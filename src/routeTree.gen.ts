@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as CertifiedRouteImport } from './routes/certified'
 import { Route as BuildCourseRouteImport } from './routes/build-course'
+import { Route as AdaptiveTestsRouteImport } from './routes/adaptive-tests'
 import { Route as IndexRouteImport } from './routes/index'
 
 const CertifiedRoute = CertifiedRouteImport.update({
@@ -23,6 +24,11 @@ const BuildCourseRoute = BuildCourseRouteImport.update({
   path: '/build-course',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdaptiveTestsRoute = AdaptiveTestsRouteImport.update({
+  id: '/adaptive-tests',
+  path: '/adaptive-tests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/adaptive-tests': typeof AdaptiveTestsRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/adaptive-tests': typeof AdaptiveTestsRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/adaptive-tests': typeof AdaptiveTestsRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/build-course' | '/certified'
+  fullPaths: '/' | '/adaptive-tests' | '/build-course' | '/certified'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/build-course' | '/certified'
-  id: '__root__' | '/' | '/build-course' | '/certified'
+  to: '/' | '/adaptive-tests' | '/build-course' | '/certified'
+  id: '__root__' | '/' | '/adaptive-tests' | '/build-course' | '/certified'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdaptiveTestsRoute: typeof AdaptiveTestsRoute
   BuildCourseRoute: typeof BuildCourseRoute
   CertifiedRoute: typeof CertifiedRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuildCourseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/adaptive-tests': {
+      id: '/adaptive-tests'
+      path: '/adaptive-tests'
+      fullPath: '/adaptive-tests'
+      preLoaderRoute: typeof AdaptiveTestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdaptiveTestsRoute: AdaptiveTestsRoute,
   BuildCourseRoute: BuildCourseRoute,
   CertifiedRoute: CertifiedRoute,
 }

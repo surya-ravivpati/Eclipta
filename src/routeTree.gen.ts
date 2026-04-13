@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CertifiedRouteImport } from './routes/certified'
 import { Route as BuildCourseRouteImport } from './routes/build-course'
 import { Route as IndexRouteImport } from './routes/index'
 
+const CertifiedRoute = CertifiedRouteImport.update({
+  id: '/certified',
+  path: '/certified',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuildCourseRoute = BuildCourseRouteImport.update({
   id: '/build-course',
   path: '/build-course',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/build-course': typeof BuildCourseRoute
+  '/certified': typeof CertifiedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/build-course': typeof BuildCourseRoute
+  '/certified': typeof CertifiedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/build-course': typeof BuildCourseRoute
+  '/certified': typeof CertifiedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/build-course'
+  fullPaths: '/' | '/build-course' | '/certified'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/build-course'
-  id: '__root__' | '/' | '/build-course'
+  to: '/' | '/build-course' | '/certified'
+  id: '__root__' | '/' | '/build-course' | '/certified'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuildCourseRoute: typeof BuildCourseRoute
+  CertifiedRoute: typeof CertifiedRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/certified': {
+      id: '/certified'
+      path: '/certified'
+      fullPath: '/certified'
+      preLoaderRoute: typeof CertifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/build-course': {
       id: '/build-course'
       path: '/build-course'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuildCourseRoute: BuildCourseRoute,
+  CertifiedRoute: CertifiedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

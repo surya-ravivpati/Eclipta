@@ -1,5 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-
+import { Luna } from "@/components/Luna";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {

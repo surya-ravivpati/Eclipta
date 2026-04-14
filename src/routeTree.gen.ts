@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PersonalizedRouteImport } from './routes/personalized'
+import { Route as ForumRouteImport } from './routes/forum'
 import { Route as CertifiedRouteImport } from './routes/certified'
 import { Route as BuildCourseRouteImport } from './routes/build-course'
 import { Route as AdaptiveTestsRouteImport } from './routes/adaptive-tests'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const PersonalizedRoute = PersonalizedRouteImport.update({
   id: '/personalized',
   path: '/personalized',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForumRoute = ForumRouteImport.update({
+  id: '/forum',
+  path: '/forum',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CertifiedRoute = CertifiedRouteImport.update({
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/adaptive-tests': typeof AdaptiveTestsRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
+  '/forum': typeof ForumRoute
   '/personalized': typeof PersonalizedRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/adaptive-tests': typeof AdaptiveTestsRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
+  '/forum': typeof ForumRoute
   '/personalized': typeof PersonalizedRoute
 }
 export interface FileRoutesById {
@@ -61,6 +69,7 @@ export interface FileRoutesById {
   '/adaptive-tests': typeof AdaptiveTestsRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
+  '/forum': typeof ForumRoute
   '/personalized': typeof PersonalizedRoute
 }
 export interface FileRouteTypes {
@@ -70,15 +79,23 @@ export interface FileRouteTypes {
     | '/adaptive-tests'
     | '/build-course'
     | '/certified'
+    | '/forum'
     | '/personalized'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/adaptive-tests' | '/build-course' | '/certified' | '/personalized'
+  to:
+    | '/'
+    | '/adaptive-tests'
+    | '/build-course'
+    | '/certified'
+    | '/forum'
+    | '/personalized'
   id:
     | '__root__'
     | '/'
     | '/adaptive-tests'
     | '/build-course'
     | '/certified'
+    | '/forum'
     | '/personalized'
   fileRoutesById: FileRoutesById
 }
@@ -87,6 +104,7 @@ export interface RootRouteChildren {
   AdaptiveTestsRoute: typeof AdaptiveTestsRoute
   BuildCourseRoute: typeof BuildCourseRoute
   CertifiedRoute: typeof CertifiedRoute
+  ForumRoute: typeof ForumRoute
   PersonalizedRoute: typeof PersonalizedRoute
 }
 
@@ -97,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/personalized'
       fullPath: '/personalized'
       preLoaderRoute: typeof PersonalizedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forum': {
+      id: '/forum'
+      path: '/forum'
+      fullPath: '/forum'
+      preLoaderRoute: typeof ForumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/certified': {
@@ -135,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdaptiveTestsRoute: AdaptiveTestsRoute,
   BuildCourseRoute: BuildCourseRoute,
   CertifiedRoute: CertifiedRoute,
+  ForumRoute: ForumRoute,
   PersonalizedRoute: PersonalizedRoute,
 }
 export const routeTree = rootRouteImport

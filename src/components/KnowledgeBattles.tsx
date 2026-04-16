@@ -71,7 +71,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
   fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
-  const comboThreshold = archetype === "consistent" ? 2 : 3;
+  const comboThreshold = archetype === "fulcrum" ? 2 : 3;
   return (
     <motion.div
       className="glass-panel p-5 flex-1 relative overflow-hidden"
@@ -183,7 +183,7 @@ function BattleLog({ logs }: { logs: string[] }) {
 // ─── Main Battle Engine ──────────────────────────────────────────────
 function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
-  const [archetype, setArchetype] = useState<ArchetypeId>("analyst");
+  const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🧑‍💻" });
   const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🤖" });
   const [momentum, setMomentum] = useState(0);
@@ -202,7 +202,7 @@ function BattleArena() {
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const comboThreshold = archetype === "consistent" ? 2 : 3;
+  const comboThreshold = archetype === "fulcrum" ? 2 : 3;
   const addLog = useCallback((msg: string) => setLogs(prev => [...prev, msg]), []);
 
   useEffect(() => {
@@ -252,25 +252,36 @@ function BattleArena() {
       } else {
         let baseDmg = action.dmg;
         // Archetype modifiers
-        if (archetype === "analyst" && currentAction === "charge") baseDmg = Math.floor(baseDmg * 1.5);
-        if (archetype === "defender") baseDmg = Math.floor(baseDmg * 0.7);
-        if (archetype === "sprinter") {
+        if (archetype === "chud") baseDmg = Math.floor(baseDmg * 1.5);
+        if (archetype === "tank") baseDmg = Math.floor(baseDmg * 0.7);
+        if (archetype === "speedster") {
           const speedBonus = 1 + (timeLeft / maxTime) * 0.6;
           baseDmg = Math.floor(baseDmg * speedBonus);
+        }
+        if (archetype === "accelerator") {
+          const turnBonus = 1 + records.length * 0.1;
+          baseDmg = Math.floor(baseDmg * turnBonus);
+        }
+        if (archetype === "gambler") {
+          baseDmg = Math.floor(baseDmg * (0.5 + Math.random() * 1.5));
         }
         const dmg = Math.floor(baseDmg * comboMult);
         setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
         setShowOpponentHit(true);
-        addLog(`✅ ${ACTION_EMOJIS[currentAction]} ${action.label}: ${dmg} DMG!${comboMult > 1 ? " 🔥 COMBO!" : ""}${archetype === "sprinter" && timeLeft > maxTime * 0.5 ? " ⚡ SPEED BONUS!" : ""}`);
+        addLog(`✅ ${ACTION_EMOJIS[currentAction]} ${action.label}: ${dmg} DMG!${comboMult > 1 ? " 🔥 COMBO!" : ""}${archetype === "speedster" && timeLeft > maxTime * 0.5 ? " ⚡ SPEED BONUS!" : ""}`);
       }
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * comboMult);
     } else {
       setMomentum(0);
       let counterDmg = Math.floor(Math.random() * 10) + 8;
-      if (archetype === "defender") counterDmg = Math.floor(counterDmg * 0.5);
+      if (archetype === "tank") counterDmg = Math.floor(counterDmg * 0.5);
+      if (archetype === "healer") {
+        const healAmt = Math.floor(counterDmg * 0.3);
+        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }));
+      }
       setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
       setShowPlayerHit(true);
-      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${archetype === "defender" ? " 🛡️ Reduced!" : ""}`);
+      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${archetype === "tank" ? " 🛡️ Reduced!" : ""}`);
     }
 
     setTimeout(() => {

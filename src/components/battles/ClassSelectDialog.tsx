@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Lock } from "lucide-react";
 import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
-import { getUnlockedArchetypes, ROAD_NODES, PLAYER_XP } from "@/lib/trophy-road-data";
+import { getUnlockedArchetypes, ROAD_NODES } from "@/lib/trophy-road-data";
 import { cn } from "@/lib/utils";
 
 const STAT_LABELS = ["ATK", "DEF", "SPD", "CMB"] as const;

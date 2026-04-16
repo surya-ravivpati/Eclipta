@@ -16,8 +16,10 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
+import { Route as AuthenticatedPersonalizedRouteImport } from './routes/_authenticated.personalized'
 import { Route as AuthenticatedLunaRouteImport } from './routes/_authenticated.luna'
 import { Route as AuthenticatedForumRouteImport } from './routes/_authenticated.forum'
+import { Route as AuthenticatedCertifiedRouteImport } from './routes/_authenticated.certified'
 import { Route as AuthenticatedBuildCourseRouteImport } from './routes/_authenticated.build-course'
 import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticated.battles'
 import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
@@ -56,6 +58,12 @@ const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPersonalizedRoute =
+  AuthenticatedPersonalizedRouteImport.update({
+    id: '/personalized',
+    path: '/personalized',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedLunaRoute = AuthenticatedLunaRouteImport.update({
   id: '/luna',
   path: '/luna',
@@ -64,6 +72,11 @@ const AuthenticatedLunaRoute = AuthenticatedLunaRouteImport.update({
 const AuthenticatedForumRoute = AuthenticatedForumRouteImport.update({
   id: '/forum',
   path: '/forum',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCertifiedRoute = AuthenticatedCertifiedRouteImport.update({
+  id: '/certified',
+  path: '/certified',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedBuildCourseRoute =
@@ -93,8 +106,10 @@ export interface FileRoutesByFullPath {
   '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/battles': typeof AuthenticatedBattlesRoute
   '/build-course': typeof AuthenticatedBuildCourseRoute
+  '/certified': typeof AuthenticatedCertifiedRoute
   '/forum': typeof AuthenticatedForumRoute
   '/luna': typeof AuthenticatedLunaRoute
+  '/personalized': typeof AuthenticatedPersonalizedRoute
   '/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRoutesByTo {
@@ -106,8 +121,10 @@ export interface FileRoutesByTo {
   '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/battles': typeof AuthenticatedBattlesRoute
   '/build-course': typeof AuthenticatedBuildCourseRoute
+  '/certified': typeof AuthenticatedCertifiedRoute
   '/forum': typeof AuthenticatedForumRoute
   '/luna': typeof AuthenticatedLunaRoute
+  '/personalized': typeof AuthenticatedPersonalizedRoute
   '/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRoutesById {
@@ -121,8 +138,10 @@ export interface FileRoutesById {
   '/_authenticated/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/_authenticated/battles': typeof AuthenticatedBattlesRoute
   '/_authenticated/build-course': typeof AuthenticatedBuildCourseRoute
+  '/_authenticated/certified': typeof AuthenticatedCertifiedRoute
   '/_authenticated/forum': typeof AuthenticatedForumRoute
   '/_authenticated/luna': typeof AuthenticatedLunaRoute
+  '/_authenticated/personalized': typeof AuthenticatedPersonalizedRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRouteTypes {
@@ -136,8 +155,10 @@ export interface FileRouteTypes {
     | '/adaptive-tests'
     | '/battles'
     | '/build-course'
+    | '/certified'
     | '/forum'
     | '/luna'
+    | '/personalized'
     | '/progress'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,8 +170,10 @@ export interface FileRouteTypes {
     | '/adaptive-tests'
     | '/battles'
     | '/build-course'
+    | '/certified'
     | '/forum'
     | '/luna'
+    | '/personalized'
     | '/progress'
   id:
     | '__root__'
@@ -163,8 +186,10 @@ export interface FileRouteTypes {
     | '/_authenticated/adaptive-tests'
     | '/_authenticated/battles'
     | '/_authenticated/build-course'
+    | '/_authenticated/certified'
     | '/_authenticated/forum'
     | '/_authenticated/luna'
+    | '/_authenticated/personalized'
     | '/_authenticated/progress'
   fileRoutesById: FileRoutesById
 }
@@ -228,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProgressRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/personalized': {
+      id: '/_authenticated/personalized'
+      path: '/personalized'
+      fullPath: '/personalized'
+      preLoaderRoute: typeof AuthenticatedPersonalizedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/luna': {
       id: '/_authenticated/luna'
       path: '/luna'
@@ -240,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/forum'
       fullPath: '/forum'
       preLoaderRoute: typeof AuthenticatedForumRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/certified': {
+      id: '/_authenticated/certified'
+      path: '/certified'
+      fullPath: '/certified'
+      preLoaderRoute: typeof AuthenticatedCertifiedRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/build-course': {
@@ -270,8 +309,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdaptiveTestsRoute: typeof AuthenticatedAdaptiveTestsRoute
   AuthenticatedBattlesRoute: typeof AuthenticatedBattlesRoute
   AuthenticatedBuildCourseRoute: typeof AuthenticatedBuildCourseRoute
+  AuthenticatedCertifiedRoute: typeof AuthenticatedCertifiedRoute
   AuthenticatedForumRoute: typeof AuthenticatedForumRoute
   AuthenticatedLunaRoute: typeof AuthenticatedLunaRoute
+  AuthenticatedPersonalizedRoute: typeof AuthenticatedPersonalizedRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
 }
 
@@ -279,8 +320,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdaptiveTestsRoute: AuthenticatedAdaptiveTestsRoute,
   AuthenticatedBattlesRoute: AuthenticatedBattlesRoute,
   AuthenticatedBuildCourseRoute: AuthenticatedBuildCourseRoute,
+  AuthenticatedCertifiedRoute: AuthenticatedCertifiedRoute,
   AuthenticatedForumRoute: AuthenticatedForumRoute,
   AuthenticatedLunaRoute: AuthenticatedLunaRoute,
+  AuthenticatedPersonalizedRoute: AuthenticatedPersonalizedRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
 }
 

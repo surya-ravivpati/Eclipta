@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as PersonalizedRouteImport } from './routes/personalized'
+import { Route as LunaRouteImport } from './routes/luna'
 import { Route as ForumRouteImport } from './routes/forum'
 import { Route as CertifiedRouteImport } from './routes/certified'
 import { Route as BuildCourseRouteImport } from './routes/build-course'
@@ -26,6 +27,11 @@ const ProgressRoute = ProgressRouteImport.update({
 const PersonalizedRoute = PersonalizedRouteImport.update({
   id: '/personalized',
   path: '/personalized',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LunaRoute = LunaRouteImport.update({
+  id: '/luna',
+  path: '/luna',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForumRoute = ForumRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
   '/forum': typeof ForumRoute
+  '/luna': typeof LunaRoute
   '/personalized': typeof PersonalizedRoute
   '/progress': typeof ProgressRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
   '/forum': typeof ForumRoute
+  '/luna': typeof LunaRoute
   '/personalized': typeof PersonalizedRoute
   '/progress': typeof ProgressRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
   '/forum': typeof ForumRoute
+  '/luna': typeof LunaRoute
   '/personalized': typeof PersonalizedRoute
   '/progress': typeof ProgressRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/build-course'
     | '/certified'
     | '/forum'
+    | '/luna'
     | '/personalized'
     | '/progress'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/build-course'
     | '/certified'
     | '/forum'
+    | '/luna'
     | '/personalized'
     | '/progress'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/build-course'
     | '/certified'
     | '/forum'
+    | '/luna'
     | '/personalized'
     | '/progress'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   BuildCourseRoute: typeof BuildCourseRoute
   CertifiedRoute: typeof CertifiedRoute
   ForumRoute: typeof ForumRoute
+  LunaRoute: typeof LunaRoute
   PersonalizedRoute: typeof PersonalizedRoute
   ProgressRoute: typeof ProgressRoute
 }
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/personalized'
       fullPath: '/personalized'
       preLoaderRoute: typeof PersonalizedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/luna': {
+      id: '/luna'
+      path: '/luna'
+      fullPath: '/luna'
+      preLoaderRoute: typeof LunaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forum': {
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuildCourseRoute: BuildCourseRoute,
   CertifiedRoute: CertifiedRoute,
   ForumRoute: ForumRoute,
+  LunaRoute: LunaRoute,
   PersonalizedRoute: PersonalizedRoute,
   ProgressRoute: ProgressRoute,
 }

@@ -12,20 +12,20 @@ export function LunaIcon({ state, hasNudge, onClick }: LunaIconProps) {
   const pulseVariants = {
     idle: {
       scale: [1, 1.02, 1],
-      transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+      transition: { duration: 3, repeat: Infinity, ease: "easeInOut" as const },
     },
     thinking: {
       scale: [1, 1.05, 1],
       rotate: [0, 3, -3, 0],
-      transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+      transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" as const },
     },
     alert: {
       scale: [1, 1.08, 1],
-      transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" },
+      transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" as const },
     },
     happy: {
       scale: [1, 1.1, 1],
-      transition: { duration: 0.6, repeat: 2, ease: "easeInOut" },
+      transition: { duration: 0.6, repeat: 2, ease: "easeInOut" as const },
     },
   };
 

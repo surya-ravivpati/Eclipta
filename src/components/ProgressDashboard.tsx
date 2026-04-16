@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { TrophyRoad } from "@/components/TrophyRoad";
 
 /* ── Mock Data ─────────────────────────────────────────────── */
 
@@ -278,43 +279,7 @@ export function ProgressDashboard() {
 
           {/* ── Trophy Road ────────────────────── */}
           <TabsContent value="trophies">
-            <div className="max-w-2xl">
-              <p className="text-sm text-muted-foreground mb-6">
-                Unlock milestones as you learn. Each trophy marks real achievement — not just participation.
-              </p>
-              <div className="space-y-1">
-                {trophyMilestones.map((m, i) => (
-                  <motion.div
-                    key={m.label}
-                    className="flex items-center gap-4 relative"
-                    initial={{ opacity: 0, x: -12 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05 }}
-                  >
-                    {i < trophyMilestones.length - 1 && (
-                      <div className={`absolute left-5 top-10 w-0.5 h-10 ${m.earned ? "bg-neon-purple" : "bg-border"}`} />
-                    )}
-                    <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                      m.earned
-                        ? "bg-neon-purple neon-glow-purple"
-                        : "bg-secondary border border-border"
-                    }`}>
-                      {m.earned ? <CheckCircle className="w-5 h-5 text-primary-foreground" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
-                    </div>
-                    <div className="flex-1 py-4">
-                      <div className="flex items-center justify-between">
-                        <span className={`font-bold font-display text-sm ${m.earned ? "text-foreground" : "text-muted-foreground"}`}>{m.label}</span>
-                        <span className={`text-xs font-mono ${m.earned ? "text-neon-purple" : "text-muted-foreground"}`}>{m.xp} XP</span>
-                      </div>
-                      {!m.earned && m.progress !== undefined && m.progress > 0 && (
-                        <Progress value={m.progress} className="h-1 mt-2" />
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
+            <TrophyRoad />
           </TabsContent>
 
           {/* ── Recommendations ────────────────── */}

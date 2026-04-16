@@ -56,6 +56,16 @@
   --color-acrylic: var(--acrylic);
   --color-acrylic-border: var(--acrylic-border);
 
+  /* Rank tier tokens */
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-diamond: var(--tier-diamond);
+  --color-tier-platinum: var(--tier-platinum);
+  --color-tier-champion: var(--tier-champion);
+  --color-tier-unreal: var(--tier-unreal);
+  --color-tier-god: var(--tier-god);
+
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
 }
@@ -91,6 +101,16 @@
   --marble: oklch(0.96 0.005 280);
   --acrylic: oklch(1 0 0 / 3%);
   --acrylic-border: oklch(1 0 0 / 10%);
+
+  /* Rank tier colors */
+  --tier-bronze: oklch(0.6 0.12 55);
+  --tier-silver: oklch(0.72 0.02 260);
+  --tier-gold: oklch(0.75 0.16 85);
+  --tier-diamond: oklch(0.7 0.18 240);
+  --tier-platinum: oklch(0.8 0.1 190);
+  --tier-champion: oklch(0.65 0.22 25);
+  --tier-unreal: oklch(0.6 0.28 310);
+  --tier-god: oklch(0.85 0.12 90);
 
   --chart-1: oklch(0.55 0.25 290);
   --chart-2: oklch(0.6 0.24 350);
@@ -136,7 +156,38 @@
     box-shadow: 0 0 30px oklch(0.6 0.24 350 / 40%), 0 0 60px oklch(0.6 0.24 350 / 20%);
   }
 
+  .neon-glow-bronze {
+    box-shadow: 0 0 20px oklch(0.6 0.12 55 / 50%);
+  }
+  .neon-glow-silver {
+    box-shadow: 0 0 20px oklch(0.72 0.02 260 / 50%);
+  }
+  .neon-glow-gold {
+    box-shadow: 0 0 25px oklch(0.75 0.16 85 / 60%), 0 0 50px oklch(0.75 0.16 85 / 25%);
+  }
+  .neon-glow-diamond {
+    box-shadow: 0 0 30px oklch(0.7 0.18 240 / 50%), 0 0 60px oklch(0.7 0.18 240 / 20%);
+  }
+  .neon-glow-platinum {
+    box-shadow: 0 0 30px oklch(0.8 0.1 190 / 50%), 0 0 60px oklch(0.8 0.1 190 / 20%);
+  }
+  .neon-glow-champion {
+    box-shadow: 0 0 35px oklch(0.65 0.22 25 / 60%), 0 0 70px oklch(0.65 0.22 25 / 25%);
+  }
+  .neon-glow-unreal {
+    box-shadow: 0 0 40px oklch(0.6 0.28 310 / 60%), 0 0 80px oklch(0.6 0.28 310 / 30%);
+  }
+  .neon-glow-god {
+    box-shadow: 0 0 50px oklch(0.85 0.12 90 / 70%), 0 0 100px oklch(0.85 0.12 90 / 35%), 0 0 150px oklch(0.85 0.12 90 / 15%);
+  }
+
   .text-glow-purple {
     text-shadow: 0 0 20px oklch(0.55 0.25 290 / 50%);
+  }
+  .text-glow-gold {
+    text-shadow: 0 0 20px oklch(0.75 0.16 85 / 60%);
+  }
+  .text-glow-god {
+    text-shadow: 0 0 30px oklch(0.85 0.12 90 / 70%), 0 0 60px oklch(0.85 0.12 90 / 35%);
   }
 }

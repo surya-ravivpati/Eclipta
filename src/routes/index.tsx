@@ -23,7 +23,7 @@ function Index() {
       <Navbar />
       <HeroSection />
       <FeaturesGrid />
-      <TrophyRoad />
+      <TrophyRoad compact />
       <StatsFooter />
     </div>
   );

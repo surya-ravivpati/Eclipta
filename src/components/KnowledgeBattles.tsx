@@ -342,11 +342,19 @@ function BattleArena() {
     setCurrentAction(action);
     if (action === "wild") setPlayer(prev => ({ ...prev, focus: prev.focus - 10 }));
 
-    const diff = action === "wild" ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)] : ACTIONS[action].difficulty;
-    const q = generateQuestion(diff);
+    const arch = ARCHETYPES[archetype];
+    const baseDiff = action === "wild" ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)] : ACTIONS[action].difficulty;
+    // Gambler randomizes difficulty
+    const effectiveDiff = archetype === "gambler"
+      ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)]
+      : statToDifficulty(baseDiff, arch.stats.difficulty);
+    const q = generateQuestion(effectiveDiff);
     setQuestion(q);
-    let t = TIMER_DURATIONS[diff];
-    if (archetype === "chud") t = Math.ceil(t * 0.75);
+    let t = TIMER_DURATIONS[effectiveDiff];
+    // Apply time stat multiplier
+    t = Math.max(4, Math.round(t * statToTimeMult(arch.stats.time)));
+    // Gambler randomizes time too
+    if (archetype === "gambler") t = Math.max(4, Math.round(t * (0.5 + Math.random())));
     setMaxTime(t);
     setTimeLeft(t);
     setPhase("question");

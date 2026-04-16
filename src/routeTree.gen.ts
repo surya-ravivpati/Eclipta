@@ -9,16 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as PersonalizedRouteImport } from './routes/personalized'
 import { Route as LunaRouteImport } from './routes/luna'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForumRouteImport } from './routes/forum'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CertifiedRouteImport } from './routes/certified'
 import { Route as BuildCourseRouteImport } from './routes/build-course'
 import { Route as BattlesRouteImport } from './routes/battles'
 import { Route as AdaptiveTestsRouteImport } from './routes/adaptive-tests'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -34,9 +48,19 @@ const LunaRoute = LunaRouteImport.update({
   path: '/luna',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForumRoute = ForumRouteImport.update({
   id: '/forum',
   path: '/forum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CertifiedRoute = CertifiedRouteImport.update({
@@ -71,10 +95,14 @@ export interface FileRoutesByFullPath {
   '/battles': typeof BattlesRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/forum': typeof ForumRoute
+  '/login': typeof LoginRoute
   '/luna': typeof LunaRoute
   '/personalized': typeof PersonalizedRoute
   '/progress': typeof ProgressRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,10 +110,14 @@ export interface FileRoutesByTo {
   '/battles': typeof BattlesRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/forum': typeof ForumRoute
+  '/login': typeof LoginRoute
   '/luna': typeof LunaRoute
   '/personalized': typeof PersonalizedRoute
   '/progress': typeof ProgressRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,10 +126,14 @@ export interface FileRoutesById {
   '/battles': typeof BattlesRoute
   '/build-course': typeof BuildCourseRoute
   '/certified': typeof CertifiedRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/forum': typeof ForumRoute
+  '/login': typeof LoginRoute
   '/luna': typeof LunaRoute
   '/personalized': typeof PersonalizedRoute
   '/progress': typeof ProgressRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,10 +143,14 @@ export interface FileRouteTypes {
     | '/battles'
     | '/build-course'
     | '/certified'
+    | '/forgot-password'
     | '/forum'
+    | '/login'
     | '/luna'
     | '/personalized'
     | '/progress'
+    | '/reset-password'
+    | '/signup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,10 +158,14 @@ export interface FileRouteTypes {
     | '/battles'
     | '/build-course'
     | '/certified'
+    | '/forgot-password'
     | '/forum'
+    | '/login'
     | '/luna'
     | '/personalized'
     | '/progress'
+    | '/reset-password'
+    | '/signup'
   id:
     | '__root__'
     | '/'
@@ -129,10 +173,14 @@ export interface FileRouteTypes {
     | '/battles'
     | '/build-course'
     | '/certified'
+    | '/forgot-password'
     | '/forum'
+    | '/login'
     | '/luna'
     | '/personalized'
     | '/progress'
+    | '/reset-password'
+    | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -141,14 +189,32 @@ export interface RootRouteChildren {
   BattlesRoute: typeof BattlesRoute
   BuildCourseRoute: typeof BuildCourseRoute
   CertifiedRoute: typeof CertifiedRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   ForumRoute: typeof ForumRoute
+  LoginRoute: typeof LoginRoute
   LunaRoute: typeof LunaRoute
   PersonalizedRoute: typeof PersonalizedRoute
   ProgressRoute: typeof ProgressRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progress': {
       id: '/progress'
       path: '/progress'
@@ -170,11 +236,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LunaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forum': {
       id: '/forum'
       path: '/forum'
       fullPath: '/forum'
       preLoaderRoute: typeof ForumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/certified': {
@@ -221,10 +301,14 @@ const rootRouteChildren: RootRouteChildren = {
   BattlesRoute: BattlesRoute,
   BuildCourseRoute: BuildCourseRoute,
   CertifiedRoute: CertifiedRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   ForumRoute: ForumRoute,
+  LoginRoute: LoginRoute,
   LunaRoute: LunaRoute,
   PersonalizedRoute: PersonalizedRoute,
   ProgressRoute: ProgressRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

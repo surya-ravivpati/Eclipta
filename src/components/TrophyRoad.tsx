@@ -503,6 +503,10 @@ function FinalMonsters() {
 
 export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { xp: playerXp } = usePlayerXp();
+  const { slugs: ownedSlugs, refresh: refreshOwned } = useOwnedEcliptars();
+
+  const ROAD_NODES = deriveNodes(playerXp);
 
   // Group nodes by tier
   let lastTier: TierId | null = null;
@@ -576,7 +580,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">XP</p>
-                  <p className="font-mono font-bold text-foreground">{PLAYER_XP.toLocaleString()}</p>
+                  <p className="font-mono font-bold text-foreground">{playerXp.toLocaleString()}</p>
                 </div>
               </div>
             </motion.div>
@@ -589,7 +593,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   // Full version for progress page
   return (
     <div>
-      <ProgressOverview />
+      <ProgressOverview playerXp={playerXp} />
 
       {/* Scrollable Road */}
       <div className="glass-panel rounded-2xl p-6 border border-border overflow-hidden">
@@ -610,7 +614,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
               return (
                 <div key={node.id} className="flex items-end gap-1">
                   {showTierSep && <TierSeparator tier={TIERS[node.tier]} />}
-                  <RoadNodeItem node={node} index={i} />
+                  <RoadNodeItem node={node} index={i} ownedSlugs={ownedSlugs} onClaimed={refreshOwned} />
                   {i < ROAD_NODES.length - 1 && <RoadConnector from={node} to={ROAD_NODES[i + 1]} />}
                 </div>
               );

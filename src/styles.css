@@ -56,6 +56,16 @@
   --color-acrylic: var(--acrylic);
   --color-acrylic-border: var(--acrylic-border);
 
+  /* Rank tier tokens */
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-diamond: var(--tier-diamond);
+  --color-tier-platinum: var(--tier-platinum);
+  --color-tier-champion: var(--tier-champion);
+  --color-tier-unreal: var(--tier-unreal);
+  --color-tier-god: var(--tier-god);
+
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
 }

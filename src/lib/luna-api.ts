@@ -16,6 +16,8 @@ interface LunaContext {
   rapidGuessCount?: number;
   accuracy?: number;
   sessionMinutes?: number;
+  profile?: Record<string, unknown> | null;
+  recentHistory?: Record<string, unknown>[] | null;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-chat`;

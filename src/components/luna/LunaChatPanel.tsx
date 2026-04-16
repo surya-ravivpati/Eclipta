@@ -134,6 +134,8 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
         rapidGuessCount: ctx.rapidGuessCount,
         accuracy: getAccuracy(),
         sessionMinutes: Math.round(getSessionDuration()),
+        profile: profileRef.current,
+        recentHistory: historyRef.current,
       },
       onDelta: upsertAssistant,
       onDone: () => setIsStreaming(false),

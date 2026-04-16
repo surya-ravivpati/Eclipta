@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
   Dice5, Heart, Scale, TrendingUp, Sparkles, Trophy, Gift
@@ -7,11 +8,12 @@ import {
 import { cn } from "@/lib/utils";
 import {
   ROAD_NODES as RAW_NODES,
-  PLAYER_XP,
   type TierId,
   type MonsterArchetypeKey,
   type RoadNode as BaseRoadNode,
 } from "@/lib/trophy-road-data";
+import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
+import { claimArchetypeReward, getEcliptarsByArchetype } from "@/lib/ecliptars";
 
 /* ── Types ─────────────────────────────────────────────────── */
 

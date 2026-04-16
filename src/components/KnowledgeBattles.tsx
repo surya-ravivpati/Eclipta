@@ -345,7 +345,7 @@ function BattleArena() {
     const q = generateQuestion(diff);
     setQuestion(q);
     let t = TIMER_DURATIONS[diff];
-    if (archetype === "analyst") t = Math.ceil(t * 0.75);
+    if (archetype === "chud") t = Math.ceil(t * 0.75);
     setMaxTime(t);
     setTimeLeft(t);
     setPhase("question");

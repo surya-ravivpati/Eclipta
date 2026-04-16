@@ -353,14 +353,17 @@ function BattleArena() {
   };
 
   const startBattle = (selectedClass?: ArchetypeId) => {
+    const cls = selectedClass || archetype;
     if (selectedClass) setArchetype(selectedClass);
     setPhase("searching");
     setTimeout(() => {
-      setPlayer({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🧑‍💻" });
+      const arch = ARCHETYPES[cls];
+      const playerHp = statToHp(arch.stats.health);
+      setPlayer({ name: "You", hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, avatar: "🧑‍💻" });
       setOpponent({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🤖" });
       setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
-      addLog(`⚔️ Battle started as ${ARCHETYPES[selectedClass || archetype].emoji} ${ARCHETYPES[selectedClass || archetype].name}!`);
+      addLog(`⚔️ Battle started as ${arch.emoji} ${arch.name}! (${playerHp} HP)`);
     }, 2200);
   };
 

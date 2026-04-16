@@ -303,7 +303,7 @@ function BattleArena() {
         return prev;
       });
     }, 800);
-  }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, comboThreshold, longestStreak, fastestAnswer]);
+  }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
 
   const finishBattle = useCallback((won: boolean) => {
     const xp = won ? Math.floor(totalScore * 0.8) + 200 : Math.floor(totalScore * 0.2);

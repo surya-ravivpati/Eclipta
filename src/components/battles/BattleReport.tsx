@@ -1,15 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Crown, Skull, Target, Zap, Flame, AlertTriangle, BookOpen, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ARCHETYPES } from "./archetypes";
 import type { BattleStats, Difficulty } from "./types";
+import { awardXp } from "@/lib/xp-service";
+import { supabase } from "@/integrations/supabase/client";
 
 export function BattleReport({ stats, onRematch, onBack }: {
   stats: BattleStats;
   onRematch: () => void;
   onBack: () => void;
 }) {
+  const xpSavedRef = useRef(false);
+
+  // Award XP and update profile on mount
+  useEffect(() => {
+    if (xpSavedRef.current) return;
+    xpSavedRef.current = true;
+
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Award XP (handles milestones & toasts internally)
+        await awardXp(stats.xp);
+
+        // Update battle stats on profile
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("total_sessions, total_questions, total_correct, current_streak, best_streak, weak_areas")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (profile) {
+          const p = profile as any;
+          const newStreak = stats.won ? (p.current_streak ?? 0) + 1 : 0;
+          const newBest = Math.max(p.best_streak ?? 0, newStreak);
+
+          // Detect weak topics from missed questions
+          const missedTopics = stats.records
+            .filter(r => !r.correct)
+            .map(r => r.question.topic);
+          const existingWeak: string[] = p.weak_areas ?? [];
+          const mergedWeak = [...new Set([...existingWeak, ...missedTopics])].slice(0, 10);
+
+          await supabase
+            .from("user_profiles")
+            .update({
+              total_sessions: (p.total_sessions ?? 0) + 1,
+              total_questions: (p.total_questions ?? 0) + stats.totalQuestions,
+              total_correct: (p.total_correct ?? 0) + stats.correctAnswers,
+              current_streak: newStreak,
+              best_streak: newBest,
+              weak_areas: mergedWeak,
+            })
+            .eq("user_id", user.id);
+
+          // Log battle to learning_history
+          await supabase.from("learning_history").insert({
+            user_id: user.id,
+            session_type: "battle",
+            topic: `Battle as ${ARCHETYPES[stats.archetype].name}`,
+            was_correct: stats.won,
+            response_time_ms: stats.fastestAnswer < Infinity ? Math.round(stats.fastestAnswer * 1000) : null,
+            luna_summary: `${stats.won ? "Won" : "Lost"} battle. ${stats.correctAnswers}/${stats.totalQuestions} correct. +${stats.xp} XP.`,
+          });
+        }
+      } catch { /* non-critical */ }
+    })();
+  }, []);
+
   const accuracy = stats.totalQuestions > 0 ? Math.round((stats.correctAnswers / stats.totalQuestions) * 100) : 0;
   const missed = stats.records.filter(r => !r.correct);
   const arch = ARCHETYPES[stats.archetype];

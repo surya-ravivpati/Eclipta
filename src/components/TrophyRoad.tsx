@@ -1,90 +1,637 @@
-import { motion } from "framer-motion";
-import { Lock, Star, CheckCircle } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState } from "react";
+import {
+  Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
+  Dice5, Heart, Scale, TrendingUp, Sparkles, Trophy, Gift
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const milestones = [
-  { label: "Foundations", status: "completed", xp: "500 XP" },
-  { label: "Core Concepts", status: "completed", xp: "1,200 XP" },
-  { label: "Advanced Theory", status: "current", xp: "2,840 XP" },
-  { label: "Practical Application", status: "locked", xp: "4,000 XP" },
-  { label: "Mastery Challenge", status: "locked", xp: "6,000 XP" },
+/* ── Types ─────────────────────────────────────────────────── */
+
+type TierId = "bronze" | "silver" | "gold" | "diamond" | "platinum" | "champion" | "unreal" | "god";
+type ArchetypeKey = "speedster" | "tank" | "chud" | "gambler" | "healer" | "fulcrum" | "accelerator" | "god";
+
+interface RankTier {
+  id: TierId;
+  name: string;
+  xpRequired: number;
+  colorClass: string;
+  bgClass: string;
+  glowClass: string;
+  borderClass: string;
+  description: string;
+}
+
+interface MonsterArchetype {
+  id: ArchetypeKey;
+  name: string;
+  emoji: string;
+  icon: typeof Zap;
+  stats: { health: string; time: string; damage: string; multiplier: string; difficulty: string };
+  special?: string;
+  colorClass: string;
+}
+
+interface RoadNode {
+  id: number;
+  tier: TierId;
+  type: "rank" | "monster" | "chest" | "boss" | "final";
+  label: string;
+  xp: number;
+  archetype?: ArchetypeKey;
+  unlocked: boolean;
+  current: boolean;
+  finalMonster?: "newton" | "ecliptadon";
+}
+
+/* ── Data ──────────────────────────────────────────────────── */
+
+const TIERS: Record<TierId, RankTier> = {
+  bronze:   { id: "bronze",   name: "Bronze",    xpRequired: 0,      colorClass: "text-tier-bronze",   bgClass: "bg-tier-bronze",   glowClass: "neon-glow-bronze",   borderClass: "border-tier-bronze/40",   description: "Rugged stone, warm glow" },
+  silver:   { id: "silver",   name: "Silver",    xpRequired: 1000,   colorClass: "text-tier-silver",   bgClass: "bg-tier-silver",   glowClass: "neon-glow-silver",   borderClass: "border-tier-silver/40",   description: "Sleek metal, cool shine" },
+  gold:     { id: "gold",     name: "Gold",      xpRequired: 3000,   colorClass: "text-tier-gold",     bgClass: "bg-tier-gold",     glowClass: "neon-glow-gold",     borderClass: "border-tier-gold/40",     description: "Radiant, sparkling" },
+  diamond:  { id: "diamond",  name: "Diamond",   xpRequired: 6000,   colorClass: "text-tier-diamond",  bgClass: "bg-tier-diamond",  glowClass: "neon-glow-diamond",  borderClass: "border-tier-diamond/40",  description: "Crystalline, blue energy" },
+  platinum: { id: "platinum", name: "Platinum",  xpRequired: 10000,  colorClass: "text-tier-platinum", bgClass: "bg-tier-platinum", glowClass: "neon-glow-platinum", borderClass: "border-tier-platinum/40", description: "Futuristic white/teal" },
+  champion: { id: "champion", name: "Champion",  xpRequired: 16000,  colorClass: "text-tier-champion", bgClass: "bg-tier-champion", glowClass: "neon-glow-champion", borderClass: "border-tier-champion/40", description: "Fiery, heroic aura" },
+  unreal:   { id: "unreal",   name: "Unreal",    xpRequired: 25000,  colorClass: "text-tier-unreal",   bgClass: "bg-tier-unreal",   glowClass: "neon-glow-unreal",   borderClass: "border-tier-unreal/40",   description: "Cosmic, glitchy, surreal" },
+  god:      { id: "god",      name: "God Tier",  xpRequired: 40000,  colorClass: "text-tier-god",      bgClass: "bg-tier-god",      glowClass: "neon-glow-god",      borderClass: "border-tier-god/40",      description: "Divine light, heavenly" },
+};
+
+const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
+  speedster:    { id: "speedster",    name: "Speedster",    emoji: "⚡", icon: Zap,        stats: { health: "Mid", time: "Low", damage: "Mid", multiplier: "High", difficulty: "Mid" },    colorClass: "text-neon-cyan" },
+  tank:         { id: "tank",         name: "Tank",         emoji: "🛡️", icon: Shield,     stats: { health: "High", time: "High", damage: "Low", multiplier: "None", difficulty: "Mid" },   colorClass: "text-tier-silver" },
+  chud:         { id: "chud",         name: "Chud",         emoji: "😵", icon: Skull,       stats: { health: "Low", time: "Low", damage: "Ultra High", multiplier: "None", difficulty: "High" }, colorClass: "text-tier-champion" },
+  gambler:      { id: "gambler",      name: "Gambler",      emoji: "🎰", icon: Dice5,       stats: { health: "Random", time: "Random", damage: "Random", multiplier: "Random", difficulty: "Random" }, colorClass: "text-tier-gold" },
+  healer:       { id: "healer",       name: "Healer",       emoji: "✨", icon: Heart,       stats: { health: "Low", time: "Mid", damage: "Low", multiplier: "Mid", difficulty: "Mid" },     special: "Can heal instead of attacking", colorClass: "text-neon-pink" },
+  fulcrum:      { id: "fulcrum",      name: "Fulcrum",      emoji: "⚖️", icon: Scale,       stats: { health: "Mid", time: "Mid", damage: "Mid", multiplier: "Mid", difficulty: "Mid" },     colorClass: "text-neon-purple" },
+  accelerator:  { id: "accelerator",  name: "Accelerator",  emoji: "⏩", icon: TrendingUp,  stats: { health: "Low", time: "Mid", damage: "Scaling", multiplier: "None", difficulty: "Mid" }, special: "Damage increases every turn", colorClass: "text-tier-platinum" },
+  god:          { id: "god",          name: "God",          emoji: "👑", icon: Crown,       stats: { health: "High", time: "High", damage: "High", multiplier: "High", difficulty: "High" }, colorClass: "text-tier-god" },
+};
+
+// Mock current progress
+const PLAYER_XP = 4200;
+
+const ROAD_NODES: RoadNode[] = [
+  // Bronze tier
+  { id: 1,  tier: "bronze",   type: "rank",    label: "Bronze I",        xp: 0,     unlocked: true,  current: false },
+  { id: 2,  tier: "bronze",   type: "monster", label: "Speedster",       xp: 200,   archetype: "speedster", unlocked: true, current: false },
+  { id: 3,  tier: "bronze",   type: "chest",   label: "Bronze Chest",    xp: 500,   unlocked: true,  current: false },
+  // Silver
+  { id: 4,  tier: "silver",   type: "rank",    label: "Silver I",        xp: 1000,  unlocked: true,  current: false },
+  { id: 5,  tier: "silver",   type: "monster", label: "Tank",            xp: 1500,  archetype: "tank", unlocked: true, current: false },
+  { id: 6,  tier: "silver",   type: "chest",   label: "Silver Chest",    xp: 2000,  unlocked: true,  current: false },
+  // Gold
+  { id: 7,  tier: "gold",     type: "rank",    label: "Gold I",          xp: 3000,  unlocked: true,  current: false },
+  { id: 8,  tier: "gold",     type: "monster", label: "Chud",            xp: 3500,  archetype: "chud", unlocked: true, current: false },
+  { id: 9,  tier: "gold",     type: "chest",   label: "Gold Chest",      xp: 4000,  unlocked: true,  current: true },
+  // Diamond
+  { id: 10, tier: "diamond",  type: "rank",    label: "Diamond I",       xp: 6000,  unlocked: false, current: false },
+  { id: 11, tier: "diamond",  type: "monster", label: "Gambler",         xp: 7000,  archetype: "gambler", unlocked: false, current: false },
+  { id: 12, tier: "diamond",  type: "chest",   label: "Diamond Chest",   xp: 8500,  unlocked: false, current: false },
+  // Platinum
+  { id: 13, tier: "platinum", type: "rank",    label: "Platinum I",      xp: 10000, unlocked: false, current: false },
+  { id: 14, tier: "platinum", type: "monster", label: "Healer",          xp: 12000, archetype: "healer", unlocked: false, current: false },
+  { id: 15, tier: "platinum", type: "chest",   label: "Platinum Chest",  xp: 14000, unlocked: false, current: false },
+  // Champion
+  { id: 16, tier: "champion", type: "rank",    label: "Champion",        xp: 16000, unlocked: false, current: false },
+  { id: 17, tier: "champion", type: "monster", label: "Fulcrum",         xp: 19000, archetype: "fulcrum", unlocked: false, current: false },
+  { id: 18, tier: "champion", type: "chest",   label: "Champion Chest",  xp: 22000, unlocked: false, current: false },
+  // Unreal
+  { id: 19, tier: "unreal",   type: "rank",    label: "Unreal",          xp: 25000, unlocked: false, current: false },
+  { id: 20, tier: "unreal",   type: "monster", label: "Accelerator",     xp: 30000, archetype: "accelerator", unlocked: false, current: false },
+  { id: 21, tier: "unreal",   type: "chest",   label: "Unreal Chest",    xp: 35000, unlocked: false, current: false },
+  // God
+  { id: 22, tier: "god",      type: "rank",    label: "God Tier",        xp: 40000, unlocked: false, current: false },
+  { id: 23, tier: "god",      type: "monster", label: "God Archetype",   xp: 45000, archetype: "god", unlocked: false, current: false },
+  // Finals
+  { id: 24, tier: "god",      type: "final",   label: "Newton",          xp: 48000, unlocked: false, current: false, finalMonster: "newton" },
+  { id: 25, tier: "god",      type: "final",   label: "ECLIPTADON",      xp: 50000, unlocked: false, current: false, finalMonster: "ecliptadon" },
 ];
 
-export function TrophyRoad() {
-  return (
-    <section className="py-24 border-t border-border bg-card/30">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-bold mb-6 font-display">
-              Your <span className="text-neon-purple text-glow-purple">Trophy Road</span>
-            </h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              Inspired by Brawl Stars, your learning journey is visualized as a competitive
-              progression path. Every milestone unlocks new challenges, rewards, and recognition.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 text-sm">
-                <div className="w-3 h-3 bg-neon-purple" />
-                <span className="text-muted-foreground">Daily practice streaks multiply XP gains</span>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="w-3 h-3 bg-neon-pink" />
-                <span className="text-muted-foreground">Time-limited challenges for bonus rewards</span>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="w-3 h-3 bg-neon-cyan" />
-                <span className="text-muted-foreground">Certified completion records and badges</span>
-              </div>
-            </div>
-          </motion.div>
+/* ── Tier Background ───────────────────────────────────────── */
 
+function getTierBg(tier: TierId): string {
+  const bgs: Record<TierId, string> = {
+    bronze:   "from-amber-950/30 via-stone-900/20 to-transparent",
+    silver:   "from-slate-700/20 via-gray-800/15 to-transparent",
+    gold:     "from-yellow-900/25 via-amber-800/15 to-transparent",
+    diamond:  "from-blue-900/30 via-cyan-900/15 to-transparent",
+    platinum: "from-teal-900/25 via-cyan-800/15 to-transparent",
+    champion: "from-orange-900/30 via-red-900/15 to-transparent",
+    unreal:   "from-purple-900/35 via-violet-900/20 to-transparent",
+    god:      "from-yellow-800/30 via-amber-700/20 to-amber-900/10",
+  };
+  return bgs[tier];
+}
+
+/* ── Node Component ────────────────────────────────────────── */
+
+function RoadNodeItem({ node, index }: { node: RoadNode; index: number }) {
+  const tier = TIERS[node.tier];
+  const archetype = node.archetype ? ARCHETYPES[node.archetype] : null;
+  const [hovered, setHovered] = useState(false);
+
+  const isFinal = node.type === "final";
+  const nodeSize = isFinal ? "w-20 h-20" : node.type === "rank" ? "w-14 h-14" : "w-12 h-12";
+
+  const getNodeIcon = () => {
+    if (node.type === "final") {
+      return node.finalMonster === "newton" ? "🍎" : "🦕";
+    }
+    if (node.type === "rank") return <Crown className="w-5 h-5" />;
+    if (node.type === "chest") return <Gift className="w-5 h-5" />;
+    if (node.type === "monster" && archetype) return <span className="text-lg">{archetype.emoji}</span>;
+    return <Star className="w-4 h-4" />;
+  };
+
+  // Zigzag vertical offset for visual interest
+  const yOffset = Math.sin(index * 0.8) * 20;
+  const xPercent = (index / (ROAD_NODES.length - 1)) * 100;
+
+  return (
+    <motion.div
+      className="relative flex flex-col items-center shrink-0"
+      style={{ marginTop: yOffset }}
+      initial={{ opacity: 0, scale: 0.6, y: 20 }}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ delay: index * 0.04, type: "spring", stiffness: 200 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* XP label */}
+      <motion.span
+        className={cn(
+          "text-[10px] font-mono mb-1.5 transition-opacity",
+          node.unlocked ? tier.colorClass : "text-muted-foreground/50"
+        )}
+        animate={{ opacity: hovered ? 1 : 0.7 }}
+      >
+        {node.xp.toLocaleString()} XP
+      </motion.span>
+
+      {/* Node circle */}
+      <motion.div
+        className={cn(
+          "relative rounded-full flex items-center justify-center cursor-pointer transition-all duration-300",
+          nodeSize,
+          node.current
+            ? `${tier.bgClass} ${tier.glowClass} ring-4 ring-white/20`
+            : node.unlocked
+            ? `${tier.bgClass} ${tier.glowClass}`
+            : "bg-secondary/80 border-2 border-border"
+        )}
+        whileHover={{ scale: node.unlocked ? 1.15 : 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        animate={node.current ? {
+          boxShadow: [
+            "0 0 20px oklch(0.75 0.16 85 / 40%)",
+            "0 0 40px oklch(0.75 0.16 85 / 60%)",
+            "0 0 20px oklch(0.75 0.16 85 / 40%)"
+          ]
+        } : {}}
+        transition={node.current ? { duration: 2, repeat: Infinity } : {}}
+      >
+        {/* Locked overlay */}
+        {!node.unlocked && (
+          <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center z-10">
+            <Lock className="w-4 h-4 text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Icon */}
+        <span className={cn(
+          "relative z-[5]",
+          node.unlocked ? "text-primary-foreground" : "opacity-30",
+          isFinal && "text-2xl"
+        )}>
+          {getNodeIcon()}
+        </span>
+
+        {/* Current indicator */}
+        {node.current && (
           <motion.div
-            className="glass-panel rounded-2xl p-8 relative overflow-hidden"
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-tr from-neon-purple/5 to-transparent" />
-            <div className="relative space-y-0">
-              {milestones.map((m, i) => (
-                <div key={m.label} className="flex items-center gap-4 relative">
-                  {/* Connector line */}
-                  {i < milestones.length - 1 && (
-                    <div className={`absolute left-5 top-10 w-0.5 h-12 ${
-                      m.status === "completed" ? "bg-neon-purple" : "bg-border"
-                    }`} />
-                  )}
-                  <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    m.status === "completed"
-                      ? "bg-neon-purple neon-glow-purple"
-                      : m.status === "current"
-                      ? "bg-neon-pink neon-glow-pink ring-4 ring-neon-pink/20"
-                      : "bg-secondary border border-border"
-                  }`}>
-                    {m.status === "completed" && <CheckCircle className="w-5 h-5 text-primary-foreground" />}
-                    {m.status === "current" && <Star className="w-5 h-5 text-foreground" />}
-                    {m.status === "locked" && <Lock className="w-4 h-4 text-muted-foreground" />}
-                  </div>
-                  <div className="flex-1 py-5">
-                    <div className="flex items-center justify-between">
-                      <span className={`font-bold font-display text-sm ${
-                        m.status === "locked" ? "text-muted-foreground" : "text-foreground"
-                      }`}>{m.label}</span>
-                      <span className={`text-xs font-mono ${
-                        m.status === "current" ? "text-neon-pink" : "text-muted-foreground"
-                      }`}>{m.xp}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            className="absolute -inset-2 rounded-full border-2 border-white/30"
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+        )}
+
+        {/* Completed checkmark */}
+        {node.unlocked && !node.current && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center z-20">
+            <CheckCircle className="w-3 h-3 text-white" />
+          </div>
+        )}
+      </motion.div>
+
+      {/* Label */}
+      <motion.span
+        className={cn(
+          "text-[11px] font-display font-bold mt-2 text-center max-w-[80px] leading-tight",
+          node.current ? "text-foreground" : node.unlocked ? tier.colorClass : "text-muted-foreground/50"
+        )}
+      >
+        {node.label}
+      </motion.span>
+
+      {/* Hover tooltip */}
+      {hovered && archetype && (
+        <motion.div
+          className={cn(
+            "absolute -top-32 left-1/2 -translate-x-1/2 glass-panel rounded-xl p-3 z-50 w-52",
+            tier.borderClass, "border"
+          )}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">{archetype.emoji}</span>
+            <div>
+              <p className={cn("font-display font-bold text-sm", archetype.colorClass)}>{archetype.name}</p>
+              {archetype.special && <p className="text-[9px] text-neon-pink italic">{archetype.special}</p>}
             </div>
-          </motion.div>
+          </div>
+          <div className="grid grid-cols-5 gap-1 text-[9px] text-center">
+            {Object.entries(archetype.stats).map(([key, val]) => (
+              <div key={key}>
+                <p className="text-muted-foreground uppercase">{key.slice(0, 3)}</p>
+                <p className={cn("font-bold", archetype.colorClass)}>{val}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Final monster special effects */}
+      {isFinal && node.finalMonster === "ecliptadon" && (
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          animate={{
+            boxShadow: [
+              "0 0 30px oklch(0.85 0.12 90 / 30%), 0 0 60px oklch(0.55 0.25 290 / 20%)",
+              "0 0 50px oklch(0.85 0.12 90 / 50%), 0 0 100px oklch(0.55 0.25 290 / 30%)",
+              "0 0 30px oklch(0.85 0.12 90 / 30%), 0 0 60px oklch(0.55 0.25 290 / 20%)",
+            ]
+          }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
+      )}
+    </motion.div>
+  );
+}
+
+/* ── Road Connector ────────────────────────────────────────── */
+
+function RoadConnector({ from, to }: { from: RoadNode; to: RoadNode }) {
+  const unlocked = from.unlocked;
+  const tier = TIERS[from.tier];
+
+  return (
+    <div className="flex items-center shrink-0 self-center" style={{ marginTop: Math.sin(0) * 10 }}>
+      <div className={cn(
+        "w-8 h-1 rounded-full transition-all",
+        unlocked ? `${tier.bgClass} opacity-60` : "bg-border/30"
+      )} />
+    </div>
+  );
+}
+
+/* ── Tier Separator ────────────────────────────────────────── */
+
+function TierSeparator({ tier }: { tier: RankTier }) {
+  return (
+    <motion.div
+      className="flex flex-col items-center shrink-0 mx-2"
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+    >
+      <div className={cn(
+        "px-3 py-1 rounded-full text-[10px] font-display font-bold uppercase tracking-widest border",
+        tier.colorClass, tier.borderClass, tier.glowClass
+      )}>
+        {tier.name}
+      </div>
+      <div className={cn("w-px h-4 mt-1", `bg-current opacity-30`, tier.colorClass)} />
+    </motion.div>
+  );
+}
+
+/* ── Archetype Legend ──────────────────────────────────────── */
+
+function ArchetypeLegend() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+      {Object.values(ARCHETYPES).map((a) => (
+        <motion.div
+          key={a.id}
+          className="glass-panel rounded-xl p-3 border border-border hover:border-white/15 transition-colors"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">{a.emoji}</span>
+            <span className={cn("font-display font-bold text-xs", a.colorClass)}>{a.name}</span>
+          </div>
+          <div className="grid grid-cols-5 gap-0.5 text-[8px] text-center">
+            {Object.entries(a.stats).map(([key, val]) => (
+              <div key={key}>
+                <p className="text-muted-foreground uppercase">{key.slice(0, 3)}</p>
+                <p className="text-foreground font-mono font-bold">{val}</p>
+              </div>
+            ))}
+          </div>
+          {a.special && (
+            <p className="text-[9px] text-neon-pink mt-1.5 italic">✦ {a.special}</p>
+          )}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Progress Bar ──────────────────────────────────────────── */
+
+function ProgressOverview() {
+  const currentTier = Object.values(TIERS).reverse().find(t => PLAYER_XP >= t.xpRequired) || TIERS.bronze;
+  const nextTier = Object.values(TIERS).find(t => t.xpRequired > PLAYER_XP);
+  const progressInTier = nextTier
+    ? ((PLAYER_XP - currentTier.xpRequired) / (nextTier.xpRequired - currentTier.xpRequired)) * 100
+    : 100;
+
+  return (
+    <motion.div
+      className="glass-panel rounded-2xl p-6 mb-8 border border-border"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", currentTier.bgClass, currentTier.glowClass)}>
+            <Crown className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div>
+            <p className={cn("font-display font-bold text-lg", currentTier.colorClass)}>
+              {currentTier.name}
+            </p>
+            <p className="text-xs text-muted-foreground">{PLAYER_XP.toLocaleString()} XP Total</p>
+          </div>
+        </div>
+        {nextTier && (
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Next: <span className={nextTier.colorClass}>{nextTier.name}</span></p>
+            <p className="text-xs font-mono text-muted-foreground">{(nextTier.xpRequired - PLAYER_XP).toLocaleString()} XP to go</p>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative h-3 bg-secondary rounded-full overflow-hidden">
+        <motion.div
+          className={cn("h-full rounded-full", currentTier.bgClass)}
+          initial={{ width: 0 }}
+          animate={{ width: `${progressInTier}%` }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
+
+      {/* Tier indicators */}
+      <div className="flex justify-between mt-3">
+        {Object.values(TIERS).map((t) => (
+          <div
+            key={t.id}
+            className={cn(
+              "text-[9px] font-display font-bold",
+              PLAYER_XP >= t.xpRequired ? t.colorClass : "text-muted-foreground/40"
+            )}
+          >
+            {t.name.slice(0, 3)}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Final Monsters ────────────────────────────────────────── */
+
+function FinalMonsters() {
+  return (
+    <div className="grid md:grid-cols-2 gap-6 mt-10">
+      {/* Newton */}
+      <motion.div
+        className="relative glass-panel rounded-2xl p-6 border border-tier-god/30 overflow-hidden group"
+        initial={{ opacity: 0, x: -30 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        whileHover={{ scale: 1.01 }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-tier-god/10 via-transparent to-neon-purple/5" />
+        <div className="absolute top-2 right-2 opacity-10 text-8xl">🍎</div>
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-14 h-14 rounded-xl bg-tier-god neon-glow-god flex items-center justify-center text-2xl">
+              🍎
+            </div>
+            <div>
+              <h4 className="font-display font-bold text-xl text-tier-god text-glow-god">Newton</h4>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Divine · Cosmic Being</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            A divine, cosmic being holding an apple. Embodies gravity, intelligence, space, and ultimate knowledge.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-tier-god/20 text-tier-god font-mono">48,000 XP</span>
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-neon-purple/20 text-neon-purple font-mono">LEGENDARY</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ECLIPTADON */}
+      <motion.div
+        className="relative glass-panel rounded-2xl p-6 border border-neon-purple/30 overflow-hidden group"
+        initial={{ opacity: 0, x: 30 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        whileHover={{ scale: 1.01 }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 via-transparent to-tier-champion/5" />
+        <div className="absolute top-2 right-2 opacity-10 text-8xl">🦕</div>
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-14 h-14 rounded-xl bg-neon-purple neon-glow-purple flex items-center justify-center text-2xl">
+              🦕
+            </div>
+            <div>
+              <h4 className="font-display font-bold text-xl text-neon-purple text-glow-purple">ECLIPTADON</h4>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Celestial · Ancient Power</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            A massive celestial dinosaur in radiant armor. Ancient power, cosmic destruction incarnate.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-neon-purple/20 text-neon-purple font-mono">50,000 XP</span>
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-tier-champion/20 text-tier-champion font-mono">MYTHICAL</span>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ── Main TrophyRoad ───────────────────────────────────────── */
+
+export function TrophyRoad({ compact = false }: { compact?: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Group nodes by tier
+  let lastTier: TierId | null = null;
+
+  if (compact) {
+    // Compact version for homepage
+    return (
+      <section className="py-24 border-t border-border bg-card/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl font-bold mb-6 font-display">
+                Your <span className="text-neon-purple text-glow-purple">Trophy Road</span>
+              </h2>
+              <p className="text-muted-foreground mb-8 leading-relaxed">
+                Rise from Bronze to God Tier. Unlock monsters, earn rewards, and ascend through
+                8 ranks — each with a distinct visual world and exclusive creatures to collect.
+              </p>
+              <div className="space-y-3">
+                {Object.values(TIERS).slice(0, 4).map((t) => (
+                  <div key={t.id} className="flex items-center gap-3">
+                    <div className={cn("w-3 h-3 rounded-sm", t.bgClass)} />
+                    <span className={cn("text-sm font-display font-bold", t.colorClass)}>{t.name}</span>
+                    <span className="text-xs text-muted-foreground">— {t.description}</span>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground pl-6 italic">…and 4 more legendary tiers</p>
+              </div>
+            </motion.div>
+
+            {/* Mini road preview */}
+            <motion.div
+              className="glass-panel rounded-2xl p-6 relative overflow-hidden"
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-neon-purple/5 to-transparent" />
+              <div className="relative flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {ROAD_NODES.slice(0, 12).map((node, i) => (
+                  <div key={node.id} className="flex items-center gap-1.5 shrink-0">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-xs",
+                      node.unlocked
+                        ? `${TIERS[node.tier].bgClass} ${TIERS[node.tier].glowClass}`
+                        : "bg-secondary border border-border"
+                    )}>
+                      {node.unlocked ? (
+                        node.type === "monster" && node.archetype
+                          ? ARCHETYPES[node.archetype].emoji
+                          : node.type === "chest" ? "🎁" : "⭐"
+                      ) : (
+                        <Lock className="w-3 h-3 text-muted-foreground" />
+                      )}
+                    </div>
+                    {i < 11 && (
+                      <div className={cn("w-3 h-0.5 rounded-full", node.unlocked ? TIERS[node.tier].bgClass : "bg-border/30")} />
+                    )}
+                  </div>
+                ))}
+                <span className="text-xs text-muted-foreground shrink-0 ml-2">+13 more →</span>
+              </div>
+              <div className="relative mt-4 flex items-center gap-4">
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">Current Rank</p>
+                  <p className="font-display font-bold text-tier-gold text-glow-gold">Gold I</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">XP</p>
+                  <p className="font-mono font-bold text-foreground">{PLAYER_XP.toLocaleString()}</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Full version for progress page
+  return (
+    <div>
+      <ProgressOverview />
+
+      {/* Scrollable Road */}
+      <div className="glass-panel rounded-2xl p-6 border border-border overflow-hidden">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="w-5 h-5 text-tier-gold" />
+          <h3 className="font-display font-bold text-lg">Progression Road</h3>
+          <span className="text-xs text-muted-foreground ml-auto">← Scroll to explore →</span>
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto pb-4 scrollbar-hide"
+        >
+          <div className="flex items-end gap-1 min-w-max px-4 py-8">
+            {ROAD_NODES.map((node, i) => {
+              const showTierSep = node.tier !== lastTier;
+              lastTier = node.tier;
+              return (
+                <div key={node.id} className="flex items-end gap-1">
+                  {showTierSep && <TierSeparator tier={TIERS[node.tier]} />}
+                  <RoadNodeItem node={node} index={i} />
+                  {i < ROAD_NODES.length - 1 && <RoadConnector from={node} to={ROAD_NODES[i + 1]} />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tier color gradient bar */}
+        <div className="flex h-1.5 rounded-full overflow-hidden mt-2">
+          {Object.values(TIERS).map((t) => (
+            <div key={t.id} className={cn("flex-1", t.bgClass)} />
+          ))}
         </div>
       </div>
-    </section>
+
+      {/* Monster Archetypes */}
+      <div className="mt-10">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-5 h-5 text-neon-purple" />
+          <h3 className="font-display font-bold text-lg">Monster Archetypes</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Unlock monsters as you progress. Each archetype has unique stats and abilities for battle.
+        </p>
+        <ArchetypeLegend />
+      </div>
+
+      {/* Final Unlocks */}
+      <div className="mt-10">
+        <div className="flex items-center gap-2 mb-2">
+          <Crown className="w-5 h-5 text-tier-god" />
+          <h3 className="font-display font-bold text-lg text-tier-god text-glow-god">Final Unlocks</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          At the peak of the road — two legendary beings await. Monumental. Radiant. Unmatched.
+        </p>
+        <FinalMonsters />
+      </div>
+    </div>
   );
 }

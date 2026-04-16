@@ -31,7 +31,7 @@ export function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {!isAuthenticated ? (
+          {isAuthenticated ? (
             <>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border">
                 <User className="w-3.5 h-3.5 text-neon-purple" />

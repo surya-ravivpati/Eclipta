@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/Navbar";
 import { KnowledgeBattles } from "@/components/KnowledgeBattles";
 
-export const Route = createFileRoute("/battles")({
+export const Route = createFileRoute("/_authenticated/battles")({
   head: () => ({
     meta: [
       { title: "Knowledge Battles – Eclipta" },

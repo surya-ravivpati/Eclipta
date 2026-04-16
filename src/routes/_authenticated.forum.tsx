@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/Navbar";
 import { Forum } from "@/components/Forum";
 
-export const Route = createFileRoute("/forum")({
+export const Route = createFileRoute("/_authenticated/forum")({
   head: () => ({
     meta: [
       { title: "Forum – Eclipta Community" },

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LunaFullSession } from "@/components/luna/LunaFullSession";
 
-export const Route = createFileRoute("/luna")({
+export const Route = createFileRoute("/_authenticated/luna")({
   head: () => ({
     meta: [
       { title: "Luna – Your AI Tutor | Eclipta" },

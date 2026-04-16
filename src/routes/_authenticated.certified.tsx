@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/Navbar";
 import { CertifiedCourses } from "@/components/CertifiedCourses";
 
-export const Route = createFileRoute("/certified")({
+export const Route = createFileRoute("/_authenticated/certified")({
   head: () => ({
     meta: [
       { title: "Certified Courses – Eclipta" },

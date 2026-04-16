@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/Navbar";
 import { PersonalizedLearning } from "@/components/PersonalizedLearning";
 
-export const Route = createFileRoute("/personalized")({
+export const Route = createFileRoute("/_authenticated/personalized")({
   head: () => ({
     meta: [
       { title: "Personalized Learning – Eclipta" },

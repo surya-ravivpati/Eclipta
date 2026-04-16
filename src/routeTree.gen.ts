@@ -11,17 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ProgressRouteImport } from './routes/progress'
-import { Route as PersonalizedRouteImport } from './routes/personalized'
-import { Route as LunaRouteImport } from './routes/luna'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForumRouteImport } from './routes/forum'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as CertifiedRouteImport } from './routes/certified'
-import { Route as BuildCourseRouteImport } from './routes/build-course'
-import { Route as BattlesRouteImport } from './routes/battles'
-import { Route as AdaptiveTestsRouteImport } from './routes/adaptive-tests'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
+import { Route as AuthenticatedPersonalizedRouteImport } from './routes/_authenticated.personalized'
+import { Route as AuthenticatedLunaRouteImport } from './routes/_authenticated.luna'
+import { Route as AuthenticatedForumRouteImport } from './routes/_authenticated.forum'
+import { Route as AuthenticatedCertifiedRouteImport } from './routes/_authenticated.certified'
+import { Route as AuthenticatedBuildCourseRouteImport } from './routes/_authenticated.build-course'
+import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticated.battles'
+import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -33,29 +34,9 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProgressRoute = ProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PersonalizedRoute = PersonalizedRouteImport.update({
-  id: '/personalized',
-  path: '/personalized',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LunaRoute = LunaRouteImport.update({
-  id: '/luna',
-  path: '/luna',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForumRoute = ForumRouteImport.update({
-  id: '/forum',
-  path: '/forum',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -63,24 +44,8 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CertifiedRoute = CertifiedRouteImport.update({
-  id: '/certified',
-  path: '/certified',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BuildCourseRoute = BuildCourseRouteImport.update({
-  id: '/build-course',
-  path: '/build-course',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BattlesRoute = BattlesRouteImport.update({
-  id: '/battles',
-  path: '/battles',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdaptiveTestsRoute = AdaptiveTestsRouteImport.update({
-  id: '/adaptive-tests',
-  path: '/adaptive-tests',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -88,113 +53,151 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPersonalizedRoute =
+  AuthenticatedPersonalizedRouteImport.update({
+    id: '/personalized',
+    path: '/personalized',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedLunaRoute = AuthenticatedLunaRouteImport.update({
+  id: '/luna',
+  path: '/luna',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedForumRoute = AuthenticatedForumRouteImport.update({
+  id: '/forum',
+  path: '/forum',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCertifiedRoute = AuthenticatedCertifiedRouteImport.update({
+  id: '/certified',
+  path: '/certified',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBuildCourseRoute =
+  AuthenticatedBuildCourseRouteImport.update({
+    id: '/build-course',
+    path: '/build-course',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBattlesRoute = AuthenticatedBattlesRouteImport.update({
+  id: '/battles',
+  path: '/battles',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdaptiveTestsRoute =
+  AuthenticatedAdaptiveTestsRouteImport.update({
+    id: '/adaptive-tests',
+    path: '/adaptive-tests',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/adaptive-tests': typeof AdaptiveTestsRoute
-  '/battles': typeof BattlesRoute
-  '/build-course': typeof BuildCourseRoute
-  '/certified': typeof CertifiedRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/forum': typeof ForumRoute
   '/login': typeof LoginRoute
-  '/luna': typeof LunaRoute
-  '/personalized': typeof PersonalizedRoute
-  '/progress': typeof ProgressRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
+  '/battles': typeof AuthenticatedBattlesRoute
+  '/build-course': typeof AuthenticatedBuildCourseRoute
+  '/certified': typeof AuthenticatedCertifiedRoute
+  '/forum': typeof AuthenticatedForumRoute
+  '/luna': typeof AuthenticatedLunaRoute
+  '/personalized': typeof AuthenticatedPersonalizedRoute
+  '/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/adaptive-tests': typeof AdaptiveTestsRoute
-  '/battles': typeof BattlesRoute
-  '/build-course': typeof BuildCourseRoute
-  '/certified': typeof CertifiedRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/forum': typeof ForumRoute
   '/login': typeof LoginRoute
-  '/luna': typeof LunaRoute
-  '/personalized': typeof PersonalizedRoute
-  '/progress': typeof ProgressRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
+  '/battles': typeof AuthenticatedBattlesRoute
+  '/build-course': typeof AuthenticatedBuildCourseRoute
+  '/certified': typeof AuthenticatedCertifiedRoute
+  '/forum': typeof AuthenticatedForumRoute
+  '/luna': typeof AuthenticatedLunaRoute
+  '/personalized': typeof AuthenticatedPersonalizedRoute
+  '/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/adaptive-tests': typeof AdaptiveTestsRoute
-  '/battles': typeof BattlesRoute
-  '/build-course': typeof BuildCourseRoute
-  '/certified': typeof CertifiedRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
-  '/forum': typeof ForumRoute
   '/login': typeof LoginRoute
-  '/luna': typeof LunaRoute
-  '/personalized': typeof PersonalizedRoute
-  '/progress': typeof ProgressRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
+  '/_authenticated/battles': typeof AuthenticatedBattlesRoute
+  '/_authenticated/build-course': typeof AuthenticatedBuildCourseRoute
+  '/_authenticated/certified': typeof AuthenticatedCertifiedRoute
+  '/_authenticated/forum': typeof AuthenticatedForumRoute
+  '/_authenticated/luna': typeof AuthenticatedLunaRoute
+  '/_authenticated/personalized': typeof AuthenticatedPersonalizedRoute
+  '/_authenticated/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
     | '/adaptive-tests'
     | '/battles'
     | '/build-course'
     | '/certified'
-    | '/forgot-password'
     | '/forum'
-    | '/login'
     | '/luna'
     | '/personalized'
     | '/progress'
-    | '/reset-password'
-    | '/signup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
     | '/adaptive-tests'
     | '/battles'
     | '/build-course'
     | '/certified'
-    | '/forgot-password'
     | '/forum'
-    | '/login'
     | '/luna'
     | '/personalized'
     | '/progress'
-    | '/reset-password'
-    | '/signup'
   id:
     | '__root__'
     | '/'
-    | '/adaptive-tests'
-    | '/battles'
-    | '/build-course'
-    | '/certified'
+    | '/_authenticated'
     | '/forgot-password'
-    | '/forum'
     | '/login'
-    | '/luna'
-    | '/personalized'
-    | '/progress'
     | '/reset-password'
     | '/signup'
+    | '/_authenticated/adaptive-tests'
+    | '/_authenticated/battles'
+    | '/_authenticated/build-course'
+    | '/_authenticated/certified'
+    | '/_authenticated/forum'
+    | '/_authenticated/luna'
+    | '/_authenticated/personalized'
+    | '/_authenticated/progress'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdaptiveTestsRoute: typeof AdaptiveTestsRoute
-  BattlesRoute: typeof BattlesRoute
-  BuildCourseRoute: typeof BuildCourseRoute
-  CertifiedRoute: typeof CertifiedRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
-  ForumRoute: typeof ForumRoute
   LoginRoute: typeof LoginRoute
-  LunaRoute: typeof LunaRoute
-  PersonalizedRoute: typeof PersonalizedRoute
-  ProgressRoute: typeof ProgressRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
 }
@@ -215,39 +218,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/progress': {
-      id: '/progress'
-      path: '/progress'
-      fullPath: '/progress'
-      preLoaderRoute: typeof ProgressRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/personalized': {
-      id: '/personalized'
-      path: '/personalized'
-      fullPath: '/personalized'
-      preLoaderRoute: typeof PersonalizedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/luna': {
-      id: '/luna'
-      path: '/luna'
-      fullPath: '/luna'
-      preLoaderRoute: typeof LunaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forum': {
-      id: '/forum'
-      path: '/forum'
-      fullPath: '/forum'
-      preLoaderRoute: typeof ForumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -257,32 +232,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/certified': {
-      id: '/certified'
-      path: '/certified'
-      fullPath: '/certified'
-      preLoaderRoute: typeof CertifiedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/build-course': {
-      id: '/build-course'
-      path: '/build-course'
-      fullPath: '/build-course'
-      preLoaderRoute: typeof BuildCourseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/battles': {
-      id: '/battles'
-      path: '/battles'
-      fullPath: '/battles'
-      preLoaderRoute: typeof BattlesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/adaptive-tests': {
-      id: '/adaptive-tests'
-      path: '/adaptive-tests'
-      fullPath: '/adaptive-tests'
-      preLoaderRoute: typeof AdaptiveTestsRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -292,21 +246,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/progress': {
+      id: '/_authenticated/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthenticatedProgressRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/personalized': {
+      id: '/_authenticated/personalized'
+      path: '/personalized'
+      fullPath: '/personalized'
+      preLoaderRoute: typeof AuthenticatedPersonalizedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/luna': {
+      id: '/_authenticated/luna'
+      path: '/luna'
+      fullPath: '/luna'
+      preLoaderRoute: typeof AuthenticatedLunaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/forum': {
+      id: '/_authenticated/forum'
+      path: '/forum'
+      fullPath: '/forum'
+      preLoaderRoute: typeof AuthenticatedForumRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/certified': {
+      id: '/_authenticated/certified'
+      path: '/certified'
+      fullPath: '/certified'
+      preLoaderRoute: typeof AuthenticatedCertifiedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/build-course': {
+      id: '/_authenticated/build-course'
+      path: '/build-course'
+      fullPath: '/build-course'
+      preLoaderRoute: typeof AuthenticatedBuildCourseRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/battles': {
+      id: '/_authenticated/battles'
+      path: '/battles'
+      fullPath: '/battles'
+      preLoaderRoute: typeof AuthenticatedBattlesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/adaptive-tests': {
+      id: '/_authenticated/adaptive-tests'
+      path: '/adaptive-tests'
+      fullPath: '/adaptive-tests'
+      preLoaderRoute: typeof AuthenticatedAdaptiveTestsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdaptiveTestsRoute: typeof AuthenticatedAdaptiveTestsRoute
+  AuthenticatedBattlesRoute: typeof AuthenticatedBattlesRoute
+  AuthenticatedBuildCourseRoute: typeof AuthenticatedBuildCourseRoute
+  AuthenticatedCertifiedRoute: typeof AuthenticatedCertifiedRoute
+  AuthenticatedForumRoute: typeof AuthenticatedForumRoute
+  AuthenticatedLunaRoute: typeof AuthenticatedLunaRoute
+  AuthenticatedPersonalizedRoute: typeof AuthenticatedPersonalizedRoute
+  AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdaptiveTestsRoute: AuthenticatedAdaptiveTestsRoute,
+  AuthenticatedBattlesRoute: AuthenticatedBattlesRoute,
+  AuthenticatedBuildCourseRoute: AuthenticatedBuildCourseRoute,
+  AuthenticatedCertifiedRoute: AuthenticatedCertifiedRoute,
+  AuthenticatedForumRoute: AuthenticatedForumRoute,
+  AuthenticatedLunaRoute: AuthenticatedLunaRoute,
+  AuthenticatedPersonalizedRoute: AuthenticatedPersonalizedRoute,
+  AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdaptiveTestsRoute: AdaptiveTestsRoute,
-  BattlesRoute: BattlesRoute,
-  BuildCourseRoute: BuildCourseRoute,
-  CertifiedRoute: CertifiedRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
-  ForumRoute: ForumRoute,
   LoginRoute: LoginRoute,
-  LunaRoute: LunaRoute,
-  PersonalizedRoute: PersonalizedRoute,
-  ProgressRoute: ProgressRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
 }

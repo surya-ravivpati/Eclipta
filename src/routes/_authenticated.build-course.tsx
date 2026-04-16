@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/Navbar";
 import { CourseBuilder } from "@/components/CourseBuilder";
 
-export const Route = createFileRoute("/build-course")({
+export const Route = createFileRoute("/_authenticated/build-course")({
   head: () => ({
     meta: [
       { title: "Build a Course – Eclipta" },

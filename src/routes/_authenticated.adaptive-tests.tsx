@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/Navbar";
 import { AdaptiveTests } from "@/components/AdaptiveTests";
 
-export const Route = createFileRoute("/adaptive-tests")({
+export const Route = createFileRoute("/_authenticated/adaptive-tests")({
   head: () => ({
     meta: [
       { title: "Adaptive Tests – Eclipta" },

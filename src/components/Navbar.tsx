@@ -10,6 +10,7 @@ export function Navbar() {
           </Link>
           <div className="hidden md:flex gap-6 text-sm font-medium tracking-wide text-muted-foreground">
             <Link to="/" className="hover:text-neon-purple transition-colors">ARENA</Link>
+            <Link to="/progress" className="hover:text-neon-purple transition-colors">PROGRESS</Link>
             <Link to="/certified" className="hover:text-neon-purple transition-colors">CERTIFIED</Link>
             <Link to="/build-course" className="hover:text-neon-purple transition-colors">BUILD</Link>
             <Link to="/adaptive-tests" className="hover:text-neon-purple transition-colors">TESTS</Link>

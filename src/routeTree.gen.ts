@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as PersonalizedRouteImport } from './routes/personalized'
 import { Route as ForumRouteImport } from './routes/forum'
 import { Route as CertifiedRouteImport } from './routes/certified'
@@ -17,6 +18,11 @@ import { Route as BattlesRouteImport } from './routes/battles'
 import { Route as AdaptiveTestsRouteImport } from './routes/adaptive-tests'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PersonalizedRoute = PersonalizedRouteImport.update({
   id: '/personalized',
   path: '/personalized',
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/certified': typeof CertifiedRoute
   '/forum': typeof ForumRoute
   '/personalized': typeof PersonalizedRoute
+  '/progress': typeof ProgressRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/certified': typeof CertifiedRoute
   '/forum': typeof ForumRoute
   '/personalized': typeof PersonalizedRoute
+  '/progress': typeof ProgressRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/certified': typeof CertifiedRoute
   '/forum': typeof ForumRoute
   '/personalized': typeof PersonalizedRoute
+  '/progress': typeof ProgressRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/certified'
     | '/forum'
     | '/personalized'
+    | '/progress'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/certified'
     | '/forum'
     | '/personalized'
+    | '/progress'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/certified'
     | '/forum'
     | '/personalized'
+    | '/progress'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,10 +131,18 @@ export interface RootRouteChildren {
   CertifiedRoute: typeof CertifiedRoute
   ForumRoute: typeof ForumRoute
   PersonalizedRoute: typeof PersonalizedRoute
+  ProgressRoute: typeof ProgressRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/personalized': {
       id: '/personalized'
       path: '/personalized'
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   CertifiedRoute: CertifiedRoute,
   ForumRoute: ForumRoute,
   PersonalizedRoute: PersonalizedRoute,
+  ProgressRoute: ProgressRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

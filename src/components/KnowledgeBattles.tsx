@@ -228,8 +228,10 @@ function BattleArena() {
     if (correct && timeSpent < fastestAnswer) setFastestAnswer(timeSpent);
 
     const action = ACTIONS[currentAction];
-    const isCombo = momentum > 0 && momentum % comboThreshold === 0;
-    let comboMult = isCombo ? 1.5 : 1;
+    const arch = ARCHETYPES[archetype];
+    const streakMult = statToStreakMult(arch.stats.multiplier);
+    // Multiplier grows with streak length
+    const currentStreakMult = momentum > 0 ? 1 + (momentum * (streakMult - 1)) : 1;
 
     setPhase("animate");
 
@@ -252,37 +254,35 @@ function BattleArena() {
         effects[Math.floor(Math.random() * effects.length)]();
       } else {
         let baseDmg = action.dmg;
-        // Archetype modifiers
-        if (archetype === "chud") baseDmg = Math.floor(baseDmg * 1.5);
-        if (archetype === "tank") baseDmg = Math.floor(baseDmg * 0.7);
-        if (archetype === "speedster") {
-          const speedBonus = 1 + (timeLeft / maxTime) * 0.6;
-          baseDmg = Math.floor(baseDmg * speedBonus);
-        }
+        // Apply damage stat multiplier
+        const dmgMult = archetype === "gambler"
+          ? 0.5 + Math.random() * 1.5
+          : statToDmgMult(arch.stats.damage);
+        baseDmg = Math.floor(baseDmg * dmgMult);
+        // Accelerator scaling bonus
         if (archetype === "accelerator") {
-          const turnBonus = 1 + records.length * 0.1;
-          baseDmg = Math.floor(baseDmg * turnBonus);
+          baseDmg = Math.floor(baseDmg * (1 + records.length * 0.1));
         }
-        if (archetype === "gambler") {
-          baseDmg = Math.floor(baseDmg * (0.5 + Math.random() * 1.5));
-        }
-        const dmg = Math.floor(baseDmg * comboMult);
+        // Apply streak multiplier
+        const dmg = Math.floor(baseDmg * currentStreakMult);
         setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
         setShowOpponentHit(true);
-        addLog(`✅ ${ACTION_EMOJIS[currentAction]} ${action.label}: ${dmg} DMG!${comboMult > 1 ? " 🔥 COMBO!" : ""}${archetype === "speedster" && timeLeft > maxTime * 0.5 ? " ⚡ SPEED BONUS!" : ""}`);
+        addLog(`✅ ${ACTION_EMOJIS[currentAction]} ${action.label}: ${dmg} DMG!${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(1)}x STREAK!` : ""}`);
       }
-      setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * comboMult);
+      setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {
       setMomentum(0);
       let counterDmg = Math.floor(Math.random() * 10) + 8;
-      if (archetype === "tank") counterDmg = Math.floor(counterDmg * 0.5);
+      // Apply self-damage reduction based on health stat
+      counterDmg = Math.floor(counterDmg * statToSelfDmgMult(arch.stats.health));
+      // Healer passive: recover some HP on getting hit
       if (archetype === "healer") {
         const healAmt = Math.floor(counterDmg * 0.3);
         setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }));
       }
       setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
       setShowPlayerHit(true);
-      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${archetype === "tank" ? " 🛡️ Reduced!" : ""}`);
+      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.stats.health >= 3 ? " 🛡️ Reduced!" : ""}`);
     }
 
     setTimeout(() => {

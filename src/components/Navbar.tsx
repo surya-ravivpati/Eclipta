@@ -15,6 +15,7 @@ export function Navbar() {
             <Link to="/build-course" className="hover:text-neon-purple transition-colors">BUILD</Link>
             <Link to="/adaptive-tests" className="hover:text-neon-purple transition-colors">TESTS</Link>
             <Link to="/battles" className="hover:text-neon-purple transition-colors">BATTLES</Link>
+            <Link to="/luna" className="hover:text-neon-purple transition-colors">LUNA</Link>
             <Link to="/forum" className="hover:text-neon-purple transition-colors">FORUM</Link>
           </div>
         </div>

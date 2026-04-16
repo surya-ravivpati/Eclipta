@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import {
   Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
@@ -110,20 +110,6 @@ const ROAD_NODES: RoadNode[] = [
 
 /* ── Tier Background ───────────────────────────────────────── */
 
-function getTierBg(tier: TierId): string {
-  const bgs: Record<TierId, string> = {
-    bronze:   "from-amber-950/30 via-stone-900/20 to-transparent",
-    silver:   "from-slate-700/20 via-gray-800/15 to-transparent",
-    gold:     "from-yellow-900/25 via-amber-800/15 to-transparent",
-    diamond:  "from-blue-900/30 via-cyan-900/15 to-transparent",
-    platinum: "from-teal-900/25 via-cyan-800/15 to-transparent",
-    champion: "from-orange-900/30 via-red-900/15 to-transparent",
-    unreal:   "from-purple-900/35 via-violet-900/20 to-transparent",
-    god:      "from-yellow-800/30 via-amber-700/20 to-amber-900/10",
-  };
-  return bgs[tier];
-}
-
 /* ── Node Component ────────────────────────────────────────── */
 
 function RoadNodeItem({ node, index }: { node: RoadNode; index: number }) {
@@ -146,7 +132,6 @@ function RoadNodeItem({ node, index }: { node: RoadNode; index: number }) {
 
   // Zigzag vertical offset for visual interest
   const yOffset = Math.sin(index * 0.8) * 20;
-  const xPercent = (index / (ROAD_NODES.length - 1)) * 100;
 
   return (
     <motion.div
@@ -283,7 +268,7 @@ function RoadNodeItem({ node, index }: { node: RoadNode; index: number }) {
 
 /* ── Road Connector ────────────────────────────────────────── */
 
-function RoadConnector({ from, to }: { from: RoadNode; to: RoadNode }) {
+function RoadConnector({ from, to: _to }: { from: RoadNode; to: RoadNode }) {
   const unlocked = from.unlocked;
   const tier = TIERS[from.tier];
 

@@ -6,6 +6,8 @@ import { streamLunaChat, parseLunaTag } from "@/lib/luna-api";
 import { getLunaContext, getAccuracy, getSessionDuration, detectFatigue, escalateHint, resetHintLevel } from "@/lib/luna-context";
 import ReactMarkdown from "react-markdown";
 import { Navbar } from "@/components/Navbar";
+import { supabase } from "@/integrations/supabase/client";
+import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "@/lib/milestones";
 
 type LunaMessage = {
   role: "assistant" | "user";
@@ -34,6 +36,9 @@ export function LunaFullSession() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const profileRef = useRef<Record<string, unknown> | null>(null);
+  const historyRef = useRef<Record<string, unknown>[] | null>(null);
+  const lastXpRef = useRef<number>(0);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -41,6 +46,53 @@ export function LunaFullSession() {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Load user profile, history, and init milestones
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [profileRes, historyRes] = await Promise.all([
+        supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("learning_history").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
+      ]);
+      if (profileRes.data) {
+        profileRef.current = profileRes.data;
+        const xp = (profileRes.data as any).xp ?? 0;
+        markExistingMilestones(xp);
+        lastXpRef.current = xp;
+      }
+      if (historyRes.data) historyRef.current = historyRes.data;
+    })();
+  }, []);
+
+  // Poll for XP changes to detect milestones
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("user_profiles").select("xp").eq("user_id", user.id).maybeSingle();
+      if (!data) return;
+      const newXp = (data as any).xp ?? 0;
+      const prevXp = lastXpRef.current;
+      if (newXp > prevXp) {
+        lastXpRef.current = newXp;
+        const { toasts, lunaMessages } = checkMilestones(prevXp, newXp);
+        fireMilestoneToasts(toasts);
+        if (lunaMessages.length > 0) {
+          setMessages(prev => [
+            ...prev,
+            ...lunaMessages.map(msg => ({
+              role: "assistant" as const,
+              content: msg,
+              tag: "nudge" as const,
+            })),
+          ]);
+        }
+      }
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const send = async () => {
@@ -90,9 +142,34 @@ export function LunaFullSession() {
         streak: ctx.streak,
         incorrectCount: ctx.incorrectCount,
         avgResponseTime: ctx.avgResponseTime,
+        hintLevel: ctx.hintLevel,
+        consecutiveErrors: ctx.consecutiveErrors,
+        rapidGuessCount: ctx.rapidGuessCount,
+        accuracy: getAccuracy(),
+        sessionMinutes: Math.round(getSessionDuration()),
+        profile: profileRef.current,
+        recentHistory: historyRef.current,
       },
       onDelta: upsertAssistant,
-      onDone: () => setIsStreaming(false),
+      onDone: () => {
+        setIsStreaming(false);
+        // Record interaction
+        (async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { tag } = parseLunaTag(assistantSoFar);
+            await supabase.from("learning_history").insert({
+              user_id: user.id,
+              session_type: "luna-session",
+              topic: ctx.lessonTitle || ctx.courseId || null,
+              question_text: text.slice(0, 500),
+              hint_level_used: ctx.hintLevel,
+              luna_summary: tag ? `[${tag.toUpperCase()}] ${assistantSoFar.slice(0, 200)}` : assistantSoFar.slice(0, 200),
+            });
+          } catch { /* non-critical */ }
+        })();
+      },
       onError: (err) => {
         setMessages(prev => [...prev, {
           role: "assistant",
@@ -138,7 +215,6 @@ export function LunaFullSession() {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            {/* Session stats */}
             <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Zap className="w-3 h-3 text-neon-cyan" />

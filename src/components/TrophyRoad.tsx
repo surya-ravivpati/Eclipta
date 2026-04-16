@@ -6,10 +6,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  ROAD_NODES as RAW_ROAD_NODES,
+  ROAD_NODES as RAW_NODES,
   PLAYER_XP,
-  isNodeUnlocked,
-  isCurrentNode,
   type TierId,
   type MonsterArchetypeKey,
   type RoadNode as BaseRoadNode,

@@ -1,9 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 
 export type Phase = "idle" | "classSelect" | "searching" | "select" | "question" | "animate" | "result";
 export type Action = "attack" | "defend" | "charge" | "wild";
 export type Difficulty = "easy" | "medium" | "hard";
-export type ArchetypeId = "analyst" | "sprinter" | "defender" | "consistent";
+export type ArchetypeId = MonsterArchetypeKey;
 
 export interface MathQuestion {
   q: string;

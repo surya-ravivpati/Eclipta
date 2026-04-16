@@ -5,6 +5,7 @@ import { streamLunaChat, parseLunaTag } from "@/lib/luna-api";
 import { getLunaContext, detectFatigue, getSessionDuration, getAccuracy, escalateHint, resetHintLevel } from "@/lib/luna-context";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
 
 export type LunaMessage = {
   role: "assistant" | "user";

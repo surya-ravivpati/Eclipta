@@ -53,6 +53,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_ecliptars: {
+        Row: {
+          archetype: string
+          claimed_at: string
+          ecliptar_name: string
+          ecliptar_slug: string
+          id: string
+          node_id: number
+          user_id: string
+        }
+        Insert: {
+          archetype: string
+          claimed_at?: string
+          ecliptar_name: string
+          ecliptar_slug: string
+          id?: string
+          node_id: number
+          user_id: string
+        }
+        Update: {
+          archetype?: string
+          claimed_at?: string
+          ecliptar_name?: string
+          ecliptar_slug?: string
+          id?: string
+          node_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           avg_completion_time: number | null

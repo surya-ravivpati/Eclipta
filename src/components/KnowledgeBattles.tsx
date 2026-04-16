@@ -9,8 +9,9 @@ import type { Phase, Action, ArchetypeId, Fighter, MathQuestion, QuestionRecord,
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
 import { statToHp, statToTimeMult, statToDmgMult, statToStreakMult, statToDifficulty, statToSelfDmgMult } from "./battles/stat-mechanics";
 import { ARCHETYPES } from "./battles/archetypes";
-import { ClassSelectDialog } from "./battles/ClassSelectDialog";
+import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";
+import type { Ecliptar } from "@/lib/ecliptars";
 
 // ─── Action Config ───────────────────────────────────────────────────
 const ACTIONS: Record<Action, ActionConfig> = {
@@ -360,18 +361,24 @@ function BattleArena() {
     setPhase("question");
   };
 
-  const startBattle = (selectedClass?: ArchetypeId) => {
-    const cls = selectedClass || archetype;
-    if (selectedClass) setArchetype(selectedClass);
+  const [ecliptar, setEcliptar] = useState<Ecliptar | null>(null);
+
+  const startBattle = (selection?: ClassSelection) => {
+    const cls = selection?.archetype || archetype;
+    const eclip = selection?.ecliptar ?? ecliptar;
+    if (selection?.archetype) setArchetype(selection.archetype);
+    if (selection?.ecliptar) setEcliptar(selection.ecliptar);
     setPhase("searching");
     setTimeout(() => {
       const arch = ARCHETYPES[cls];
       const playerHp = statToHp(arch.stats.health);
-      setPlayer({ name: "You", hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, avatar: "🧑‍💻" });
+      const playerName = eclip?.name ?? "You";
+      const playerAvatar = eclip?.avatar ?? "🧑‍💻";
+      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, avatar: playerAvatar });
       setOpponent({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🤖" });
       setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
-      addLog(`⚔️ Battle started as ${arch.emoji} ${arch.name}! (${playerHp} HP)`);
+      addLog(`⚔️ ${playerName} (${arch.emoji} ${arch.name}) enters the arena! (${playerHp} HP)`);
     }, 2200);
   };
 
@@ -402,7 +409,7 @@ function BattleArena() {
 
   // ── Class Select ──
   if (phase === "classSelect") {
-    return <ClassSelectDialog onSelect={(id) => startBattle(id)} />;
+    return <ClassSelectDialog onSelect={(sel) => startBattle(sel)} />;
   }
 
   // ── Searching ──

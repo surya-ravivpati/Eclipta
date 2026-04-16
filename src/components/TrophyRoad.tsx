@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
   Dice5, Heart, Scale, TrendingUp, Sparkles, Trophy, Gift
@@ -7,11 +8,12 @@ import {
 import { cn } from "@/lib/utils";
 import {
   ROAD_NODES as RAW_NODES,
-  PLAYER_XP,
   type TierId,
   type MonsterArchetypeKey,
   type RoadNode as BaseRoadNode,
 } from "@/lib/trophy-road-data";
+import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
+import { claimArchetypeReward, getEcliptarsByArchetype } from "@/lib/ecliptars";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -79,22 +81,51 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   god:          { id: "god",          name: "God",          emoji: "👑", icon: Crown,       stats: { health: "High", time: "High", damage: "High", multiplier: "High", difficulty: "High" }, colorClass: "text-tier-god" },
 };
 
-// Derive enriched nodes from shared data
-const ROAD_NODES: RoadNode[] = RAW_NODES.map((node, i, arr) => {
-  const unlocked = node.xp <= PLAYER_XP;
-  const nextNode = arr[i + 1];
-  const current = unlocked && (!nextNode || nextNode.xp > PLAYER_XP);
-  return { ...node, unlocked, current };
-});
+// Derive enriched nodes from shared data based on live player XP
+function deriveNodes(playerXp: number): RoadNode[] {
+  return RAW_NODES.map((node, i, arr) => {
+    const unlocked = node.xp <= playerXp;
+    const nextNode = arr[i + 1];
+    const current = unlocked && (!nextNode || nextNode.xp > playerXp);
+    return { ...node, unlocked, current };
+  });
+}
 
 /* ── Tier Background ───────────────────────────────────────── */
 
 /* ── Node Component ────────────────────────────────────────── */
 
-function RoadNodeItem({ node, index }: { node: RoadNode; index: number }) {
+function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
+  node: RoadNode;
+  index: number;
+  ownedSlugs: Set<string>;
+  onClaimed: () => void;
+}) {
   const tier = TIERS[node.tier];
   const archetype = node.archetype ? ARCHETYPES[node.archetype] : null;
   const [hovered, setHovered] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+
+  // Determine if this monster node has unclaimed Ecliptars
+  const isClaimable = node.type === "monster" && node.archetype && node.unlocked;
+  const requiredSlugs = node.archetype ? getEcliptarsByArchetype(node.archetype).map(e => e.slug) : [];
+  const allOwned = requiredSlugs.length > 0 && requiredSlugs.every(s => ownedSlugs.has(s));
+  const showClaim = isClaimable && !allOwned;
+
+  const handleClaim = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!node.archetype || claiming) return;
+    setClaiming(true);
+    const granted = await claimArchetypeReward(node.archetype, node.id);
+    setClaiming(false);
+    if (granted.length > 0) {
+      toast(`🎉 ${ARCHETYPES[node.archetype].name} Ecliptars unlocked!`, {
+        description: `You now own ${granted.map(g => g.name).join(" & ")} for battle.`,
+        duration: 6000,
+      });
+      onClaimed();
+    }
+  };
 
   const isFinal = node.type === "final";
   const nodeSize = isFinal ? "w-20 h-20" : node.type === "rank" ? "w-14 h-14" : "w-12 h-12";
@@ -198,6 +229,28 @@ function RoadNodeItem({ node, index }: { node: RoadNode; index: number }) {
       >
         {node.label}
       </motion.span>
+
+      {/* Claim button for unlocked monster nodes */}
+      {showClaim && (
+        <motion.button
+          onClick={handleClaim}
+          disabled={claiming}
+          className={cn(
+            "mt-1.5 px-2 py-0.5 text-[9px] font-bold tracking-widest rounded-full",
+            "bg-neon-pink text-primary-foreground border border-neon-pink/60",
+            "hover:opacity-90 transition-opacity disabled:opacity-50"
+          )}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {claiming ? "..." : "CLAIM"}
+        </motion.button>
+      )}
+      {isClaimable && allOwned && (
+        <span className="mt-1 text-[9px] text-emerald-400 font-bold tracking-widest">CLAIMED</span>
+      )}
 
       {/* Hover tooltip */}
       {hovered && archetype && (
@@ -316,11 +369,11 @@ function ArchetypeLegend() {
 
 /* ── Progress Bar ──────────────────────────────────────────── */
 
-function ProgressOverview() {
-  const currentTier = Object.values(TIERS).reverse().find(t => PLAYER_XP >= t.xpRequired) || TIERS.bronze;
-  const nextTier = Object.values(TIERS).find(t => t.xpRequired > PLAYER_XP);
+function ProgressOverview({ playerXp }: { playerXp: number }) {
+  const currentTier = Object.values(TIERS).reverse().find(t => playerXp >= t.xpRequired) || TIERS.bronze;
+  const nextTier = Object.values(TIERS).find(t => t.xpRequired > playerXp);
   const progressInTier = nextTier
-    ? ((PLAYER_XP - currentTier.xpRequired) / (nextTier.xpRequired - currentTier.xpRequired)) * 100
+    ? ((playerXp - currentTier.xpRequired) / (nextTier.xpRequired - currentTier.xpRequired)) * 100
     : 100;
 
   return (
@@ -338,13 +391,13 @@ function ProgressOverview() {
             <p className={cn("font-display font-bold text-lg", currentTier.colorClass)}>
               {currentTier.name}
             </p>
-            <p className="text-xs text-muted-foreground">{PLAYER_XP.toLocaleString()} XP Total</p>
+            <p className="text-xs text-muted-foreground">{playerXp.toLocaleString()} XP Total</p>
           </div>
         </div>
         {nextTier && (
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Next: <span className={nextTier.colorClass}>{nextTier.name}</span></p>
-            <p className="text-xs font-mono text-muted-foreground">{(nextTier.xpRequired - PLAYER_XP).toLocaleString()} XP to go</p>
+            <p className="text-xs font-mono text-muted-foreground">{(nextTier.xpRequired - playerXp).toLocaleString()} XP to go</p>
           </div>
         )}
       </div>
@@ -367,7 +420,7 @@ function ProgressOverview() {
             key={t.id}
             className={cn(
               "text-[9px] font-display font-bold",
-              PLAYER_XP >= t.xpRequired ? t.colorClass : "text-muted-foreground/40"
+              playerXp >= t.xpRequired ? t.colorClass : "text-muted-foreground/40"
             )}
           >
             {t.name.slice(0, 3)}
@@ -450,6 +503,10 @@ function FinalMonsters() {
 
 export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { xp: playerXp } = usePlayerXp();
+  const { slugs: ownedSlugs, refresh: refreshOwned } = useOwnedEcliptars();
+
+  const ROAD_NODES = deriveNodes(playerXp);
 
   // Group nodes by tier
   let lastTier: TierId | null = null;
@@ -523,7 +580,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">XP</p>
-                  <p className="font-mono font-bold text-foreground">{PLAYER_XP.toLocaleString()}</p>
+                  <p className="font-mono font-bold text-foreground">{playerXp.toLocaleString()}</p>
                 </div>
               </div>
             </motion.div>
@@ -536,7 +593,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   // Full version for progress page
   return (
     <div>
-      <ProgressOverview />
+      <ProgressOverview playerXp={playerXp} />
 
       {/* Scrollable Road */}
       <div className="glass-panel rounded-2xl p-6 border border-border overflow-hidden">
@@ -557,7 +614,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
               return (
                 <div key={node.id} className="flex items-end gap-1">
                   {showTierSep && <TierSeparator tier={TIERS[node.tier]} />}
-                  <RoadNodeItem node={node} index={i} />
+                  <RoadNodeItem node={node} index={i} ownedSlugs={ownedSlugs} onClaimed={refreshOwned} />
                   {i < ROAD_NODES.length - 1 && <RoadConnector from={node} to={ROAD_NODES[i + 1]} />}
                 </div>
               );

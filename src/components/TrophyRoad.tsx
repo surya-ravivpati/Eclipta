@@ -230,6 +230,28 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
         {node.label}
       </motion.span>
 
+      {/* Claim button for unlocked monster nodes */}
+      {showClaim && (
+        <motion.button
+          onClick={handleClaim}
+          disabled={claiming}
+          className={cn(
+            "mt-1.5 px-2 py-0.5 text-[9px] font-bold tracking-widest rounded-full",
+            "bg-neon-pink text-primary-foreground border border-neon-pink/60",
+            "hover:opacity-90 transition-opacity disabled:opacity-50"
+          )}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {claiming ? "..." : "CLAIM"}
+        </motion.button>
+      )}
+      {isClaimable && allOwned && (
+        <span className="mt-1 text-[9px] text-emerald-400 font-bold tracking-widest">CLAIMED</span>
+      )}
+
       {/* Hover tooltip */}
       {hovered && archetype && (
         <motion.div
@@ -347,11 +369,11 @@ function ArchetypeLegend() {
 
 /* ── Progress Bar ──────────────────────────────────────────── */
 
-function ProgressOverview() {
-  const currentTier = Object.values(TIERS).reverse().find(t => PLAYER_XP >= t.xpRequired) || TIERS.bronze;
-  const nextTier = Object.values(TIERS).find(t => t.xpRequired > PLAYER_XP);
+function ProgressOverview({ playerXp }: { playerXp: number }) {
+  const currentTier = Object.values(TIERS).reverse().find(t => playerXp >= t.xpRequired) || TIERS.bronze;
+  const nextTier = Object.values(TIERS).find(t => t.xpRequired > playerXp);
   const progressInTier = nextTier
-    ? ((PLAYER_XP - currentTier.xpRequired) / (nextTier.xpRequired - currentTier.xpRequired)) * 100
+    ? ((playerXp - currentTier.xpRequired) / (nextTier.xpRequired - currentTier.xpRequired)) * 100
     : 100;
 
   return (
@@ -369,13 +391,13 @@ function ProgressOverview() {
             <p className={cn("font-display font-bold text-lg", currentTier.colorClass)}>
               {currentTier.name}
             </p>
-            <p className="text-xs text-muted-foreground">{PLAYER_XP.toLocaleString()} XP Total</p>
+            <p className="text-xs text-muted-foreground">{playerXp.toLocaleString()} XP Total</p>
           </div>
         </div>
         {nextTier && (
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Next: <span className={nextTier.colorClass}>{nextTier.name}</span></p>
-            <p className="text-xs font-mono text-muted-foreground">{(nextTier.xpRequired - PLAYER_XP).toLocaleString()} XP to go</p>
+            <p className="text-xs font-mono text-muted-foreground">{(nextTier.xpRequired - playerXp).toLocaleString()} XP to go</p>
           </div>
         )}
       </div>
@@ -398,7 +420,7 @@ function ProgressOverview() {
             key={t.id}
             className={cn(
               "text-[9px] font-display font-bold",
-              PLAYER_XP >= t.xpRequired ? t.colorClass : "text-muted-foreground/40"
+              playerXp >= t.xpRequired ? t.colorClass : "text-muted-foreground/40"
             )}
           >
             {t.name.slice(0, 3)}

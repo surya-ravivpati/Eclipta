@@ -6,6 +6,7 @@ import { getLunaContext, detectFatigue, getSessionDuration, getAccuracy, escalat
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "@/lib/milestones";
 
 export type LunaMessage = {
   role: "assistant" | "user";

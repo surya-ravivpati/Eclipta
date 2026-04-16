@@ -11,10 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PersonalizedRouteImport } from './routes/personalized'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as CertifiedRouteImport } from './routes/certified'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
@@ -34,11 +32,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PersonalizedRoute = PersonalizedRouteImport.update({
-  id: '/personalized',
-  path: '/personalized',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -47,11 +40,6 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CertifiedRoute = CertifiedRouteImport.update({
-  id: '/certified',
-  path: '/certified',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -98,10 +86,8 @@ const AuthenticatedAdaptiveTestsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/certified': typeof CertifiedRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/personalized': typeof PersonalizedRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
@@ -113,10 +99,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/certified': typeof CertifiedRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/personalized': typeof PersonalizedRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
@@ -130,10 +114,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/certified': typeof CertifiedRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/personalized': typeof PersonalizedRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_authenticated/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
@@ -147,10 +129,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/certified'
     | '/forgot-password'
     | '/login'
-    | '/personalized'
     | '/reset-password'
     | '/signup'
     | '/adaptive-tests'
@@ -162,10 +142,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/certified'
     | '/forgot-password'
     | '/login'
-    | '/personalized'
     | '/reset-password'
     | '/signup'
     | '/adaptive-tests'
@@ -178,10 +156,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/certified'
     | '/forgot-password'
     | '/login'
-    | '/personalized'
     | '/reset-password'
     | '/signup'
     | '/_authenticated/adaptive-tests'
@@ -195,10 +171,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  CertifiedRoute: typeof CertifiedRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
-  PersonalizedRoute: typeof PersonalizedRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
 }
@@ -219,13 +193,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/personalized': {
-      id: '/personalized'
-      path: '/personalized'
-      fullPath: '/personalized'
-      preLoaderRoute: typeof PersonalizedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -238,13 +205,6 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/certified': {
-      id: '/certified'
-      path: '/certified'
-      fullPath: '/certified'
-      preLoaderRoute: typeof CertifiedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -331,10 +291,8 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  CertifiedRoute: CertifiedRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
-  PersonalizedRoute: PersonalizedRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
 }

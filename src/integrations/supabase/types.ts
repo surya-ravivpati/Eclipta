@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      learning_history: {
+        Row: {
+          created_at: string
+          hint_level_used: number | null
+          id: string
+          luna_summary: string | null
+          question_text: string | null
+          response_time_ms: number | null
+          session_type: string
+          topic: string | null
+          user_id: string
+          was_correct: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          hint_level_used?: number | null
+          id?: string
+          luna_summary?: string | null
+          question_text?: string | null
+          response_time_ms?: number | null
+          session_type?: string
+          topic?: string | null
+          user_id: string
+          was_correct?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          hint_level_used?: number | null
+          id?: string
+          luna_summary?: string | null
+          question_text?: string | null
+          response_time_ms?: number | null
+          session_type?: string
+          topic?: string | null
+          user_id?: string
+          was_correct?: boolean | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avg_completion_time: number | null
+          best_streak: number
+          created_at: string
+          current_streak: number
+          id: string
+          preferred_pace: string
+          preferred_style: string
+          strong_areas: string[] | null
+          total_correct: number
+          total_questions: number
+          total_sessions: number
+          updated_at: string
+          user_id: string
+          weak_areas: string[] | null
+          xp: number
+        }
+        Insert: {
+          avg_completion_time?: number | null
+          best_streak?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          preferred_pace?: string
+          preferred_style?: string
+          strong_areas?: string[] | null
+          total_correct?: number
+          total_questions?: number
+          total_sessions?: number
+          updated_at?: string
+          user_id: string
+          weak_areas?: string[] | null
+          xp?: number
+        }
+        Update: {
+          avg_completion_time?: number | null
+          best_streak?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          preferred_pace?: string
+          preferred_style?: string
+          strong_areas?: string[] | null
+          total_correct?: number
+          total_questions?: number
+          total_sessions?: number
+          updated_at?: string
+          user_id?: string
+          weak_areas?: string[] | null
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

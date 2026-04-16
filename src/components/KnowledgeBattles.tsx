@@ -7,6 +7,7 @@ import {
 
 import type { Phase, Action, ArchetypeId, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig } from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
+import { statToHp, statToTimeMult, statToDmgMult, statToStreakMult, statToDifficulty, statToSelfDmgMult } from "./battles/stat-mechanics";
 import { ARCHETYPES } from "./battles/archetypes";
 import { ClassSelectDialog } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";

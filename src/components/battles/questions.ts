@@ -29,24 +29,24 @@ export function generateQuestion(difficulty: Difficulty): MathQuestion {
       answer = a + b; q = `${a} + ${b}`; topic = "Addition";
     } else {
       if (a < b) [a, b] = [b, a];
-      answer = a - b; q = `${a} − ${b}`; topic = "Subtraction";
+      answer = a - b; q = `${a} - ${b}`; topic = "Subtraction";
     }
   } else if (difficulty === "medium") {
     const type = rand(0, 1);
     if (type === 0) {
       a = rand(3, 15); b = rand(3, 12);
-      answer = a * b; q = `${a} × ${b}`; topic = "Multiplication";
+      answer = a * b; q = `${a} * ${b}`; topic = "Multiplication";
     } else {
       b = rand(2, 12); answer = rand(2, 15); a = answer * b;
-      q = `${a} ÷ ${b}`; topic = "Division";
+      q = `${a} / ${b}`; topic = "Division";
     }
   } else {
     const type = rand(0, 2);
     if (type === 0) {
-      a = rand(2, 15); answer = a * a; q = `${a}²`; topic = "Exponents";
+      a = rand(2, 15); answer = a * a; q = `${a}^2`; topic = "Exponents";
     } else if (type === 1) {
       a = rand(5, 20); b = rand(2, 12); const c = rand(2, 8);
-      answer = a + b * c; q = `${a} + ${b} × ${c}`; topic = "Order of Operations";
+      answer = a + b * c; q = `${a} + ${b} * ${c}`; topic = "Order of Operations";
     } else {
       // Solve for x: x + b = a  →  x = a - b
       const x = rand(2, 20);

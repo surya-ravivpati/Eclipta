@@ -48,9 +48,13 @@ export function generateQuestion(difficulty: Difficulty): MathQuestion {
       a = rand(5, 20); b = rand(2, 12); const c = rand(2, 8);
       answer = a + b * c; q = `${a} + ${b} × ${c}`; topic = "Order of Operations";
     } else {
-      b = rand(3, 12); answer = rand(2, 10); a = answer * b + rand(1, 10);
-      const remainder = a - answer * b;
-      answer = a - remainder; q = `${a} − ${remainder}`; topic = "Algebra";
+      // Solve for x: x + b = a  →  x = a - b
+      const x = rand(2, 20);
+      b = rand(2, 15);
+      a = x + b;
+      answer = x;
+      q = `x + ${b} = ${a}, x = ?`;
+      topic = "Algebra";
     }
   }
 

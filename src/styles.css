@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
+@font-face {
+  font-family: 'Molgan';
+  src: url('/fonts/MolganRegular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -66,8 +74,8 @@
   --color-tier-unreal: var(--tier-unreal);
   --color-tier-god: var(--tier-god);
 
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Molgan', 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', Calibri, sans-serif;
 }
 
 :root {

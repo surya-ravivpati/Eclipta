@@ -19,15 +19,17 @@ export function Navbar() {
           <Link to="/" className="text-2xl font-bold tracking-tighter text-neon-purple font-display">
             ECLIPTA
           </Link>
-          <div className="hidden md:flex gap-6 text-sm font-medium tracking-wide text-muted-foreground">
+          <div className="hidden md:flex gap-5 text-sm font-medium tracking-wide text-muted-foreground">
             <Link to="/" className="hover:text-neon-purple transition-colors">ARENA</Link>
             <Link to="/progress" className="hover:text-neon-purple transition-colors">PROGRESS</Link>
+            <Link to="/collection" className="hover:text-neon-purple transition-colors">COLLECTION</Link>
             <Link to="/certified" className="hover:text-neon-purple transition-colors">CERTIFIED</Link>
             <Link to="/build-course" className="hover:text-neon-purple transition-colors">BUILD</Link>
             <Link to="/adaptive-tests" className="hover:text-neon-purple transition-colors">TESTS</Link>
             <Link to="/battles" className="hover:text-neon-purple transition-colors">BATTLES</Link>
             <Link to="/luna" className="hover:text-neon-purple transition-colors">LUNA</Link>
             <Link to="/forum" className="hover:text-neon-purple transition-colors">FORUM</Link>
+            <Link to="/about" className="hover:text-neon-purple transition-colors">ABOUT</Link>
           </div>
         </div>
         <div className="flex items-center gap-3">

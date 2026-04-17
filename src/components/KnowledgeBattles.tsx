@@ -20,7 +20,7 @@ const ACTIONS: Record<Action, ActionConfig> = {
   charge: { label: "Charge", icon: Zap, difficulty: "hard", dmg: 25, focusCost: 0, desc: "Deal 25 DMG" },
   wild:   { label: "Wild",   icon: Dices, difficulty: "medium", dmg: 0, focusCost: 10, desc: "Random effect" },
 };
-const ACTION_EMOJIS: Record<Action, string> = { attack: "⚔️", defend: "🧱", charge: "⚡", wild: "🎲" };
+const ACTION_EMOJIS: Record<Action, string> = { attack: ">>", defend: "[#]", charge: "//", wild: "[?]" };
 
 const LEADERBOARD = [
   { rank: 1, name: "shadowKing", xp: 24800, wins: 312, tier: "Grandmaster" },
@@ -187,8 +187,8 @@ function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
-  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🧑‍💻" });
-  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🤖" });
+  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "[P1]" });
+  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "[AI]" });
   const [momentum, setMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
   const [question, setQuestion] = useState<MathQuestion | null>(null);
@@ -383,7 +383,7 @@ function BattleArena() {
       const arch = ARCHETYPES[cls];
       const playerHp = statToHp(arch.stats.health);
       const playerName = eclip?.name ?? "You";
-      const playerAvatar = eclip?.avatar ?? "🧑‍💻";
+      const playerAvatar = eclip?.avatar ?? "[P1]";
       const oppHp = statToHp(oppArch.stats.health);
       setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, avatar: playerAvatar });
       setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 50, maxFocus: 50, avatar: oppEclip.avatar });

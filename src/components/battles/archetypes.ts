@@ -4,7 +4,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   speedster: {
     id: "speedster",
     name: "The Speedster",
-    emoji: "⚡",
+    emoji: "//",
     color: "text-neon-cyan",
     borderColor: "border-neon-cyan/40",
     description: "Fast, pressured gameplay. Less time but higher damage when answering quickly.",
@@ -14,7 +14,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   tank: {
     id: "tank",
     name: "The Tank",
-    emoji: "🛡️",
+    emoji: "[#]",
     color: "text-tier-silver",
     borderColor: "border-tier-silver/40",
     description: "Heavy, durable, easy questions. Tons of HP but low damage output.",
@@ -24,7 +24,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   chud: {
     id: "chud",
     name: "The Chud",
-    emoji: "😵",
+    emoji: "x_x",
     color: "text-tier-champion",
     borderColor: "border-tier-champion/40",
     description: "Glass cannon. Ultra-high damage with hard questions and almost no HP.",
@@ -34,7 +34,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   gambler: {
     id: "gambler",
     name: "The Gambler",
-    emoji: "🎰",
+    emoji: "[?]",
     color: "text-tier-gold",
     borderColor: "border-tier-gold/40",
     description: "All stats randomized each turn. High risk, high reward gameplay.",
@@ -44,7 +44,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   healer: {
     id: "healer",
     name: "The Healer",
-    emoji: "✨",
+    emoji: "(+)",
     color: "text-neon-pink",
     borderColor: "border-neon-pink/40",
     description: "Sustain-focused with high HP, easy questions, but low damage.",
@@ -54,7 +54,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   fulcrum: {
     id: "fulcrum",
     name: "The Fulcrum",
-    emoji: "⚖️",
+    emoji: "<=>",
     color: "text-neon-purple",
     borderColor: "border-neon-purple/40",
     description: "Balanced all-rounder with the highest multiplier. Rewards consistency.",
@@ -64,7 +64,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   accelerator: {
     id: "accelerator",
     name: "The Accelerator",
-    emoji: "⏩",
+    emoji: ">>",
     color: "text-tier-platinum",
     borderColor: "border-tier-platinum/40",
     description: "Scaling power over time. Damage increases every turn. Harder questions.",
@@ -74,7 +74,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   god: {
     id: "god",
     name: "The God",
-    emoji: "👑",
+    emoji: "[*]",
     color: "text-tier-god",
     borderColor: "border-tier-god/40",
     description: "Endgame archetype. Max stats across the board with hardest questions.",

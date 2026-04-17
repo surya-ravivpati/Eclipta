@@ -16,14 +16,14 @@ export interface Ecliptar {
 /** Two placeholder Ecliptars per archetype (A and B). */
 export const ECLIPTARS: Ecliptar[] = (
   [
-    ["speedster", "⚡"],
-    ["tank", "🛡️"],
-    ["chud", "😵"],
-    ["gambler", "🎰"],
-    ["healer", "✨"],
-    ["fulcrum", "⚖️"],
-    ["accelerator", "⏩"],
-    ["god", "👑"],
+    ["speedster", "//"],
+    ["tank", "[#]"],
+    ["chud", "x_x"],
+    ["gambler", "[?]"],
+    ["healer", "(+)"],
+    ["fulcrum", "<=>"],
+    ["accelerator", ">>"],
+    ["god", "[*]"],
   ] as [MonsterArchetypeKey, string][]
 ).flatMap(([arch, avatar]) => [
   { slug: `${arch}-a`, name: `Ecliptar A`, archetype: arch, avatar },

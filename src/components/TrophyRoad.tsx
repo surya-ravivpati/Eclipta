@@ -268,7 +268,7 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl">{archetype.emoji}</span>
+            <archetype.icon className={cn("w-5 h-5", archetype.colorClass)} />
             <div>
               <p className={cn("font-display font-bold text-sm", archetype.colorClass)}>{archetype.name}</p>
               {archetype.special && <p className="text-[9px] text-neon-pink italic">{archetype.special}</p>}
@@ -352,7 +352,7 @@ function ArchetypeLegend() {
           whileHover={{ scale: 1.02 }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">{a.emoji}</span>
+            <a.icon className={cn("w-5 h-5", a.colorClass)} />
             <span className={cn("font-display font-bold text-xs", a.colorClass)}>{a.name}</span>
           </div>
           <div className="grid grid-cols-5 gap-0.5 text-[8px] text-center">

@@ -4,7 +4,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   speedster: {
     id: "speedster",
     name: "The Speedster",
-    emoji: "⚡",
+    emoji: "//",
     color: "text-neon-cyan",
     borderColor: "border-neon-cyan/40",
     description: "Fast, pressured gameplay. Less time but higher damage when answering quickly.",

@@ -3,7 +3,8 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
-  Dice5, Heart, Scale, TrendingUp, Sparkles, Trophy, Gift
+  Dice5, Heart, Scale, TrendingUp, Sparkles, Trophy, Gift,
+  Apple, Atom,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -132,11 +133,15 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
 
   const getNodeIcon = () => {
     if (node.type === "final") {
-      return node.finalMonster === "newton" ? "🍎" : "🦕";
+      const FinalIcon = node.finalMonster === "newton" ? Apple : Atom;
+      return <FinalIcon className="w-7 h-7" />;
     }
     if (node.type === "rank") return <Crown className="w-5 h-5" />;
     if (node.type === "chest") return <Gift className="w-5 h-5" />;
-    if (node.type === "monster" && archetype) return <span className="text-lg">{archetype.emoji}</span>;
+    if (node.type === "monster" && archetype) {
+      const Icon = archetype.icon;
+      return <Icon className="w-5 h-5" />;
+    }
     return <Star className="w-4 h-4" />;
   };
 
@@ -263,7 +268,7 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl">{archetype.emoji}</span>
+            <archetype.icon className={cn("w-5 h-5", archetype.colorClass)} />
             <div>
               <p className={cn("font-display font-bold text-sm", archetype.colorClass)}>{archetype.name}</p>
               {archetype.special && <p className="text-[9px] text-neon-pink italic">{archetype.special}</p>}
@@ -347,7 +352,7 @@ function ArchetypeLegend() {
           whileHover={{ scale: 1.02 }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">{a.emoji}</span>
+            <a.icon className={cn("w-5 h-5", a.colorClass)} />
             <span className={cn("font-display font-bold text-xs", a.colorClass)}>{a.name}</span>
           </div>
           <div className="grid grid-cols-5 gap-0.5 text-[8px] text-center">
@@ -445,11 +450,11 @@ function FinalMonsters() {
         whileHover={{ scale: 1.01 }}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-tier-god/10 via-transparent to-neon-purple/5" />
-        <div className="absolute top-2 right-2 opacity-10 text-8xl">🍎</div>
+        <Apple className="absolute top-2 right-2 opacity-10 w-32 h-32 text-tier-god" />
         <div className="relative">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-14 h-14 rounded-xl bg-tier-god neon-glow-god flex items-center justify-center text-2xl">
-              🍎
+            <div className="w-14 h-14 rounded-xl bg-tier-god neon-glow-god flex items-center justify-center text-primary-foreground">
+              <Apple className="w-7 h-7" />
             </div>
             <div>
               <h4 className="font-display font-bold text-xl text-tier-god text-glow-god">Newton</h4>
@@ -475,11 +480,11 @@ function FinalMonsters() {
         whileHover={{ scale: 1.01 }}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 via-transparent to-tier-champion/5" />
-        <div className="absolute top-2 right-2 opacity-10 text-8xl">🦕</div>
+        <Atom className="absolute top-2 right-2 opacity-10 w-32 h-32 text-neon-purple" />
         <div className="relative">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-14 h-14 rounded-xl bg-neon-purple neon-glow-purple flex items-center justify-center text-2xl">
-              🦕
+            <div className="w-14 h-14 rounded-xl bg-neon-purple neon-glow-purple flex items-center justify-center text-primary-foreground">
+              <Atom className="w-7 h-7" />
             </div>
             <div>
               <h4 className="font-display font-bold text-xl text-neon-purple text-glow-purple">ECLIPTADON</h4>
@@ -559,9 +564,9 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                         : "bg-secondary border border-border"
                     )}>
                       {node.unlocked ? (
-                        node.type === "monster" && node.archetype
-                          ? ARCHETYPES[node.archetype].emoji
-                          : node.type === "chest" ? "🎁" : "⭐"
+                        node.type === "monster" && node.archetype ? (
+                          (() => { const I = ARCHETYPES[node.archetype].icon; return <I className="w-3.5 h-3.5" />; })()
+                        ) : node.type === "chest" ? <Gift className="w-3.5 h-3.5" /> : <Star className="w-3.5 h-3.5" />
                       ) : (
                         <Lock className="w-3 h-3 text-muted-foreground" />
                       )}

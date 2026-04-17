@@ -40,7 +40,7 @@ function AboutPage() {
           </div>
           <h1 className="text-5xl md:text-7xl font-bold font-display tracking-tight mb-6">
             Learning, but make it{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan">
+            <span className="text-neon-pink">
               an arena
             </span>
             .

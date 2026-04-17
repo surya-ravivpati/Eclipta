@@ -20,7 +20,7 @@ export function HeroSection() {
           </div>
           <h1 className="text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-display">
             LEARN AT <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-foreground">
+            <span className="text-neon-purple">
               VELOCITY.
             </span>
           </h1>

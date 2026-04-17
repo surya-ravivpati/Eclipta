@@ -42,7 +42,7 @@ function CollectionPage() {
           </div>
           <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-4">
             My{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan">
+            <span className="text-neon-pink">
               Ecliptars
             </span>
           </h1>

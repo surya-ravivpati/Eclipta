@@ -43,7 +43,7 @@ function TimelineBar() {
         {/* Track */}
         <div className="h-2 bg-secondary rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan"
+            className="h-full bg-neon-purple"
             initial={{ width: 0 }}
             whileInView={{ width: "100%" }}
             viewport={{ once: true }}
@@ -89,7 +89,7 @@ export function PersonalizedLearning() {
           </div>
           <h1 className="text-5xl md:text-7xl font-bold font-display tracking-tight mb-6">
             It Learns{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan">
+            <span className="text-neon-purple">
               You
             </span>
           </h1>

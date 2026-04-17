@@ -523,7 +523,7 @@ export function KnowledgeBattles() {
           </div>
           <h1 className="text-5xl md:text-7xl font-bold font-display tracking-tight mb-4">
             Knowledge{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan">Battles</span>
+            <span className="text-neon-pink">Battles</span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Choose your archetype. Solve equations under pressure. Build devastating combos. Review and learn from every fight.

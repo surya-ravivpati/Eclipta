@@ -210,7 +210,7 @@ export function Forum() {
           </div>
           <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-4">
             The{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+            <span className="text-neon-pink">
               Forum
             </span>
           </h1>

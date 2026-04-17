@@ -371,17 +371,25 @@ function BattleArena() {
     const eclip = selection?.ecliptar ?? ecliptar;
     if (selection?.archetype) setArchetype(selection.archetype);
     if (selection?.ecliptar) setEcliptar(selection.ecliptar);
+
+    // Pick a random Ecliptar opponent (different archetype if possible)
+    const candidates = ECLIPTARS.filter(e => e.archetype !== cls);
+    const oppEclip = candidates[Math.floor(Math.random() * candidates.length)] ?? ECLIPTARS[0];
+    const oppArch = ARCHETYPES[oppEclip.archetype];
+    setOpponentArchetype(oppEclip.archetype);
+
     setPhase("searching");
     setTimeout(() => {
       const arch = ARCHETYPES[cls];
       const playerHp = statToHp(arch.stats.health);
       const playerName = eclip?.name ?? "You";
       const playerAvatar = eclip?.avatar ?? "🧑‍💻";
+      const oppHp = statToHp(oppArch.stats.health);
       setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, avatar: playerAvatar });
-      setOpponent({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🤖" });
+      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 50, maxFocus: 50, avatar: oppEclip.avatar });
       setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
-      addLog(`⚔️ ${playerName} (${arch.emoji} ${arch.name}) enters the arena! (${playerHp} HP)`);
+      addLog(`⚔️ ${playerName} (${arch.emoji} ${arch.name}) vs ${oppEclip.name} (${oppArch.emoji} ${oppArch.name})!`);
     }, 2200);
   };
 

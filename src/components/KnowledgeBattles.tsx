@@ -324,11 +324,13 @@ function BattleArena() {
   }, [totalScore, records, longestStreak, fastestAnswer, archetype]);
 
   const aiTurn = useCallback(() => {
-    const aiDmg = Math.floor(Math.random() * 8) + 5;
+    const oppArch = ARCHETYPES[opponentArchetype];
+    const dmgMult = statToDmgMult(oppArch.stats.damage);
+    const aiDmg = Math.floor((Math.floor(Math.random() * 8) + 5) * dmgMult);
     setTimeout(() => {
       setPlayer(prev => {
         const newHp = Math.max(0, prev.hp - aiDmg);
-        addLog(`🤖 AI strikes: -${aiDmg} HP.`);
+        addLog(`${opponent.avatar} ${opponent.name} strikes: -${aiDmg} HP.`);
         setShowPlayerHit(true);
         setTimeout(() => {
           setShowPlayerHit(false);
@@ -337,7 +339,7 @@ function BattleArena() {
         return { ...prev, hp: newHp };
       });
     }, 400);
-  }, [addLog, finishBattle]);
+  }, [addLog, finishBattle, opponentArchetype, opponent.avatar, opponent.name]);
 
   const selectAction = (action: Action) => {
     if (action === "wild" && player.focus < 10) { addLog("⚠️ Not enough Focus!"); return; }

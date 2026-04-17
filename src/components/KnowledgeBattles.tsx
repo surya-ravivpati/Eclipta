@@ -186,6 +186,7 @@ function BattleLog({ logs }: { logs: string[] }) {
 function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
+  const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
   const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🧑‍💻" });
   const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, avatar: "🤖" });
   const [momentum, setMomentum] = useState(0);

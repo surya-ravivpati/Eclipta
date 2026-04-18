@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Sparkles, Target, Swords, Trophy, Brain, Users } from "lucide-react";
+import { Sparkles, Target, Swords, Trophy, Brain, Users, User } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+
+const FOUNDERS = [
+  { name: "Surya Ravipati", role: "Co-Founder", bio: "Architect of Eclipta's adaptive learning engine and arena design." },
+  { name: "Aarit Perswal", role: "Co-Founder", bio: "Builds the battle systems and gamified progression that make learning addictive." },
+];
 
 export const Route = createFileRoute("/about")({
   head: () => ({

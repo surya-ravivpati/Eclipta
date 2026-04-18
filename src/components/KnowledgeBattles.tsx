@@ -622,6 +622,67 @@ function LeaderboardCard() {
   );
 }
 
+// ─── Daily Challenge (live) ───────────────────────────────────────────
+function DailyChallengeCard() {
+  const [wins, setWins] = useState(0);
+  const [bonusClaimed, setBonusClaimed] = useState(false);
+  const [authed, setAuthed] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setAuthed(false); return; }
+    setAuthed(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const { data } = await supabase
+      .from("daily_challenge_progress")
+      .select("wins, bonus_claimed")
+      .eq("user_id", user.id)
+      .eq("challenge_date", today)
+      .maybeSingle();
+    setWins(data?.wins ?? 0);
+    setBonusClaimed(data?.bonus_claimed ?? false);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    const handler = () => refresh();
+    window.addEventListener("daily-challenge-updated", handler);
+    return () => window.removeEventListener("daily-challenge-updated", handler);
+  }, [refresh]);
+
+  const target = 3;
+  const display = Math.min(wins, target);
+  const complete = wins >= target;
+
+  return (
+    <motion.div className="glass-panel p-5 border border-neon-purple/20" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-neon-purple/10 border border-neon-purple/30 flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-neon-purple" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-xs font-bold tracking-widest">DAILY CHALLENGE</h4>
+          <p className="text-[10px] text-muted-foreground">
+            {!authed ? "Sign in to track daily wins" : complete ? "Bonus unlocked! 🎉" : "Win 3 battles today for 2x XP bonus"}
+          </p>
+        </div>
+        <div className={`text-lg font-bold font-display ${complete ? "text-neon-cyan" : "text-neon-purple"}`}>
+          {display}/{target}
+        </div>
+      </div>
+      {authed && (
+        <div className="mt-3 h-1.5 bg-secondary/60 overflow-hidden">
+          <motion.div
+            className={`h-full ${complete ? "bg-neon-cyan" : "bg-neon-purple"}`}
+            animate={{ width: `${(display / target) * 100}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
   return (

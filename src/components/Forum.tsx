@@ -138,7 +138,8 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
       .filter((t) => t.length > 0)
       .slice(0, 5);
 
-    const author_name = user.user_metadata?.display_name || user.email?.split("@")[0] || "Learner";
+    const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
+    const author_name = prof?.username || user.email?.split("@")[0] || "Learner";
 
     const { error } = await supabase.from("forum_threads").insert({
       user_id: user.id,

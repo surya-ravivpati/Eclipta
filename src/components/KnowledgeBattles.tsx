@@ -204,7 +204,15 @@ function BattleArena() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [fastestAnswer, setFastestAnswer] = useState(Infinity);
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
+  const [gamblerStats, setGamblerStats] = useState<{ health: number; time: number; damage: number; multiplier: number; difficulty: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Returns archetype, with stats overridden by per-battle randomized stats for gambler
+  const getArch = useCallback((id: ArchetypeId) => {
+    const base = ARCHETYPES[id];
+    if (id === "gambler" && gamblerStats) return { ...base, stats: gamblerStats };
+    return base;
+  }, [gamblerStats]);
 
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
   const addLog = useCallback((msg: string) => setLogs(prev => [...prev, msg]), []);

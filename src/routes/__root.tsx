@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import { Luna } from "@/components/Luna";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
@@ -74,10 +75,12 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showLuna = !HIDE_LUNA_ON.some((p) => pathname.startsWith(p));
   return (
-    <AuthProvider>
-      <Outlet />
-      {showLuna && <Luna />}
-      <Toaster />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Outlet />
+        {showLuna && <Luna />}
+        <Toaster />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

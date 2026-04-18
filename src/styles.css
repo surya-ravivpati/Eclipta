@@ -142,6 +142,48 @@
   --sidebar-ring: oklch(0.55 0.25 290);
 }
 
+/* Light theme — toggled via .light on <html> */
+.light {
+  --background: oklch(0.985 0.005 280);
+  --foreground: oklch(0.18 0.03 280);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.03 280);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.03 280);
+  --primary: oklch(0.5 0.22 290);
+  --primary-foreground: oklch(0.98 0.005 280);
+  --secondary: oklch(0.94 0.015 280);
+  --secondary-foreground: oklch(0.2 0.03 280);
+  --muted: oklch(0.94 0.015 280);
+  --muted-foreground: oklch(0.45 0.03 280);
+  --accent: oklch(0.5 0.22 290);
+  --accent-foreground: oklch(0.98 0.005 280);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.98 0.005 280);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 14%);
+  --ring: oklch(0.5 0.22 290);
+
+  --neon-purple: oklch(0.5 0.22 290);
+  --neon-pink: oklch(0.55 0.22 350);
+  --neon-cyan: oklch(0.55 0.13 195);
+  --arena: oklch(0.985 0.005 280);
+  --arena-light: oklch(0.96 0.01 280);
+  --marble: oklch(0.18 0.03 280);
+  --acrylic: oklch(0 0 0 / 3%);
+  --acrylic-border: oklch(0 0 0 / 10%);
+
+  --sidebar: oklch(0.96 0.01 280);
+  --sidebar-foreground: oklch(0.18 0.03 280);
+  --sidebar-border: oklch(0 0 0 / 8%);
+}
+
+.light .glass-panel {
+  background: oklch(1 0 0 / 70%);
+  border: 1px solid oklch(0 0 0 / 10%);
+  box-shadow: 0 4px 20px oklch(0 0 0 / 8%);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

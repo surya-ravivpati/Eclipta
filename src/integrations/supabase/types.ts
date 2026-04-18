@@ -342,6 +342,7 @@ export type Database = {
           total_sessions: number
           updated_at: string
           user_id: string
+          username: string | null
           weak_areas: string[] | null
           xp: number
         }
@@ -359,6 +360,7 @@ export type Database = {
           total_sessions?: number
           updated_at?: string
           user_id: string
+          username?: string | null
           weak_areas?: string[] | null
           xp?: number
         }
@@ -376,6 +378,7 @@ export type Database = {
           total_sessions?: number
           updated_at?: string
           user_id?: string
+          username?: string | null
           weak_areas?: string[] | null
           xp?: number
         }

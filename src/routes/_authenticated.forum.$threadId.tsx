@@ -110,7 +110,8 @@ function ThreadPage() {
     if (!user || !thread) return;
     if (reply.trim().length < 10) return toast.error("Answer must be at least 10 characters");
     setSubmitting(true);
-    const author_name = user.user_metadata?.display_name || user.email?.split("@")[0] || "Learner";
+    const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
+    const author_name = prof?.username || user.email?.split("@")[0] || "Learner";
     const { error } = await supabase.from("forum_answers").insert({
       thread_id: thread.id, user_id: user.id, author_name, body: reply.trim().slice(0, 4000),
     });

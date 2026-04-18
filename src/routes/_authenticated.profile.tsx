@@ -1,27 +1,33 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut } from "lucide-react";
+import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { ARCHETYPES } from "@/components/battles/archetypes";
+import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
+import { useOwnedEcliptars } from "@/hooks/use-player-xp";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
       { title: "Your Profile – Eclipta" },
-      { name: "description", content: "Your XP, streaks, ecliptars, enrolled courses, and forum activity." },
+      { name: "description", content: "Settings, XP, ecliptars, courses, and forum activity." },
     ],
   }),
   component: ProfilePage,
 });
 
 type Profile = {
+  username: string | null;
   xp: number; current_streak: number; best_streak: number;
   total_correct: number; total_questions: number; total_sessions: number;
   preferred_pace: string; preferred_style: string;
-  weak_areas: string[] | null; strong_areas: string[] | null;
 };
 type Ecliptar = { id: string; ecliptar_name: string; archetype: string; claimed_at: string };
 type Enrollment = { id: string; course_slug: string; course_title: string; enrolled_at: string };
@@ -36,24 +42,24 @@ function ProfilePage() {
   const [answersCount, setAnswersCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const reload = async () => {
     if (!user) return;
-    (async () => {
-      const [p, e, en, t, a] = await Promise.all([
-        supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-        supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
-        supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
-        supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("forum_answers").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      ]);
-      setProfile((p.data as Profile) || null);
-      setEcliptars((e.data as Ecliptar[]) || []);
-      setEnrollments((en.data as Enrollment[]) || []);
-      setThreads((t.data as ForumActivity[]) || []);
-      setAnswersCount(a.count || 0);
-      setLoading(false);
-    })();
-  }, [user]);
+    const [p, e, en, t, a] = await Promise.all([
+      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
+      supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
+      supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
+      supabase.from("forum_answers").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    ]);
+    setProfile((p.data as Profile) || null);
+    setEcliptars((e.data as Ecliptar[]) || []);
+    setEnrollments((en.data as Enrollment[]) || []);
+    setThreads((t.data as ForumActivity[]) || []);
+    setAnswersCount(a.count || 0);
+    setLoading(false);
+  };
+
+  useEffect(() => { reload(); }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -62,7 +68,7 @@ function ProfilePage() {
 
   if (!user) return null;
 
-  const username = user.email?.split("@")[0] || "Learner";
+  const displayName = profile?.username || user.email?.split("@")[0] || "Learner";
   const accuracy = profile && profile.total_questions > 0
     ? Math.round((profile.total_correct / profile.total_questions) * 100)
     : 0;
@@ -81,7 +87,7 @@ function ProfilePage() {
               <User className="w-10 h-10 text-neon-purple" />
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-bold font-display tracking-tight">{username}</h1>
+              <h1 className="text-3xl font-bold font-display tracking-tight">{displayName}</h1>
               <p className="text-sm text-muted-foreground">{user.email}</p>
               <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
                 <span className="text-[10px] font-bold tracking-widest bg-neon-purple/10 text-neon-purple border border-neon-purple/30 px-2 py-0.5">
@@ -112,25 +118,15 @@ function ProfilePage() {
                 <StatCard icon={<Target className="w-4 h-4" />} label="Accuracy" value={`${accuracy}%`} color="text-foreground" />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Ecliptars */}
-                <Card title="Ecliptars Claimed" icon={<Sparkles className="w-4 h-4 text-neon-purple" />} count={ecliptars.length}>
-                  {ecliptars.length === 0 ? (
-                    <EmptyState text="No ecliptars yet." cta={<Link to="/collection" className="text-neon-purple hover:underline">Walk the trophy road →</Link>} />
-                  ) : (
-                    <ul className="space-y-2">
-                      {ecliptars.slice(0, 6).map((e) => (
-                        <li key={e.id} className="flex items-center justify-between text-xs border-b border-border/50 pb-2">
-                          <span className="font-medium">{e.ecliptar_name}</span>
-                          <span className="text-[10px] tracking-widest text-muted-foreground uppercase">{e.archetype}</span>
-                        </li>
-                      ))}
-                      {ecliptars.length > 6 && <li className="text-[10px] text-muted-foreground text-center pt-1">+{ecliptars.length - 6} more</li>}
-                    </ul>
-                  )}
-                </Card>
+              {/* Settings */}
+              <SettingsPanel
+                currentUsername={profile?.username ?? null}
+                userId={user.id}
+                onSaved={reload}
+              />
 
-                {/* Enrollments */}
+              {/* Activity cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <Card title="Enrolled Courses" icon={<BookOpen className="w-4 h-4 text-neon-cyan" />} count={enrollments.length}>
                   {enrollments.length === 0 ? (
                     <EmptyState text="No courses enrolled." cta={<Link to="/certified" className="text-neon-cyan hover:underline">Browse certified →</Link>} />
@@ -147,7 +143,6 @@ function ProfilePage() {
                   )}
                 </Card>
 
-                {/* Forum activity */}
                 <Card title="Forum Threads" icon={<MessageSquare className="w-4 h-4 text-neon-pink" />} count={threads.length}>
                   {threads.length === 0 ? (
                     <EmptyState text="No threads posted." cta={<Link to="/forum" className="text-neon-pink hover:underline">Start a discussion →</Link>} />
@@ -164,7 +159,6 @@ function ProfilePage() {
                   )}
                 </Card>
 
-                {/* Activity numbers */}
                 <Card title="Lifetime Activity" icon={<Target className="w-4 h-4 text-foreground" />} count={null}>
                   <div className="space-y-2 text-xs">
                     <Row label="Sessions" value={profile?.total_sessions ?? 0} />
@@ -173,7 +167,18 @@ function ProfilePage() {
                     <Row label="Forum answers" value={answersCount} />
                   </div>
                 </Card>
+
+                <Card title="Ecliptars Claimed" icon={<Sparkles className="w-4 h-4 text-neon-purple" />} count={ecliptars.length}>
+                  {ecliptars.length === 0 ? (
+                    <EmptyState text="No ecliptars yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Walk the trophy road →</Link>} />
+                  ) : (
+                    <p className="text-xs text-muted-foreground">See full collection below ↓</p>
+                  )}
+                </Card>
               </div>
+
+              {/* Embedded Collection */}
+              <CollectionSection />
             </>
           )}
         </div>
@@ -181,6 +186,191 @@ function ProfilePage() {
     </div>
   );
 }
+
+/* =================== Settings Panel =================== */
+
+function SettingsPanel({ currentUsername, userId, onSaved }: {
+  currentUsername: string | null; userId: string; onSaved: () => void;
+}) {
+  const { theme, setTheme } = useTheme();
+  const [username, setUsername] = useState(currentUsername || "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setUsername(currentUsername || ""); }, [currentUsername]);
+
+  const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v);
+
+  const saveUsername = async () => {
+    const trimmed = username.trim();
+    if (!validateUsername(trimmed)) {
+      return toast.error("Username must be 3–20 chars: letters, numbers, underscores");
+    }
+    if (trimmed === currentUsername) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({ username: trimmed })
+      .eq("user_id", userId);
+    setSaving(false);
+    if (error) {
+      if (error.code === "23505") return toast.error("That username is already taken");
+      return toast.error(error.message);
+    }
+    toast.success("Username updated — visible publicly");
+    onSaved();
+  };
+
+  return (
+    <motion.div className="glass-panel p-6 mb-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center gap-2 mb-5">
+        <Settings className="w-4 h-4 text-neon-purple" />
+        <h2 className="font-display font-bold text-sm tracking-widest uppercase">Settings</h2>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Username */}
+        <div>
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Public Username</label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-2">Shown on your forum threads and answers.</p>
+          <div className="flex gap-2">
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              maxLength={20}
+              placeholder="your_username"
+              className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+            />
+            <button
+              onClick={saveUsername}
+              disabled={saving || username.trim() === (currentUsername || "")}
+              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
+            >
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              SAVE
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">3–20 chars. Letters, numbers, underscores only.</p>
+        </div>
+
+        {/* Theme */}
+        <div>
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Appearance</label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-2">Switch between dark and light arena.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTheme("dark")}
+              className={cn(
+                "flex-1 px-3 py-2 text-xs font-bold tracking-widest border transition-colors inline-flex items-center justify-center gap-2",
+                theme === "dark"
+                  ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
+                  : "border-border text-muted-foreground hover:border-neon-purple/40"
+              )}
+            >
+              <Moon className="w-3.5 h-3.5" />DARK
+            </button>
+            <button
+              onClick={() => setTheme("light")}
+              className={cn(
+                "flex-1 px-3 py-2 text-xs font-bold tracking-widest border transition-colors inline-flex items-center justify-center gap-2",
+                theme === "light"
+                  ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
+                  : "border-border text-muted-foreground hover:border-neon-purple/40"
+              )}
+            >
+              <Sun className="w-3.5 h-3.5" />LIGHT
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* =================== Embedded Collection =================== */
+
+function CollectionSection() {
+  const { slugs, loading } = useOwnedEcliptars();
+  const total = ECLIPTARS.length;
+  const owned = ECLIPTARS.filter((e) => slugs.has(e.slug)).length;
+  const archetypeKeys = Object.keys(ARCHETYPES) as MonsterArchetypeKey[];
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 border border-neon-purple/30 bg-neon-purple/10 text-neon-purple text-[10px] font-bold tracking-widest mb-2">
+            <Sparkles className="w-3 h-3" />ECLIPTAR COLLECTION
+          </div>
+          <h2 className="text-3xl font-bold font-display tracking-tight">My Ecliptars</h2>
+        </div>
+        <p className="text-sm font-bold tracking-widest text-neon-purple">{owned} / {total} COLLECTED</p>
+      </div>
+
+      {loading ? (
+        <div className="text-center text-muted-foreground py-10">Loading collection…</div>
+      ) : (
+        <div className="space-y-8">
+          {archetypeKeys.map((archKey) => {
+            const arch = ARCHETYPES[archKey];
+            const eclips = getEcliptarsByArchetype(archKey);
+            const ownedCount = eclips.filter((e) => slugs.has(e.slug)).length;
+
+            return (
+              <div key={archKey}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <arch.icon className={cn("w-6 h-6", arch.color)} />
+                    <div>
+                      <h3 className={cn("text-base font-bold font-display", arch.color)}>{arch.name}</h3>
+                      <p className="text-[10px] font-bold tracking-widest text-muted-foreground">{arch.passive}</p>
+                    </div>
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-bold tracking-widest px-2 py-1 rounded-full border",
+                    ownedCount === eclips.length ? "border-emerald-500/50 text-emerald-400" : "border-border text-muted-foreground"
+                  )}>
+                    {ownedCount}/{eclips.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {eclips.map((e) => {
+                    const isOwned = slugs.has(e.slug);
+                    return (
+                      <div
+                        key={e.slug}
+                        className={cn(
+                          "glass-panel p-4 border text-center relative overflow-hidden",
+                          isOwned ? arch.borderColor : "border-border/30 opacity-60"
+                        )}
+                      >
+                        {!isOwned && (
+                          <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                            <Lock className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <e.icon className={cn("w-10 h-10 mx-auto mb-2", isOwned ? arch.color : "text-muted-foreground")} />
+                        <div className={cn("text-sm font-bold font-display", isOwned ? arch.color : "text-muted-foreground")}>{e.name}</div>
+                        <div className="text-[9px] tracking-widest text-muted-foreground mt-1">{arch.name.toUpperCase()}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="text-center mt-10">
+        <Link to="/progress" className="inline-block px-6 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity">
+          UNLOCK MORE ON THE TROPHY ROAD
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/* =================== Small UI helpers =================== */
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
   return (

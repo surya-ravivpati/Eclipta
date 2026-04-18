@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { usePlayerXp } from "@/hooks/use-player-xp";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Menu, X } from "lucide-react";
+import { LogOut, User, Menu, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const NAV_LINKS = [
   { to: "/", label: "ARENA" },
   { to: "/progress", label: "PROGRESS" },
-  { to: "/collection", label: "COLLECTION" },
   { to: "/certified", label: "CERTIFIED" },
   { to: "/build-course", label: "BUILD" },
   { to: "/adaptive-tests", label: "TESTS" },
@@ -20,6 +20,7 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuth();
+  const { xp } = usePlayerXp();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -47,12 +48,19 @@ export function Navbar() {
             <>
               <Link
                 to="/profile"
-                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border hover:border-neon-purple/40 transition-colors"
+                className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border hover:border-neon-purple/40 transition-colors"
                 title="View profile"
               >
-                <User className="w-3.5 h-3.5 text-neon-purple" />
-                <span className="text-xs font-medium text-foreground truncate max-w-[120px]">
-                  {user?.email?.split("@")[0]}
+                <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-neon-purple">
+                  <Zap className="w-3 h-3" />
+                  {xp.toLocaleString()}
+                </span>
+                <span className="w-px h-3 bg-border" />
+                <span className="flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-neon-purple" />
+                  <span className="text-xs font-medium text-foreground truncate max-w-[100px]">
+                    {user?.email?.split("@")[0]}
+                  </span>
                 </span>
               </Link>
               <button
@@ -89,6 +97,18 @@ export function Navbar() {
       {mobileOpen && (
         <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
+            {isAuthenticated && (
+              <Link
+                to="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-3 py-3 mb-2 border border-border rounded-md"
+              >
+                <span className="text-sm font-medium">{user?.email?.split("@")[0]}</span>
+                <span className="flex items-center gap-1 text-xs font-bold text-neon-purple tabular-nums">
+                  <Zap className="w-3 h-3" />{xp.toLocaleString()} XP
+                </span>
+              </Link>
+            )}
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.to}

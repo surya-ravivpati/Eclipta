@@ -93,9 +93,12 @@ export function HeroSection() {
               </div>
             </div>
 
-            <button className="w-full py-4 border border-border text-xs font-bold tracking-widest hover:bg-foreground hover:text-background transition-all">
-              SPECTATE MATCH
-            </button>
+            <Link
+              to="/battles"
+              className="block w-full py-4 text-center border border-border text-xs font-bold tracking-widest hover:bg-foreground hover:text-background transition-all"
+            >
+              ENTER THE ARENA
+            </Link>
           </div>
         </motion.div>
       </div>
@@ -111,10 +114,6 @@ export function HeroSection() {
         <div className="relative border border-border rounded-xl overflow-hidden">
           <img src={heroImage} alt="Eclipta Arena" className="w-full aspect-video object-cover opacity-70" width={1920} height={1080} />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-          <div className="absolute bottom-8 left-8 glass-panel px-6 py-4 flex items-center gap-4">
-            <div className="w-3 h-3 rounded-full bg-neon-purple animate-pulse" />
-            <span className="text-xs font-mono text-neon-purple tracking-tighter uppercase">Neural Engine Active • Personalization: 94%</span>
-          </div>
         </div>
       </motion.div>
     </section>

@@ -15,6 +15,14 @@ export const Route = createFileRoute("/_authenticated/certified/$slug")({
     if (!course) throw notFound();
     return { course };
   },
+  notFoundComponent: () => (
+    <div className="min-h-screen flex items-center justify-center">
+      <Link to="/certified" className="text-neon-purple">← Back to courses</Link>
+    </div>
+  ),
+  errorComponent: ({ error }) => (
+    <div className="min-h-screen flex items-center justify-center text-muted-foreground">{error.message}</div>
+  ),
 });
 
 function CourseDetail() {
@@ -83,7 +91,7 @@ function CourseDetail() {
             <p className="text-base text-foreground/80 leading-relaxed mb-6">{course.description}</p>
 
             <div className="flex flex-wrap gap-1.5 mb-8">
-              {course.tags.map(t => (
+              {course.tags.map((t: string) => (
                 <span key={t} className="px-2 py-0.5 text-[10px] font-bold tracking-wide border border-border text-muted-foreground">{t}</span>
               ))}
             </div>
@@ -107,7 +115,7 @@ function CourseDetail() {
               SYLLABUS
             </h2>
             <div className="space-y-3">
-              {course.syllabus.map((mod, i) => (
+              {course.syllabus.map((mod: { title: string; lessons: string[] }, i: number) => (
                 <motion.div
                   key={mod.title}
                   initial={{ opacity: 0, x: -10 }}
@@ -119,7 +127,7 @@ function CourseDetail() {
                     <span className="text-neon-purple mr-2">0{i + 1}</span>{mod.title}
                   </h3>
                   <ul className="space-y-1.5">
-                    {mod.lessons.map(l => (
+                    {mod.lessons.map((l: string) => (
                       <li key={l} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <div className="w-1 h-1 bg-neon-purple/50 rounded-full" /> {l}
                       </li>
@@ -132,7 +140,7 @@ function CourseDetail() {
 
           <h3 className="font-display font-bold tracking-widest text-xs text-muted-foreground mt-12 mb-3">YOU'LL LEARN TO</h3>
           <ul className="space-y-2">
-            {course.outcomes.map(o => (
+            {course.outcomes.map((o: string) => (
               <li key={o} className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-neon-cyan shrink-0 mt-0.5" /> {o}
               </li>

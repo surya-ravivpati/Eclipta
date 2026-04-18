@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, TrendingUp, Target, Zap, BarChart3, Clock, ChevronRight, Check, X, ArrowRight, Flame, ShieldCheck } from "lucide-react";
+import { Brain, TrendingUp, Target, Zap, BarChart3, Check, X, ArrowRight, Flame, ShieldCheck, Code2, Cpu, Sigma, Flag, Building2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 /* ── data ── */
 
@@ -12,11 +14,11 @@ const HOW_IT_WORKS = [
 ];
 
 const COURSE_TEST_FORMATS = [
-  { course: "FAANG Interview Prep", format: "Live Coding Interview", icon: "💻", description: "Timed whiteboard problems with follow-up questions, just like real interviews", difficulty: "Adaptive" },
-  { course: "Machine Learning Foundations", format: "Model Analysis", icon: "🧠", description: "Debug models, interpret outputs, choose the right architecture", difficulty: "Progressive" },
-  { course: "Calculus Through Intuition", format: "Proof & Visualization", icon: "📐", description: "Derive formulas, sketch graphs, explain concepts in your own words", difficulty: "Adaptive" },
-  { course: "Cybersecurity Red Team", format: "Capture The Flag", icon: "🚩", description: "Find vulnerabilities in simulated systems under time pressure", difficulty: "Escalating" },
-  { course: "Systems Design Mastery", format: "Architecture Review", icon: "🏗️", description: "Design systems for given constraints, defend trade-offs verbally", difficulty: "Scenario-based" },
+  { course: "FAANG Interview Prep", format: "Live Coding Interview", Icon: Code2, description: "Timed whiteboard problems with follow-up questions, just like real interviews", difficulty: "Adaptive" },
+  { course: "Machine Learning Foundations", format: "Model Analysis", Icon: Cpu, description: "Debug models, interpret outputs, choose the right architecture", difficulty: "Progressive" },
+  { course: "Calculus Through Intuition", format: "Proof & Visualization", Icon: Sigma, description: "Derive formulas, sketch graphs, explain concepts in your own words", difficulty: "Adaptive" },
+  { course: "Cybersecurity Red Team", format: "Capture The Flag", Icon: Flag, description: "Find vulnerabilities in simulated systems under time pressure", difficulty: "Escalating" },
+  { course: "Systems Design Mastery", format: "Architecture Review", Icon: Building2, description: "Design systems for given constraints, defend trade-offs verbally", difficulty: "Scenario-based" },
 ];
 
 /* ── demo question bank ── */
@@ -128,7 +130,7 @@ function CourseFormats() {
             transition={{ delay: 0.06 * i }}
             className="glass-panel p-4 flex items-center gap-4 group hover:border-neon-purple/30 transition-colors"
           >
-            <span className="text-2xl">{f.icon}</span>
+            <f.Icon className="w-6 h-6 text-neon-purple shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-display font-bold text-sm">{f.course}</span>
@@ -147,6 +149,7 @@ function CourseFormats() {
 /* ── interactive demo ── */
 
 function LiveDemo() {
+  const { user } = useAuth();
   const [started, setStarted] = useState(false);
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -155,6 +158,7 @@ function LiveDemo() {
   const [streak, setStreak] = useState(0);
   const [difficultyLevel, setDifficultyLevel] = useState(1);
   const [history, setHistory] = useState<{ correct: boolean; topic: string; difficulty: number }[]>([]);
+  const [questionStart, setQuestionStart] = useState<number>(Date.now());
 
   const currentQ = DEMO_QUESTIONS[Math.min(qIndex, DEMO_QUESTIONS.length - 1)];
   const finished = qIndex >= DEMO_QUESTIONS.length;
@@ -164,6 +168,7 @@ function LiveDemo() {
     setSelected(idx);
     setShowResult(true);
     const correct = idx === currentQ.correct;
+    const responseMs = Date.now() - questionStart;
     if (correct) {
       setScore(s => s + 1);
       setStreak(s => s + 1);
@@ -173,13 +178,32 @@ function LiveDemo() {
       setDifficultyLevel(d => Math.max(1, d - 1));
     }
     setHistory(h => [...h, { correct, topic: currentQ.topic, difficulty: currentQ.difficulty }]);
+
+    // Persist to learning_history if logged in (best-effort, non-blocking)
+    if (user) {
+      void supabase.from("learning_history").insert({
+        user_id: user.id,
+        session_type: "adaptive_test",
+        topic: currentQ.topic,
+        question_text: currentQ.question,
+        was_correct: correct,
+        response_time_ms: responseMs,
+        hint_level_used: 0,
+      });
+    }
   };
 
   const nextQuestion = () => {
     setQIndex(i => i + 1);
     setSelected(null);
     setShowResult(false);
+    setQuestionStart(Date.now());
   };
+
+  // Reset timer on start and on question change
+  useEffect(() => {
+    if (started && !showResult) setQuestionStart(Date.now());
+  }, [started, qIndex, showResult]);
 
   const reset = () => {
     setStarted(false);

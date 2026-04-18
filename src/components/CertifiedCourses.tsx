@@ -1,74 +1,11 @@
 import { motion } from "framer-motion";
-import { ShieldCheck, Star, Clock, Users, ArrowRight, Award, BookOpen, TrendingUp } from "lucide-react";
-
-const CERTIFIED_COURSES = [
-  {
-    title: "Machine Learning Foundations",
-    creator: "Eclipta Team",
-    badge: "ECLIPTA OFFICIAL",
-    level: "Intermediate",
-    duration: "40 hrs",
-    enrolled: "2.4k",
-    rating: 4.9,
-    outcomes: ["Build ML models from scratch", "Understand neural network architecture", "Deploy models to production"],
-    tags: ["Python", "TensorFlow", "Statistics"],
-  },
-  {
-    title: "Advanced Algorithms & Data Structures",
-    creator: "Dr. Elara Voss",
-    badge: "CERTIFIED CREATOR",
-    level: "Advanced",
-    duration: "55 hrs",
-    enrolled: "1.8k",
-    rating: 4.8,
-    outcomes: ["Master graph algorithms", "Optimize time & space complexity", "Ace technical interviews"],
-    tags: ["Algorithms", "Complexity", "Problem Solving"],
-  },
-  {
-    title: "Quantum Computing Primer",
-    creator: "Eclipta Team",
-    badge: "ECLIPTA OFFICIAL",
-    level: "Beginner",
-    duration: "25 hrs",
-    enrolled: "980",
-    rating: 4.9,
-    outcomes: ["Understand qubits & superposition", "Write basic quantum circuits", "Grasp quantum advantage"],
-    tags: ["Physics", "Qiskit", "Linear Algebra"],
-  },
-  {
-    title: "Systems Design Mastery",
-    creator: "Kai Nakamura",
-    badge: "CERTIFIED CREATOR",
-    level: "Advanced",
-    duration: "60 hrs",
-    enrolled: "3.1k",
-    rating: 4.7,
-    outcomes: ["Design scalable distributed systems", "Handle millions of concurrent users", "Navigate real-world trade-offs"],
-    tags: ["Architecture", "Distributed Systems", "Databases"],
-  },
-  {
-    title: "Calculus Through Intuition",
-    creator: "Eclipta Team",
-    badge: "ECLIPTA OFFICIAL",
-    level: "Beginner",
-    duration: "30 hrs",
-    enrolled: "5.2k",
-    rating: 5.0,
-    outcomes: ["Visualize derivatives & integrals", "Solve real-world optimization problems", "Build mathematical intuition"],
-    tags: ["Mathematics", "Visualization", "Problem Solving"],
-  },
-  {
-    title: "Cybersecurity Red Team Ops",
-    creator: "Zara Okonkwo",
-    badge: "CERTIFIED CREATOR",
-    level: "Advanced",
-    duration: "70 hrs",
-    enrolled: "1.2k",
-    rating: 4.8,
-    outcomes: ["Perform penetration testing", "Exploit common vulnerabilities", "Build defensive strategies"],
-    tags: ["Security", "Networking", "Linux"],
-  },
-];
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ShieldCheck, Star, Clock, Users, ArrowRight, Award, BookOpen, TrendingUp, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import { CERTIFIED_COURSES } from "@/lib/certified-courses";
 
 const PILLARS = [
   { icon: ShieldCheck, title: "Vetted Creators", description: "Every certified creator is hand-picked and verified by Eclipta" },
@@ -77,6 +14,47 @@ const PILLARS = [
 ];
 
 export function CertifiedCourses() {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [enrolled, setEnrolled] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) { setEnrolled(new Set()); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("enrollments")
+        .select("course_slug")
+        .eq("user_id", user.id);
+      if (cancelled) return;
+      setEnrolled(new Set((data ?? []).map(r => r.course_slug)));
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const handleEnroll = async (slug: string, title: string) => {
+    if (!isAuthenticated || !user) {
+      toast.error("Sign in to enroll");
+      navigate({ to: "/login" });
+      return;
+    }
+    if (enrolled.has(slug)) {
+      navigate({ to: "/certified/$slug", params: { slug } });
+      return;
+    }
+    const { error } = await supabase.from("enrollments").insert({
+      user_id: user.id,
+      course_slug: slug,
+      course_title: title,
+    });
+    if (error) {
+      toast.error("Could not enroll", { description: error.message });
+      return;
+    }
+    setEnrolled(prev => new Set(prev).add(slug));
+    toast.success(`Enrolled in ${title}`);
+  };
+
   return (
     <div className="pt-24 pb-16 px-6">
       <div className="max-w-6xl mx-auto">
@@ -120,62 +98,71 @@ export function CertifiedCourses() {
 
         {/* Course grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {CERTIFIED_COURSES.map((course, i) => (
-            <motion.div
-              key={course.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i }}
-              className="glass-panel p-5 flex flex-col group hover:border-neon-purple/30 transition-colors"
-            >
-              {/* Badge */}
-              <div className={`inline-flex self-start items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold tracking-widest mb-3 ${
-                course.badge === "ECLIPTA OFFICIAL"
-                  ? "bg-neon-purple/15 text-neon-purple border border-neon-purple/20"
-                  : "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20"
-              }`}>
-                {course.badge === "ECLIPTA OFFICIAL" ? <ShieldCheck className="w-3 h-3" /> : <Star className="w-3 h-3" />}
-                {course.badge}
-              </div>
+          {CERTIFIED_COURSES.map((course, i) => {
+            const isEnrolled = enrolled.has(course.slug);
+            return (
+              <motion.div
+                key={course.slug}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 * i }}
+                className="glass-panel p-5 flex flex-col group hover:border-neon-purple/30 transition-colors"
+              >
+                <div className={`inline-flex self-start items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold tracking-widest mb-3 ${
+                  course.badge === "ECLIPTA OFFICIAL"
+                    ? "bg-neon-purple/15 text-neon-purple border border-neon-purple/20"
+                    : "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20"
+                }`}>
+                  {course.badge === "ECLIPTA OFFICIAL" ? <ShieldCheck className="w-3 h-3" /> : <Star className="w-3 h-3" />}
+                  {course.badge}
+                </div>
 
-              <h3 className="font-display font-bold text-lg tracking-tight leading-tight mb-1">
-                {course.title}
-              </h3>
-              <p className="text-xs text-muted-foreground mb-4">by {course.creator}</p>
+                <Link
+                  to="/certified/$slug"
+                  params={{ slug: course.slug }}
+                  className="font-display font-bold text-lg tracking-tight leading-tight mb-1 hover:text-neon-purple transition-colors"
+                >
+                  {course.title}
+                </Link>
+                <p className="text-xs text-muted-foreground mb-4">by {course.creator}</p>
 
-              {/* Meta row */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{course.level}</span>
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{course.duration}</span>
-                <span className="flex items-center gap-1"><Users className="w-3 h-3" />{course.enrolled}</span>
-                <span className="flex items-center gap-1 text-neon-pink"><Star className="w-3 h-3 fill-neon-pink" />{course.rating}</span>
-              </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                  <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{course.level}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{course.duration}</span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{course.enrolled}</span>
+                  <span className="flex items-center gap-1 text-neon-pink"><Star className="w-3 h-3 fill-neon-pink" />{course.rating}</span>
+                </div>
 
-              {/* Outcomes */}
-              <div className="space-y-1.5 mb-4 flex-1">
-                {course.outcomes.map(o => (
-                  <div key={o} className="flex items-start gap-2 text-xs">
-                    <ArrowRight className="w-3 h-3 text-neon-purple shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{o}</span>
-                  </div>
-                ))}
-              </div>
+                <div className="space-y-1.5 mb-4 flex-1">
+                  {course.outcomes.map(o => (
+                    <div key={o} className="flex items-start gap-2 text-xs">
+                      <ArrowRight className="w-3 h-3 text-neon-purple shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">{o}</span>
+                    </div>
+                  ))}
+                </div>
 
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {course.tags.map(t => (
-                  <span key={t} className="px-2 py-0.5 text-[10px] font-bold tracking-wide border border-border text-muted-foreground">
-                    {t}
-                  </span>
-                ))}
-              </div>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {course.tags.map(t => (
+                    <span key={t} className="px-2 py-0.5 text-[10px] font-bold tracking-wide border border-border text-muted-foreground">
+                      {t}
+                    </span>
+                  ))}
+                </div>
 
-              {/* CTA */}
-              <button className="w-full py-2 text-xs font-bold tracking-widest border border-neon-purple/30 text-neon-purple hover:bg-neon-purple hover:text-primary-foreground transition-all">
-                ENROLL
-              </button>
-            </motion.div>
-          ))}
+                <button
+                  onClick={() => handleEnroll(course.slug, course.title)}
+                  className={`w-full py-2 text-xs font-bold tracking-widest transition-all flex items-center justify-center gap-1.5 ${
+                    isEnrolled
+                      ? "bg-neon-purple/15 border border-neon-purple/40 text-neon-purple"
+                      : "border border-neon-purple/30 text-neon-purple hover:bg-neon-purple hover:text-primary-foreground"
+                  }`}
+                >
+                  {isEnrolled ? (<><Check className="w-3 h-3" /> ENROLLED — VIEW</>) : "ENROLL"}
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>

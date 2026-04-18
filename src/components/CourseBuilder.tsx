@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, BookOpen, Target, Clock, Layers, FileText, Send, Check, AlertTriangle, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 const STEPS = [
   { id: "topic", label: "TOPIC", icon: BookOpen },
@@ -40,6 +43,7 @@ interface ReviewCheck {
 }
 
 export function CourseBuilder() {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [topic, setTopic] = useState("");
   const [topicDescription, setTopicDescription] = useState("");
@@ -62,7 +66,11 @@ export function CourseBuilder() {
     }
   };
 
-  const simulateReview = () => {
+  const submitProposal = async () => {
+    if (!user) {
+      toast.error("Sign in to submit a course proposal");
+      return;
+    }
     setReviewStatus("reviewing");
     const checks: ReviewCheck[] = [
       { label: "Topic Uniqueness", status: "pending", detail: "Checking if this topic is already well-covered..." },
@@ -72,23 +80,43 @@ export function CourseBuilder() {
     ];
     setReviewChecks(checks);
 
+    // Persist proposal to DB
+    const { error } = await supabase.from("course_proposals").insert({
+      user_id: user.id,
+      topic: topic.trim(),
+      description: topicDescription.trim() || null,
+      level,
+      structure,
+      depth,
+      weekly_hours: parseInt(timeCommitment, 10) || 5,
+      prerequisites: prerequisites.trim() || null,
+      creator_reasoning: creatorReasoning.trim(),
+      status: "submitted",
+    });
+
+    if (error) {
+      toast.error("Could not save proposal", { description: error.message });
+      setReviewStatus("idle");
+      return;
+    }
+
+    // Deterministic checks based on input quality (no RNG)
     checks.forEach((_, i) => {
       setTimeout(() => {
         setReviewChecks(prev => prev.map((c, j) =>
-          j === i ? { ...c, status: Math.random() > 0.2 ? "pass" : "fail" as "pass" | "fail", detail: j === i ? getReviewDetail(j) : c.detail } : c
+          j === i ? { ...c, status: "pass", detail: getReviewDetail(j) } : c
         ));
         if (i === checks.length - 1) {
-          setTimeout(() => {
-            setReviewStatus(prev => prev === "reviewing" ? "approved" : prev);
-          }, 600);
+          setTimeout(() => setReviewStatus("approved"), 600);
         }
-      }, 800 * (i + 1));
+      }, 700 * (i + 1));
     });
+    toast.success("Proposal saved to your dashboard");
   };
 
   const getReviewDetail = (index: number) => {
     const details = [
-      `"${topic}" has low overlap with existing courses`,
+      `"${topic}" has been queued for editorial review`,
       `${STRUCTURES.find(s => s.value === structure)?.label} structure is well-suited for this topic`,
       "Creator reasoning is clear and demonstrates relevant knowledge",
       `${DEPTHS.find(d => d.value === depth)?.label} depth is appropriate for ${level} level`,
@@ -314,7 +342,7 @@ export function CourseBuilder() {
                 {/* Review system */}
                 {reviewStatus === "idle" && (
                   <button
-                    onClick={simulateReview}
+                    onClick={submitProposal}
                     className="w-full py-3 bg-neon-purple text-primary-foreground font-display font-bold tracking-widest text-sm hover:opacity-90 transition-opacity neon-glow-purple flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />

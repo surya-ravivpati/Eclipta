@@ -17,15 +17,16 @@ export function StatsFooter() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [a, b, c] = await Promise.all([
-        supabase.from("user_profiles").select("*", { count: "exact", head: true }),
-        supabase.from("learning_history").select("*", { count: "exact", head: true }).eq("session_type", "battle"),
-        supabase.from("user_ecliptars").select("*", { count: "exact", head: true }),
-      ]);
+      const { data, error } = await supabase.rpc("get_platform_stats");
       if (cancelled) return;
-      setLearners(a.count ?? 0);
-      setBattles(b.count ?? 0);
-      setEcliptars(c.count ?? 0);
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error || !row) {
+        setLearners(0); setBattles(0); setEcliptars(0);
+        return;
+      }
+      setLearners(Number(row.learners) || 0);
+      setBattles(Number(row.battles) || 0);
+      setEcliptars(Number(row.ecliptars) || 0);
     })();
     return () => { cancelled = true; };
   }, []);

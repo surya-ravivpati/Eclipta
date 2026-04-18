@@ -1,8 +1,10 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import { Luna } from "@/components/Luna";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
+
+const HIDE_LUNA_ON = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 function NotFoundComponent() {
   return (
@@ -69,10 +71,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showLuna = !HIDE_LUNA_ON.some((p) => pathname.startsWith(p));
   return (
     <AuthProvider>
       <Outlet />
-      <Luna />
+      {showLuna && <Luna />}
       <Toaster />
     </AuthProvider>
   );

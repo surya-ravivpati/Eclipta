@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      course_proposals: {
+        Row: {
+          created_at: string
+          creator_reasoning: string
+          depth: string
+          description: string | null
+          id: string
+          level: string
+          prerequisites: string | null
+          status: string
+          structure: string
+          topic: string
+          updated_at: string
+          user_id: string
+          weekly_hours: number
+        }
+        Insert: {
+          created_at?: string
+          creator_reasoning: string
+          depth: string
+          description?: string | null
+          id?: string
+          level: string
+          prerequisites?: string | null
+          status?: string
+          structure: string
+          topic: string
+          updated_at?: string
+          user_id: string
+          weekly_hours?: number
+        }
+        Update: {
+          created_at?: string
+          creator_reasoning?: string
+          depth?: string
+          description?: string | null
+          id?: string
+          level?: string
+          prerequisites?: string | null
+          status?: string
+          structure?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+          weekly_hours?: number
+        }
+        Relationships: []
+      }
+      daily_challenge_progress: {
+        Row: {
+          bonus_claimed: boolean
+          challenge_date: string
+          id: string
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          bonus_claimed?: boolean
+          challenge_date?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          bonus_claimed?: boolean
+          challenge_date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          course_slug: string
+          course_title: string
+          enrolled_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          course_slug: string
+          course_title: string
+          enrolled_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          course_slug?: string
+          course_title?: string
+          enrolled_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       learning_history: {
         Row: {
           created_at: string
@@ -139,7 +238,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      platform_stats: {
+        Row: {
+          battles: number | null
+          ecliptars: number | null
+          learners: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

@@ -96,6 +96,36 @@ function AboutPage() {
         </div>
 
         <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="text-2xl font-bold font-display mb-6 text-center text-neon-cyan">Meet the Founders</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {FOUNDERS.map((f, i) => (
+              <motion.div
+                key={f.name}
+                className="glass-panel p-6 border border-neon-cyan/20 flex items-start gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <div className="w-16 h-16 shrink-0 bg-neon-cyan/10 border border-neon-cyan/40 flex items-center justify-center">
+                  <User className="w-8 h-8 text-neon-cyan" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold font-display text-lg">{f.name}</h3>
+                  <p className="text-[10px] font-bold tracking-widest text-neon-cyan mb-2">{f.role.toUpperCase()}</p>
+                  <p className="text-sm text-muted-foreground">{f.bio}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div
           className="text-center glass-panel p-10 border border-neon-pink/20"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

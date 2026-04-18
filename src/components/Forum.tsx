@@ -102,8 +102,10 @@ const rankColors: Record<string, string> = {
 function ThreadCard({ thread }: { thread: Thread }) {
   const [voted, setVoted] = useState<"up" | "down" | null>(null);
   const [voteCount, setVoteCount] = useState(thread.votes);
+  const [expanded, setExpanded] = useState(false);
 
-  const handleVote = (dir: "up" | "down") => {
+  const handleVote = (e: React.MouseEvent, dir: "up" | "down") => {
+    e.stopPropagation();
     if (voted === dir) {
       setVoted(null);
       setVoteCount(thread.votes);
@@ -115,16 +117,22 @@ function ThreadCard({ thread }: { thread: Thread }) {
 
   return (
     <motion.div
-      className="glass-panel p-5 hover:border-neon-purple/40 transition-colors group"
+      className="glass-panel p-5 hover:border-neon-purple/40 transition-colors group cursor-pointer"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={() => setExpanded((v) => !v)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((v) => !v); } }}
+      aria-expanded={expanded}
     >
       <div className="flex gap-4">
         {/* Vote column */}
         <div className="flex flex-col items-center gap-1 pt-1">
           <button
-            onClick={() => handleVote("up")}
+            onClick={(e) => handleVote(e, "up")}
             className={`p-1 transition-colors ${voted === "up" ? "text-neon-purple" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Upvote"
           >
             <ChevronUp className="w-5 h-5" />
           </button>
@@ -132,8 +140,9 @@ function ThreadCard({ thread }: { thread: Thread }) {
             {voteCount}
           </span>
           <button
-            onClick={() => handleVote("down")}
+            onClick={(e) => handleVote(e, "down")}
             className={`p-1 transition-colors ${voted === "down" ? "text-neon-pink" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Downvote"
           >
             <ChevronDown className="w-5 h-5" />
           </button>
@@ -152,7 +161,7 @@ function ThreadCard({ thread }: { thread: Thread }) {
             </h3>
           </div>
 
-          <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
+          <p className={`text-xs text-muted-foreground leading-relaxed mb-3 ${expanded ? "" : "line-clamp-2"}`}>
             {thread.preview}
           </p>
 
@@ -175,6 +184,28 @@ function ThreadCard({ thread }: { thread: Thread }) {
             <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{thread.timestamp}</span>
             <span>{thread.views.toLocaleString()} views</span>
           </div>
+
+          <AnimatePresence initial={false}>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden mt-4 pt-4 border-t border-border"
+              >
+                <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                  Full discussion threads with answers, voting, and replies are coming soon. Sign up to be notified
+                  when threading goes live.
+                </p>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-4 py-2 text-[10px] font-bold tracking-widest border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                >
+                  WRITE AN ANSWER (COMING SOON)
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>

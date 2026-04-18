@@ -1,6 +1,6 @@
 // Luna AI streaming client
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; imageDataUrl?: string };
 
 interface LunaContext {
   courseId?: string;

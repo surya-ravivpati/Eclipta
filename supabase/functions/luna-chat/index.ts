@@ -212,10 +212,22 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: contextualPrompt },
-          ...messages,
+          ...messages.map((m: any) => {
+            // Support multimodal: if imageDataUrl is attached, send as content array with image_url
+            if (m.imageDataUrl && m.role === "user") {
+              return {
+                role: "user",
+                content: [
+                  { type: "text", text: m.content || "Here's what I'm looking at — can you help?" },
+                  { type: "image_url", image_url: { url: m.imageDataUrl } },
+                ],
+              };
+            }
+            return { role: m.role, content: m.content };
+          }),
         ],
         stream: true,
       }),

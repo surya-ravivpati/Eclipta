@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpen, Target, TrendingUp, Users, Award, Clock, ChevronRight,
   Zap, Lock, CheckCircle, Star, BarChart3, Brain, Route as RouteIcon,
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { TrophyRoad } from "@/components/TrophyRoad";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 /* ── Mock Data ─────────────────────────────────────────────── */
 
@@ -187,6 +189,32 @@ function PathCard({ path }: { path: typeof learningPaths[0] }) {
 
 export function ProgressDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<{ best_streak: number; total_correct: number; total_questions: number; xp: number } | null>(null);
+  const [enrollCount, setEnrollCount] = useState<number>(0);
+  const [trophiesEarned, setTrophiesEarned] = useState<number>(0);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const [p, e, t] = await Promise.all([
+        supabase.from("user_profiles").select("best_streak,total_correct,total_questions,xp").eq("user_id", user.id).maybeSingle(),
+        supabase.from("enrollments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("user_ecliptars").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      ]);
+      if (cancelled) return;
+      if (p.data) setProfile(p.data);
+      setEnrollCount(e.count ?? 0);
+      setTrophiesEarned(t.count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const accuracy = profile && profile.total_questions > 0
+    ? Math.round((profile.total_correct / profile.total_questions) * 100)
+    : 0;
+  const totalTrophies = 7;
 
   return (
     <section className="pt-24 pb-16">
@@ -214,10 +242,10 @@ export function ProgressDashboard() {
           transition={{ delay: 0.1 }}
         >
           {[
-            { icon: BookOpen, label: "Enrolled", value: "4 Courses", color: "text-neon-purple" },
-            { icon: Flame, label: "Best Streak", value: "12 Days", color: "text-neon-pink" },
-            { icon: Target, label: "Accuracy", value: "87%", color: "text-neon-cyan" },
-            { icon: Award, label: "Trophies", value: "3 / 7", color: "text-neon-purple" },
+            { icon: BookOpen, label: "Enrolled", value: `${enrollCount} ${enrollCount === 1 ? "Course" : "Courses"}`, color: "text-neon-purple" },
+            { icon: Flame, label: "Best Streak", value: `${profile?.best_streak ?? 0} Days`, color: "text-neon-pink" },
+            { icon: Target, label: "Accuracy", value: `${accuracy}%`, color: "text-neon-cyan" },
+            { icon: Award, label: "Trophies", value: `${trophiesEarned} / ${totalTrophies}`, color: "text-neon-purple" },
           ].map(stat => (
             <Card key={stat.label} className="bg-card/60 border-border">
               <CardContent className="p-4 flex items-center gap-3">

@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Lightbulb, AlertTriangle, Eye, Sparkles, Coffee, BookOpen, ArrowRight } from "lucide-react";
+import { X, Send, Lightbulb, AlertTriangle, Eye, Sparkles, Coffee, BookOpen, ArrowRight, Monitor, Loader2 } from "lucide-react";
 import { streamLunaChat, parseLunaTag } from "@/lib/luna-api";
 import { getLunaContext, detectFatigue, getSessionDuration, getAccuracy, escalateHint, resetHintLevel } from "@/lib/luna-context";
+import { captureScreenFrame } from "@/lib/luna-screen";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ export type LunaMessage = {
   role: "assistant" | "user";
   content: string;
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
+  imageDataUrl?: string;
 };
 
 interface LunaChatPanelProps {

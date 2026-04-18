@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { PasswordStrength, scorePassword } from "./PasswordStrength";
 
 interface AuthFormProps {
   mode: "login" | "signup";
@@ -23,6 +24,11 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === "signup") {
+        if (scorePassword(password).score < 2) {
+          toast.error("Please pick a stronger password (8+ chars, mix cases, numbers).");
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -119,6 +125,8 @@ export function AuthForm({ mode }: AuthFormProps) {
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+
+        {mode === "signup" && <PasswordStrength password={password} />}
 
         {mode === "login" && (
           <div className="text-right">

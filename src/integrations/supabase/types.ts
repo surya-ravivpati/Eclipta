@@ -333,6 +333,7 @@ export type Database = {
           best_streak: number
           created_at: string
           current_streak: number
+          equipped_ecliptar: string | null
           id: string
           preferred_pace: string
           preferred_style: string
@@ -351,6 +352,7 @@ export type Database = {
           best_streak?: number
           created_at?: string
           current_streak?: number
+          equipped_ecliptar?: string | null
           id?: string
           preferred_pace?: string
           preferred_style?: string
@@ -369,6 +371,7 @@ export type Database = {
           best_streak?: number
           created_at?: string
           current_streak?: number
+          equipped_ecliptar?: string | null
           id?: string
           preferred_pace?: string
           preferred_style?: string

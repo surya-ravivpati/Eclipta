@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedLunaRouteImport } from './routes/_authenticated.luna'
@@ -60,6 +61,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/luna': typeof AuthenticatedLunaRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/u/$username': typeof UUsernameRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/luna': typeof AuthenticatedLunaRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/u/$username': typeof UUsernameRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated/luna': typeof AuthenticatedLunaRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/u/$username': typeof UUsernameRoute
   '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/_authenticated/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/luna'
     | '/profile'
     | '/progress'
+    | '/u/$username'
     | '/certified/$slug'
     | '/forum/$threadId'
   fileRoutesByTo: FileRoutesByTo
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/luna'
     | '/profile'
     | '/progress'
+    | '/u/$username'
     | '/certified/$slug'
     | '/forum/$threadId'
   id:
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/luna'
     | '/_authenticated/profile'
     | '/_authenticated/progress'
+    | '/u/$username'
     | '/_authenticated/certified/$slug'
     | '/_authenticated/forum/$threadId'
   fileRoutesById: FileRoutesById
@@ -250,6 +262,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/progress': {
@@ -444,6 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

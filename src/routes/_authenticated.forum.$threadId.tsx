@@ -37,6 +37,16 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function AuthorLink({ name }: { name: string }) {
+  const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(name);
+  if (!isUsername) return <span className="font-medium text-foreground">{name}</span>;
+  return (
+    <Link to="/u/$username" params={{ username: name }} className="font-medium text-foreground hover:text-neon-purple transition-colors">
+      {name}
+    </Link>
+  );
+}
+
 function ThreadPage() {
   const { threadId } = useParams({ from: "/_authenticated/forum/$threadId" });
   const { user } = useAuth();
@@ -163,7 +173,7 @@ function ThreadPage() {
                       {thread.tags.map((t) => <span key={t} className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5"><Tag className="w-2.5 h-2.5" />{t}</span>)}
                     </div>
                     <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
-                      <span className="font-medium text-foreground">{thread.author_name}</span>
+                      <AuthorLink name={thread.author_name} />
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
                       <span>{thread.view_count.toLocaleString()} views</span>
                     </div>
@@ -193,7 +203,7 @@ function ThreadPage() {
                         <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap mb-3">{a.body}</p>
                         <div className="flex items-center justify-between gap-4">
                           <div className="text-[11px] text-muted-foreground">
-                            <span className="font-medium text-foreground">{a.author_name}</span> · {timeAgo(a.created_at)}
+                            <AuthorLink name={a.author_name} /> · {timeAgo(a.created_at)}
                           </div>
                           {!a.accepted && user?.id === thread.user_id && (
                             <button onClick={() => acceptAnswer(a.id)} className="text-[10px] font-bold tracking-widest text-neon-cyan hover:bg-neon-cyan/10 px-2 py-1 transition-colors">ACCEPT ANSWER</button>

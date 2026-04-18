@@ -3,19 +3,36 @@ import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Menu, X, Zap } from "lucide-react";
+import { LogOut, User, Menu, X, Zap, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
-const NAV_LINKS = [
-  { to: "/", label: "ARENA" },
-  { to: "/progress", label: "PROGRESS" },
-  { to: "/certified", label: "CERTIFIED" },
-  { to: "/build-course", label: "BUILD" },
-  { to: "/adaptive-tests", label: "TESTS" },
-  { to: "/battles", label: "BATTLES" },
-  { to: "/luna", label: "LUNA" },
-  { to: "/forum", label: "FORUM" },
-  { to: "/about", label: "ABOUT" },
+const NAV_GROUPS = [
+  {
+    label: "LEARN",
+    items: [
+      { to: "/certified", label: "Certified Courses", desc: "Curated learning tracks" },
+      { to: "/build-course", label: "Build a Course", desc: "Personalized syllabi" },
+      { to: "/luna", label: "Luna Tutor", desc: "Your AI guide" },
+    ],
+  },
+  {
+    label: "PRACTICE",
+    items: [
+      { to: "/adaptive-tests", label: "Adaptive Tests", desc: "Tests that evolve with you" },
+      { to: "/battles", label: "Knowledge Battles", desc: "1v1 duels" },
+      { to: "/progress", label: "Trophy Road", desc: "Your progression map" },
+    ],
+  },
+  {
+    label: "COMMUNITY",
+    items: [
+      { to: "/forum", label: "Forum", desc: "Ask & share" },
+      { to: "/about", label: "About", desc: "Mission & team" },
+    ],
+  },
 ] as const;
 
 export function Navbar() {
@@ -35,11 +52,33 @@ export function Navbar() {
           <Link to="/" className="text-2xl font-bold tracking-tighter text-neon-purple font-display shrink-0">
             ECLIPTA
           </Link>
-          <div className="hidden lg:flex gap-5 text-sm font-medium tracking-wide text-muted-foreground">
-            {NAV_LINKS.map((l) => (
-              <Link key={l.to} to={l.to} className="hover:text-neon-purple transition-colors">
-                {l.label}
-              </Link>
+          <div className="hidden lg:flex gap-1 text-sm font-medium tracking-wide">
+            <Link to="/" className="px-3 py-1.5 text-muted-foreground hover:text-neon-purple transition-colors">
+              ARENA
+            </Link>
+            {NAV_GROUPS.map((group) => (
+              <DropdownMenu key={group.label}>
+                <DropdownMenuTrigger className="px-3 py-1.5 text-muted-foreground hover:text-neon-purple transition-colors inline-flex items-center gap-1 outline-none">
+                  {group.label}
+                  <ChevronDown className="w-3 h-3 opacity-60" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="bg-background/95 backdrop-blur-xl border-border min-w-56"
+                >
+                  {group.items.map((it) => (
+                    <DropdownMenuItem key={it.to} asChild>
+                      <Link
+                        to={it.to}
+                        className="flex flex-col items-start gap-0.5 cursor-pointer focus:bg-neon-purple/10 focus:text-neon-purple"
+                      >
+                        <span className="text-sm font-medium">{it.label}</span>
+                        <span className="text-[11px] text-muted-foreground">{it.desc}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             ))}
           </div>
         </div>
@@ -95,13 +134,13 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
+        <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4">
             {isAuthenticated && (
               <Link
                 to="/profile"
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-between px-3 py-3 mb-2 border border-border rounded-md"
+                className="flex items-center justify-between px-3 py-3 border border-border rounded-md"
               >
                 <span className="text-sm font-medium">{user?.email?.split("@")[0]}</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-neon-purple tabular-nums">
@@ -109,18 +148,30 @@ export function Navbar() {
                 </span>
               </Link>
             )}
-            {NAV_LINKS.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setMobileOpen(false)}
-                className="px-3 py-3 text-sm font-medium tracking-wide text-muted-foreground hover:text-neon-purple hover:bg-secondary/30 transition-colors"
-              >
-                {l.label}
-              </Link>
+            <Link
+              to="/"
+              onClick={() => setMobileOpen(false)}
+              className="px-3 py-2 text-sm font-bold tracking-widest text-foreground hover:text-neon-purple"
+            >
+              ARENA
+            </Link>
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="px-3 text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-1">{group.label}</p>
+                {group.items.map((it) => (
+                  <Link
+                    key={it.to}
+                    to={it.to}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 text-sm text-muted-foreground hover:text-neon-purple hover:bg-secondary/30 transition-colors"
+                  >
+                    {it.label}
+                  </Link>
+                ))}
+              </div>
             ))}
             {!isAuthenticated && (
-              <div className="flex gap-2 pt-3 border-t border-border mt-2">
+              <div className="flex gap-2 pt-3 border-t border-border">
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}

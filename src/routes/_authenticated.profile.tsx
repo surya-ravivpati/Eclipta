@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock } from "lucide-react";
+import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock, ExternalLink, AlertTriangle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
@@ -28,6 +28,7 @@ type Profile = {
   xp: number; current_streak: number; best_streak: number;
   total_correct: number; total_questions: number; total_sessions: number;
   preferred_pace: string; preferred_style: string;
+  equipped_ecliptar: string | null;
 };
 type Ecliptar = { id: string; ecliptar_name: string; archetype: string; claimed_at: string };
 type Enrollment = { id: string; course_slug: string; course_title: string; enrolled_at: string };
@@ -45,7 +46,7 @@ function ProfilePage() {
   const reload = async () => {
     if (!user) return;
     const [p, e, en, t, a] = await Promise.all([
-      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
       supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
       supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
@@ -89,13 +90,22 @@ function ProfilePage() {
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold font-display tracking-tight">{displayName}</h1>
               <p className="text-sm text-muted-foreground">{user.email}</p>
-              <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
+              <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start items-center">
                 <span className="text-[10px] font-bold tracking-widest bg-neon-purple/10 text-neon-purple border border-neon-purple/30 px-2 py-0.5">
                   {profile?.preferred_pace?.toUpperCase() || "NORMAL"} PACE
                 </span>
                 <span className="text-[10px] font-bold tracking-widest bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 px-2 py-0.5">
                   {profile?.preferred_style?.toUpperCase() || "MIXED"} STYLE
                 </span>
+                {profile?.username && (
+                  <Link
+                    to="/u/$username"
+                    params={{ username: profile.username }}
+                    className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-neon-purple inline-flex items-center gap-1 border border-border px-2 py-0.5 transition-colors"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />/u/{profile.username}
+                  </Link>
+                )}
               </div>
             </div>
             <button
@@ -120,7 +130,7 @@ function ProfilePage() {
 
               {/* Settings */}
               <SettingsPanel
-                currentUsername={profile?.username ?? null}
+                profile={profile}
                 userId={user.id}
                 onSaved={reload}
               />
@@ -172,13 +182,17 @@ function ProfilePage() {
                   {ecliptars.length === 0 ? (
                     <EmptyState text="No ecliptars yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Walk the trophy road →</Link>} />
                   ) : (
-                    <p className="text-xs text-muted-foreground">See full collection below ↓</p>
+                    <p className="text-xs text-muted-foreground">Click any ecliptar below to equip ↓</p>
                   )}
                 </Card>
               </div>
 
-              {/* Embedded Collection */}
-              <CollectionSection />
+              {/* Embedded Collection w/ click-to-equip */}
+              <CollectionSection
+                equippedSlug={profile?.equipped_ecliptar ?? null}
+                userId={user.id}
+                onEquipped={reload}
+              />
             </>
           )}
         </div>
@@ -189,14 +203,22 @@ function ProfilePage() {
 
 /* =================== Settings Panel =================== */
 
-function SettingsPanel({ currentUsername, userId, onSaved }: {
-  currentUsername: string | null; userId: string; onSaved: () => void;
+function SettingsPanel({ profile, userId, onSaved }: {
+  profile: Profile | null; userId: string; onSaved: () => void;
 }) {
   const { theme, setTheme } = useTheme();
-  const [username, setUsername] = useState(currentUsername || "");
+  const [username, setUsername] = useState(profile?.username || "");
+  const [pace, setPace] = useState(profile?.preferred_pace || "normal");
+  const [style, setStyle] = useState(profile?.preferred_style || "mixed");
   const [saving, setSaving] = useState(false);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => { setUsername(currentUsername || ""); }, [currentUsername]);
+  useEffect(() => {
+    setUsername(profile?.username || "");
+    setPace(profile?.preferred_pace || "normal");
+    setStyle(profile?.preferred_style || "mixed");
+  }, [profile?.username, profile?.preferred_pace, profile?.preferred_style]);
 
   const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v);
 
@@ -205,12 +227,9 @@ function SettingsPanel({ currentUsername, userId, onSaved }: {
     if (!validateUsername(trimmed)) {
       return toast.error("Username must be 3–20 chars: letters, numbers, underscores");
     }
-    if (trimmed === currentUsername) return;
+    if (trimmed === profile?.username) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({ username: trimmed })
-      .eq("user_id", userId);
+    const { error } = await supabase.from("user_profiles").update({ username: trimmed }).eq("user_id", userId);
     setSaving(false);
     if (error) {
       if (error.code === "23505") return toast.error("That username is already taken");
@@ -218,6 +237,33 @@ function SettingsPanel({ currentUsername, userId, onSaved }: {
     }
     toast.success("Username updated — visible publicly");
     onSaved();
+  };
+
+  const savePrefs = async () => {
+    setSavingPrefs(true);
+    const { error } = await supabase.from("user_profiles")
+      .update({ preferred_pace: pace, preferred_style: style })
+      .eq("user_id", userId);
+    setSavingPrefs(false);
+    if (error) return toast.error(error.message);
+    toast.success("Learning preferences saved");
+    onSaved();
+  };
+
+  const deleteAccount = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      toast.message("Click again to confirm. This signs you out and removes your local data.");
+      setTimeout(() => setConfirmDelete(false), 5000);
+      return;
+    }
+    // We don't have admin API to hard-delete an auth user from the client.
+    // Best-effort: clear profile data, sign out.
+    await supabase.from("user_profiles").update({
+      username: null, equipped_ecliptar: null,
+    }).eq("user_id", userId);
+    await supabase.auth.signOut();
+    toast.success("Account data cleared. Contact support to fully delete the account.");
   };
 
   return (
@@ -231,7 +277,7 @@ function SettingsPanel({ currentUsername, userId, onSaved }: {
         {/* Username */}
         <div>
           <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Public Username</label>
-          <p className="text-[11px] text-muted-foreground mt-1 mb-2">Shown on your forum threads and answers.</p>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-2">Shown on your forum threads, answers, and public profile.</p>
           <div className="flex gap-2">
             <input
               value={username}
@@ -242,7 +288,7 @@ function SettingsPanel({ currentUsername, userId, onSaved }: {
             />
             <button
               onClick={saveUsername}
-              disabled={saving || username.trim() === (currentUsername || "")}
+              disabled={saving || username.trim() === (profile?.username || "")}
               className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
             >
               {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
@@ -281,18 +327,92 @@ function SettingsPanel({ currentUsername, userId, onSaved }: {
             </button>
           </div>
         </div>
+
+        {/* Learning preferences */}
+        <div className="md:col-span-2 border-t border-border pt-5">
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Learning Preferences</label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-3">Tunes how Luna paces hints and selects question styles.</p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5">PACE</p>
+              <div className="flex gap-1">
+                {(["slow", "normal", "fast"] as const).map((opt) => (
+                  <button key={opt} onClick={() => setPace(opt)} className={cn(
+                    "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
+                    pace === opt ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan" : "border-border text-muted-foreground hover:border-neon-cyan/40"
+                  )}>{opt.toUpperCase()}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5">STYLE</p>
+              <div className="flex gap-1">
+                {(["visual", "verbal", "mixed", "applied"] as const).map((opt) => (
+                  <button key={opt} onClick={() => setStyle(opt)} className={cn(
+                    "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
+                    style === opt ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-border text-muted-foreground hover:border-neon-pink/40"
+                  )}>{opt.toUpperCase()}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={savePrefs}
+              disabled={savingPrefs || (pace === profile?.preferred_pace && style === profile?.preferred_style)}
+              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
+            >
+              {savingPrefs ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              SAVE PREFERENCES
+            </button>
+          </div>
+        </div>
+
+        {/* Danger zone */}
+        <div className="md:col-span-2 border-t border-destructive/30 pt-5">
+          <label className="text-[10px] font-bold tracking-widest text-destructive uppercase flex items-center gap-2">
+            <AlertTriangle className="w-3 h-3" />Danger Zone
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-3">
+            Clears your username and signs you out. Full deletion of historical battle/forum data requires emailing support.
+          </p>
+          <button
+            onClick={deleteAccount}
+            className={cn(
+              "px-4 py-2 text-xs font-bold tracking-widest border transition-colors",
+              confirmDelete
+                ? "border-destructive bg-destructive text-destructive-foreground"
+                : "border-destructive/40 text-destructive hover:bg-destructive/10"
+            )}
+          >
+            {confirmDelete ? "CONFIRM — CLEAR & SIGN OUT" : "CLEAR ACCOUNT DATA"}
+          </button>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-/* =================== Embedded Collection =================== */
+/* =================== Embedded Collection (click-to-equip) =================== */
 
-function CollectionSection() {
+function CollectionSection({ equippedSlug, userId, onEquipped }: {
+  equippedSlug: string | null; userId: string; onEquipped: () => void;
+}) {
   const { slugs, loading } = useOwnedEcliptars();
   const total = ECLIPTARS.length;
   const owned = ECLIPTARS.filter((e) => slugs.has(e.slug)).length;
   const archetypeKeys = Object.keys(ARCHETYPES) as MonsterArchetypeKey[];
+
+  const equip = async (slug: string) => {
+    if (!slugs.has(slug)) return;
+    const next = equippedSlug === slug ? null : slug;
+    const { error } = await supabase.from("user_profiles")
+      .update({ equipped_ecliptar: next })
+      .eq("user_id", userId);
+    if (error) return toast.error(error.message);
+    toast.success(next ? "Ecliptar equipped" : "Ecliptar unequipped");
+    onEquipped();
+  };
 
   return (
     <div className="mt-10">
@@ -302,6 +422,7 @@ function CollectionSection() {
             <Sparkles className="w-3 h-3" />ECLIPTAR COLLECTION
           </div>
           <h2 className="text-3xl font-bold font-display tracking-tight">My Ecliptars</h2>
+          <p className="text-xs text-muted-foreground mt-1">Click any owned ecliptar to equip it as your public avatar.</p>
         </div>
         <p className="text-sm font-bold tracking-widest text-neon-purple">{owned} / {total} COLLECTED</p>
       </div>
@@ -335,12 +456,18 @@ function CollectionSection() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {eclips.map((e) => {
                     const isOwned = slugs.has(e.slug);
+                    const isEquipped = equippedSlug === e.slug;
                     return (
-                      <div
+                      <button
                         key={e.slug}
+                        type="button"
+                        onClick={() => equip(e.slug)}
+                        disabled={!isOwned}
+                        title={!isOwned ? "Locked — claim on the Trophy Road" : isEquipped ? "Click to unequip" : "Click to equip as avatar"}
                         className={cn(
-                          "glass-panel p-4 border text-center relative overflow-hidden",
-                          isOwned ? arch.borderColor : "border-border/30 opacity-60"
+                          "glass-panel p-4 border text-center relative overflow-hidden transition-all",
+                          isOwned ? `${arch.borderColor} hover:scale-[1.03] cursor-pointer` : "border-border/30 opacity-60 cursor-not-allowed",
+                          isEquipped && "ring-2 ring-neon-purple ring-offset-2 ring-offset-background"
                         )}
                       >
                         {!isOwned && (
@@ -348,10 +475,15 @@ function CollectionSection() {
                             <Lock className="w-5 h-5 text-muted-foreground" />
                           </div>
                         )}
+                        {isEquipped && (
+                          <div className="absolute top-1 right-1 z-10 bg-neon-purple text-primary-foreground text-[8px] font-bold tracking-widest px-1.5 py-0.5">
+                            EQUIPPED
+                          </div>
+                        )}
                         <e.icon className={cn("w-10 h-10 mx-auto mb-2", isOwned ? arch.color : "text-muted-foreground")} />
                         <div className={cn("text-sm font-bold font-display", isOwned ? arch.color : "text-muted-foreground")}>{e.name}</div>
                         <div className="text-[9px] tracking-widest text-muted-foreground mt-1">{arch.name.toUpperCase()}</div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

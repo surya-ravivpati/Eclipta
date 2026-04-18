@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Brain, Swords, Target, Trophy, Users, Zap } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Brain, Swords, Target, Trophy, Users, Zap, ArrowUpRight } from "lucide-react";
 
 const features = [
   {
@@ -8,6 +9,7 @@ const features = [
     title: "AI Guidance",
     description: "An AI companion that learns your style, gives hints instead of answers, and introduces trick questions to deepen understanding.",
     color: "neon-purple" as const,
+    to: "/luna" as const,
   },
   {
     icon: Swords,
@@ -15,6 +17,7 @@ const features = [
     title: "Knowledge Battles",
     description: "Pokémon-style battles where you compete with peers in real-time knowledge duels. Earn XP, climb ranks, and unlock rewards.",
     color: "neon-pink" as const,
+    to: "/battles" as const,
   },
   {
     icon: Target,
@@ -22,6 +25,7 @@ const features = [
     title: "Adaptive Tests",
     description: "Tests that evolve with your performance. Struggle? More practice. Excel? Higher difficulty. Your weak spots get laser focus.",
     color: "neon-cyan" as const,
+    to: "/adaptive-tests" as const,
   },
   {
     icon: Trophy,
@@ -29,6 +33,7 @@ const features = [
     title: "Trophy Road",
     description: "Brawl Stars-inspired progression. Milestones, checkpoints, and rewards that keep you pushing forward through every course.",
     color: "neon-purple" as const,
+    to: "/progress" as const,
   },
   {
     icon: Users,
@@ -36,13 +41,15 @@ const features = [
     title: "Community Forum",
     description: "Stack Exchange-style discussions with rated answers. Course-specific threads keep learners on track with quality responses.",
     color: "neon-pink" as const,
+    to: "/forum" as const,
   },
   {
     icon: Zap,
     number: "06",
-    title: "Real-World Pressure",
-    description: "Daily practice limits, deadlines, simulated exams, and time constraints that mirror real-world learning environments.",
+    title: "Build Your Course",
+    description: "Design a personalized learning path with adaptive depth, weekly hours, and prerequisites tuned to your goals.",
     color: "neon-cyan" as const,
+    to: "/build-course" as const,
   },
 ];
 
@@ -94,22 +101,27 @@ export function FeaturesGrid() {
           return (
             <motion.div
               key={feature.number}
-              className={`group relative p-8 glass-panel ${colors.hoverBorder} transition-colors`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className={`w-12 h-12 ${colors.border} border ${colors.bg} flex items-center justify-center mb-6 ${colors.hoverBg} transition-all`}>
-                <feature.icon className={`w-5 h-5 ${colors.text} group-hover:text-background transition-colors`} />
-              </div>
-              <h4 className="text-xl font-bold mb-3 uppercase tracking-tight font-display">{feature.title}</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">{feature.description}</p>
-              <div className="flex gap-2">
-                {[...Array(3)].map((_, j) => (
-                  <div key={j} className={`w-2 h-2 ${j <= i % 3 ? colors.dot : "bg-border"}`} />
-                ))}
-              </div>
+              <Link
+                to={feature.to}
+                className={`group relative block p-8 glass-panel ${colors.hoverBorder} transition-colors h-full`}
+              >
+                <ArrowUpRight className={`absolute top-5 right-5 w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${colors.text}`} />
+                <div className={`w-12 h-12 ${colors.border} border ${colors.bg} flex items-center justify-center mb-6 ${colors.hoverBg} transition-all`}>
+                  <feature.icon className={`w-5 h-5 ${colors.text} group-hover:text-background transition-colors`} />
+                </div>
+                <h4 className="text-xl font-bold mb-3 uppercase tracking-tight font-display">{feature.title}</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-6">{feature.description}</p>
+                <div className="flex gap-2">
+                  {[...Array(3)].map((_, j) => (
+                    <div key={j} className={`w-2 h-2 ${j <= i % 3 ? colors.dot : "bg-border"}`} />
+                  ))}
+                </div>
+              </Link>
             </motion.div>
           );
         })}

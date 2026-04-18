@@ -604,8 +604,13 @@ function LeaderboardCard() {
       </div>
       <div className="space-y-2">
         {loading && <p className="text-[10px] text-muted-foreground italic px-3">Loading rankings…</p>}
-        {!loading && entries.length === 0 && (
-          <p className="text-[10px] text-muted-foreground italic px-3">No fighters yet — be the first to climb the ranks.</p>
+        {!loading && entries.length < 3 && (
+          <div className="px-3 py-4 border border-dashed border-neon-pink/40 bg-neon-pink/5 text-center">
+            <p className="text-xs font-bold text-neon-pink mb-1">CLAIM THE THRONE</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              The arena is fresh. Win battles to be among the first names etched into the leaderboard.
+            </p>
+          </div>
         )}
         {entries.map(p => (
           <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">

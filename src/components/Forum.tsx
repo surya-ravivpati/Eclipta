@@ -250,36 +250,6 @@ export function Forum() {
           </p>
         </motion.div>
 
-        {/* Stats bar */}
-        <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {(() => {
-            const totalThreads = SAMPLE_THREADS.length;
-            const totalAnswers = SAMPLE_THREADS.reduce((s, t) => s + t.answers, 0);
-            const solvedPct = totalThreads > 0
-              ? Math.round((SAMPLE_THREADS.filter((t) => t.solved).length / totalThreads) * 100)
-              : 0;
-            const activeUsers = new Set(SAMPLE_THREADS.map((t) => t.author)).size;
-            const stats = [
-              { icon: MessageSquare, label: "Threads", value: totalThreads.toString() },
-              { icon: ThumbsUp, label: "Answers", value: totalAnswers.toString() },
-              { icon: Award, label: "Solved", value: `${solvedPct}%` },
-              { icon: Star, label: "Active Users", value: activeUsers.toString() },
-            ];
-            return stats.map(stat => (
-              <div key={stat.label} className="glass-panel p-4 text-center">
-                <stat.icon className="w-4 h-4 text-neon-purple mx-auto mb-2" />
-                <div className="text-lg font-bold font-display">{stat.value}</div>
-                <div className="text-[10px] font-bold tracking-widest text-muted-foreground">{stat.label.toUpperCase()}</div>
-              </div>
-            ));
-          })()}
-        </motion.div>
-
         {/* Filters */}
         <motion.div
           className="flex flex-col md:flex-row gap-3 mb-6"

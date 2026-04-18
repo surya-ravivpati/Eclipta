@@ -1,7 +1,11 @@
 import { motion } from "framer-motion";
+import { Link } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/use-auth";
 import heroImage from "@/assets/hero-arena.jpg";
 
 export function HeroSection() {
+  const { isAuthenticated } = useAuth();
+  const ctaTo = isAuthenticated ? "/battles" : "/signup";
   return (
     <section className="pt-32 pb-20 px-6 relative overflow-hidden">
       {/* Ambient glow */}
@@ -29,24 +33,19 @@ export function HeroSection() {
             AI-driven growth paths, high-stakes battles, and personalized courses.
           </p>
           <div className="flex flex-wrap gap-4">
-            <button className="px-8 py-4 bg-neon-pink text-foreground font-bold text-sm tracking-widest flex items-center gap-3 group transition-all hover:scale-105 neon-glow-pink">
+            <Link
+              to={ctaTo}
+              className="px-8 py-4 bg-neon-pink text-foreground font-bold text-sm tracking-widest flex items-center gap-3 group transition-all hover:scale-105 neon-glow-pink"
+            >
               START YOUR ASCENT
               <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-            <div className="flex -space-x-3 items-center">
-              <div className="w-12 h-12 border border-border bg-card rounded-sm overflow-hidden">
-                <div className="w-full h-full bg-neon-purple/20" />
-              </div>
-              <div className="w-12 h-12 border border-border bg-card rounded-sm overflow-hidden">
-                <div className="w-full h-full bg-neon-pink/20" />
-              </div>
-              <div className="w-12 h-12 border border-border bg-card rounded-sm overflow-hidden">
-                <div className="w-full h-full bg-neon-cyan/20" />
-              </div>
-              <div className="w-12 h-12 border border-border bg-acrylic flex items-center justify-center text-[10px] font-bold text-neon-purple">
-                +12K
-              </div>
-            </div>
+            </Link>
+            <Link
+              to="/about"
+              className="px-8 py-4 border border-border hover:border-neon-purple text-foreground font-bold text-sm tracking-widest flex items-center gap-3 transition-colors"
+            >
+              LEARN MORE
+            </Link>
           </div>
         </motion.div>
 

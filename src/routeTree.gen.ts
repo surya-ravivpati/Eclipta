@@ -17,7 +17,6 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
-import { Route as AuthenticatedPersonalizedRouteImport } from './routes/_authenticated.personalized'
 import { Route as AuthenticatedLunaRouteImport } from './routes/_authenticated.luna'
 import { Route as AuthenticatedForumRouteImport } from './routes/_authenticated.forum'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated.collection'
@@ -65,12 +64,6 @@ const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedPersonalizedRoute =
-  AuthenticatedPersonalizedRouteImport.update({
-    id: '/personalized',
-    path: '/personalized',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedLunaRoute = AuthenticatedLunaRouteImport.update({
   id: '/luna',
   path: '/luna',
@@ -123,7 +116,6 @@ export interface FileRoutesByFullPath {
   '/collection': typeof AuthenticatedCollectionRoute
   '/forum': typeof AuthenticatedForumRoute
   '/luna': typeof AuthenticatedLunaRoute
-  '/personalized': typeof AuthenticatedPersonalizedRoute
   '/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRoutesByTo {
@@ -140,7 +132,6 @@ export interface FileRoutesByTo {
   '/collection': typeof AuthenticatedCollectionRoute
   '/forum': typeof AuthenticatedForumRoute
   '/luna': typeof AuthenticatedLunaRoute
-  '/personalized': typeof AuthenticatedPersonalizedRoute
   '/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRoutesById {
@@ -159,7 +150,6 @@ export interface FileRoutesById {
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/forum': typeof AuthenticatedForumRoute
   '/_authenticated/luna': typeof AuthenticatedLunaRoute
-  '/_authenticated/personalized': typeof AuthenticatedPersonalizedRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
 }
 export interface FileRouteTypes {
@@ -178,7 +168,6 @@ export interface FileRouteTypes {
     | '/collection'
     | '/forum'
     | '/luna'
-    | '/personalized'
     | '/progress'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -195,7 +184,6 @@ export interface FileRouteTypes {
     | '/collection'
     | '/forum'
     | '/luna'
-    | '/personalized'
     | '/progress'
   id:
     | '__root__'
@@ -213,7 +201,6 @@ export interface FileRouteTypes {
     | '/_authenticated/collection'
     | '/_authenticated/forum'
     | '/_authenticated/luna'
-    | '/_authenticated/personalized'
     | '/_authenticated/progress'
   fileRoutesById: FileRoutesById
 }
@@ -285,13 +272,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProgressRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/personalized': {
-      id: '/_authenticated/personalized'
-      path: '/personalized'
-      fullPath: '/personalized'
-      preLoaderRoute: typeof AuthenticatedPersonalizedRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/luna': {
       id: '/_authenticated/luna'
       path: '/luna'
@@ -352,7 +332,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedForumRoute: typeof AuthenticatedForumRoute
   AuthenticatedLunaRoute: typeof AuthenticatedLunaRoute
-  AuthenticatedPersonalizedRoute: typeof AuthenticatedPersonalizedRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
 }
 
@@ -364,7 +343,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedForumRoute: AuthenticatedForumRoute,
   AuthenticatedLunaRoute: AuthenticatedLunaRoute,
-  AuthenticatedPersonalizedRoute: AuthenticatedPersonalizedRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
 }
 

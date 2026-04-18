@@ -333,6 +333,43 @@ function BattleArena() {
       xp,
     });
     setPhase("result");
+
+    // Persist battle to learning_history + increment daily challenge on win
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("learning_history").insert({
+        user_id: user.id,
+        session_type: "battle",
+        was_correct: won,
+        topic: ARCHETYPES[archetype].name,
+        luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(totalScore)} · streak ${longestStreak}`,
+      });
+      if (won) {
+        const today = new Date().toISOString().slice(0, 10);
+        const { data: existing } = await supabase
+          .from("daily_challenge_progress")
+          .select("id, wins, bonus_claimed")
+          .eq("user_id", user.id)
+          .eq("challenge_date", today)
+          .maybeSingle();
+        if (existing) {
+          const newWins = (existing.wins ?? 0) + 1;
+          await supabase
+            .from("daily_challenge_progress")
+            .update({ wins: newWins, bonus_claimed: existing.bonus_claimed || newWins >= 3 })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("daily_challenge_progress").insert({
+            user_id: user.id,
+            challenge_date: today,
+            wins: 1,
+            bonus_claimed: false,
+          });
+        }
+        window.dispatchEvent(new Event("daily-challenge-updated"));
+      }
+    })();
   }, [totalScore, records, longestStreak, fastestAnswer, archetype]);
 
   const aiTurn = useCallback(() => {

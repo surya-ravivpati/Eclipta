@@ -376,6 +376,18 @@ function BattleArena() {
     if (selection?.archetype) setArchetype(selection.archetype);
     if (selection?.ecliptar) setEcliptar(selection.ecliptar);
 
+    // Randomize gambler stats per battle (each 0-4) — true gamble between godlike and garbage
+    const rolledGambler = cls === "gambler"
+      ? {
+          health: Math.floor(Math.random() * 5),
+          time: Math.floor(Math.random() * 5),
+          damage: Math.floor(Math.random() * 5),
+          multiplier: Math.floor(Math.random() * 5),
+          difficulty: Math.floor(Math.random() * 5),
+        }
+      : null;
+    setGamblerStats(rolledGambler);
+
     // Pick a random Ecliptar opponent (different archetype if possible)
     const candidates = ECLIPTARS.filter(e => e.archetype !== cls);
     const oppEclip = candidates[Math.floor(Math.random() * candidates.length)] ?? ECLIPTARS[0];
@@ -384,8 +396,9 @@ function BattleArena() {
 
     setPhase("searching");
     setTimeout(() => {
-      const arch = ARCHETYPES[cls];
-      const playerHp = statToHp(arch.stats.health);
+      const baseArch = ARCHETYPES[cls];
+      const playerStats = rolledGambler ?? baseArch.stats;
+      const playerHp = statToHp(playerStats.health);
       const playerName = eclip?.name ?? "You";
       const playerIcon = eclip?.icon ?? User;
       const oppHp = statToHp(oppArch.stats.health);
@@ -393,7 +406,10 @@ function BattleArena() {
       setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 50, maxFocus: 50, icon: oppEclip.icon });
       setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
-      addLog(`⚔️ ${playerName} (${arch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
+      addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
+      if (rolledGambler) {
+        addLog(`🎲 Gambler rolled: HP ${rolledGambler.health}/4 · TIME ${rolledGambler.time}/4 · DMG ${rolledGambler.damage}/4 · MULT ${rolledGambler.multiplier}/4 · DIFF ${rolledGambler.difficulty}/4`);
+      }
     }, 2200);
   };
 

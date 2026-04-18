@@ -238,17 +238,17 @@ export type Database = {
       }
     }
     Views: {
-      platform_stats: {
-        Row: {
-          battles: number | null
-          ecliptars: number | null
-          learners: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_platform_stats: {
+        Args: never
+        Returns: {
+          battles: number
+          ecliptars: number
+          learners: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

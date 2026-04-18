@@ -45,12 +45,16 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border">
+              <Link
+                to="/profile"
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border hover:border-neon-purple/40 transition-colors"
+                title="View profile"
+              >
                 <User className="w-3.5 h-3.5 text-neon-purple" />
                 <span className="text-xs font-medium text-foreground truncate max-w-[120px]">
                   {user?.email?.split("@")[0]}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 text-muted-foreground hover:text-neon-pink transition-colors"

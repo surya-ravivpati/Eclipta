@@ -17,6 +17,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedLunaRouteImport } from './routes/_authenticated.luna'
 import { Route as AuthenticatedForumRouteImport } from './routes/_authenticated.forum'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated.collection'
@@ -24,6 +25,7 @@ import { Route as AuthenticatedCertifiedRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBuildCourseRouteImport } from './routes/_authenticated.build-course'
 import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticated.battles'
 import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
+import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authenticated.forum.$threadId'
 import { Route as AuthenticatedCertifiedSlugRouteImport } from './routes/_authenticated.certified.$slug'
 
 const SignupRoute = SignupRouteImport.update({
@@ -65,6 +67,11 @@ const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedLunaRoute = AuthenticatedLunaRouteImport.update({
   id: '/luna',
   path: '/luna',
@@ -102,6 +109,12 @@ const AuthenticatedAdaptiveTestsRoute =
     path: '/adaptive-tests',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedForumThreadIdRoute =
+  AuthenticatedForumThreadIdRouteImport.update({
+    id: '/$threadId',
+    path: '/$threadId',
+    getParentRoute: () => AuthenticatedForumRoute,
+  } as any)
 const AuthenticatedCertifiedSlugRoute =
   AuthenticatedCertifiedSlugRouteImport.update({
     id: '/$slug',
@@ -121,10 +134,12 @@ export interface FileRoutesByFullPath {
   '/build-course': typeof AuthenticatedBuildCourseRoute
   '/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/collection': typeof AuthenticatedCollectionRoute
-  '/forum': typeof AuthenticatedForumRoute
+  '/forum': typeof AuthenticatedForumRouteWithChildren
   '/luna': typeof AuthenticatedLunaRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
+  '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -138,10 +153,12 @@ export interface FileRoutesByTo {
   '/build-course': typeof AuthenticatedBuildCourseRoute
   '/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/collection': typeof AuthenticatedCollectionRoute
-  '/forum': typeof AuthenticatedForumRoute
+  '/forum': typeof AuthenticatedForumRouteWithChildren
   '/luna': typeof AuthenticatedLunaRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
+  '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -157,10 +174,12 @@ export interface FileRoutesById {
   '/_authenticated/build-course': typeof AuthenticatedBuildCourseRoute
   '/_authenticated/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
-  '/_authenticated/forum': typeof AuthenticatedForumRoute
+  '/_authenticated/forum': typeof AuthenticatedForumRouteWithChildren
   '/_authenticated/luna': typeof AuthenticatedLunaRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
+  '/_authenticated/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -178,8 +197,10 @@ export interface FileRouteTypes {
     | '/collection'
     | '/forum'
     | '/luna'
+    | '/profile'
     | '/progress'
     | '/certified/$slug'
+    | '/forum/$threadId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -195,8 +216,10 @@ export interface FileRouteTypes {
     | '/collection'
     | '/forum'
     | '/luna'
+    | '/profile'
     | '/progress'
     | '/certified/$slug'
+    | '/forum/$threadId'
   id:
     | '__root__'
     | '/'
@@ -213,8 +236,10 @@ export interface FileRouteTypes {
     | '/_authenticated/collection'
     | '/_authenticated/forum'
     | '/_authenticated/luna'
+    | '/_authenticated/profile'
     | '/_authenticated/progress'
     | '/_authenticated/certified/$slug'
+    | '/_authenticated/forum/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -285,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProgressRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/luna': {
       id: '/_authenticated/luna'
       path: '/luna'
@@ -334,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdaptiveTestsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/forum/$threadId': {
+      id: '/_authenticated/forum/$threadId'
+      path: '/$threadId'
+      fullPath: '/forum/$threadId'
+      preLoaderRoute: typeof AuthenticatedForumThreadIdRouteImport
+      parentRoute: typeof AuthenticatedForumRoute
+    }
     '/_authenticated/certified/$slug': {
       id: '/_authenticated/certified/$slug'
       path: '/$slug'
@@ -358,14 +397,26 @@ const AuthenticatedCertifiedRouteWithChildren =
     AuthenticatedCertifiedRouteChildren,
   )
 
+interface AuthenticatedForumRouteChildren {
+  AuthenticatedForumThreadIdRoute: typeof AuthenticatedForumThreadIdRoute
+}
+
+const AuthenticatedForumRouteChildren: AuthenticatedForumRouteChildren = {
+  AuthenticatedForumThreadIdRoute: AuthenticatedForumThreadIdRoute,
+}
+
+const AuthenticatedForumRouteWithChildren =
+  AuthenticatedForumRoute._addFileChildren(AuthenticatedForumRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedAdaptiveTestsRoute: typeof AuthenticatedAdaptiveTestsRoute
   AuthenticatedBattlesRoute: typeof AuthenticatedBattlesRoute
   AuthenticatedBuildCourseRoute: typeof AuthenticatedBuildCourseRoute
   AuthenticatedCertifiedRoute: typeof AuthenticatedCertifiedRouteWithChildren
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
-  AuthenticatedForumRoute: typeof AuthenticatedForumRoute
+  AuthenticatedForumRoute: typeof AuthenticatedForumRouteWithChildren
   AuthenticatedLunaRoute: typeof AuthenticatedLunaRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
 }
 
@@ -375,8 +426,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBuildCourseRoute: AuthenticatedBuildCourseRoute,
   AuthenticatedCertifiedRoute: AuthenticatedCertifiedRouteWithChildren,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
-  AuthenticatedForumRoute: AuthenticatedForumRoute,
+  AuthenticatedForumRoute: AuthenticatedForumRouteWithChildren,
   AuthenticatedLunaRoute: AuthenticatedLunaRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
 }
 

@@ -35,6 +35,8 @@ const TAG_CONFIG = {
 export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChatPanelProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const profileRef = useRef<Record<string, unknown> | null>(null);

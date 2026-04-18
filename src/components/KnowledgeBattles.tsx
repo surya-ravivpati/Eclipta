@@ -533,6 +533,58 @@ function BattleArena() {
   );
 }
 
+// ─── Leaderboard (live) ───────────────────────────────────────────────
+function LeaderboardCard() {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("user_id, xp")
+        .order("xp", { ascending: false })
+        .limit(6);
+      if (cancelled) return;
+      const rows: LeaderboardEntry[] = (data ?? []).map((r, i) => ({
+        rank: i + 1,
+        name: `learner_${r.user_id.slice(0, 6)}`,
+        xp: r.xp ?? 0,
+        tier: xpToTier(r.xp ?? 0),
+      }));
+      setEntries(rows);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <motion.div className="glass-panel p-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold font-display tracking-widest text-neon-cyan">LEADERBOARD</h3>
+        <Trophy className="w-4 h-4 text-neon-cyan" />
+      </div>
+      <div className="space-y-2">
+        {loading && <p className="text-[10px] text-muted-foreground italic px-3">Loading rankings…</p>}
+        {!loading && entries.length === 0 && (
+          <p className="text-[10px] text-muted-foreground italic px-3">No fighters yet — be the first to climb the ranks.</p>
+        )}
+        {entries.map(p => (
+          <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
+            <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+              <span className={`text-[10px] ml-2 font-bold ${tierColors[p.tier]}`}>{p.tier}</span>
+            </div>
+            <div className="text-xs font-bold text-foreground">{p.xp.toLocaleString()} XP</div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
   return (

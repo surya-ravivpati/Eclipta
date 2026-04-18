@@ -113,6 +113,151 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_answers: {
+        Row: {
+          accepted: boolean
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          thread_id: string
+          updated_at: string
+          user_id: string
+          votes: number
+        }
+        Insert: {
+          accepted?: boolean
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          thread_id: string
+          updated_at?: string
+          user_id: string
+          votes?: number
+        }
+        Update: {
+          accepted?: boolean
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+          votes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_answers_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_thread_views: {
+        Row: {
+          thread_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          thread_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          thread_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_thread_views_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_threads: {
+        Row: {
+          answer_count: number
+          author_name: string
+          body: string
+          course: string
+          created_at: string
+          id: string
+          solved: boolean
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+          view_count: number
+          votes: number
+        }
+        Insert: {
+          answer_count?: number
+          author_name: string
+          body: string
+          course?: string
+          created_at?: string
+          id?: string
+          solved?: boolean
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+          view_count?: number
+          votes?: number
+        }
+        Update: {
+          answer_count?: number
+          author_name?: string
+          body?: string
+          course?: string
+          created_at?: string
+          id?: string
+          solved?: boolean
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number
+          votes?: number
+        }
+        Relationships: []
+      }
+      forum_votes: {
+        Row: {
+          created_at: string
+          id: string
+          target_id: string
+          target_type: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          target_id: string
+          target_type: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
       learning_history: {
         Row: {
           created_at: string
@@ -241,6 +386,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_forum_stats: {
+        Args: never
+        Returns: {
+          answers: number
+          contributors: number
+          threads: number
+        }[]
+      }
       get_platform_stats: {
         Args: never
         Returns: {

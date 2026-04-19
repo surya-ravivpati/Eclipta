@@ -651,6 +651,7 @@ function DailyChallengeCard() {
   const [wins, setWins] = useState(0);
   const [bonusClaimed, setBonusClaimed] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [countdown, setCountdown] = useState("");
 
   const refresh = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -673,6 +674,24 @@ function DailyChallengeCard() {
     window.addEventListener("daily-challenge-updated", handler);
     return () => window.removeEventListener("daily-challenge-updated", handler);
   }, [refresh]);
+
+  // Countdown to next UTC midnight
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const next = new Date(Date.UTC(
+        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
+      ));
+      const diff = next.getTime() - now.getTime();
+      const h = Math.floor(diff / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      const s = Math.floor((diff % 60_000) / 1000);
+      setCountdown(`${h}h ${m}m ${s}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const target = 3;
   const display = Math.min(wins, target);
@@ -703,6 +722,10 @@ function DailyChallengeCard() {
           />
         </div>
       )}
+      <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-muted-foreground">
+        <Timer className="w-3 h-3" />
+        RESETS IN <span className="text-foreground tabular-nums">{countdown}</span>
+      </div>
     </motion.div>
   );
 }

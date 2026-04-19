@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock, ExternalLink, AlertTriangle } from "lucide-react";
+import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
@@ -29,6 +29,7 @@ type Profile = {
   total_correct: number; total_questions: number; total_sessions: number;
   preferred_pace: string; preferred_style: string;
   equipped_ecliptar: string | null;
+  avatar_url: string | null;
 };
 type Ecliptar = { id: string; ecliptar_name: string; archetype: string; claimed_at: string };
 type Enrollment = { id: string; course_slug: string; course_title: string; enrolled_at: string };
@@ -46,7 +47,7 @@ function ProfilePage() {
   const reload = async () => {
     if (!user) return;
     const [p, e, en, t, a] = await Promise.all([
-      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar,avatar_url").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
       supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
       supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
@@ -84,9 +85,12 @@ function ProfilePage() {
             className="glass-panel p-8 mb-6 flex flex-col md:flex-row items-center md:items-start gap-6"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           >
-            <div className="w-20 h-20 rounded-full bg-neon-purple/10 border-2 border-neon-purple/40 flex items-center justify-center shrink-0">
-              <User className="w-10 h-10 text-neon-purple" />
-            </div>
+            <AvatarUploader
+              userId={user.id}
+              avatarUrl={profile?.avatar_url ?? null}
+              equippedSlug={profile?.equipped_ecliptar ?? null}
+              onUploaded={reload}
+            />
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold font-display tracking-tight">{displayName}</h1>
               <p className="text-sm text-muted-foreground">{user.email}</p>

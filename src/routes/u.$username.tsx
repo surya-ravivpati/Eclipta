@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Sparkles, MessageSquare, Loader2, Zap } from "lucide-react";
+import { User, Trophy, Flame, Sparkles, MessageSquare, Loader2, Zap, Calendar } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { ECLIPTARS } from "@/lib/ecliptars";
@@ -26,6 +26,8 @@ type PublicProfile = {
   current_streak: number;
   best_streak: number;
   equipped_ecliptar: string | null;
+  avatar_url: string | null;
+  created_at: string;
 };
 
 type Ecliptar = { id: string; ecliptar_name: string; ecliptar_slug: string; archetype: string };
@@ -44,7 +46,7 @@ function PublicProfilePage() {
       setLoading(true);
       const { data: p } = await supabase
         .from("user_profiles")
-        .select("user_id,username,xp,current_streak,best_streak,equipped_ecliptar")
+        .select("user_id,username,xp,current_streak,best_streak,equipped_ecliptar,avatar_url,created_at")
         .eq("username", username)
         .maybeSingle();
       if (!p) { setNotFound(true); setLoading(false); return; }
@@ -95,14 +97,21 @@ function PublicProfilePage() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         >
           <div className={cn(
-            "w-24 h-24 rounded-full border-2 flex items-center justify-center shrink-0",
+            "w-24 h-24 rounded-full border-2 flex items-center justify-center shrink-0 overflow-hidden",
             equippedArch ? equippedArch.borderColor + " bg-secondary/30" : "border-neon-purple/40 bg-neon-purple/10"
           )}>
-            <EquippedIcon className={cn("w-12 h-12", equippedArch?.color ?? "text-neon-purple")} />
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+            ) : (
+              <EquippedIcon className={cn("w-12 h-12", equippedArch?.color ?? "text-neon-purple")} />
+            )}
           </div>
           <div className="flex-1 text-center sm:text-left">
             <h1 className="text-4xl font-bold font-display tracking-tight">{profile.username}</h1>
-            <p className="text-xs text-muted-foreground tracking-widest font-bold uppercase mt-1">Public profile</p>
+            <p className="text-xs text-muted-foreground tracking-widest font-bold uppercase mt-1 flex items-center gap-1.5 justify-center sm:justify-start">
+              <Calendar className="w-3 h-3" />
+              Joined {new Date(profile.created_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+            </p>
             <div className="flex flex-wrap gap-4 mt-4 justify-center sm:justify-start">
               <Stat icon={<Zap className="w-3.5 h-3.5" />} label="XP" value={profile.xp} color="text-neon-purple" />
               <Stat icon={<Flame className="w-3.5 h-3.5" />} label="Streak" value={profile.current_streak} color="text-neon-pink" />

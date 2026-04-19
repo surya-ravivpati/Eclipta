@@ -37,20 +37,6 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
-function AuthorLink({ name }: { name: string }) {
-  const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(name);
-  if (!isUsername) return <span className="font-medium text-foreground">{name}</span>;
-  return (
-    <Link
-      to="/u/$username"
-      params={{ username: name }}
-      onClick={(e) => e.stopPropagation()}
-      className="font-medium text-foreground hover:text-neon-purple transition-colors"
-    >
-      {name}
-    </Link>
-  );
-}
 
 function ThreadCard({ thread, userVote, onVote }: {
   thread: Thread;

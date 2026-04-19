@@ -120,7 +120,7 @@ function ThreadCard({ thread, userVote, onVote }: {
             </div>
 
             <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
-              <AuthorLink name={thread.author_name} />
+              <span className="font-medium text-foreground">{thread.author_name}</span>
               <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{thread.answer_count}</span>
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
               <span>{thread.view_count.toLocaleString()} views</span>

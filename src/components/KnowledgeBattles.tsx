@@ -24,16 +24,27 @@ const ACTIONS: Record<Action, ActionConfig> = {
 
 type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string };
 
+// Aligned with Trophy Road tier thresholds in src/lib/trophy-road-data.ts
 function xpToTier(xp: number): string {
-  if (xp >= 20000) return "Grandmaster";
-  if (xp >= 10000) return "Diamond";
-  if (xp >= 5000) return "Platinum";
-  if (xp >= 1000) return "Gold";
-  return "Silver";
+  if (xp >= 40000) return "God Tier";
+  if (xp >= 25000) return "Unreal";
+  if (xp >= 16000) return "Champion";
+  if (xp >= 10000) return "Platinum";
+  if (xp >= 6000) return "Diamond";
+  if (xp >= 3000) return "Gold";
+  if (xp >= 1000) return "Silver";
+  return "Bronze";
 }
 
 const tierColors: Record<string, string> = {
-  Grandmaster: "text-neon-pink", Diamond: "text-neon-cyan", Platinum: "text-neon-purple", Gold: "text-yellow-400", Silver: "text-muted-foreground",
+  "God Tier": "text-tier-god",
+  Unreal: "text-tier-unreal",
+  Champion: "text-tier-champion",
+  Platinum: "text-tier-platinum",
+  Diamond: "text-tier-diamond",
+  Gold: "text-tier-gold",
+  Silver: "text-tier-silver",
+  Bronze: "text-tier-bronze",
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────

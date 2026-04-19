@@ -397,6 +397,57 @@ function SettingsPanel({ profile, userId, onSaved }: {
   );
 }
 
+/* =================== Avatar Uploader =================== */
+
+function AvatarUploader({ userId, avatarUrl, equippedSlug, onUploaded }: {
+  userId: string; avatarUrl: string | null; equippedSlug: string | null; onUploaded: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const equipped = equippedSlug ? ECLIPTARS.find((e) => e.slug === equippedSlug) : null;
+  const equippedArch = equipped ? ARCHETYPES[equipped.archetype as MonsterArchetypeKey] : null;
+  const FallbackIcon = equipped?.icon ?? User;
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Max 2 MB");
+    if (!file.type.startsWith("image/")) return toast.error("Image files only");
+    setUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+    const path = `${userId}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+      cacheControl: "3600", upsert: true, contentType: file.type,
+    });
+    if (upErr) { setUploading(false); return toast.error(upErr.message); }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error: dbErr } = await supabase.from("user_profiles")
+      .update({ avatar_url: pub.publicUrl }).eq("user_id", userId);
+    setUploading(false);
+    if (dbErr) return toast.error(dbErr.message);
+    toast.success("Profile picture updated");
+    onUploaded();
+  };
+
+  return (
+    <div className="relative shrink-0">
+      <div className={cn(
+        "w-20 h-20 rounded-full border-2 flex items-center justify-center overflow-hidden bg-secondary/30",
+        equippedArch ? equippedArch.borderColor : "border-neon-purple/40"
+      )}>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Your avatar" className="w-full h-full object-cover" />
+        ) : (
+          <FallbackIcon className={cn("w-10 h-10", equippedArch?.color ?? "text-neon-purple")} />
+        )}
+      </div>
+      <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-neon-purple text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity shadow-lg" title="Change profile picture">
+        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+        <input type="file" accept="image/*" className="sr-only" onChange={onPick} disabled={uploading} />
+      </label>
+    </div>
+  );
+}
+
 /* =================== Embedded Collection (click-to-equip) =================== */
 
 function CollectionSection({ equippedSlug, userId, onEquipped }: {

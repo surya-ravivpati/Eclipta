@@ -5,7 +5,21 @@ import {
   Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
   Dice5, Heart, Scale, TrendingUp, Sparkles, Trophy, Gift,
   Apple, Atom,
+  // Per-tier rank icons
+  Hammer, Swords, Medal, Gem, Diamond as DiamondIcon, Flame, Sparkle, Sun,
 } from "lucide-react";
+
+// Distinct icon per rank tier (used for "rank" road nodes)
+const TIER_ICONS: Record<TierId, typeof Crown> = {
+  bronze: Hammer,
+  silver: Swords,
+  gold: Medal,
+  diamond: DiamondIcon,
+  platinum: Gem,
+  champion: Flame,
+  unreal: Sparkle,
+  god: Sun,
+};
 import { cn } from "@/lib/utils";
 import {
   ROAD_NODES as RAW_NODES,
@@ -140,7 +154,10 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
       const FinalIcon = node.finalMonster === "newton" ? Apple : Atom;
       return <FinalIcon className="w-7 h-7" />;
     }
-    if (node.type === "rank") return <Crown className="w-5 h-5" />;
+    if (node.type === "rank") {
+      const RankIcon = TIER_ICONS[node.tier] ?? Crown;
+      return <RankIcon className="w-5 h-5" />;
+    }
     if (node.type === "chest") return <Gift className="w-5 h-5" />;
     if (node.type === "monster" && archetype) {
       const Icon = archetype.icon;

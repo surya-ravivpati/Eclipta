@@ -205,6 +205,7 @@ export function LunaFullSession() {
       content: "Fresh start! 🌙 What would you like to work on?",
       tag: null,
     }]);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     setIsStreaming(false);
   };
 

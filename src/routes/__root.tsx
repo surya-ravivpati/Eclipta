@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
-const HIDE_LUNA_ON = ["/login", "/signup", "/forgot-password", "/reset-password"];
+const HIDE_LUNA_ON = ["/login", "/signup", "/forgot-password", "/reset-password", "/luna"];
 
 function NotFoundComponent() {
   return (

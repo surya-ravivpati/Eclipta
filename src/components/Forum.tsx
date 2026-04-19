@@ -37,20 +37,6 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
-function AuthorLink({ name }: { name: string }) {
-  const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(name);
-  if (!isUsername) return <span className="font-medium text-foreground">{name}</span>;
-  return (
-    <Link
-      to="/u/$username"
-      params={{ username: name }}
-      onClick={(e) => e.stopPropagation()}
-      className="font-medium text-foreground hover:text-neon-purple transition-colors"
-    >
-      {name}
-    </Link>
-  );
-}
 
 function ThreadCard({ thread, userVote, onVote }: {
   thread: Thread;
@@ -120,7 +106,7 @@ function ThreadCard({ thread, userVote, onVote }: {
             </div>
 
             <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
-              <AuthorLink name={thread.author_name} />
+              <span className="font-medium text-foreground">{thread.author_name}</span>
               <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{thread.answer_count}</span>
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
               <span>{thread.view_count.toLocaleString()} views</span>

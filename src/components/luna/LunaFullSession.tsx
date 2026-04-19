@@ -23,14 +23,25 @@ const TAG_CONFIG: Record<string, { icon: React.ElementType; color: string; label
   break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
 };
 
+const STORAGE_KEY = "luna:full-session:v1";
+const INTRO_MSG: LunaMessage = {
+  role: "assistant",
+  content: "Welcome to a deep learning session. 🌙 I'm Luna, your Socratic tutor. Tell me what you're working on, or pick a topic — I'll guide you through it step by step. No shortcuts, just real understanding.",
+  tag: null,
+};
+
 export function LunaFullSession() {
-  const [messages, setMessages] = useState<LunaMessage[]>([
-    {
-      role: "assistant",
-      content: "Welcome to a deep learning session. 🌙 I'm Luna, your Socratic tutor. Tell me what you're working on, or pick a topic — I'll guide you through it step by step. No shortcuts, just real understanding.",
-      tag: null,
-    },
-  ]);
+  const [messages, setMessages] = useState<LunaMessage[]>(() => {
+    if (typeof window === "undefined") return [INTRO_MSG];
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as LunaMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* ignore */ }
+    return [INTRO_MSG];
+  });
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,6 +50,11 @@ export function LunaFullSession() {
   const profileRef = useRef<Record<string, unknown> | null>(null);
   const historyRef = useRef<Record<string, unknown>[] | null>(null);
   const lastXpRef = useRef<number>(0);
+
+  // Persist chat history
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-100))); } catch { /* ignore */ }
+  }, [messages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

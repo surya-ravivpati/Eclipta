@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock, ExternalLink, AlertTriangle } from "lucide-react";
+import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
@@ -29,6 +29,7 @@ type Profile = {
   total_correct: number; total_questions: number; total_sessions: number;
   preferred_pace: string; preferred_style: string;
   equipped_ecliptar: string | null;
+  avatar_url: string | null;
 };
 type Ecliptar = { id: string; ecliptar_name: string; archetype: string; claimed_at: string };
 type Enrollment = { id: string; course_slug: string; course_title: string; enrolled_at: string };
@@ -46,7 +47,7 @@ function ProfilePage() {
   const reload = async () => {
     if (!user) return;
     const [p, e, en, t, a] = await Promise.all([
-      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar,avatar_url").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
       supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
       supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
@@ -84,9 +85,12 @@ function ProfilePage() {
             className="glass-panel p-8 mb-6 flex flex-col md:flex-row items-center md:items-start gap-6"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           >
-            <div className="w-20 h-20 rounded-full bg-neon-purple/10 border-2 border-neon-purple/40 flex items-center justify-center shrink-0">
-              <User className="w-10 h-10 text-neon-purple" />
-            </div>
+            <AvatarUploader
+              userId={user.id}
+              avatarUrl={profile?.avatar_url ?? null}
+              equippedSlug={profile?.equipped_ecliptar ?? null}
+              onUploaded={reload}
+            />
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold font-display tracking-tight">{displayName}</h1>
               <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -390,6 +394,57 @@ function SettingsPanel({ profile, userId, onSaved }: {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/* =================== Avatar Uploader =================== */
+
+function AvatarUploader({ userId, avatarUrl, equippedSlug, onUploaded }: {
+  userId: string; avatarUrl: string | null; equippedSlug: string | null; onUploaded: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const equipped = equippedSlug ? ECLIPTARS.find((e) => e.slug === equippedSlug) : null;
+  const equippedArch = equipped ? ARCHETYPES[equipped.archetype as MonsterArchetypeKey] : null;
+  const FallbackIcon = equipped?.icon ?? User;
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Max 2 MB");
+    if (!file.type.startsWith("image/")) return toast.error("Image files only");
+    setUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+    const path = `${userId}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+      cacheControl: "3600", upsert: true, contentType: file.type,
+    });
+    if (upErr) { setUploading(false); return toast.error(upErr.message); }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error: dbErr } = await supabase.from("user_profiles")
+      .update({ avatar_url: pub.publicUrl }).eq("user_id", userId);
+    setUploading(false);
+    if (dbErr) return toast.error(dbErr.message);
+    toast.success("Profile picture updated");
+    onUploaded();
+  };
+
+  return (
+    <div className="relative shrink-0">
+      <div className={cn(
+        "w-20 h-20 rounded-full border-2 flex items-center justify-center overflow-hidden bg-secondary/30",
+        equippedArch ? equippedArch.borderColor : "border-neon-purple/40"
+      )}>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Your avatar" className="w-full h-full object-cover" />
+        ) : (
+          <FallbackIcon className={cn("w-10 h-10", equippedArch?.color ?? "text-neon-purple")} />
+        )}
+      </div>
+      <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-neon-purple text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity shadow-lg" title="Change profile picture">
+        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+        <input type="file" accept="image/*" className="sr-only" onChange={onPick} disabled={uploading} />
+      </label>
+    </div>
   );
 }
 

@@ -217,6 +217,7 @@ function SettingsPanel({ profile, userId, onSaved }: {
   const [saving, setSaving] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [availability, setAvailability] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "current">("idle");
 
   useEffect(() => {
     setUsername(profile?.username || "");
@@ -226,12 +227,30 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
   const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v);
 
+  // Debounced availability check
+  useEffect(() => {
+    const trimmed = username.trim();
+    if (!trimmed) { setAvailability("idle"); return; }
+    if (trimmed === profile?.username) { setAvailability("current"); return; }
+    if (!validateUsername(trimmed)) { setAvailability("invalid"); return; }
+    setAvailability("checking");
+    const handle = setTimeout(async () => {
+      const { count } = await supabase
+        .from("user_profiles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("username", trimmed);
+      setAvailability((count ?? 0) > 0 ? "taken" : "available");
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [username, profile?.username]);
+
   const saveUsername = async () => {
     const trimmed = username.trim();
     if (!validateUsername(trimmed)) {
       return toast.error("Username must be 3–20 chars: letters, numbers, underscores");
     }
     if (trimmed === profile?.username) return;
+    if (availability === "taken") return toast.error("That username is already taken");
     setSaving(true);
     const { error } = await supabase.from("user_profiles").update({ username: trimmed }).eq("user_id", userId);
     setSaving(false);
@@ -292,14 +311,26 @@ function SettingsPanel({ profile, userId, onSaved }: {
             />
             <button
               onClick={saveUsername}
-              disabled={saving || username.trim() === (profile?.username || "")}
+              disabled={saving || username.trim() === (profile?.username || "") || availability === "taken" || availability === "invalid" || availability === "checking"}
               className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
             >
               {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
               SAVE
             </button>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">3–20 chars. Letters, numbers, underscores only.</p>
+          <p className={cn(
+            "text-[10px] mt-1 font-bold tracking-widest",
+            availability === "available" && "text-emerald-400",
+            availability === "taken" && "text-destructive",
+            availability === "invalid" && "text-neon-pink",
+            (availability === "idle" || availability === "current" || availability === "checking") && "text-muted-foreground",
+          )}>
+            {availability === "checking" && "CHECKING…"}
+            {availability === "available" && "✓ AVAILABLE"}
+            {availability === "taken" && "✗ ALREADY TAKEN"}
+            {availability === "invalid" && "INVALID — 3–20 chars, letters/numbers/underscore"}
+            {(availability === "idle" || availability === "current") && "3–20 chars. Letters, numbers, underscores only."}
+          </p>
         </div>
 
         {/* Theme */}
@@ -522,7 +553,7 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                         className={cn(
                           "glass-panel p-4 border text-center relative overflow-hidden transition-all",
                           isOwned ? `${arch.borderColor} hover:scale-[1.03] cursor-pointer` : "border-border/30 opacity-60 cursor-not-allowed",
-                          isEquipped && "ring-2 ring-neon-purple ring-offset-2 ring-offset-background"
+                          isEquipped && "ring-2 ring-neon-purple ring-offset-2 ring-offset-background shadow-[0_0_24px_rgba(168,85,247,0.55)] bg-neon-purple/15 scale-[1.02]"
                         )}
                       >
                         {!isOwned && (
@@ -531,11 +562,11 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                           </div>
                         )}
                         {isEquipped && (
-                          <div className="absolute top-1 right-1 z-10 bg-neon-purple text-primary-foreground text-[8px] font-bold tracking-widest px-1.5 py-0.5">
-                            EQUIPPED
+                          <div className="absolute top-1 right-1 z-10 bg-neon-purple text-primary-foreground text-[9px] font-bold tracking-widest px-2 py-0.5 inline-flex items-center gap-1 shadow-md">
+                            <Check className="w-2.5 h-2.5" />EQUIPPED
                           </div>
                         )}
-                        <e.icon className={cn("w-10 h-10 mx-auto mb-2", isOwned ? arch.color : "text-muted-foreground")} />
+                        <e.icon className={cn("w-10 h-10 mx-auto mb-2", isOwned ? arch.color : "text-muted-foreground", isEquipped && "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]")} />
                         <div className={cn("text-sm font-bold font-display", isOwned ? arch.color : "text-muted-foreground")}>{e.name}</div>
                         <div className="text-[9px] tracking-widest text-muted-foreground mt-1">{arch.name.toUpperCase()}</div>
                       </button>

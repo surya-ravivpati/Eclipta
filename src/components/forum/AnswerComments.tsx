@@ -37,7 +37,6 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
   const { user, isAuthenticated } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reporting, setReporting] = useState<string | null>(null);
@@ -79,71 +78,65 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
 
   return (
     <div className="mt-3 pl-4 border-l border-border/50">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="text-[11px] font-bold tracking-widest text-muted-foreground hover:text-neon-purple transition-colors inline-flex items-center gap-1"
-      >
+      <div className="text-[11px] font-bold tracking-widest text-muted-foreground inline-flex items-center gap-1 mb-2">
         <MessageCircle className="w-3 h-3" />
-        {comments.length === 0 ? "ADD COMMENT" : `${comments.length} ${comments.length === 1 ? "COMMENT" : "COMMENTS"}`}
-        {open ? " ▾" : " ▸"}
-      </button>
+        {comments.length === 0 ? "COMMENTS" : `${comments.length} ${comments.length === 1 ? "COMMENT" : "COMMENTS"}`}
+      </div>
 
-      {open && (
-        <div className="mt-2 space-y-2">
-          {loading ? (
-            <Loader2 className="w-3 h-3 animate-spin text-neon-purple" />
-          ) : (
-            comments.map((c) => (
-              <div key={c.id} className="text-xs py-1.5 border-b border-border/30 last:border-0">
-                <p className="text-foreground/90 leading-snug whitespace-pre-wrap">{c.body}</p>
-                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                  <AuthorLink name={c.author_name} />
-                  <span>· {timeAgo(c.created_at)}</span>
-                  {isAuthenticated && user?.id !== c.user_id && (
-                    <button
-                      onClick={() => setReporting(c.id)}
-                      className="text-muted-foreground hover:text-neon-pink inline-flex items-center gap-0.5"
-                      title="Report comment"
-                    >
-                      <Flag className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                  {(user?.id === c.user_id || isModerator) && (
-                    <button
-                      onClick={() => remove(c.id)}
-                      className="text-muted-foreground hover:text-destructive inline-flex items-center gap-0.5"
-                      title="Delete comment"
-                    >
-                      <Trash2 className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                </div>
+      <div className="space-y-2">
+        {loading ? (
+          <Loader2 className="w-3 h-3 animate-spin text-neon-purple" />
+        ) : (
+          comments.map((c) => (
+            <div key={c.id} className="text-xs py-1.5 border-b border-border/30 last:border-0">
+              <p className="text-foreground/90 leading-snug whitespace-pre-wrap">{c.body}</p>
+              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                <AuthorLink name={c.author_name} />
+                <span>· {timeAgo(c.created_at)}</span>
+                {isAuthenticated && user?.id !== c.user_id && (
+                  <button
+                    onClick={() => setReporting(c.id)}
+                    className="text-muted-foreground hover:text-neon-pink inline-flex items-center gap-0.5"
+                    title="Report comment"
+                  >
+                    <Flag className="w-2.5 h-2.5" />
+                  </button>
+                )}
+                {(user?.id === c.user_id || isModerator) && (
+                  <button
+                    onClick={() => remove(c.id)}
+                    className="text-muted-foreground hover:text-destructive inline-flex items-center gap-0.5"
+                    title="Delete comment"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </button>
+                )}
               </div>
-            ))
-          )}
+            </div>
+          ))
+        )}
 
-          {isAuthenticated ? (
-            <form onSubmit={submit} className="flex gap-2 pt-1">
-              <input
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                maxLength={1000}
-                placeholder="Add a comment…"
-                className="flex-1 bg-secondary/30 border border-input px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-neon-purple"
-              />
-              <button
-                type="submit"
-                disabled={submitting || reply.trim().length < 2}
-                className="px-3 py-1 text-[10px] font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity"
-              >
-                POST
-              </button>
-            </form>
-          ) : (
-            <p className="text-[10px] text-muted-foreground italic">Sign in to comment.</p>
-          )}
-        </div>
-      )}
+        {isAuthenticated ? (
+          <form onSubmit={submit} className="flex gap-2 pt-1">
+            <input
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              maxLength={1000}
+              placeholder="Add a comment…"
+              className="flex-1 bg-secondary/30 border border-input px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-neon-purple"
+            />
+            <button
+              type="submit"
+              disabled={submitting || reply.trim().length < 2}
+              className="px-3 py-1 text-[10px] font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity"
+            >
+              POST
+            </button>
+          </form>
+        ) : (
+          <p className="text-[10px] text-muted-foreground italic">Sign in to comment.</p>
+        )}
+      </div>
 
       {reporting && (
         <ReportDialog

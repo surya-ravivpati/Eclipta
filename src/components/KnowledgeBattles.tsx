@@ -505,7 +505,14 @@ function BattleArena() {
 
   // ── Result ──
   if (phase === "result" && battleStats) {
-    return <BattleReport stats={battleStats} onRematch={() => setPhase("classSelect")} onBack={reset} />;
+    return (
+      <BattleReport
+        stats={battleStats}
+        onRematch={() => setPhase("classSelect")}
+        onContinueWithEcliptar={ecliptar ? () => startBattle({ archetype, ecliptar }) : undefined}
+        onBack={reset}
+      />
+    );
   }
 
   // ── Battle ──
@@ -584,9 +591,14 @@ function LeaderboardCard() {
         .order("xp", { ascending: false })
         .limit(6);
       if (cancelled) return;
-      const rows: LeaderboardEntry[] = (data ?? []).map((r, i) => ({
+      const { data: data2 } = await supabase
+        .from("user_profiles")
+        .select("user_id, username, xp")
+        .order("xp", { ascending: false })
+        .limit(6);
+      const rows: LeaderboardEntry[] = (data2 ?? data ?? []).map((r: { user_id: string; username?: string | null; xp: number | null }, i) => ({
         rank: i + 1,
-        name: `learner_${r.user_id.slice(0, 6)}`,
+        name: r.username || `learner_${r.user_id.slice(0, 6)}`,
         xp: r.xp ?? 0,
         tier: xpToTier(r.xp ?? 0),
       }));
@@ -612,16 +624,23 @@ function LeaderboardCard() {
             </p>
           </div>
         )}
-        {entries.map(p => (
-          <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
-            <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
-              <span className={`text-[10px] ml-2 font-bold ${tierColors[p.tier]}`}>{p.tier}</span>
+        {entries.map(p => {
+          const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(p.name);
+          return (
+            <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
+              <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
+              <div className="flex-1 min-w-0">
+                {isUsername ? (
+                  <a href={`/u/${p.name}`} className="text-xs font-bold text-foreground truncate hover:text-neon-purple transition-colors">{p.name}</a>
+                ) : (
+                  <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+                )}
+                <span className={`text-[10px] ml-2 font-bold ${tierColors[p.tier]}`}>{p.tier}</span>
+              </div>
+              <div className="text-xs font-bold text-foreground">{p.xp.toLocaleString()} XP</div>
             </div>
-            <div className="text-xs font-bold text-foreground">{p.xp.toLocaleString()} XP</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </motion.div>
   );

@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
-import { Lock, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { Lock, ArrowLeft, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
 import { getUnlockedArchetypes, ROAD_NODES } from "@/lib/trophy-road-data";
 import { cn } from "@/lib/utils";
 import { useOwnedEcliptars, usePlayerXp } from "@/hooks/use-player-xp";
-import { getEcliptarsByArchetype, type Ecliptar } from "@/lib/ecliptars";
+import { getEcliptarsByArchetype, getEcliptarBySlug, type Ecliptar } from "@/lib/ecliptars";
 import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 
 const STAT_LABELS: { key: "health" | "time" | "damage" | "multiplier" | "difficulty"; label: string }[] = [
   { key: "health", label: "HP" },
@@ -116,6 +117,29 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
     >
+      {equipped && equippedOwned && equippedArch && (
+        <button
+          onClick={() => onSelect({ archetype: equipped!.archetype, ecliptar: equipped! })}
+          className={cn(
+            "w-full mb-5 px-4 py-3 border-2 text-left transition-colors flex items-center gap-3 group",
+            equippedArch.borderColor,
+            "hover:bg-secondary/30"
+          )}
+        >
+          <equipped.icon className={cn("w-8 h-8 shrink-0", equippedArch.color)} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold tracking-widest text-neon-purple">QUICK BATTLE</span>
+              <span className="text-[9px] text-muted-foreground">EQUIPPED</span>
+            </div>
+            <div className="font-display font-bold text-base">
+              {equipped.name} <span className={cn("text-xs font-normal", equippedArch.color)}>· {equippedArch.name}</span>
+            </div>
+          </div>
+          <Zap className={cn("w-5 h-5 group-hover:scale-110 transition-transform", equippedArch.color)} />
+        </button>
+      )}
+
       <h3 className="text-xl font-bold font-display text-center mb-1">Choose Your Archetype</h3>
       <p className="text-xs text-muted-foreground text-center mb-6">
         Unlock more archetypes by progressing on the Trophy Road.

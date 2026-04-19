@@ -7,9 +7,10 @@ import type { BattleStats, Difficulty } from "./types";
 import { awardXp } from "@/lib/xp-service";
 import { supabase } from "@/integrations/supabase/client";
 
-export function BattleReport({ stats, onRematch, onBack }: {
+export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack }: {
   stats: BattleStats;
   onRematch: () => void;
+  onContinueWithEcliptar?: () => void;
   onBack: () => void;
 }) {
   const xpSavedRef = useRef(false);
@@ -268,15 +269,25 @@ export function BattleReport({ stats, onRematch, onBack }: {
       </Tabs>
 
       {/* Action buttons */}
-      <div className="flex justify-center gap-3 mt-6">
+      <div className="flex flex-wrap justify-center gap-3 mt-6">
         <motion.button
           onClick={onRematch}
           className="px-6 py-2.5 bg-neon-pink text-primary-foreground font-bold text-xs tracking-widest"
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
         >
-          REMATCH
+          REMATCH (NEW CLASS)
         </motion.button>
+        {onContinueWithEcliptar && (
+          <motion.button
+            onClick={onContinueWithEcliptar}
+            className="px-6 py-2.5 bg-neon-purple text-primary-foreground font-bold text-xs tracking-widest"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            CONTINUE WITH ECLIPTAR
+          </motion.button>
+        )}
         <button
           onClick={onBack}
           className="px-6 py-2.5 border border-border text-xs font-bold tracking-widest text-muted-foreground hover:text-foreground transition-colors"

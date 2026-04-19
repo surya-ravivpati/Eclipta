@@ -28,6 +28,7 @@ import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
 import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authenticated.forum.$threadId'
 import { Route as AuthenticatedCertifiedSlugRouteImport } from './routes/_authenticated.certified.$slug'
+import { Route as AuthenticatedAdminForumRouteImport } from './routes/_authenticated.admin.forum'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -127,6 +128,11 @@ const AuthenticatedCertifiedSlugRoute =
     path: '/$slug',
     getParentRoute: () => AuthenticatedCertifiedRoute,
   } as any)
+const AuthenticatedAdminForumRoute = AuthenticatedAdminForumRouteImport.update({
+  id: '/admin/forum',
+  path: '/admin/forum',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/forum': typeof AuthenticatedAdminForumRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/forum': typeof AuthenticatedAdminForumRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/u/$username': typeof UUsernameRoute
+  '/_authenticated/admin/forum': typeof AuthenticatedAdminForumRoute
   '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/_authenticated/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/progress'
     | '/u/$username'
+    | '/admin/forum'
     | '/certified/$slug'
     | '/forum/$threadId'
   fileRoutesByTo: FileRoutesByTo
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/progress'
     | '/u/$username'
+    | '/admin/forum'
     | '/certified/$slug'
     | '/forum/$threadId'
   id:
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/progress'
     | '/u/$username'
+    | '/_authenticated/admin/forum'
     | '/_authenticated/certified/$slug'
     | '/_authenticated/forum/$threadId'
   fileRoutesById: FileRoutesById
@@ -400,6 +412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCertifiedSlugRouteImport
       parentRoute: typeof AuthenticatedCertifiedRoute
     }
+    '/_authenticated/admin/forum': {
+      id: '/_authenticated/admin/forum'
+      path: '/admin/forum'
+      fullPath: '/admin/forum'
+      preLoaderRoute: typeof AuthenticatedAdminForumRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -438,6 +457,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLunaRoute: typeof AuthenticatedLunaRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+  AuthenticatedAdminForumRoute: typeof AuthenticatedAdminForumRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -450,6 +470,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedLunaRoute: AuthenticatedLunaRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+  AuthenticatedAdminForumRoute: AuthenticatedAdminForumRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

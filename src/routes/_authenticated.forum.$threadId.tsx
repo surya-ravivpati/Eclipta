@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ChevronUp, ChevronDown, ArrowLeft, Loader2, Check, Tag, Clock, MessageCircle } from "lucide-react";
+import { ChevronUp, ChevronDown, ArrowLeft, Loader2, Check, Tag, Clock, MessageCircle, Flag, Trash2, ShieldCheck } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useModerator } from "@/hooks/use-moderator";
+import { ReportDialog } from "@/components/forum/ReportDialog";
+import { AnswerComments } from "@/components/forum/AnswerComments";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/forum/$threadId")({
@@ -50,12 +53,15 @@ function AuthorLink({ name }: { name: string }) {
 function ThreadPage() {
   const { threadId } = useParams({ from: "/_authenticated/forum/$threadId" });
   const { user } = useAuth();
+  const { isModerator } = useModerator();
+  const navigate = useNavigate();
   const [thread, setThread] = useState<Thread | null>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [votes, setVotes] = useState<Record<string, number>>({}); // key: `${type}:${id}`
+  const [votes, setVotes] = useState<Record<string, number>>({});
+  const [report, setReport] = useState<{ type: "thread" | "answer"; id: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -70,13 +76,11 @@ function ThreadPage() {
 
   useEffect(() => { load(); }, [threadId]);
 
-  // Track view (unique per user)
   useEffect(() => {
     if (!user || !thread) return;
     supabase.from("forum_thread_views").insert({ thread_id: thread.id, user_id: user.id }).then(() => {});
   }, [user, thread?.id]);
 
-  // Load user's votes for this thread + its answers
   useEffect(() => {
     if (!user || !thread) return;
     const ids = [thread.id, ...answers.map((a) => a.id)];
@@ -140,6 +144,23 @@ function ThreadPage() {
     load();
   };
 
+  const deleteThread = async () => {
+    if (!thread) return;
+    if (!confirm("Delete this thread permanently? All answers and comments will be removed.")) return;
+    const { error } = await supabase.from("forum_threads").delete().eq("id", thread.id);
+    if (error) return toast.error(error.message);
+    toast.success("Thread deleted");
+    navigate({ to: "/forum" });
+  };
+
+  const deleteAnswer = async (answerId: string) => {
+    if (!confirm("Delete this answer?")) return;
+    const { error } = await supabase.from("forum_answers").delete().eq("id", answerId);
+    if (error) return toast.error(error.message);
+    toast.success("Answer deleted");
+    load();
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <Navbar />
@@ -176,6 +197,16 @@ function ThreadPage() {
                       <AuthorLink name={thread.author_name} />
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
                       <span>{thread.view_count.toLocaleString()} views</span>
+                      {user && user.id !== thread.user_id && (
+                        <button onClick={() => setReport({ type: "thread", id: thread.id })} className="inline-flex items-center gap-1 text-muted-foreground hover:text-neon-pink transition-colors">
+                          <Flag className="w-3 h-3" />Report
+                        </button>
+                      )}
+                      {(user?.id === thread.user_id || isModerator) && (
+                        <button onClick={deleteThread} className="inline-flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="w-3 h-3" />Delete{isModerator && user?.id !== thread.user_id ? " (mod)" : ""}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -201,14 +232,25 @@ function ThreadPage() {
                           </div>
                         )}
                         <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap mb-3">{a.body}</p>
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="text-[11px] text-muted-foreground">
-                            <AuthorLink name={a.author_name} /> · {timeAgo(a.created_at)}
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-3 flex-wrap">
+                            <span><AuthorLink name={a.author_name} /> · {timeAgo(a.created_at)}</span>
+                            {user && user.id !== a.user_id && (
+                              <button onClick={() => setReport({ type: "answer", id: a.id })} className="inline-flex items-center gap-1 hover:text-neon-pink transition-colors">
+                                <Flag className="w-3 h-3" />Report
+                              </button>
+                            )}
+                            {(user?.id === a.user_id || isModerator) && (
+                              <button onClick={() => deleteAnswer(a.id)} className="inline-flex items-center gap-1 hover:text-destructive transition-colors">
+                                <Trash2 className="w-3 h-3" />Delete
+                              </button>
+                            )}
                           </div>
                           {!a.accepted && user?.id === thread.user_id && (
                             <button onClick={() => acceptAnswer(a.id)} className="text-[10px] font-bold tracking-widest text-neon-cyan hover:bg-neon-cyan/10 px-2 py-1 transition-colors">ACCEPT ANSWER</button>
                           )}
                         </div>
+                        <AnswerComments answerId={a.id} isModerator={isModerator} />
                       </div>
                     </div>
                   </div>
@@ -235,10 +277,27 @@ function ThreadPage() {
                   </button>
                 </div>
               </form>
+
+              {isModerator && (
+                <div className="mt-6 text-center">
+                  <Link to="/admin/forum" className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-neon-cyan hover:underline">
+                    <ShieldCheck className="w-3.5 h-3.5" />REVIEW REPORTS QUEUE
+                  </Link>
+                </div>
+              )}
             </>
           )}
         </div>
       </section>
+
+      {report && (
+        <ReportDialog
+          open={!!report}
+          onClose={() => setReport(null)}
+          targetType={report.type}
+          targetId={report.id}
+        />
+      )}
     </div>
   );
 }

@@ -157,6 +157,77 @@ export type Database = {
           },
         ]
       }
+      forum_comments: {
+        Row: {
+          answer_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer_id: string
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer_id?: string
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_comments_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "forum_answers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       forum_thread_views: {
         Row: {
           thread_id: string
@@ -329,6 +400,7 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          avatar_url: string | null
           avg_completion_time: number | null
           best_streak: number
           created_at: string
@@ -348,6 +420,7 @@ export type Database = {
           xp: number
         }
         Insert: {
+          avatar_url?: string | null
           avg_completion_time?: number | null
           best_streak?: number
           created_at?: string
@@ -367,6 +440,7 @@ export type Database = {
           xp?: number
         }
         Update: {
+          avatar_url?: string | null
           avg_completion_time?: number | null
           best_streak?: number
           created_at?: string
@@ -384,6 +458,27 @@ export type Database = {
           username?: string | null
           weak_areas?: string[] | null
           xp?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -408,9 +503,16 @@ export type Database = {
           learners: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -537,6 +639,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

@@ -31,6 +31,7 @@ type Report = {
 function AdminForumPage() {
   const { isModerator, loading: roleLoading } = useModerator();
   const [reports, setReports] = useState<Report[]>([]);
+  const [snippets, setSnippets] = useState<Record<string, { title?: string; body: string; author?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
 
@@ -39,8 +40,30 @@ function AdminForumPage() {
     let q = supabase.from("forum_reports").select("*").order("created_at", { ascending: false }).limit(200);
     if (filter === "pending") q = q.eq("status", "pending");
     const { data } = await q;
-    setReports((data as Report[]) || []);
+    const list = (data as Report[]) || [];
+    setReports(list);
     setLoading(false);
+
+    // Fetch snippet content for each report's target
+    const grouped = { thread: [] as string[], answer: [] as string[], comment: [] as string[] };
+    list.forEach((r) => grouped[r.target_type]?.push(r.target_id));
+
+    const next: typeof snippets = {};
+    const [tRes, aRes, cRes] = await Promise.all([
+      grouped.thread.length
+        ? supabase.from("forum_threads").select("id, title, body, author_name").in("id", grouped.thread)
+        : Promise.resolve({ data: [] as any[] }),
+      grouped.answer.length
+        ? supabase.from("forum_answers").select("id, body, author_name").in("id", grouped.answer)
+        : Promise.resolve({ data: [] as any[] }),
+      grouped.comment.length
+        ? supabase.from("forum_comments").select("id, body, author_name").in("id", grouped.comment)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    (tRes.data || []).forEach((row: any) => { next[row.id] = { title: row.title, body: row.body, author: row.author_name }; });
+    (aRes.data || []).forEach((row: any) => { next[row.id] = { body: row.body, author: row.author_name }; });
+    (cRes.data || []).forEach((row: any) => { next[row.id] = { body: row.body, author: row.author_name }; });
+    setSnippets(next);
   };
 
   useEffect(() => { if (isModerator) load(); }, [isModerator, filter]);

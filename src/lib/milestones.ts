@@ -103,6 +103,10 @@ export function fireMilestoneToasts(milestoneToasts: { title: string; descriptio
         description: t.description,
         duration: 6000,
         className: "milestone-toast",
+        action: {
+          label: "View Progress",
+          onClick: () => { window.location.href = "/progress"; },
+        },
       });
     }, i * 1500); // Stagger toasts
   });

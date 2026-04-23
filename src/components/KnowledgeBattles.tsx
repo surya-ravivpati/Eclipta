@@ -13,6 +13,42 @@ import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDia
 import { BattleReport } from "./battles/BattleReport";
 import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
+import { ROAD_NODES, type MonsterArchetypeKey } from "@/lib/trophy-road-data";
+
+/** Map each archetype → XP at which it is unlocked on the trophy road */
+const ARCHETYPE_UNLOCK_XP: Record<MonsterArchetypeKey, number> = ROAD_NODES.reduce(
+  (acc, n) => {
+    if (n.type === "monster" && n.archetype) acc[n.archetype] = n.xp;
+    return acc;
+  },
+  {} as Record<MonsterArchetypeKey, number>,
+);
+
+/** Pick an opponent Ecliptar within the player's rank band (±1 tier step). */
+function matchmakeOpponent(playerXp: number, playerArch: ArchetypeId): Ecliptar {
+  const archKeys = Object.keys(ARCHETYPE_UNLOCK_XP) as MonsterArchetypeKey[];
+  // Sort archetypes by unlock XP
+  const sorted = [...archKeys].sort(
+    (a, b) => (ARCHETYPE_UNLOCK_XP[a] ?? 0) - (ARCHETYPE_UNLOCK_XP[b] ?? 0),
+  );
+  // Player's own tier index = highest archetype unlocked at their XP
+  const unlockedIdx = sorted.reduce(
+    (best, a, i) => (ARCHETYPE_UNLOCK_XP[a] <= playerXp ? i : best),
+    0,
+  );
+  // Allow ±1 tier band, never include "god" tier unless player is already there
+  const lo = Math.max(0, unlockedIdx - 1);
+  const hi = Math.min(sorted.length - 1, unlockedIdx + 1);
+  const allowed = new Set(sorted.slice(lo, hi + 1));
+  // Prefer different archetype than player; fall back to same archetype
+  const candidates = ECLIPTARS.filter(
+    (e) => allowed.has(e.archetype) && e.archetype !== playerArch,
+  );
+  const pool = candidates.length > 0
+    ? candidates
+    : ECLIPTARS.filter((e) => allowed.has(e.archetype));
+  return pool[Math.floor(Math.random() * pool.length)] ?? ECLIPTARS[0];
+}
 
 // ─── Action Config ───────────────────────────────────────────────────
 const ACTIONS: Record<Action, ActionConfig> = {
@@ -220,6 +256,22 @@ function BattleArena() {
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const [gamblerStats, setGamblerStats] = useState<{ health: number; time: number; damage: number; multiplier: number; difficulty: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [playerXp, setPlayerXp] = useState<number>(0);
+  const [opponentTier, setOpponentTier] = useState<string>("");
+
+  // Fetch player XP once for matchmaking
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("xp")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setPlayerXp((data as any)?.xp ?? 0);
+    })();
+  }, []);
 
   // Returns archetype, with stats overridden by per-battle randomized stats for gambler
   const getArch = useCallback((id: ArchetypeId) => {
@@ -439,11 +491,11 @@ function BattleArena() {
       : null;
     setGamblerStats(rolledGambler);
 
-    // Pick a random Ecliptar opponent (different archetype if possible)
-    const candidates = ECLIPTARS.filter(e => e.archetype !== cls);
-    const oppEclip = candidates[Math.floor(Math.random() * candidates.length)] ?? ECLIPTARS[0];
+    // Rank-based matchmaking: pick an opponent within ±1 tier of the player's XP.
+    const oppEclip = matchmakeOpponent(playerXp, cls);
     const oppArch = ARCHETYPES[oppEclip.archetype];
     setOpponentArchetype(oppEclip.archetype);
+    setOpponentTier(xpToTier(ARCHETYPE_UNLOCK_XP[oppEclip.archetype] ?? 0));
 
     setPhase("searching");
     setTimeout(() => {
@@ -497,6 +549,7 @@ function BattleArena() {
   // ── Searching ──
   if (phase === "searching") {
     const arch = ARCHETYPES[archetype];
+    const playerTier = xpToTier(playerXp);
     return (
       <motion.div className="glass-panel p-10 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <motion.div className="w-20 h-20 mx-auto mb-6 border-2 border-neon-pink/50 flex items-center justify-center"
@@ -505,8 +558,15 @@ function BattleArena() {
         >
           <Target className="w-8 h-8 text-neon-pink" />
         </motion.div>
-        <h3 className="text-xl font-bold font-display mb-1">Matching opponent...</h3>
+        <h3 className="text-xl font-bold font-display mb-1">Matching rank-tier opponent…</h3>
         <p className={`inline-flex items-center gap-1 text-xs font-bold ${arch.color}`}><arch.icon className="w-3.5 h-3.5" /> {arch.name}</p>
+        <div className="mt-3 flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest">
+          <span className={tierColors[playerTier]}>YOU · {playerTier.toUpperCase()}</span>
+          <span className="text-muted-foreground">VS</span>
+          <span className={opponentTier ? tierColors[opponentTier] : "text-muted-foreground"}>
+            {opponentTier ? `${opponentTier.toUpperCase()} TIER` : "…"}
+          </span>
+        </div>
         <motion.div className="flex justify-center gap-1 mt-4" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}>
           {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 bg-neon-pink rounded-full" />)}
         </motion.div>

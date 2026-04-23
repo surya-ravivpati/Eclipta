@@ -836,9 +836,26 @@ function DailyChallengeCard() {
 
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
+  const [showHelp, setShowHelp] = useState(false);
   return (
     <section className="min-h-screen pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-6">
+        {/* Floating Help button */}
+        <motion.button
+          onClick={() => setShowHelp(true)}
+          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-neon-purple text-primary-foreground shadow-lg shadow-neon-purple/40 flex items-center justify-center hover:bg-neon-purple/90 transition-colors"
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          aria-label="How to play"
+          title="How to play"
+        >
+          <HelpCircle className="w-6 h-6" />
+        </motion.button>
+
+        <AnimatePresence>
+          {showHelp && <HowToPlayDialog onClose={() => setShowHelp(false)} />}
+        </AnimatePresence>
+
         <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
             <Swords className="w-3 h-3" />

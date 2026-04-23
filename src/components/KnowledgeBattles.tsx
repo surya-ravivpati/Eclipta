@@ -2,8 +2,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
-  Target, Heart, Skull, Dices, User, Bot,
+  Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info,
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 import type { Phase, Action, ArchetypeId, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig } from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
@@ -24,30 +28,36 @@ const ARCHETYPE_UNLOCK_XP: Record<MonsterArchetypeKey, number> = ROAD_NODES.redu
   {} as Record<MonsterArchetypeKey, number>,
 );
 
-/** Pick an opponent Ecliptar within the player's rank band (±1 tier step). */
-function matchmakeOpponent(playerXp: number, playerArch: ArchetypeId): Ecliptar {
+/**
+ * Pick an opponent Ecliptar within a tier band of the player (±band steps).
+ * Returns the Ecliptar plus the band that actually produced it (for UI).
+ * If no human-style opponent is available even at the widest band, returns null
+ * so the caller can fall back to a pure-AI opponent.
+ */
+function matchmakeOpponent(
+  playerXp: number,
+  playerArch: ArchetypeId,
+  band: number,
+): { ecliptar: Ecliptar; band: number } | null {
   const archKeys = Object.keys(ARCHETYPE_UNLOCK_XP) as MonsterArchetypeKey[];
-  // Sort archetypes by unlock XP
   const sorted = [...archKeys].sort(
     (a, b) => (ARCHETYPE_UNLOCK_XP[a] ?? 0) - (ARCHETYPE_UNLOCK_XP[b] ?? 0),
   );
-  // Player's own tier index = highest archetype unlocked at their XP
   const unlockedIdx = sorted.reduce(
     (best, a, i) => (ARCHETYPE_UNLOCK_XP[a] <= playerXp ? i : best),
     0,
   );
-  // Allow ±1 tier band, never include "god" tier unless player is already there
-  const lo = Math.max(0, unlockedIdx - 1);
-  const hi = Math.min(sorted.length - 1, unlockedIdx + 1);
+  const lo = Math.max(0, unlockedIdx - band);
+  const hi = Math.min(sorted.length - 1, unlockedIdx + band);
   const allowed = new Set(sorted.slice(lo, hi + 1));
-  // Prefer different archetype than player; fall back to same archetype
   const candidates = ECLIPTARS.filter(
     (e) => allowed.has(e.archetype) && e.archetype !== playerArch,
   );
   const pool = candidates.length > 0
     ? candidates
     : ECLIPTARS.filter((e) => allowed.has(e.archetype));
-  return pool[Math.floor(Math.random() * pool.length)] ?? ECLIPTARS[0];
+  if (pool.length === 0) return null;
+  return { ecliptar: pool[Math.floor(Math.random() * pool.length)], band };
 }
 
 // ─── Action Config ───────────────────────────────────────────────────
@@ -258,6 +268,8 @@ function BattleArena() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
   const [opponentTier, setOpponentTier] = useState<string>("");
+  const [searchBand, setSearchBand] = useState<number>(1);
+  const [searchAiFallback, setSearchAiFallback] = useState<boolean>(false);
 
   // Fetch player XP once for matchmaking
   useEffect(() => {
@@ -491,13 +503,41 @@ function BattleArena() {
       : null;
     setGamblerStats(rolledGambler);
 
-    // Rank-based matchmaking: pick an opponent within ±1 tier of the player's XP.
-    const oppEclip = matchmakeOpponent(playerXp, cls);
+    // Progressive rank-based matchmaking: try ±1, widen to ±2, ±3, then AI fallback.
+    setSearchBand(1);
+    setSearchAiFallback(false);
+    setOpponentTier("");
+    setPhase("searching");
+
+    const tryBands: number[] = [1, 2, 3];
+    let resolved: { ecliptar: Ecliptar; band: number } | null = null;
+    for (const b of tryBands) {
+      const r = matchmakeOpponent(playerXp, cls, b);
+      if (r) { resolved = r; break; }
+    }
+    // AI fallback: if every band is empty, pick any Ecliptar as a stand-in opponent.
+    const usedAiFallback = !resolved;
+    const oppEclip: Ecliptar = resolved?.ecliptar ?? ECLIPTARS[Math.floor(Math.random() * ECLIPTARS.length)];
+    const finalBand: number = resolved?.band ?? 99;
     const oppArch = ARCHETYPES[oppEclip.archetype];
     setOpponentArchetype(oppEclip.archetype);
     setOpponentTier(xpToTier(ARCHETYPE_UNLOCK_XP[oppEclip.archetype] ?? 0));
 
-    setPhase("searching");
+    // Animate the band-widening UI: show ±1 (400ms) → ±2 (400ms) → ±3 (400ms) → reveal.
+    // Total ≤ ~1.4s which fits well inside the existing 2.2s search window.
+    const widenSteps: Array<{ band: number; ai: boolean }> = [];
+    for (const b of tryBands) {
+      widenSteps.push({ band: b, ai: false });
+      if (b >= finalBand && !usedAiFallback) break;
+    }
+    if (usedAiFallback) widenSteps.push({ band: 3, ai: true });
+    widenSteps.forEach((step, i) => {
+      setTimeout(() => {
+        setSearchBand(step.band);
+        setSearchAiFallback(step.ai);
+      }, i * 450);
+    });
+
     setTimeout(() => {
       const baseArch = ARCHETYPES[cls];
       const playerStats = rolledGambler ?? baseArch.stats;
@@ -510,6 +550,11 @@ function BattleArena() {
       setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
       addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
+      addLog(
+        usedAiFallback
+          ? `🤖 No live opponents in range — AI fallback engaged.`
+          : `🎯 Matched within ±${finalBand} tier${finalBand > 1 ? "s" : ""} of your rank.`,
+      );
       if (rolledGambler) {
         addLog(`🎲 Gambler rolled: HP ${rolledGambler.health}/4 · TIME ${rolledGambler.time}/4 · DMG ${rolledGambler.damage}/4 · MULT ${rolledGambler.multiplier}/4 · DIFF ${rolledGambler.difficulty}/4`);
       }
@@ -558,7 +603,9 @@ function BattleArena() {
         >
           <Target className="w-8 h-8 text-neon-pink" />
         </motion.div>
-        <h3 className="text-xl font-bold font-display mb-1">Matching rank-tier opponent…</h3>
+        <h3 className="text-xl font-bold font-display mb-1">
+          {searchAiFallback ? "No live opponents — engaging AI…" : "Matching rank-tier opponent…"}
+        </h3>
         <p className={`inline-flex items-center gap-1 text-xs font-bold ${arch.color}`}><arch.icon className="w-3.5 h-3.5" /> {arch.name}</p>
         <div className="mt-3 flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest">
           <span className={tierColors[playerTier]}>YOU · {playerTier.toUpperCase()}</span>
@@ -566,6 +613,10 @@ function BattleArena() {
           <span className={opponentTier ? tierColors[opponentTier] : "text-muted-foreground"}>
             {opponentTier ? `${opponentTier.toUpperCase()} TIER` : "…"}
           </span>
+        </div>
+        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 border border-neon-purple/30 bg-neon-purple/5 text-[10px] font-bold tracking-widest text-neon-purple">
+          <Target className="w-3 h-3" />
+          {searchAiFallback ? "AI FALLBACK" : `SEARCH RANGE · ±${searchBand} TIER${searchBand > 1 ? "S" : ""}`}
         </div>
         <motion.div className="flex justify-center gap-1 mt-4" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}>
           {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 bg-neon-pink rounded-full" />)}
@@ -803,6 +854,7 @@ function DailyChallengeCard() {
 
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
+  const [howOpen, setHowOpen] = useState(false);
   return (
     <section className="min-h-screen pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-6">
@@ -844,6 +896,93 @@ export function KnowledgeBattles() {
           </div>
         </div>
       </div>
+
+      {/* Floating "How to Play" button */}
+      <motion.button
+        onClick={() => setHowOpen(true)}
+        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-neon-purple text-primary-foreground shadow-lg shadow-neon-purple/30 flex items-center justify-center hover:opacity-90 transition-opacity"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label="How to play"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <HelpCircle className="w-6 h-6" />
+      </motion.button>
+
+      <Dialog open={howOpen} onOpenChange={setHowOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl flex items-center gap-2">
+              <Info className="w-5 h-5 text-neon-purple" />
+              How Knowledge Battles work
+            </DialogTitle>
+            <DialogDescription>
+              Everything you need to know — matchmaking, combat, and rewards.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 text-sm">
+            <section>
+              <h4 className="text-xs font-bold tracking-widest text-neon-pink mb-2 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" /> MATCHMAKING
+              </h4>
+              <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
+                <li>
+                  Your <span className="text-foreground font-bold">tier</span> is derived from your XP — the same tiers
+                  used on the Trophy Road (Bronze → God).
+                </li>
+                <li>
+                  Matchmaking starts at <span className="text-foreground font-bold">±1 tier</span>. If no opponent fits,
+                  it widens to <span className="text-foreground font-bold">±2</span>, then <span className="text-foreground font-bold">±3</span>.
+                </li>
+                <li>
+                  After ±3 with no match, an <span className="text-foreground font-bold">AI opponent</span> is dispatched
+                  so you never wait. The current search range is shown in the matchmaking screen.
+                </li>
+                <li>
+                  Whenever possible, the system picks an opponent of a <span className="text-foreground font-bold">different
+                  archetype</span> than yours for variety.
+                </li>
+                <li>
+                  Gods can't farm Bronze — the band is symmetric, so a higher-tier player won't be matched against someone
+                  far below them.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h4 className="text-xs font-bold tracking-widest text-neon-cyan mb-2 flex items-center gap-1.5">
+                <Swords className="w-3.5 h-3.5" /> COMBAT
+              </h4>
+              <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
+                <li><span className="text-foreground font-bold">Attack</span> — medium question, deals damage.</li>
+                <li><span className="text-foreground font-bold">Defend</span> — easy question, heals + builds Focus.</li>
+                <li><span className="text-foreground font-bold">Charge</span> — hard question, max damage.</li>
+                <li><span className="text-foreground font-bold">Wild</span> — costs 10 Focus, random outcome.</li>
+                <li>Correct answers grow your <span className="text-neon-pink font-bold">Streak</span>; combos amplify damage.</li>
+                <li>Wrong answers or timeouts reset your streak and trigger a counter-attack.</li>
+              </ul>
+            </section>
+
+            <section>
+              <h4 className="text-xs font-bold tracking-widest text-neon-purple mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> ARCHETYPES & REWARDS
+              </h4>
+              <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
+                <li>Each archetype tweaks HP, time, damage, multiplier, and question difficulty.</li>
+                <li>Win 3 battles in a day to unlock the <span className="text-foreground font-bold">2x XP daily bonus</span>.</li>
+                <li>XP earned advances your Trophy Road and unlocks new Ecliptars to claim.</li>
+              </ul>
+            </section>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setHowOpen(false)} variant="default">Got it</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { MessageSquare, Search, Users, BookOpen, ChevronUp, ChevronDown, Clock, MessageCircle, Plus, X, Loader2, Tag, Flag, ShieldCheck } from "lucide-react";
+import { MessageSquare, Search, Users, BookOpen, ChevronUp, ChevronDown, Clock, MessageCircle, Plus, X, Loader2, Tag, Trash2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useModerator } from "@/hooks/use-moderator";
-import { ReportDialog } from "@/components/forum/ReportDialog";
 import { toast } from "sonner";
 
 type Thread = {
@@ -38,15 +37,22 @@ function timeAgo(iso: string): string {
 }
 
 
-function ThreadCard({ thread, userVote, onVote }: {
+function ThreadCard({ thread, userVote, onVote, canDelete, onDelete }: {
   thread: Thread;
   userVote: number | null;
   onVote: (dir: 1 | -1) => void;
+  canDelete: boolean;
+  onDelete: () => void;
 }) {
   const handleVote = (e: React.MouseEvent, dir: 1 | -1) => {
     e.preventDefault();
     e.stopPropagation();
     onVote(dir);
+  };
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete();
   };
 
   return (
@@ -110,6 +116,15 @@ function ThreadCard({ thread, userVote, onVote }: {
               <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{thread.answer_count}</span>
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
               <span>{thread.view_count.toLocaleString()} views</span>
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="inline-flex items-center gap-1 hover:text-destructive transition-colors ml-auto"
+                  aria-label="Delete thread"
+                >
+                  <Trash2 className="w-3 h-3" />Delete
+                </button>
+              )}
             </div>
           </div>
         </div>

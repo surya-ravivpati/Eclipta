@@ -10,7 +10,7 @@ import { ReportDialog } from "@/components/forum/ReportDialog";
 import { AnswerComments } from "@/components/forum/AnswerComments";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/forum/$threadId")({
+export const Route = createFileRoute("/_authenticated/forum_/$threadId")({
   head: () => ({
     meta: [
       { title: "Thread – Eclipta Forum" },
@@ -51,7 +51,7 @@ function AuthorLink({ name }: { name: string }) {
 }
 
 function ThreadPage() {
-  const { threadId } = useParams({ from: "/_authenticated/forum/$threadId" });
+  const { threadId } = useParams({ from: "/_authenticated/forum_/$threadId" });
   const { user } = useAuth();
   const { isModerator } = useModerator();
   const navigate = useNavigate();

@@ -26,7 +26,7 @@ import { Route as AuthenticatedCertifiedRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBuildCourseRouteImport } from './routes/_authenticated.build-course'
 import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticated.battles'
 import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
-import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authenticated.forum.$threadId'
+import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authenticated.forum_.$threadId'
 import { Route as AuthenticatedCertifiedSlugRouteImport } from './routes/_authenticated.certified.$slug'
 import { Route as AuthenticatedAdminForumRouteImport } from './routes/_authenticated.admin.forum'
 
@@ -118,9 +118,9 @@ const AuthenticatedAdaptiveTestsRoute =
   } as any)
 const AuthenticatedForumThreadIdRoute =
   AuthenticatedForumThreadIdRouteImport.update({
-    id: '/$threadId',
-    path: '/$threadId',
-    getParentRoute: () => AuthenticatedForumRoute,
+    id: '/forum_/$threadId',
+    path: '/forum/$threadId',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedCertifiedSlugRoute =
   AuthenticatedCertifiedSlugRouteImport.update({
@@ -146,7 +146,7 @@ export interface FileRoutesByFullPath {
   '/build-course': typeof AuthenticatedBuildCourseRoute
   '/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/collection': typeof AuthenticatedCollectionRoute
-  '/forum': typeof AuthenticatedForumRouteWithChildren
+  '/forum': typeof AuthenticatedForumRoute
   '/luna': typeof AuthenticatedLunaRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
@@ -167,7 +167,7 @@ export interface FileRoutesByTo {
   '/build-course': typeof AuthenticatedBuildCourseRoute
   '/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/collection': typeof AuthenticatedCollectionRoute
-  '/forum': typeof AuthenticatedForumRouteWithChildren
+  '/forum': typeof AuthenticatedForumRoute
   '/luna': typeof AuthenticatedLunaRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
@@ -190,14 +190,14 @@ export interface FileRoutesById {
   '/_authenticated/build-course': typeof AuthenticatedBuildCourseRoute
   '/_authenticated/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
-  '/_authenticated/forum': typeof AuthenticatedForumRouteWithChildren
+  '/_authenticated/forum': typeof AuthenticatedForumRoute
   '/_authenticated/luna': typeof AuthenticatedLunaRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/admin/forum': typeof AuthenticatedAdminForumRoute
   '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
-  '/_authenticated/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/_authenticated/forum_/$threadId': typeof AuthenticatedForumThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -263,7 +263,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/_authenticated/admin/forum'
     | '/_authenticated/certified/$slug'
-    | '/_authenticated/forum/$threadId'
+    | '/_authenticated/forum_/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -398,12 +398,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdaptiveTestsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/forum/$threadId': {
-      id: '/_authenticated/forum/$threadId'
-      path: '/$threadId'
+    '/_authenticated/forum_/$threadId': {
+      id: '/_authenticated/forum_/$threadId'
+      path: '/forum/$threadId'
       fullPath: '/forum/$threadId'
       preLoaderRoute: typeof AuthenticatedForumThreadIdRouteImport
-      parentRoute: typeof AuthenticatedForumRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/certified/$slug': {
       id: '/_authenticated/certified/$slug'
@@ -436,28 +436,18 @@ const AuthenticatedCertifiedRouteWithChildren =
     AuthenticatedCertifiedRouteChildren,
   )
 
-interface AuthenticatedForumRouteChildren {
-  AuthenticatedForumThreadIdRoute: typeof AuthenticatedForumThreadIdRoute
-}
-
-const AuthenticatedForumRouteChildren: AuthenticatedForumRouteChildren = {
-  AuthenticatedForumThreadIdRoute: AuthenticatedForumThreadIdRoute,
-}
-
-const AuthenticatedForumRouteWithChildren =
-  AuthenticatedForumRoute._addFileChildren(AuthenticatedForumRouteChildren)
-
 interface AuthenticatedRouteChildren {
   AuthenticatedAdaptiveTestsRoute: typeof AuthenticatedAdaptiveTestsRoute
   AuthenticatedBattlesRoute: typeof AuthenticatedBattlesRoute
   AuthenticatedBuildCourseRoute: typeof AuthenticatedBuildCourseRoute
   AuthenticatedCertifiedRoute: typeof AuthenticatedCertifiedRouteWithChildren
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
-  AuthenticatedForumRoute: typeof AuthenticatedForumRouteWithChildren
+  AuthenticatedForumRoute: typeof AuthenticatedForumRoute
   AuthenticatedLunaRoute: typeof AuthenticatedLunaRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
   AuthenticatedAdminForumRoute: typeof AuthenticatedAdminForumRoute
+  AuthenticatedForumThreadIdRoute: typeof AuthenticatedForumThreadIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -466,11 +456,12 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBuildCourseRoute: AuthenticatedBuildCourseRoute,
   AuthenticatedCertifiedRoute: AuthenticatedCertifiedRouteWithChildren,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
-  AuthenticatedForumRoute: AuthenticatedForumRouteWithChildren,
+  AuthenticatedForumRoute: AuthenticatedForumRoute,
   AuthenticatedLunaRoute: AuthenticatedLunaRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
   AuthenticatedAdminForumRoute: AuthenticatedAdminForumRoute,
+  AuthenticatedForumThreadIdRoute: AuthenticatedForumThreadIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

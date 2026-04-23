@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Lightbulb, AlertTriangle, Eye, Sparkles, Coffee, BookOpen, ArrowRight, Monitor, Loader2 } from "lucide-react";
+import { X, Send, Lightbulb, Eye, Sparkles, Coffee, BookOpen, ArrowRight, Monitor, Loader2 } from "lucide-react";
 import { streamLunaChat, parseLunaTag } from "@/lib/luna-api";
 import { getLunaContext, detectFatigue, getSessionDuration, getAccuracy, escalateHint, resetHintLevel } from "@/lib/luna-context";
 import { captureScreenFrame } from "@/lib/luna-screen";
@@ -29,7 +29,6 @@ const TAG_CONFIG = {
   explain: { icon: BookOpen, color: "text-neon-cyan", label: "EXPLAIN" },
   challenge: { icon: Eye, color: "text-neon-pink", label: "CHALLENGE" },
   break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
-  refuse: { icon: AlertTriangle, color: "text-neon-pink", label: "THINK FIRST" },
 };
 
 export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChatPanelProps) {
@@ -168,9 +167,11 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
 
       setMessages(prev => {
         const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && last === prev[prev.length - 1] && prev.length > 0 && prev[prev.length - 1].role === "assistant") {
+        // After the first chunk we always have an assistant message at the tail; update in place.
+        if (last?.role === "assistant") {
           return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanText, tag } : m);
         }
+        // First chunk: append a new assistant message.
         return [...prev, { role: "assistant" as const, content: cleanText, tag }];
       });
     };

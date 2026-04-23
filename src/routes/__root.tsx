@@ -3,7 +3,7 @@ import { Luna } from "@/components/Luna";
 import { SiteFooter } from "@/components/SiteFooter";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 const HIDE_LUNA_ON = ["/login", "/signup", "/forgot-password", "/reset-password", "/luna"];

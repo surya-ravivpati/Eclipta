@@ -491,11 +491,11 @@ function BattleArena() {
       : null;
     setGamblerStats(rolledGambler);
 
-    // Pick a random Ecliptar opponent (different archetype if possible)
-    const candidates = ECLIPTARS.filter(e => e.archetype !== cls);
-    const oppEclip = candidates[Math.floor(Math.random() * candidates.length)] ?? ECLIPTARS[0];
+    // Rank-based matchmaking: pick an opponent within ±1 tier of the player's XP.
+    const oppEclip = matchmakeOpponent(playerXp, cls);
     const oppArch = ARCHETYPES[oppEclip.archetype];
     setOpponentArchetype(oppEclip.archetype);
+    setOpponentTier(xpToTier(ARCHETYPE_UNLOCK_XP[oppEclip.archetype] ?? 0));
 
     setPhase("searching");
     setTimeout(() => {

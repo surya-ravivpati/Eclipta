@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Lock, ArrowLeft, Zap } from "lucide-react";
+import { Lock, ArrowLeft, Zap, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
-import { getUnlockedArchetypes, ROAD_NODES } from "@/lib/trophy-road-data";
+import { ROAD_NODES } from "@/lib/trophy-road-data";
 import { cn } from "@/lib/utils";
 import { useOwnedEcliptars, usePlayerXp } from "@/hooks/use-player-xp";
 import { getEcliptarsByArchetype, getEcliptarBySlug, type Ecliptar } from "@/lib/ecliptars";
@@ -26,8 +26,14 @@ export interface ClassSelection {
 export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection) => void }) {
   const { xp } = usePlayerXp();
   const { slugs: ownedSlugs } = useOwnedEcliptars();
-  const unlocked = getUnlockedArchetypes(xp);
   const allArchetypes = Object.values(ARCHETYPES);
+  // Decoupled rule: an archetype is usable as long as the player owns at least one of its Ecliptars,
+  // regardless of current XP rank. XP rank only affects matchmaking (who you fight).
+  const usableArchIds = new Set(
+    allArchetypes
+      .filter((a) => getEcliptarsByArchetype(a.id).some((e) => ownedSlugs.has(e.slug)))
+      .map((a) => a.id),
+  );
   const [pickedArch, setPickedArch] = useState<ArchetypeId | null>(null);
   const [equippedSlug, setEquippedSlug] = useState<string | null>(null);
 
@@ -160,13 +166,20 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
 
       <h3 className="text-xl font-bold font-display text-center mb-1">Choose Your Archetype</h3>
       <p className="text-xs text-muted-foreground text-center mb-6">
-        Unlock more archetypes by progressing on the Trophy Road.
-        <span className="text-neon-purple font-bold ml-1">{unlocked.length}/{allArchetypes.length}</span> unlocked
+        Equip <span className="text-foreground font-bold">any Ecliptar you've unlocked</span>, no matter your rank.
+        <span className="text-neon-purple font-bold ml-1">{usableArchIds.size}/{allArchetypes.length}</span> archetypes ready
       </p>
+      <div className="flex items-start gap-2 mb-5 px-3 py-2 border border-neon-purple/20 bg-neon-purple/5 text-[10px] text-muted-foreground leading-relaxed">
+        <Info className="w-3 h-3 text-neon-purple shrink-0 mt-0.5" />
+        <span>
+          Your XP rank decides <span className="text-foreground font-bold">who you fight</span> — not what you bring.
+          Unlock more Ecliptars on the Trophy Road.
+        </span>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {allArchetypes.map((arch) => {
-          const isUnlocked = unlocked.includes(arch.id);
+          const isUnlocked = usableArchIds.has(arch.id);
           const monsterNode = ROAD_NODES.find(n => n.archetype === arch.id);
           const xpNeeded = monsterNode ? monsterNode.xp : 0;
           const ownedCount = getEcliptarsByArchetype(arch.id).filter(e => ownedSlugs.has(e.slug)).length;
@@ -189,7 +202,10 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
                 <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center gap-1">
                   <Lock className="w-5 h-5 text-muted-foreground" />
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    {xpNeeded.toLocaleString()} XP
+                    Claim on Trophy Road
+                  </span>
+                  <span className="text-[9px] text-muted-foreground/70 font-mono">
+                    (unlocks at {xpNeeded.toLocaleString()} XP)
                   </span>
                 </div>
               )}

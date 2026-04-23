@@ -835,6 +835,108 @@ function DailyChallengeCard() {
 }
 
 // ─── Main Export ──────────────────────────────────────────────────────
+function HowToPlayDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="glass-panel max-w-2xl w-full p-8 max-h-[85vh] overflow-y-auto relative"
+        initial={{ scale: 0.92, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.92, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-neon-purple/15 border border-neon-purple/40 flex items-center justify-center">
+            <HelpCircle className="w-5 h-5 text-neon-purple" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold font-display">How Battles Work</h2>
+            <p className="text-[10px] tracking-widest text-neon-purple font-bold">RULES · MATCHMAKING · ECLIPTARS</p>
+          </div>
+        </div>
+
+        <section className="mb-5">
+          <h3 className="text-xs font-bold tracking-widest text-neon-cyan mb-2">⚔️ THE LOOP</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Pick an action (Attack, Defend, Charge, Wild) → solve the math problem before time runs out.
+            Correct answers deal damage or heal. Build a streak for bonus multipliers. First to 0 HP loses.
+          </p>
+        </section>
+
+        <section className="mb-5">
+          <h3 className="text-xs font-bold tracking-widest text-neon-pink mb-2">🎯 RANK-BASED MATCHMAKING</h3>
+          <ul className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+            <li className="flex gap-2">
+              <span className="text-neon-pink font-bold">1.</span>
+              <span>We first search opponents within <span className="text-foreground font-bold">±1 tier</span> of your XP rank (Bronze ↔ God).</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-neon-pink font-bold">2.</span>
+              <span>If no match is found quickly, the band <span className="text-foreground font-bold">widens to ±2, then ±3 tiers</span>.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-neon-pink font-bold">3.</span>
+              <span>If still empty, a <span className="text-foreground font-bold">calibrated AI rival</span> takes over so you never wait — labeled <span className="text-neon-purple font-bold">AI_</span> in the arena.</span>
+            </li>
+          </ul>
+          <p className="mt-3 text-[10px] text-muted-foreground italic">
+            Gods don't fight Bronze. Bronze don't fight Gods. Tier band keeps fights fair.
+          </p>
+        </section>
+
+        <section className="mb-5">
+          <h3 className="text-xs font-bold tracking-widest text-tier-gold mb-2">🐉 ECLIPTARS ≠ RANK LOCK</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Your XP rank decides <span className="text-foreground font-bold">who you fight</span>, but
+            <span className="text-foreground font-bold"> not what you bring</span>. You can field
+            <span className="text-neon-cyan"> any Ecliptar you've unlocked</span> on the Trophy Road, regardless of its
+            archetype tier. A Champion can rock a Bronze Speedster. A Bronze player who unlocked a higher Ecliptar
+            in collection can still equip it — matchmaking won't punish you for the choice.
+          </p>
+        </section>
+
+        <section className="mb-5">
+          <h3 className="text-xs font-bold tracking-widest text-neon-purple mb-2">🔥 STREAKS & FOCUS</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Consecutive correct answers build <span className="text-neon-pink font-bold">Momentum</span>. Each archetype's
+            multiplier stat dictates how hard streaks scale. Wrong answers reset the streak and trigger a counter-attack.
+            <span className="text-neon-purple font-bold"> Wild</span> costs 10 Focus and can roll healing or extra damage.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-xs font-bold tracking-widest text-neon-cyan mb-2">🏆 DAILY CHALLENGE</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Win 3 battles in a UTC day to unlock the <span className="text-foreground font-bold">2× XP bonus</span>.
+            Resets at midnight UTC.
+          </p>
+        </section>
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full px-6 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity"
+        >
+          GOT IT — TO BATTLE
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export function KnowledgeBattles() {
   const [showHelp, setShowHelp] = useState(false);
   return (

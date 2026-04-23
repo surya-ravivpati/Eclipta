@@ -2,8 +2,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
-  Target, Heart, Skull, Dices, User, Bot,
+  Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info,
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 import type { Phase, Action, ArchetypeId, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig } from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
@@ -24,30 +28,36 @@ const ARCHETYPE_UNLOCK_XP: Record<MonsterArchetypeKey, number> = ROAD_NODES.redu
   {} as Record<MonsterArchetypeKey, number>,
 );
 
-/** Pick an opponent Ecliptar within the player's rank band (±1 tier step). */
-function matchmakeOpponent(playerXp: number, playerArch: ArchetypeId): Ecliptar {
+/**
+ * Pick an opponent Ecliptar within a tier band of the player (±band steps).
+ * Returns the Ecliptar plus the band that actually produced it (for UI).
+ * If no human-style opponent is available even at the widest band, returns null
+ * so the caller can fall back to a pure-AI opponent.
+ */
+function matchmakeOpponent(
+  playerXp: number,
+  playerArch: ArchetypeId,
+  band: number,
+): { ecliptar: Ecliptar; band: number } | null {
   const archKeys = Object.keys(ARCHETYPE_UNLOCK_XP) as MonsterArchetypeKey[];
-  // Sort archetypes by unlock XP
   const sorted = [...archKeys].sort(
     (a, b) => (ARCHETYPE_UNLOCK_XP[a] ?? 0) - (ARCHETYPE_UNLOCK_XP[b] ?? 0),
   );
-  // Player's own tier index = highest archetype unlocked at their XP
   const unlockedIdx = sorted.reduce(
     (best, a, i) => (ARCHETYPE_UNLOCK_XP[a] <= playerXp ? i : best),
     0,
   );
-  // Allow ±1 tier band, never include "god" tier unless player is already there
-  const lo = Math.max(0, unlockedIdx - 1);
-  const hi = Math.min(sorted.length - 1, unlockedIdx + 1);
+  const lo = Math.max(0, unlockedIdx - band);
+  const hi = Math.min(sorted.length - 1, unlockedIdx + band);
   const allowed = new Set(sorted.slice(lo, hi + 1));
-  // Prefer different archetype than player; fall back to same archetype
   const candidates = ECLIPTARS.filter(
     (e) => allowed.has(e.archetype) && e.archetype !== playerArch,
   );
   const pool = candidates.length > 0
     ? candidates
     : ECLIPTARS.filter((e) => allowed.has(e.archetype));
-  return pool[Math.floor(Math.random() * pool.length)] ?? ECLIPTARS[0];
+  if (pool.length === 0) return null;
+  return { ecliptar: pool[Math.floor(Math.random() * pool.length)], band };
 }
 
 // ─── Action Config ───────────────────────────────────────────────────

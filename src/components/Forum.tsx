@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { MessageSquare, Search, Users, BookOpen, ChevronUp, ChevronDown, Clock, MessageCircle, Plus, X, Loader2, Tag, Flag, ShieldCheck } from "lucide-react";
+import { MessageSquare, Search, Users, BookOpen, ChevronUp, ChevronDown, Clock, MessageCircle, Plus, X, Loader2, Tag, Trash2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useModerator } from "@/hooks/use-moderator";
-import { ReportDialog } from "@/components/forum/ReportDialog";
 import { toast } from "sonner";
 
 type Thread = {
@@ -38,15 +37,22 @@ function timeAgo(iso: string): string {
 }
 
 
-function ThreadCard({ thread, userVote, onVote }: {
+function ThreadCard({ thread, userVote, onVote, canDelete, onDelete }: {
   thread: Thread;
   userVote: number | null;
   onVote: (dir: 1 | -1) => void;
+  canDelete: boolean;
+  onDelete: () => void;
 }) {
   const handleVote = (e: React.MouseEvent, dir: 1 | -1) => {
     e.preventDefault();
     e.stopPropagation();
     onVote(dir);
+  };
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete();
   };
 
   return (
@@ -110,6 +116,15 @@ function ThreadCard({ thread, userVote, onVote }: {
               <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{thread.answer_count}</span>
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
               <span>{thread.view_count.toLocaleString()} views</span>
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="inline-flex items-center gap-1 hover:text-destructive transition-colors ml-auto"
+                  aria-label="Delete thread"
+                >
+                  <Trash2 className="w-3 h-3" />Delete
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -231,7 +246,6 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
 export function Forum() {
   const { user, isAuthenticated } = useAuth();
   const { isModerator } = useModerator();
-  const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{ threads: number; answers: number; contributors: number } | null>(null);
@@ -289,6 +303,14 @@ export function Forum() {
     }
     setUserVotes(optimistic);
     setThreads((prev) => prev.map((t) => t.id === threadId ? { ...t, votes: t.votes + delta } : t));
+  };
+
+  const handleDeleteThread = async (threadId: string) => {
+    if (!confirm("Delete this thread permanently? All answers and comments will be removed.")) return;
+    const { error } = await supabase.from("forum_threads").delete().eq("id", threadId);
+    if (error) return toast.error(error.message);
+    setThreads((prev) => prev.filter((t) => t.id !== threadId));
+    toast.success("Thread deleted");
   };
 
   const filtered = useMemo(() => {
@@ -423,6 +445,8 @@ export function Forum() {
                     thread={thread}
                     userVote={userVotes[thread.id] ?? null}
                     onVote={(dir) => handleVote(thread.id, dir)}
+                    canDelete={!!user && (user.id === thread.user_id || isModerator)}
+                    onDelete={() => handleDeleteThread(thread.id)}
                   />
                 ))}
               </AnimatePresence>

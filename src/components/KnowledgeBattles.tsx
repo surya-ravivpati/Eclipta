@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
-  Target, Heart, Skull, Dices, User, Bot,
+  Target, Heart, Skull, Dices, User, Bot, HelpCircle, X,
 } from "lucide-react";
 
 import type { Phase, Action, ArchetypeId, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig } from "./battles/types";
@@ -24,30 +24,36 @@ const ARCHETYPE_UNLOCK_XP: Record<MonsterArchetypeKey, number> = ROAD_NODES.redu
   {} as Record<MonsterArchetypeKey, number>,
 );
 
-/** Pick an opponent Ecliptar within the player's rank band (±1 tier step). */
-function matchmakeOpponent(playerXp: number, playerArch: ArchetypeId): Ecliptar {
+/**
+ * Progressive rank-based matchmaking with widening fallback.
+ * Returns the chosen opponent + which band width (in tier steps) was used.
+ * Band 1 = ±1 tier (preferred), 2 = ±2, 3 = ±3, 99 = "open" (any tier, AI fallback).
+ */
+function matchmakeOpponent(
+  playerXp: number,
+  playerArch: ArchetypeId,
+  bandWidth: number,
+): { ecliptar: Ecliptar; bandUsed: number } {
   const archKeys = Object.keys(ARCHETYPE_UNLOCK_XP) as MonsterArchetypeKey[];
-  // Sort archetypes by unlock XP
   const sorted = [...archKeys].sort(
     (a, b) => (ARCHETYPE_UNLOCK_XP[a] ?? 0) - (ARCHETYPE_UNLOCK_XP[b] ?? 0),
   );
-  // Player's own tier index = highest archetype unlocked at their XP
   const unlockedIdx = sorted.reduce(
     (best, a, i) => (ARCHETYPE_UNLOCK_XP[a] <= playerXp ? i : best),
     0,
   );
-  // Allow ±1 tier band, never include "god" tier unless player is already there
-  const lo = Math.max(0, unlockedIdx - 1);
-  const hi = Math.min(sorted.length - 1, unlockedIdx + 1);
+  const lo = Math.max(0, unlockedIdx - bandWidth);
+  const hi = Math.min(sorted.length - 1, unlockedIdx + bandWidth);
   const allowed = new Set(sorted.slice(lo, hi + 1));
-  // Prefer different archetype than player; fall back to same archetype
-  const candidates = ECLIPTARS.filter(
-    (e) => allowed.has(e.archetype) && e.archetype !== playerArch,
-  );
-  const pool = candidates.length > 0
-    ? candidates
-    : ECLIPTARS.filter((e) => allowed.has(e.archetype));
-  return pool[Math.floor(Math.random() * pool.length)] ?? ECLIPTARS[0];
+  // Prefer different archetype than player; fall back to same; finally any.
+  const diffArch = ECLIPTARS.filter((e) => allowed.has(e.archetype) && e.archetype !== playerArch);
+  const sameArch = ECLIPTARS.filter((e) => allowed.has(e.archetype));
+  const pool = diffArch.length > 0 ? diffArch : sameArch.length > 0 ? sameArch : ECLIPTARS;
+  const usedBand = diffArch.length > 0 || sameArch.length > 0 ? bandWidth : 99;
+  return {
+    ecliptar: pool[Math.floor(Math.random() * pool.length)] ?? ECLIPTARS[0],
+    bandUsed: usedBand,
+  };
 }
 
 // ─── Action Config ───────────────────────────────────────────────────

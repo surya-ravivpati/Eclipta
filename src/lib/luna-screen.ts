@@ -1,9 +1,14 @@
-// Captures a single frame from the user's screen via getDisplayMedia, returns base64 PNG data URL.
-// Stops the stream immediately after capture so the browser doesn't keep sharing.
-export async function captureScreenFrame(): Promise<string | null> {
+// Captures a single frame from the user's screen via getDisplayMedia.
+// Returns { dataUrl } on success, or { error } describing why it failed
+// (denied, unsupported, generic) so callers can surface a toast.
+export type ScreenCaptureResult =
+  | { ok: true; dataUrl: string }
+  | { ok: false; error: "denied" | "unsupported" | "failed"; message: string };
+
+export async function captureScreenFrame(): Promise<ScreenCaptureResult> {
   try {
     if (!navigator.mediaDevices?.getDisplayMedia) {
-      throw new Error("Screen capture not supported in this browser.");
+      return { ok: false, error: "unsupported", message: "Screen sharing isn't supported in this browser." };
     }
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: 1 },
@@ -25,17 +30,20 @@ export async function captureScreenFrame(): Promise<string | null> {
     canvas.width = Math.round(w * scale);
     canvas.height = Math.round(h * scale);
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Could not get canvas context");
+    if (!ctx) return { ok: false, error: "failed", message: "Couldn't capture the screen frame." };
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // Stop sharing immediately
     track.stop();
     stream.getTracks().forEach((t) => t.stop());
 
-    return canvas.toDataURL("image/jpeg", 0.7);
+    return { ok: true, dataUrl: canvas.toDataURL("image/jpeg", 0.7) };
   } catch (e) {
-    if ((e as Error).name === "NotAllowedError") return null;
+    const name = (e as Error).name;
+    if (name === "NotAllowedError") {
+      return { ok: false, error: "denied", message: "Screen sharing was denied. You can try again when you're ready." };
+    }
     console.error("Screen capture failed:", e);
-    return null;
+    return { ok: false, error: "failed", message: "Screen capture failed. Try again in a moment." };
   }
 }

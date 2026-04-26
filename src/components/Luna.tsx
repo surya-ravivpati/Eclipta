@@ -50,6 +50,7 @@ export function Luna() {
   const [hasNudged, setHasNudged] = useState(false);
   const [iconState, setIconState] = useState<"idle" | "thinking" | "alert" | "happy">("idle");
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // Load profile once on mount so the intro can be personalized
   useEffect(() => {
@@ -70,13 +71,19 @@ export function Luna() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50))); } catch { /* ignore */ }
   }, [messages]);
 
-  // Nudge after 30s
+  // Nudge after 30s of inactivity. After the user dismisses (opens the panel),
+  // re-arm on a 5-minute cooldown so Luna can gently remind once per session
+  // gap, not constantly.
   useEffect(() => {
     if (open || hasNudged) return;
-    const timer = setTimeout(() => {
-      setHasNudged(true);
-    }, 30000);
+    const timer = setTimeout(() => setHasNudged(true), 30000);
     return () => clearTimeout(timer);
+  }, [open, hasNudged]);
+
+  useEffect(() => {
+    if (open || !hasNudged) return;
+    const cooldown = setTimeout(() => setHasNudged(false), 5 * 60 * 1000);
+    return () => clearTimeout(cooldown);
   }, [open, hasNudged]);
 
   // Monitor fatigue for icon state
@@ -88,14 +95,16 @@ export function Luna() {
     return () => clearInterval(interval);
   }, []);
 
-  // Detect streaming for thinking state
+  // Drive icon state from streaming + happy completion ping.
   useEffect(() => {
+    if (isStreaming) { setIconState("thinking"); return; }
     const last = messages[messages.length - 1];
-    if (last?.role === "assistant" && last.tag === null && messages.length > 1) {
+    if (last?.role === "assistant" && messages.length > 1) {
       setIconState("happy");
-      setTimeout(() => setIconState("idle"), 2000);
+      const t = setTimeout(() => setIconState("idle"), 2000);
+      return () => clearTimeout(t);
     }
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   const handleOpen = () => {
     setOpen(true);
@@ -125,6 +134,7 @@ export function Luna() {
         onClose={handleClose}
         messages={messages}
         setMessages={setMessages}
+        onStreamingChange={setIsStreaming}
       />
     </>
   );

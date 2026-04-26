@@ -78,6 +78,8 @@ export async function streamLunaChat({
   onDone,
   onError,
   signal,
+  reasoning,
+  idleTimeoutMs,
 }: {
   messages: Msg[];
   context?: LunaContext;
@@ -85,6 +87,8 @@ export async function streamLunaChat({
   onDone: () => void;
   onError?: (error: string) => void;
   signal?: AbortSignal;
+  reasoning?: { effort: "minimal" | "low" | "medium" | "high" | "xhigh" | "none" };
+  idleTimeoutMs?: number;
 }) {
   try {
     const resp = await fetch(CHAT_URL, {
@@ -93,7 +97,7 @@ export async function streamLunaChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages: trimMessagesForApi(messages), context }),
+      body: JSON.stringify({ messages: trimMessagesForApi(messages), context, reasoning }),
       signal,
     });
 
@@ -120,9 +124,24 @@ export async function streamLunaChat({
     let textBuffer = "";
     let streamDone = false;
 
+    // Idle-timeout: if no chunk arrives within idleTimeoutMs (default 60s),
+    // abort the read so we don't hang the UI on a stuck SSE connection.
+    const timeoutMs = idleTimeoutMs ?? 60000;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    let idleAborted = false;
+    const armIdle = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        idleAborted = true;
+        try { reader.cancel(); } catch { /* ignore */ }
+      }, timeoutMs);
+    };
+    armIdle();
+
     while (!streamDone) {
       const { done, value } = await reader.read();
       if (done) break;
+      armIdle();
       textBuffer += decoder.decode(value, { stream: true });
 
       let newlineIndex: number;
@@ -149,6 +168,12 @@ export async function streamLunaChat({
           break;
         }
       }
+    }
+    if (idleTimer) clearTimeout(idleTimer);
+    if (idleAborted) {
+      onError?.("Luna went quiet. The connection timed out - try again.");
+      onDone();
+      return;
     }
 
     // Final flush
@@ -184,7 +209,8 @@ export function parseLunaTag(content: string): {
   tag: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   text: string;
 } {
-  const match = content.match(/^\[(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\]\s*/i);
+  // Allow whitespace inside the brackets so e.g. "[ HINT ]" still parses.
+  const match = content.match(/^\[\s*(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\s*\]\s*/i);
   if (match) {
     return {
       tag: match[1].toLowerCase() as any,

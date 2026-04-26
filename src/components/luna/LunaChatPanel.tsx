@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, ArrowRight, Monitor, Loader2 } from "lucide-react";
+import { X, Send, ArrowRight, Monitor, Loader2, RotateCcw } from "lucide-react";
 import { streamLunaChat, parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { getLunaContext, getSessionDuration, getAccuracy, escalateHint, resetHintLevel, subscribeFatigue } from "@/lib/luna-context";
 import { captureScreenFrame } from "@/lib/luna-screen";
@@ -26,9 +26,10 @@ interface LunaChatPanelProps {
   onClose: () => void;
   messages: LunaMessage[];
   setMessages: React.Dispatch<React.SetStateAction<LunaMessage[]>>;
+  onStreamingChange?: (streaming: boolean) => void;
 }
 
-export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChatPanelProps) {
+export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamingChange }: LunaChatPanelProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -37,6 +38,10 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
   const abortRef = useRef<AbortController | null>(null);
   const profileRef = useRef<Record<string, unknown> | null>(null);
   const historyRef = useRef<Record<string, unknown>[] | null>(null);
+  const lastSendRef = useRef<{ text: string; image: string | null } | null>(null);
+
+  // Lift streaming status so the floating Luna icon can show the thinking emoji.
+  useEffect(() => { onStreamingChange?.(isStreaming); }, [isStreaming, onStreamingChange]);
 
   // Shared XP-milestone subscription. When new milestones land, append them
   // as Luna messages so the user sees the celebration in-chat.
@@ -100,19 +105,25 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
   const handleScreenShare = async () => {
     if (capturing || isStreaming) return;
     setCapturing(true);
-    const dataUrl = await captureScreenFrame();
+    const result = await captureScreenFrame();
     setCapturing(false);
-    if (dataUrl) {
-      setPendingImage(dataUrl);
+    if (result.ok) {
+      setPendingImage(result.dataUrl);
+    } else {
+      // Surface denial / unsupported / failure so the user knows nothing got attached.
+      toast.error(result.message);
     }
   };
 
-  const send = async () => {
-    const text = input.trim();
-    if ((!text && !pendingImage) || isStreaming) return;
-    setInput("");
-    const attachedImage = pendingImage;
-    setPendingImage(null);
+  const send = async (override?: { text: string; image: string | null }) => {
+    const text = override ? override.text : input.trim();
+    const attachedImage = override ? override.image : pendingImage;
+    if ((!text && !attachedImage) || isStreaming) return;
+    if (!override) {
+      setInput("");
+      setPendingImage(null);
+    }
+    lastSendRef.current = { text, image: attachedImage };
 
     const userMsg: LunaMessage = {
       role: "user",
@@ -204,11 +215,31 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
           role: "assistant",
           content: `Hmm, ${err} 🌙`,
           tag: null,
+          // Mark this bubble so the UI can render a retry button next to it.
+          id: `err-${Date.now()}`,
         }]);
         setIsStreaming(false);
       },
       signal: abortController.signal,
     });
+  };
+
+  const retryLast = () => {
+    const last = lastSendRef.current;
+    if (!last || isStreaming) return;
+    // Drop the trailing error bubble before retrying.
+    setMessages(prev => {
+      for (let i = prev.length - 1; i >= 0; i--) {
+        if (prev[i].role === "assistant" && typeof prev[i].id === "string" && prev[i].id!.startsWith("err-")) {
+          // Also drop the user message we already pushed - send() will re-push it.
+          const trimmed = prev.slice(0, i);
+          while (trimmed.length && trimmed[trimmed.length - 1].role === "user") trimmed.pop();
+          return trimmed;
+        }
+      }
+      return prev;
+    });
+    void send(last);
   };
 
   const tagIcon = (tag?: string | null) => {
@@ -282,6 +313,16 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
                     <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                     </div>
+                  )}
+                  {msg.role === "assistant" && typeof msg.id === "string" && msg.id.startsWith("err-") && (
+                    <button
+                      type="button"
+                      onClick={retryLast}
+                      disabled={isStreaming}
+                      className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-3 h-3" /> RETRY
+                    </button>
                   )}
                 </div>
               </motion.div>

@@ -60,7 +60,7 @@ Every sentence either lowers the reader's confusion or gets cut. Brevity isn't t
 
 Write for someone who left school after 5th grade. Simple, never talking down. Explain a term the first time you use it. Spell acronyms the first time. Every sentence stands on its own.
 
-Numbers as digits: 94 not ninety four. Currencies vary: \\$50, "50 Euro". Write in paragraphs. No bullets. No headers. No bold.
+Numbers as digits: 94 not ninety four. Money in tutoring prose: spell it out as "50 dollars" or "50 Euro" instead of using a dollar sign, because a literal \\$ in chat collides with KaTeX math rendering. Write in paragraphs. No bullets. No headers. No bold.
 
 Lead with the mental model, not the facts. Pick one everyday analogy and weave it through the whole explanation. Grow it as the explanation grows. Don't drop it after the intro.
 
@@ -82,9 +82,9 @@ Good: "Plants eat sunlight. They take light, water, and air, and turn it into su
 
 ## Math and LaTeX
 
-The chat renders LaTeX through KaTeX. Use it for equations, fractions, exponents, integrals, sums, matrices, Greek letters, logic, chemistry subscripts. Inline: \\$x^2 + 3x = 0\\$. Block: double dollar signs on their own lines. Escape money with a backslash so \\$50 stays as a price.
+The chat renders LaTeX through KaTeX. Use it for equations, fractions, exponents, integrals, sums, matrices, Greek letters, logic, chemistry subscripts. Inline: \\$x^2 + 3x = 0\\$. Block: double dollar signs on their own lines.
 
-Don't dollar-wrap plain numbers in prose ("I have 3 apples", not "I have \\$3\\$ apples"). Code goes in fences, not LaTeX. Name the concept first, show the math, tie it back to the analogy.
+For money, never use a dollar sign in prose - it triggers KaTeX. Write "50 dollars" instead of \\$50. Don't dollar-wrap plain numbers in prose ("I have 3 apples", not "I have \\$3\\$ apples"). Code goes in fences, not LaTeX. Name the concept first, show the math, tie it back to the analogy.
 
 ## Thinking lenses (silent)
 
@@ -112,7 +112,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, reasoning } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -192,7 +192,8 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
+        ...(reasoning ? { reasoning } : {}),
         messages: [
           { role: "system", content: contextualPrompt },
           ...messages.map((m: any) => {

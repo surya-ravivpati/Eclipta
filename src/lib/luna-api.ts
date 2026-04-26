@@ -22,6 +22,30 @@ interface LunaContext {
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-chat`;
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
+const STREAM_RETRY_DELAYS_MS = [600, 1400];
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Response> {
+  for (let attempt = 0; attempt <= STREAM_RETRY_DELAYS_MS.length; attempt++) {
+    const resp = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body,
+      signal,
+    });
+
+    if (!TRANSIENT_STATUSES.has(resp.status) || attempt === STREAM_RETRY_DELAYS_MS.length) return resp;
+    await resp.body?.cancel().catch(() => undefined);
+    await wait(STREAM_RETRY_DELAYS_MS[attempt]);
+  }
+
+  throw new Error("Luna is temporarily unavailable. Try again in a moment.");
+}
 
 // Shared tag config so the mini panel and full session render the same way.
 export type LunaTag = "hint" | "nudge" | "explain" | "challenge" | "break";
@@ -91,15 +115,7 @@ export async function streamLunaChat({
   idleTimeoutMs?: number;
 }) {
   try {
-    const resp = await fetch(CHAT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ messages: trimMessagesForApi(messages), context, reasoning }),
-      signal,
-    });
+    const resp = await fetchLunaStream(JSON.stringify({ messages: trimMessagesForApi(messages), context, reasoning }), signal);
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({ error: "Request failed" }));
@@ -108,6 +124,7 @@ export async function streamLunaChat({
       let msg = err.error || `Error ${resp.status}`;
       if (resp.status === 429) msg = "Luna is getting a lot of questions right now. Try again in a moment.";
       else if (resp.status === 402) msg = "Luna's AI credits ran out. Add more in Workspace → Usage.";
+      else if (TRANSIENT_STATUSES.has(resp.status)) msg = "Luna is temporarily unavailable. Try again in a moment.";
       onError?.(msg);
       onDone();
       return;

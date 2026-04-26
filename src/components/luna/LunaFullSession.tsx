@@ -279,18 +279,21 @@ export function LunaFullSession() {
                     ? "bg-neon-purple/15 border border-neon-purple/20 text-foreground"
                     : "bg-secondary/40 border border-border text-foreground"
                 }`}>
-                  {msg.role === "assistant" && msg.tag && TAG_CONFIG[msg.tag] && (
+                  {msg.role === "assistant" && msg.tag && LUNA_TAG_CONFIG[msg.tag] && (
                     <div className="flex items-center gap-1 mb-2">
                       {(() => {
-                        const Icon = TAG_CONFIG[msg.tag].icon;
-                        return <Icon className={`w-3.5 h-3.5 ${TAG_CONFIG[msg.tag].color}`} />;
+                        const Icon = LUNA_TAG_CONFIG[msg.tag].icon;
+                        return <Icon className={`w-3.5 h-3.5 ${LUNA_TAG_CONFIG[msg.tag].color}`} />;
                       })()}
-                      <span className={`text-[9px] font-bold tracking-widest uppercase ${TAG_CONFIG[msg.tag].color}`}>
-                        {TAG_CONFIG[msg.tag].label}
+                      <span className={`text-[9px] font-bold tracking-widest uppercase ${LUNA_TAG_CONFIG[msg.tag].color}`}>
+                        {LUNA_TAG_CONFIG[msg.tag].label}
                       </span>
                     </div>
                   )}
-                  <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0 [&>ul]:mt-1 [&>ol]:mt-1">
+                  {msg.imageDataUrl && (
+                    <img src={msg.imageDataUrl} alt="Shared screen" className="rounded mb-2 border border-border max-w-full" />
+                  )}
+                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:mt-1 [&>ol]:mt-1">
                     <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                   </div>
                 </div>

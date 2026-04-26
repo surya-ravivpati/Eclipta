@@ -313,17 +313,35 @@ export function LunaFullSession() {
 
         {/* Input bar */}
         <div className="border-t border-border px-4 py-4">
+          {pendingImage && (
+            <div className="max-w-2xl mx-auto mb-2 flex items-center gap-2 p-1.5 border border-neon-cyan/30 bg-neon-cyan/5 rounded">
+              <img src={pendingImage} alt="screen preview" className="w-12 h-8 object-cover rounded-sm border border-border" />
+              <span className="text-[10px] font-bold tracking-widest text-neon-cyan flex-1">SCREEN ATTACHED</span>
+              <button type="button" onClick={() => setPendingImage(null)} className="text-muted-foreground hover:text-foreground" aria-label="Remove screen attachment">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
           <form onSubmit={e => { e.preventDefault(); send(); }} className="max-w-2xl mx-auto flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleScreenShare}
+              disabled={capturing || isStreaming}
+              title="Share your screen with Luna"
+              className="p-3 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-md"
+            >
+              {capturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Monitor className="w-4 h-4" />}
+            </button>
             <input
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Ask a question, describe what you're stuck on, or tell Luna what you're learning..."
+              placeholder={pendingImage ? "Ask Luna about your screen..." : "Ask a question, describe what you're stuck on, or tell Luna what you're learning..."}
               className="flex-1 bg-secondary/30 border border-input rounded-md px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-neon-purple/50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || isStreaming}
+              disabled={(!input.trim() && !pendingImage) || isStreaming}
               className="p-3 bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 rounded-md"
             >
               <Send className="w-4 h-4" />

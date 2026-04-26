@@ -31,7 +31,7 @@ export function usePlayerXp() {
       await refresh();
       if (cancelled || !userIdRef.current) return;
       channel = supabase
-        .channel(`xp:${userIdRef.current}`)
+        .channel(`xp:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${userIdRef.current}` },
@@ -80,7 +80,7 @@ export function useOwnedEcliptars() {
       await refresh();
       if (cancelled || !userIdRef.current) return;
       channel = supabase
-        .channel(`ecliptars:${userIdRef.current}`)
+        .channel(`ecliptars:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "user_ecliptars", filter: `user_id=eq.${userIdRef.current}` },

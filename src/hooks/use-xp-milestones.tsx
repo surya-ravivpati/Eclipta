@@ -43,7 +43,7 @@ export function useXpMilestones(opts: { onLunaMessages?: (msgs: string[]) => voi
       handleNewXp((data as any)?.xp ?? 0);
       if (cancelled) return;
       channel = supabase
-        .channel(`xp-milestones:${user.id}`)
+        .channel(`xp-milestones:${user.id}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${user.id}` },

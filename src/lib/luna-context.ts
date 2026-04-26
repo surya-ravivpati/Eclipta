@@ -36,6 +36,27 @@ const DEFAULT_CONTEXT: LunaLearningContext = {
 let context: LunaLearningContext = { ...DEFAULT_CONTEXT };
 let currentOwnerId: string | null = null;
 
+// Pub/sub so Luna can react to fatigue the moment recordAnswer changes the
+// signals, instead of polling on a 60s interval.
+type FatigueLevel = "none" | "mild" | "severe";
+type FatigueListener = (level: FatigueLevel, ctx: LunaLearningContext) => void;
+const fatigueListeners = new Set<FatigueListener>();
+let lastEmittedFatigue: FatigueLevel = "none";
+
+export function subscribeFatigue(listener: FatigueListener): () => void {
+  fatigueListeners.add(listener);
+  return () => fatigueListeners.delete(listener);
+}
+
+function emitFatigueIfChanged() {
+  const level = detectFatigue();
+  if (level === lastEmittedFatigue) return;
+  lastEmittedFatigue = level;
+  fatigueListeners.forEach(l => {
+    try { l(level, context); } catch { /* ignore listener errors */ }
+  });
+}
+
 /**
  * Bind the in-memory context to a specific user. If the owner changes
  * (login, logout, account switch) the context is reset so one user's
@@ -45,6 +66,7 @@ export function bindLunaContextToUser(userId: string | null) {
   if (currentOwnerId === userId) return;
   currentOwnerId = userId;
   context = { ...DEFAULT_CONTEXT, sessionStartTime: Date.now() };
+  lastEmittedFatigue = "none";
 }
 
 export function getLunaContext(): LunaLearningContext {
@@ -84,6 +106,8 @@ export function recordAnswer(correct: boolean, responseTimeMs: number) {
   const n = context.totalQuestions;
   context.avgResponseTime =
     (context.avgResponseTime * (n - 1) + responseTimeMs / 1000) / n;
+
+  emitFatigueIfChanged();
 }
 
 // Fatigue detection
@@ -106,4 +130,5 @@ export function getAccuracy(): number {
 
 export function resetSession() {
   context = { ...DEFAULT_CONTEXT, sessionStartTime: Date.now() };
+  lastEmittedFatigue = "none";
 }

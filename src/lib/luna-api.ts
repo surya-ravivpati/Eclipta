@@ -1,4 +1,5 @@
 // Luna AI streaming client
+import { Lightbulb, Eye, Sparkles, Coffee, BookOpen, type LucideIcon } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string; imageDataUrl?: string };
 
@@ -22,6 +23,54 @@ interface LunaContext {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-chat`;
 
+// Shared tag config so the mini panel and full session render the same way.
+export type LunaTag = "hint" | "nudge" | "explain" | "challenge" | "break";
+export const LUNA_TAG_CONFIG: Record<LunaTag, { icon: LucideIcon; color: string; label: string }> = {
+  hint: { icon: Lightbulb, color: "text-neon-cyan", label: "HINT" },
+  nudge: { icon: Sparkles, color: "text-neon-purple", label: "NUDGE" },
+  explain: { icon: BookOpen, color: "text-neon-cyan", label: "EXPLAIN" },
+  challenge: { icon: Eye, color: "text-neon-pink", label: "CHALLENGE" },
+  break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
+};
+
+// Shared localStorage key — the mini panel and full session share memory
+// so dropping into the full session continues the same conversation.
+export const LUNA_HISTORY_KEY = "luna:history:v2";
+
+// Cap the rolling history we send to the model. Older turns are summarized
+// into a single context line so token cost stays roughly linear.
+export const LUNA_MAX_TURNS = 16;
+
+/**
+ * Trim a message list before sending to the model:
+ *  - Strip image payloads from anything except the most recent user turn
+ *    (the model only needs to "see" the latest screen, not every prior one).
+ *  - Keep at most LUNA_MAX_TURNS of recent messages; collapse older turns
+ *    into a single system-style assistant note so context isn't lost.
+ */
+export function trimMessagesForApi(msgs: Msg[]): Msg[] {
+  const lastUserWithImageIdx = (() => {
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === "user" && msgs[i].imageDataUrl) return i;
+    }
+    return -1;
+  })();
+  const stripped: Msg[] = msgs.map((m, i) => {
+    if (m.imageDataUrl && i !== lastUserWithImageIdx) {
+      const { imageDataUrl: _drop, ...rest } = m;
+      return { ...rest, content: rest.content || "[earlier shared screen]" };
+    }
+    return m;
+  });
+  if (stripped.length <= LUNA_MAX_TURNS) return stripped;
+  const overflow = stripped.slice(0, stripped.length - LUNA_MAX_TURNS);
+  const recent = stripped.slice(-LUNA_MAX_TURNS);
+  const summary = `[Earlier in this session: ${overflow.length} messages exchanged. Topics touched: ${
+    Array.from(new Set(overflow.map(m => m.content.split(/[.?!\n]/)[0].slice(0, 60)).filter(Boolean))).slice(0, 5).join("; ")
+  }]`;
+  return [{ role: "assistant", content: summary }, ...recent];
+}
+
 export async function streamLunaChat({
   messages,
   context,
@@ -44,13 +93,18 @@ export async function streamLunaChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, context }),
+      body: JSON.stringify({ messages: trimMessagesForApi(messages), context }),
       signal,
     });
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({ error: "Request failed" }));
-      onError?.(err.error || `Error ${resp.status}`);
+      // Surface 402/429 with explicit, user-readable messages so the UI can
+      // toast them instead of dropping a raw "Error 429" into the chat bubble.
+      let msg = err.error || `Error ${resp.status}`;
+      if (resp.status === 429) msg = "Luna is getting a lot of questions right now. Try again in a moment.";
+      else if (resp.status === 402) msg = "Luna's AI credits ran out. Add more in Workspace → Usage.";
+      onError?.(msg);
       onDone();
       return;
     }

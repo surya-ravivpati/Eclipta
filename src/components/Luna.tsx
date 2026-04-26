@@ -3,8 +3,10 @@ import { LunaIcon } from "@/components/luna/LunaIcon";
 import { LunaChatPanel, type LunaMessage } from "@/components/luna/LunaChatPanel";
 import { detectFatigue } from "@/lib/luna-context";
 import { supabase } from "@/integrations/supabase/client";
+import { LUNA_HISTORY_KEY } from "@/lib/luna-api";
 
-const STORAGE_KEY = "luna:mini-panel:v1";
+// Unified key so the mini panel and the full session share one history.
+const STORAGE_KEY = LUNA_HISTORY_KEY;
 
 const GENERIC_INTROS = [
   "Hey — need a hand with anything? 🌙",

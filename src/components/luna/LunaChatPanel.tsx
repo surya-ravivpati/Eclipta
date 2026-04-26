@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Lightbulb, Eye, Sparkles, Coffee, BookOpen, ArrowRight, Monitor, Loader2 } from "lucide-react";
-import { streamLunaChat, parseLunaTag } from "@/lib/luna-api";
-import { getLunaContext, detectFatigue, getSessionDuration, getAccuracy, escalateHint, resetHintLevel } from "@/lib/luna-context";
+import { X, Send, ArrowRight, Monitor, Loader2 } from "lucide-react";
+import { streamLunaChat, parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
+import { getLunaContext, getSessionDuration, getAccuracy, escalateHint, resetHintLevel, subscribeFatigue } from "@/lib/luna-context";
 import { captureScreenFrame } from "@/lib/luna-screen";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
@@ -10,7 +10,8 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { supabase } from "@/integrations/supabase/client";
-import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "@/lib/milestones";
+import { useXpMilestones } from "@/hooks/use-xp-milestones";
+import { toast } from "sonner";
 
 export type LunaMessage = {
   role: "assistant" | "user";
@@ -27,14 +28,6 @@ interface LunaChatPanelProps {
   setMessages: React.Dispatch<React.SetStateAction<LunaMessage[]>>;
 }
 
-const TAG_CONFIG = {
-  hint: { icon: Lightbulb, color: "text-neon-cyan", label: "HINT" },
-  nudge: { icon: Sparkles, color: "text-neon-purple", label: "NUDGE" },
-  explain: { icon: BookOpen, color: "text-neon-cyan", label: "EXPLAIN" },
-  challenge: { icon: Eye, color: "text-neon-pink", label: "CHALLENGE" },
-  break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
-};
-
 export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChatPanelProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -44,9 +37,19 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
   const abortRef = useRef<AbortController | null>(null);
   const profileRef = useRef<Record<string, unknown> | null>(null);
   const historyRef = useRef<Record<string, unknown>[] | null>(null);
-  const lastXpRef = useRef<number>(0);
 
-  // Load user profile, recent history, and initialize milestones
+  // Shared XP-milestone subscription. When new milestones land, append them
+  // as Luna messages so the user sees the celebration in-chat.
+  useXpMilestones({
+    onLunaMessages: (msgs) => {
+      setMessages(prev => [
+        ...prev,
+        ...msgs.map(content => ({ role: "assistant" as const, content, tag: "nudge" as const })),
+      ]);
+    },
+  });
+
+  // Load user profile + recent history once when the panel first opens.
   useEffect(() => {
     if (!open) return;
     (async () => {
@@ -56,44 +59,10 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
         supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("learning_history").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
       ]);
-      if (profileRes.data) {
-        profileRef.current = profileRes.data;
-        const xp = (profileRes.data as any).xp ?? 0;
-        markExistingMilestones(xp);
-        lastXpRef.current = xp;
-      }
+      if (profileRes.data) profileRef.current = profileRes.data;
       if (historyRes.data) historyRef.current = historyRes.data;
     })();
   }, [open]);
-
-  // Poll for XP changes to detect milestones
-  useEffect(() => {
-    if (!open) return;
-    const interval = setInterval(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase.from("user_profiles").select("xp").eq("user_id", user.id).maybeSingle();
-      if (!data) return;
-      const newXp = (data as any).xp ?? 0;
-      const prevXp = lastXpRef.current;
-      if (newXp > prevXp) {
-        lastXpRef.current = newXp;
-        const { toasts, lunaMessages } = checkMilestones(prevXp, newXp);
-        fireMilestoneToasts(toasts);
-        if (lunaMessages.length > 0) {
-          setMessages(prev => [
-            ...prev,
-            ...lunaMessages.map(msg => ({
-              role: "assistant" as const,
-              content: msg,
-              tag: "nudge" as const,
-            })),
-          ]);
-        }
-      }
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [open, setMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -110,27 +79,23 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
     }
   }, [open]);
 
-  // Proactive fatigue check
+  // Event-driven fatigue: react the moment recordAnswer flips the level to
+  // severe, instead of polling every 60 seconds.
   useEffect(() => {
     if (!open) return;
-    const interval = setInterval(() => {
-      const fatigue = detectFatigue();
-      const duration = getSessionDuration();
-      if (fatigue === "severe" || duration > 45) {
-        const hasBreakMsg = messages.some(m => m.tag === "break");
-        if (!hasBreakMsg) {
-          setMessages(prev => [...prev, {
-            role: "assistant",
-            content: fatigue === "severe"
-              ? "Hey, I can see you're pushing through some tough spots. 🌙 How about a 5-minute break? Or we could switch to a battle for some fun?"
-              : "You've been at it for a while! Your brain could use a breather. Take 5, grab some water — I'll be right here when you're back.",
-            tag: "break",
-          }]);
-        }
-      }
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [open, messages, setMessages]);
+    const unsubscribe = subscribeFatigue((level) => {
+      if (level !== "severe") return;
+      setMessages(prev => {
+        if (prev.some(m => m.tag === "break")) return prev;
+        return [...prev, {
+          role: "assistant",
+          content: "You've been pushing through tough spots. 🌙 How about a 5-minute break? Or we could switch to a battle for some fun?",
+          tag: "break",
+        }];
+      });
+    });
+    return unsubscribe;
+  }, [open, setMessages]);
 
   const handleScreenShare = async () => {
     if (capturing || isStreaming) return;
@@ -234,9 +199,10 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
         })();
       },
       onError: (err) => {
+        toast.error(err);
         setMessages(prev => [...prev, {
           role: "assistant",
-          content: `Hmm, something went wrong on my end. 🌙 ${err}. Try again in a moment?`,
+          content: `Hmm, ${err} 🌙`,
           tag: null,
         }]);
         setIsStreaming(false);
@@ -246,8 +212,8 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
   };
 
   const tagIcon = (tag?: string | null) => {
-    if (!tag || !(tag in TAG_CONFIG)) return null;
-    const config = TAG_CONFIG[tag as keyof typeof TAG_CONFIG];
+    if (!tag || !(tag in LUNA_TAG_CONFIG)) return null;
+    const config = LUNA_TAG_CONFIG[tag as keyof typeof LUNA_TAG_CONFIG];
     const Icon = config.icon;
     return (
       <div className="flex items-center gap-1 mb-1">
@@ -313,7 +279,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
                     />
                   )}
                   {msg.content && (
-                    <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0">
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                     </div>
                   )}

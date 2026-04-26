@@ -52,6 +52,7 @@ export function LunaFullSession() {
   const abortRef = useRef<AbortController | null>(null);
   const profileRef = useRef<Record<string, unknown> | null>(null);
   const historyRef = useRef<Record<string, unknown>[] | null>(null);
+  const lastSendRef = useRef<{ text: string; image: string | null } | null>(null);
 
   useXpMilestones({
     onLunaMessages: (msgs) => {
@@ -115,12 +116,15 @@ export function LunaFullSession() {
     else toast.error(result.message);
   };
 
-  const send = async () => {
-    const text = input.trim();
-    if ((!text && !pendingImage) || isStreaming) return;
-    setInput("");
-    const attachedImage = pendingImage;
-    setPendingImage(null);
+  const send = async (override?: { text: string; image: string | null }) => {
+    const text = override ? override.text : input.trim();
+    const attachedImage = override ? override.image : pendingImage;
+    if ((!text && !attachedImage) || isStreaming) return;
+    if (!override) {
+      setInput("");
+      setPendingImage(null);
+    }
+    lastSendRef.current = { text, image: attachedImage };
 
     const userMsg: LunaMessage = {
       role: "user",
@@ -161,6 +165,9 @@ export function LunaFullSession() {
 
     await streamLunaChat({
       messages: apiMessages,
+      // Full-session calls get a low reasoning budget. The mini panel keeps
+      // default (no reasoning) since those answers should fire fast.
+      reasoning: { effort: "low" },
       context: {
         courseId: ctx.courseId,
         lessonTitle: ctx.lessonTitle,
@@ -204,11 +211,28 @@ export function LunaFullSession() {
           role: "assistant",
           content: `Something went wrong. 🌙 ${err}`,
           tag: null,
+          id: `err-${Date.now()}`,
         }]);
         setIsStreaming(false);
       },
       signal: abortController.signal,
     });
+  };
+
+  const retryLast = () => {
+    const last = lastSendRef.current;
+    if (!last || isStreaming) return;
+    setMessages(prev => {
+      for (let i = prev.length - 1; i >= 0; i--) {
+        if (prev[i].role === "assistant" && typeof prev[i].id === "string" && prev[i].id!.startsWith("err-")) {
+          const trimmed = prev.slice(0, i);
+          while (trimmed.length && trimmed[trimmed.length - 1].role === "user") trimmed.pop();
+          return trimmed;
+        }
+      }
+      return prev;
+    });
+    void send(last);
   };
 
   const resetSession = () => {
@@ -297,6 +321,16 @@ export function LunaFullSession() {
                   <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:mt-1 [&>ol]:mt-1">
                     <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                   </div>
+                  {msg.role === "assistant" && typeof msg.id === "string" && msg.id.startsWith("err-") && (
+                    <button
+                      type="button"
+                      onClick={retryLast}
+                      disabled={isStreaming}
+                      className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-3 h-3" /> RETRY
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}

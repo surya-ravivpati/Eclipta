@@ -26,9 +26,10 @@ interface LunaChatPanelProps {
   onClose: () => void;
   messages: LunaMessage[];
   setMessages: React.Dispatch<React.SetStateAction<LunaMessage[]>>;
+  onStreamingChange?: (streaming: boolean) => void;
 }
 
-export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChatPanelProps) {
+export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamingChange }: LunaChatPanelProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -37,6 +38,10 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
   const abortRef = useRef<AbortController | null>(null);
   const profileRef = useRef<Record<string, unknown> | null>(null);
   const historyRef = useRef<Record<string, unknown>[] | null>(null);
+  const lastSendRef = useRef<{ text: string; image: string | null } | null>(null);
+
+  // Lift streaming status so the floating Luna icon can show the thinking emoji.
+  useEffect(() => { onStreamingChange?.(isStreaming); }, [isStreaming, onStreamingChange]);
 
   // Shared XP-milestone subscription. When new milestones land, append them
   // as Luna messages so the user sees the celebration in-chat.
@@ -100,19 +105,25 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
   const handleScreenShare = async () => {
     if (capturing || isStreaming) return;
     setCapturing(true);
-    const dataUrl = await captureScreenFrame();
+    const result = await captureScreenFrame();
     setCapturing(false);
-    if (dataUrl) {
-      setPendingImage(dataUrl);
+    if (result.dataUrl) {
+      setPendingImage(result.dataUrl);
+    } else {
+      // Surface denial / unsupported / failure so the user knows nothing got attached.
+      toast.error(result.message);
     }
   };
 
-  const send = async () => {
-    const text = input.trim();
-    if ((!text && !pendingImage) || isStreaming) return;
-    setInput("");
-    const attachedImage = pendingImage;
-    setPendingImage(null);
+  const send = async (override?: { text: string; image: string | null }) => {
+    const text = override ? override.text : input.trim();
+    const attachedImage = override ? override.image : pendingImage;
+    if ((!text && !attachedImage) || isStreaming) return;
+    if (!override) {
+      setInput("");
+      setPendingImage(null);
+    }
+    lastSendRef.current = { text, image: attachedImage };
 
     const userMsg: LunaMessage = {
       role: "user",
@@ -204,11 +215,42 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
           role: "assistant",
           content: `Hmm, ${err} 🌙`,
           tag: null,
+          // Mark this bubble so the UI can render a retry button next to it.
+          id: `err-${Date.now()}`,
         }]);
         setIsStreaming(false);
       },
       signal: abortController.signal,
     });
+  };
+
+  const retryLast = () => {
+    const last = lastSendRef.current;
+    if (!last || isStreaming) return;
+    // Drop the trailing error bubble before retrying.
+    setMessages(prev => {
+      for (let i = prev.length - 1; i >= 0; i--) {
+        if (prev[i].role === "assistant" && typeof prev[i].id === "string" && prev[i].id!.startsWith("err-")) {
+          // Also drop the user message we already pushed - send() will re-push it.
+          const trimmed = prev.slice(0, i);
+          while (trimmed.length && trimmed[trimmed.length - 1].role === "user") trimmed.pop();
+          return trimmed;
+        }
+      }
+      return prev;
+    });
+    void send(last);
+  };
+
+  // Old onError block stub (replaced above) - keep send() flow intact.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _noop = () => {
+    setMessages(prev => [...prev, {
+          role: "assistant",
+          content: ``,
+          tag: null,
+        }]);
+        setIsStreaming(false);
   };
 
   const tagIcon = (tag?: string | null) => {

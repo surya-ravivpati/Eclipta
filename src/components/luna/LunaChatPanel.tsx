@@ -6,6 +6,9 @@ import { getLunaContext, detectFatigue, getSessionDuration, getAccuracy, escalat
 import { captureScreenFrame } from "@/lib/luna-screen";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { supabase } from "@/integrations/supabase/client";
 import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "@/lib/milestones";
 
@@ -296,7 +299,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
                   )}
                   {msg.content && (
                     <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                     </div>
                   )}
                 </div>

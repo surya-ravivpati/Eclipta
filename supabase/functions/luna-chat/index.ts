@@ -371,16 +371,24 @@ serve(async (req) => {
     // Inject user profile for personalization
     if (context?.profile) {
       const p = context.profile;
-      contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PROFILE\n═══════════════════════════════════════`;
-      contextualPrompt += `\nPreferred Pace: ${p.preferred_pace || 'normal'}`;
-      contextualPrompt += `\nPreferred Style: ${p.preferred_style || 'mixed'}`;
-      if (p.avg_completion_time) contextualPrompt += `\nAvg Completion Time: ${p.avg_completion_time}s`;
-      if (p.total_sessions) contextualPrompt += `\nTotal Sessions: ${p.total_sessions}`;
-      if (p.total_questions) contextualPrompt += `\nLifetime Questions: ${p.total_questions} (${p.total_correct || 0} correct - ${p.total_questions > 0 ? Math.round(((p.total_correct || 0) / p.total_questions) * 100) : 0}% accuracy)`;
-      if (p.weak_areas?.length) contextualPrompt += `\nKnown Weak Areas: ${p.weak_areas.join(', ')}`;
-      if (p.strong_areas?.length) contextualPrompt += `\nStrong Areas: ${p.strong_areas.join(', ')}`;
-      if (p.current_streak) contextualPrompt += `\nLifetime Streak: ${p.current_streak} (best: ${p.best_streak || 0})`;
-      if (p.xp !== undefined) contextualPrompt += `\nXP: ${p.xp}`;
+      // Only emit fields that carry signal. Empty arrays and zeros confuse the
+      // model (e.g. it starts coaching against blank "weak areas").
+      const lines: string[] = [];
+      if (p.preferred_pace && p.preferred_pace !== 'normal') lines.push(`Preferred Pace: ${p.preferred_pace}`);
+      if (p.preferred_style && p.preferred_style !== 'mixed') lines.push(`Preferred Style: ${p.preferred_style}`);
+      if (typeof p.avg_completion_time === 'number' && p.avg_completion_time > 0) lines.push(`Avg Completion Time: ${p.avg_completion_time}s`);
+      if (typeof p.total_sessions === 'number' && p.total_sessions > 0) lines.push(`Total Sessions: ${p.total_sessions}`);
+      if (typeof p.total_questions === 'number' && p.total_questions >= 5) {
+        const acc = Math.round(((p.total_correct || 0) / p.total_questions) * 100);
+        lines.push(`Lifetime Questions: ${p.total_questions} (${p.total_correct || 0} correct - ${acc}% accuracy)`);
+      }
+      if (Array.isArray(p.weak_areas) && p.weak_areas.length) lines.push(`Known Weak Areas: ${p.weak_areas.join(', ')}`);
+      if (Array.isArray(p.strong_areas) && p.strong_areas.length) lines.push(`Strong Areas: ${p.strong_areas.join(', ')}`);
+      if (typeof p.current_streak === 'number' && p.current_streak > 0) lines.push(`Lifetime Streak: ${p.current_streak} (best: ${p.best_streak || 0})`);
+      if (typeof p.xp === 'number' && p.xp > 0) lines.push(`XP: ${p.xp}`);
+      if (lines.length) {
+        contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PROFILE\n═══════════════════════════════════════\n${lines.join('\n')}`;
+      }
     }
 
     // Inject recent learning history for memory
@@ -398,25 +406,32 @@ serve(async (req) => {
 
     // Inject session context
     if (context) {
-      contextualPrompt += `\n\n═══════════════════════════════════════\nCURRENT SESSION CONTEXT\n═══════════════════════════════════════`;
-      if (context.courseId) contextualPrompt += `\nCourse: ${context.courseId}`;
-      if (context.lessonTitle) contextualPrompt += `\nLesson: ${context.lessonTitle}`;
-      if (context.currentQuestion) contextualPrompt += `\nCurrent Question: ${context.currentQuestion}`;
-      if (context.difficulty) contextualPrompt += `\nDifficulty: ${context.difficulty}`;
-      if (context.weakAreas?.length) contextualPrompt += `\nWeak Areas: ${context.weakAreas.join(", ")}`;
-      if (context.streak !== undefined) contextualPrompt += `\nCurrent Streak: ${context.streak} correct in a row`;
-      if (context.incorrectCount !== undefined) contextualPrompt += `\nTotal Incorrect This Session: ${context.incorrectCount}`;
-      if (context.consecutiveErrors !== undefined) contextualPrompt += `\nConsecutive Errors (current): ${context.consecutiveErrors}`;
-      if (context.rapidGuessCount !== undefined) contextualPrompt += `\nRapid Guesses (< 2s): ${context.rapidGuessCount}`;
-      if (context.avgResponseTime) contextualPrompt += `\nAvg Response Time: ${context.avgResponseTime}s`;
-      if (context.hintLevel !== undefined) {
-        contextualPrompt += `\nHint Escalation Level: ${context.hintLevel}/3`;
-        if (context.hintLevel === 0) contextualPrompt += ` - Give a conceptual hint, do NOT give the answer.`;
-        else if (context.hintLevel === 1) contextualPrompt += ` - Give a more direct hint with partial breakdown.`;
-        else if (context.hintLevel >= 2) contextualPrompt += ` - User has asked multiple times. You may now explain fully.`;
+      // Same principle: skip zero / empty signals so we don't tell the model
+      // "0% accuracy, 0 streak" on the very first turn.
+      const sLines: string[] = [];
+      if (context.courseId) sLines.push(`Course: ${context.courseId}`);
+      if (context.lessonTitle) sLines.push(`Lesson: ${context.lessonTitle}`);
+      if (context.currentQuestion) sLines.push(`Current Question: ${context.currentQuestion}`);
+      if (context.difficulty) sLines.push(`Difficulty: ${context.difficulty}`);
+      if (Array.isArray(context.weakAreas) && context.weakAreas.length) sLines.push(`Weak Areas: ${context.weakAreas.join(", ")}`);
+      if (typeof context.streak === 'number' && context.streak > 0) sLines.push(`Current Streak: ${context.streak} correct in a row`);
+      if (typeof context.incorrectCount === 'number' && context.incorrectCount > 0) sLines.push(`Total Incorrect This Session: ${context.incorrectCount}`);
+      if (typeof context.consecutiveErrors === 'number' && context.consecutiveErrors > 0) sLines.push(`Consecutive Errors (current): ${context.consecutiveErrors}`);
+      if (typeof context.rapidGuessCount === 'number' && context.rapidGuessCount > 0) sLines.push(`Rapid Guesses (< 2s): ${context.rapidGuessCount}`);
+      if (typeof context.avgResponseTime === 'number' && context.avgResponseTime > 0) sLines.push(`Avg Response Time: ${context.avgResponseTime}s`);
+      if (typeof context.hintLevel === 'number' && context.hintLevel > 0) {
+        let line = `Hint Escalation Level: ${context.hintLevel}/3`;
+        if (context.hintLevel === 1) line += ` - Give a more direct hint with partial breakdown.`;
+        else if (context.hintLevel >= 2) line += ` - User has asked multiple times. You may now explain fully.`;
+        sLines.push(line);
       }
-      if (context.accuracy !== undefined) contextualPrompt += `\nSession Accuracy: ${context.accuracy}%`;
-      if (context.sessionMinutes !== undefined) contextualPrompt += `\nSession Duration: ${context.sessionMinutes} minutes`;
+      // Only show session accuracy once we have enough samples for it to mean anything.
+      const totalSession = (context.streak ?? 0) + (context.incorrectCount ?? 0);
+      if (typeof context.accuracy === 'number' && totalSession >= 3) sLines.push(`Session Accuracy: ${context.accuracy}%`);
+      if (typeof context.sessionMinutes === 'number' && context.sessionMinutes >= 2) sLines.push(`Session Duration: ${context.sessionMinutes} minutes`);
+      if (sLines.length) {
+        contextualPrompt += `\n\n═══════════════════════════════════════\nCURRENT SESSION CONTEXT\n═══════════════════════════════════════\n${sLines.join('\n')}`;
+      }
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

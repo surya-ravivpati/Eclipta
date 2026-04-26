@@ -17,6 +17,7 @@ export type LunaMessage = {
   content: string;
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   imageDataUrl?: string;
+  id?: string;
 };
 
 interface LunaChatPanelProps {
@@ -98,6 +99,17 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Abort any in-flight stream when the panel closes so we stop billing
+  // the AI gateway for tokens the user can no longer see.
+  useEffect(() => {
+    if (open) return;
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+      setIsStreaming(false);
+    }
+  }, [open]);
+
   // Proactive fatigue check
   useEffect(() => {
     if (!open) return;
@@ -145,8 +157,10 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
     setMessages(prev => [...prev, userMsg]);
     setIsStreaming(true);
 
-    // Detect if user is asking for an answer
-    const askingForAnswer = /\b(answer|tell me|what is|solution|just tell|give me)\b/i.test(text);
+    // Detect explicit demands for the answer. We avoid generic phrases like
+    // "what is X" (legitimate learning questions) so the hint budget isn't
+    // burned on the first turn.
+    const askingForAnswer = /\b(just (tell|give) me|tell me the answer|give me the answer|what(?:'s| is) the answer|the solution|skip the hint|stop hinting)\b/i.test(text);
     if (askingForAnswer) {
       escalateHint();
     } else {
@@ -163,19 +177,20 @@ export function LunaChatPanel({ open, onClose, messages, setMessages }: LunaChat
     let assistantSoFar = "";
     const abortController = new AbortController();
     abortRef.current = abortController;
+    const streamId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       const { tag, text: cleanText } = parseLunaTag(assistantSoFar);
 
       setMessages(prev => {
-        const last = prev[prev.length - 1];
-        // After the first chunk we always have an assistant message at the tail; update in place.
-        if (last?.role === "assistant") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanText, tag } : m);
+        // Update by stream id so an auto-inserted [BREAK]/[NUDGE] message
+        // landing during the stream can't be clobbered by the next chunk.
+        const idx = prev.findIndex(m => m.id === streamId);
+        if (idx !== -1) {
+          return prev.map((m, i) => i === idx ? { ...m, content: cleanText, tag } : m);
         }
-        // First chunk: append a new assistant message.
-        return [...prev, { role: "assistant" as const, content: cleanText, tag }];
+        return [...prev, { role: "assistant" as const, content: cleanText, tag, id: streamId }];
       });
     };
 

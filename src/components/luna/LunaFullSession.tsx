@@ -16,6 +16,7 @@ type LunaMessage = {
   role: "assistant" | "user";
   content: string;
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
+  id?: string;
 };
 
 const TAG_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
@@ -123,7 +124,7 @@ export function LunaFullSession() {
     setMessages(prev => [...prev, userMsg]);
     setIsStreaming(true);
 
-    const askingForAnswer = /\b(answer|tell me|what is|solution|just tell|give me)\b/i.test(text);
+    const askingForAnswer = /\b(just (tell|give) me|tell me the answer|give me the answer|what(?:'s| is) the answer|the solution|skip the hint|stop hinting)\b/i.test(text);
     if (askingForAnswer) escalateHint();
     else resetHintLevel();
 
@@ -136,17 +137,18 @@ export function LunaFullSession() {
     let assistantSoFar = "";
     const abortController = new AbortController();
     abortRef.current = abortController;
+    const streamId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       const { tag, text: cleanText } = parseLunaTag(assistantSoFar);
 
       setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanText, tag } : m);
+        const idx = prev.findIndex(m => m.id === streamId);
+        if (idx !== -1) {
+          return prev.map((m, i) => i === idx ? { ...m, content: cleanText, tag } : m);
         }
-        return [...prev, { role: "assistant" as const, content: cleanText, tag }];
+        return [...prev, { role: "assistant" as const, content: cleanText, tag, id: streamId }];
       });
     };
 

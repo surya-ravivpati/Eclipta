@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { bindLunaContextToUser } from "@/lib/luna-context";
 
 interface AuthState {
   user: User | null;
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      bindLunaContextToUser(session?.user?.id ?? null);
       setState({
         user: session?.user ?? null,
         session,
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      bindLunaContextToUser(session?.user?.id ?? null);
       setState({
         user: session?.user ?? null,
         session,

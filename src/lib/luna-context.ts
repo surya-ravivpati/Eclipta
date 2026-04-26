@@ -34,6 +34,18 @@ const DEFAULT_CONTEXT: LunaLearningContext = {
 };
 
 let context: LunaLearningContext = { ...DEFAULT_CONTEXT };
+let currentOwnerId: string | null = null;
+
+/**
+ * Bind the in-memory context to a specific user. If the owner changes
+ * (login, logout, account switch) the context is reset so one user's
+ * streak/weakness signals never leak into another user's session.
+ */
+export function bindLunaContextToUser(userId: string | null) {
+  if (currentOwnerId === userId) return;
+  currentOwnerId = userId;
+  context = { ...DEFAULT_CONTEXT, sessionStartTime: Date.now() };
+}
 
 export function getLunaContext(): LunaLearningContext {
   return { ...context };

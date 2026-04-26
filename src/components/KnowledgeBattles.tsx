@@ -313,6 +313,11 @@ function BattleArena() {
 
     const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
     setRecords(prev => [...prev, record]);
+    // Feed Luna's adaptive context (timeSpent is in seconds, recordAnswer expects ms).
+    void import("@/lib/luna-context").then(({ recordAnswer, updateLunaContext }) => {
+      recordAnswer(correct, timeSpent * 1000);
+      updateLunaContext({ lessonTitle: question.topic, difficulty: question.difficulty });
+    });
 
     if (correct && timeSpent < fastestAnswer) setFastestAnswer(timeSpent);
 

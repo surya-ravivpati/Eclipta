@@ -169,6 +169,11 @@ function LiveDemo() {
     setShowResult(true);
     const correct = idx === currentQ.correct;
     const responseMs = Date.now() - questionStart;
+    // Feed Luna's adaptive context so streak / consecutiveErrors / rapidGuessCount are real.
+    void import("@/lib/luna-context").then(({ recordAnswer, updateLunaContext }) => {
+      recordAnswer(correct, responseMs);
+      updateLunaContext({ lessonTitle: currentQ.topic, difficulty: String(currentQ.difficulty) });
+    });
     if (correct) {
       setScore(s => s + 1);
       setStreak(s => s + 1);

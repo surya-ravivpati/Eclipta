@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
 import { LunaIcon } from "@/components/luna/LunaIcon";
 import { LunaChatPanel } from "@/components/luna/LunaChatPanel";
-import { detectFatigue } from "@/lib/luna-context";
+import { subscribeFatigue } from "@/lib/luna-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useLunaHistory } from "@/hooks/use-luna-history";
+import { useState, useEffect } from "react";
 
 const GENERIC_INTROS = [
   "Hey, need a hand with anything? 🌙",
@@ -68,11 +68,16 @@ export function Luna() {
   }, [open, hasNudged]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const fatigue = detectFatigue();
-      if (fatigue !== "none") setIconState("alert");
-    }, 15000);
-    return () => clearInterval(interval);
+    // Event-driven fatigue → icon state. Resets to idle when fatigue clears
+    // (and we aren't mid-stream), so the badge isn't a one-way write.
+    const unsubscribe = subscribeFatigue((level) => {
+      if (level === "none") {
+        setIconState(prev => (prev === "alert" ? "idle" : prev));
+      } else {
+        setIconState("alert");
+      }
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {

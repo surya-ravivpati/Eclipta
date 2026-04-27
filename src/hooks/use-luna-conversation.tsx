@@ -160,8 +160,11 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
             });
           } catch { /* non-critical, don't break chat */ }
         })();
-        // Free image payload from retry buffer once the stream succeeds.
-        if (lastSendRef.current) lastSendRef.current = { ...lastSendRef.current, image: null };
+        // Stream succeeded — clear the retry buffer entirely so we don't keep
+        // the prior turn (and any base64 screen-share image) in memory.
+        // retryLast() is gated on a trailing err-* bubble, which can't exist
+        // after a successful stream, so dropping this is safe.
+        lastSendRef.current = null;
       },
       onError: (err) => {
         toast.error(err);

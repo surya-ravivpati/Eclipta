@@ -20,7 +20,8 @@ function pickIntro(profile: Record<string, unknown> | null): string {
 
   const greeting = name ? `Hey ${name}` : "Hey";
   if (weak.length > 0) {
-    return `${greeting}, want to take another crack at ${weak[0]}? Last time it tripped you up. 🌙`;
+    const pick = weak[Math.floor(Math.random() * weak.length)];
+    return `${greeting}, want to take another crack at ${pick}? Last time it tripped you up. 🌙`;
   }
   if (streak >= 5) {
     return `${greeting}, ${streak}-question streak going. Want a harder challenge? 🌙`;

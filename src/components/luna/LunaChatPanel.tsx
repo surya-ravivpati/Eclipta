@@ -79,7 +79,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-24 right-6 z-50 w-[380px] max-h-[520px] flex flex-col glass-panel border border-acrylic-border overflow-hidden rounded-lg"
+          className="fixed bottom-24 right-6 z-50 w-[380px] max-h-[min(520px,80vh)] flex flex-col glass-panel border border-acrylic-border overflow-hidden rounded-lg"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -105,7 +105,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px] max-h-[360px]">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[160px] max-h-[min(360px,55vh)]">
             {messages.length === 0 && introContent && (
               <div className="flex justify-start">
                 <div className="max-w-[85%] px-3 py-2 text-sm leading-relaxed rounded bg-secondary/50 border border-border text-foreground">

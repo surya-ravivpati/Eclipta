@@ -226,12 +226,14 @@ export function parseLunaTag(content: string): {
   tag: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   text: string;
 } {
-  // Allow whitespace inside the brackets so e.g. "[ HINT ]" still parses.
-  const match = content.match(/^\[\s*(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\s*\]\s*/i);
+  // Defensive: match the tag anywhere in the content. The model usually emits
+  // it at the start, but occasionally drifts ("Let me think... [HINT] ...").
+  // Allow whitespace inside the brackets so "[ HINT ]" still parses.
+  const match = content.match(/\[\s*(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\s*\]\s*/i);
   if (match) {
     return {
-      tag: match[1].toLowerCase() as any,
-      text: content.slice(match[0].length),
+      tag: match[1].toLowerCase() as "hint" | "nudge" | "explain" | "challenge" | "break",
+      text: (content.slice(0, match.index ?? 0) + content.slice((match.index ?? 0) + match[0].length)).trimStart(),
     };
   }
   return { tag: null, text: content };

@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import { LunaIcon } from "@/components/luna/LunaIcon";
-import { LunaChatPanel, type LunaMessage } from "@/components/luna/LunaChatPanel";
+import { LunaChatPanel } from "@/components/luna/LunaChatPanel";
 import { detectFatigue } from "@/lib/luna-context";
 import { supabase } from "@/integrations/supabase/client";
-import { LUNA_HISTORY_KEY } from "@/lib/luna-api";
-
-// Unified key so the mini panel and the full session share one history.
-const STORAGE_KEY = LUNA_HISTORY_KEY;
+import { useLunaHistory } from "@/hooks/use-luna-history";
 
 const GENERIC_INTROS = [
-  "Hey — need a hand with anything? 🌙",
+  "Hey, need a hand with anything? 🌙",
   "I'm here if you want to think through something together.",
   "Ready to learn? Drop a question and we'll work through it. 🌙",
 ];
@@ -23,36 +20,28 @@ function pickIntro(profile: Record<string, unknown> | null): string {
 
   const greeting = name ? `Hey ${name}` : "Hey";
   if (weak.length > 0) {
-    return `${greeting} — want to take another crack at ${weak[0]}? Last time it tripped you up. 🌙`;
+    return `${greeting}, want to take another crack at ${weak[0]}? Last time it tripped you up. 🌙`;
   }
   if (streak >= 5) {
-    return `${greeting} — ${streak}-question streak going. Want a harder challenge? 🌙`;
+    return `${greeting}, ${streak}-question streak going. Want a harder challenge? 🌙`;
   }
   if (xp === 0) {
-    return `${greeting} — I'm Luna, your AI tutor. Ask me anything or try a course to start earning XP. 🌙`;
+    return `${greeting}, I'm Luna, your AI tutor. Ask me anything or try a course to start earning XP. 🌙`;
   }
-  return `${greeting} — what are we working on today? 🌙`;
+  return `${greeting}, what are we working on today? 🌙`;
 }
 
 export function Luna() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<LunaMessage[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as LunaMessage[];
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch { /* ignore */ }
-    return [];
-  });
+  // Shared history — no local persistence here; the hook owns it.
+  const { messages, setMessages } = useLunaHistory();
   const [hasNudged, setHasNudged] = useState(false);
   const [iconState, setIconState] = useState<"idle" | "thinking" | "alert" | "happy">("idle");
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  // Intro is presentational — recomputed each open, never persisted.
+  const [introContent, setIntroContent] = useState<string>("");
 
-  // Load profile once on mount so the intro can be personalized
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -66,14 +55,6 @@ export function Luna() {
     })();
   }, []);
 
-  // Persist mini-panel history
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50))); } catch { /* ignore */ }
-  }, [messages]);
-
-  // Nudge after 30s of inactivity. After the user dismisses (opens the panel),
-  // re-arm on a 5-minute cooldown so Luna can gently remind once per session
-  // gap, not constantly.
   useEffect(() => {
     if (open || hasNudged) return;
     const timer = setTimeout(() => setHasNudged(true), 30000);
@@ -86,7 +67,6 @@ export function Luna() {
     return () => clearTimeout(cooldown);
   }, [open, hasNudged]);
 
-  // Monitor fatigue for icon state
   useEffect(() => {
     const interval = setInterval(() => {
       const fatigue = detectFatigue();
@@ -95,7 +75,6 @@ export function Luna() {
     return () => clearInterval(interval);
   }, []);
 
-  // Drive icon state from streaming + happy completion ping.
   useEffect(() => {
     if (isStreaming) { setIconState("thinking"); return; }
     const last = messages[messages.length - 1];
@@ -109,18 +88,15 @@ export function Luna() {
   const handleOpen = () => {
     setOpen(true);
     setHasNudged(false);
+    // Recompute a fresh intro every time the panel opens with no transcript.
+    // This is *not* pushed into messages — it renders as a placeholder until
+    // the user sends their first turn.
     if (messages.length === 0) {
-      setMessages([{
-        role: "assistant",
-        content: pickIntro(profile),
-        tag: null,
-      }]);
+      setIntroContent(pickIntro(profile));
     }
   };
 
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const handleClose = () => setOpen(false);
 
   return (
     <>
@@ -135,6 +111,7 @@ export function Luna() {
         messages={messages}
         setMessages={setMessages}
         onStreamingChange={setIsStreaming}
+        introContent={messages.length === 0 ? introContent : null}
       />
     </>
   );

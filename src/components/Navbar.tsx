@@ -65,9 +65,6 @@ export function Navbar() {
             ECLIPTA
           </Link>
           <div className="hidden lg:flex gap-1 text-sm font-medium tracking-wide">
-            <Link to="/" className="px-3 py-1.5 text-muted-foreground hover:text-neon-purple transition-colors">
-              ARENA
-            </Link>
             {NAV_GROUPS.map((group) => {
               const active = isGroupActive(group);
               return (
@@ -180,7 +177,7 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="px-3 py-2 text-sm font-bold tracking-widest text-foreground hover:text-neon-purple"
             >
-              ARENA
+              HOME
             </Link>
             {NAV_GROUPS.map((group) => (
               <div key={group.label}>

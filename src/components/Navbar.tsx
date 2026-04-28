@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
 import { useTheme } from "@/hooks/use-theme";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Menu, X, Zap, ChevronDown, Sun, Moon } from "lucide-react";
+import { LogOut, User, Menu, X, Zap, ChevronDown, Sun, Moon, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -39,7 +39,13 @@ const NAV_GROUPS = [
 export function Navbar() {
   const { user, isAuthenticated } = useAuth();
   const { xp } = usePlayerXp();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
+  const cycleTheme = () => {
+    const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+    setTheme(next);
+  };
+  const ThemeIcon = theme === "system" ? Monitor : resolvedTheme === "dark" ? Sun : Moon;
+  const themeNext = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -97,12 +103,12 @@ export function Navbar() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={toggleTheme}
+            onClick={cycleTheme}
             className="p-2 text-muted-foreground hover:text-neon-purple transition-colors"
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            aria-label="Toggle theme"
+            title={`Theme: ${theme}. Click for ${themeNext}.`}
+            aria-label="Cycle theme (dark / light / system)"
           >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <ThemeIcon className="w-4 h-4" />
           </button>
           {isAuthenticated ? (
             <>

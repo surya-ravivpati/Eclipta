@@ -35,6 +35,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
     handleScreenShare,
     send,
     retryLast,
+    abort,
   } = useLunaConversation({
     messages, setMessages,
     sessionType: "chat",
@@ -94,11 +95,11 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
               <Link
                 to="/luna"
                 className="text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink transition-colors flex items-center gap-1"
-                onClick={onClose}
+                onClick={() => { abort(); onClose(); }}
               >
                 FULL SESSION <ArrowRight className="w-3 h-3" />
               </Link>
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => { abort(); onClose(); }} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>

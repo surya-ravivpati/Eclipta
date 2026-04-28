@@ -140,6 +140,12 @@ serve(async (req) => {
       if (lines.length) {
         contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PROFILE\n═══════════════════════════════════════\n${lines.join('\n')}`;
       }
+
+      // Free-form notes the user (or Luna's preference detector) saved.
+      // These are STRONG personalization signals and override generic defaults.
+      if (typeof p.luna_notes === 'string' && p.luna_notes.trim()) {
+        contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PREFERENCES (HONOUR THESE)\n═══════════════════════════════════════\nThe user has explicitly told you the following. Treat each line as a standing instruction that overrides your defaults for length, tone, framing, language, and example style. Do not acknowledge that you "remember" — just comply.\n${p.luna_notes.trim()}`;
+      }
     }
 
     // Inject recent learning history for memory

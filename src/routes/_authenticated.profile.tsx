@@ -237,6 +237,7 @@ function SettingsPanel({ profile, userId, onSaved }: {
   const [username, setUsername] = useState(profile?.username || "");
   const [pace, setPace] = useState(profile?.preferred_pace || "normal");
   const [style, setStyle] = useState(profile?.preferred_style || "mixed");
+  const [lunaNotes, setLunaNotes] = useState(profile?.luna_notes || "");
   const [saving, setSaving] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -246,7 +247,8 @@ function SettingsPanel({ profile, userId, onSaved }: {
     setUsername(profile?.username || "");
     setPace(profile?.preferred_pace || "normal");
     setStyle(profile?.preferred_style || "mixed");
-  }, [profile?.username, profile?.preferred_pace, profile?.preferred_style]);
+    setLunaNotes(profile?.luna_notes || "");
+  }, [profile?.username, profile?.preferred_pace, profile?.preferred_style, profile?.luna_notes]);
 
   const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v);
 
@@ -288,7 +290,7 @@ function SettingsPanel({ profile, userId, onSaved }: {
   const savePrefs = async () => {
     setSavingPrefs(true);
     const { error } = await supabase.from("user_profiles")
-      .update({ preferred_pace: pace, preferred_style: style })
+      .update({ preferred_pace: pace, preferred_style: style, luna_notes: lunaNotes.trim() || null })
       .eq("user_id", userId);
     setSavingPrefs(false);
     if (error) return toast.error(error.message);

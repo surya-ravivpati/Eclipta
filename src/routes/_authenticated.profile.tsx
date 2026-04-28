@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera, ListChecks, Clock } from "lucide-react";
+import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Monitor, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera, ListChecks, Clock, Info } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
 import { useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { useTheme } from "@/hooks/use-theme";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";

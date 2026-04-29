@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, BookOpen, Target, Clock, Layers, FileText, Send, Check, AlertTriangle, Sparkles, ListChecks } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Target, Clock, Layers, FileText, Send, Check, AlertTriangle, Sparkles, ListChecks, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ const STRUCTURES = [
   { value: "challenge-driven", label: "Challenge-Driven", description: "Problem sets and adaptive tests" },
 ];
 
-type ReviewStatus = "idle" | "reviewing" | "approved" | "rejected";
+type ReviewStatus = "idle" | "reviewing" | "approved" | "denied" | "error";
 
 interface ReviewCheck {
   label: string;
@@ -43,8 +43,18 @@ interface ReviewCheck {
   detail: string;
 }
 
+type Verdict = {
+  decision: "approve" | "deny";
+  score: number;
+  reason: string;
+  feedback: string;
+  courseId?: string;
+  courseSlug?: string;
+};
+
 export function CourseBuilder() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [topic, setTopic] = useState("");
   const [topicDescription, setTopicDescription] = useState("");
@@ -56,6 +66,7 @@ export function CourseBuilder() {
   const [creatorReasoning, setCreatorReasoning] = useState("");
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus>("idle");
   const [reviewChecks, setReviewChecks] = useState<ReviewCheck[]>([]);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
 
   const canProceed = () => {
     switch (step) {
@@ -73,16 +84,17 @@ export function CourseBuilder() {
       return;
     }
     setReviewStatus("reviewing");
+    setVerdict(null);
     const checks: ReviewCheck[] = [
-      { label: "Topic Uniqueness", status: "pending", detail: "Checking if this topic is already well-covered..." },
-      { label: "Structure Quality", status: "pending", detail: "Analyzing course structure..." },
-      { label: "Creator Reasoning", status: "pending", detail: "Evaluating creator background..." },
-      { label: "Content Depth", status: "pending", detail: "Verifying depth matches level..." },
+      { label: "Format & Spam Check", status: "pending", detail: "Validating proposal isn't spam or junk…" },
+      { label: "Scope Coherence", status: "pending", detail: "Checking depth fits level…" },
+      { label: "AI Editorial Review", status: "pending", detail: "Grading on clarity, scope, and creator credibility…" },
+      { label: "Final Verdict", status: "pending", detail: "Compiling decision…" },
     ];
     setReviewChecks(checks);
 
-    // Persist proposal to DB
-    const { error } = await supabase.from("course_proposals").insert({
+    // Persist proposal to DB first
+    const { data: inserted, error } = await supabase.from("course_proposals").insert({
       user_id: user.id,
       topic: topic.trim(),
       description: topicDescription.trim() || null,
@@ -92,8 +104,8 @@ export function CourseBuilder() {
       weekly_hours: parseInt(timeCommitment, 10) || 5,
       prerequisites: prerequisites.trim() || null,
       creator_reasoning: creatorReasoning.trim(),
-      status: "submitted",
-    });
+      status: "reviewing",
+    }).select("id").single();
 
     if (error) {
       toast.error("Could not save proposal", { description: error.message });
@@ -101,28 +113,63 @@ export function CourseBuilder() {
       return;
     }
 
-    // Deterministic checks based on input quality (no RNG)
-    checks.forEach((_, i) => {
+    // Animate the first two heuristic checks while AI runs in background
+    setTimeout(() => {
+      setReviewChecks(prev => prev.map((c, j) =>
+        j === 0 ? { ...c, status: "pass", detail: "Looks like a real proposal." } : c
+      ));
+    }, 600);
+    setTimeout(() => {
+      setReviewChecks(prev => prev.map((c, j) =>
+        j === 1 ? { ...c, status: "pass", detail: `${DEPTHS.find(d => d.value === depth)?.label} depth fits ${LEVELS.find(l => l.value === level)?.label} level.` } : c
+      ));
+    }, 1200);
+
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("review-course-proposal", {
+        body: { proposalId: inserted.id },
+      });
+      if (fnErr) throw fnErr;
+      const v = data as Verdict;
+      setVerdict(v);
+
+      // Update last two checks based on verdict
+      setReviewChecks(prev => prev.map((c, j) => {
+        if (j === 2) return {
+          ...c,
+          status: v.decision === "approve" ? "pass" : "fail",
+          detail: v.feedback,
+        };
+        if (j === 3) return {
+          ...c,
+          status: v.decision === "approve" ? "pass" : "fail",
+          detail: v.decision === "approve" ? `Approved with score ${v.score}/100.` : `Denied (${v.score}/100): ${v.reason}`,
+        };
+        return c;
+      }));
+
       setTimeout(() => {
-        setReviewChecks(prev => prev.map((c, j) =>
-          j === i ? { ...c, status: "pass", detail: getReviewDetail(j) } : c
-        ));
-        if (i === checks.length - 1) {
-          setTimeout(() => setReviewStatus("approved"), 600);
-        }
-      }, 700 * (i + 1));
-    });
-    toast.success("Proposal saved to your dashboard");
+        setReviewStatus(v.decision === "approve" ? "approved" : "denied");
+      }, 500);
+    } catch (e) {
+      console.error(e);
+      setReviewStatus("error");
+      setReviewChecks(prev => prev.map((c, j) =>
+        j >= 2 ? { ...c, status: "fail", detail: "Review service unavailable. Try again in a moment." } : c
+      ));
+    }
   };
 
-  const getReviewDetail = (index: number) => {
-    const details = [
-      `"${topic}" has been queued for editorial review`,
-      `${STRUCTURES.find(s => s.value === structure)?.label} structure is well-suited for this topic`,
-      "Creator reasoning is clear and demonstrates relevant knowledge",
-      `${DEPTHS.find(d => d.value === depth)?.label} depth is appropriate for ${level} level`,
-    ];
-    return details[index] || "";
+  const goToEditor = () => {
+    if (verdict?.courseId) {
+      navigate({ to: "/courses/$courseId/edit", params: { courseId: verdict.courseId } });
+    }
+  };
+
+  const reset = () => {
+    setReviewStatus("idle");
+    setVerdict(null);
+    setReviewChecks([]);
   };
 
   return (
@@ -390,14 +437,59 @@ export function CourseBuilder() {
                         className="p-4 border border-neon-purple/40 bg-neon-purple/10 text-center neon-glow-purple"
                       >
                         <Check className="w-6 h-6 text-neon-purple mx-auto mb-2" />
-                        <p className="font-display font-bold tracking-wide">PROPOSAL SUBMITTED</p>
-                        <p className="text-sm text-muted-foreground mt-1 mb-4">Your course is queued for editorial review.</p>
-                        <Link
-                          to="/profile"
+                        <p className="font-display font-bold tracking-wide">APPROVED — SCORE {verdict?.score}/100</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4 max-w-md mx-auto">{verdict?.reason}</p>
+                        <button
+                          onClick={goToEditor}
                           className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity"
                         >
-                          <ListChecks className="w-3.5 h-3.5" />VIEW MY PROPOSALS
-                        </Link>
+                          <Sparkles className="w-3.5 h-3.5" />OPEN COURSE EDITOR
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {reviewStatus === "denied" && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="p-4 border border-destructive/40 bg-destructive/10 text-center"
+                      >
+                        <AlertTriangle className="w-6 h-6 text-destructive mx-auto mb-2" />
+                        <p className="font-display font-bold tracking-wide text-destructive">PROPOSAL DENIED</p>
+                        <p className="text-sm text-foreground mt-2 mb-2 max-w-md mx-auto"><span className="text-muted-foreground">Why: </span>{verdict?.reason}</p>
+                        {verdict?.feedback && verdict.feedback !== verdict.reason && (
+                          <p className="text-xs text-muted-foreground mt-2 mb-4 max-w-md mx-auto italic">{verdict.feedback}</p>
+                        )}
+                        <div className="flex justify-center gap-2 mt-4">
+                          <button
+                            onClick={reset}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />REVISE & RESUBMIT
+                          </button>
+                          <Link
+                            to="/profile"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:border-foreground transition-colors"
+                          >
+                            <ListChecks className="w-3.5 h-3.5" />MY COURSES
+                          </Link>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {reviewStatus === "error" && (
+                      <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        className="p-4 border border-destructive/40 bg-destructive/10 text-center"
+                      >
+                        <p className="font-display font-bold text-destructive">REVIEW FAILED</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-3">Couldn't reach the AI review service. Please try again.</p>
+                        <button
+                          onClick={reset}
+                          className="px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                        >
+                          TRY AGAIN
+                        </button>
                       </motion.div>
                     )}
                   </div>

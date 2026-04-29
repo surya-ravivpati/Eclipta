@@ -14,10 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      course_proposals: {
+      course_blocks: {
         Row: {
           created_at: string
+          data: Json
+          id: string
+          module_id: string
+          position: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          module_id: string
+          position?: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          module_id?: string
+          position?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_blocks_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_modules: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "user_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_proposals: {
+        Row: {
+          ai_feedback: string | null
+          ai_score: number | null
+          course_id: string | null
+          created_at: string
           creator_reasoning: string
+          denial_reason: string | null
           depth: string
           description: string | null
           id: string
@@ -31,8 +108,12 @@ export type Database = {
           weekly_hours: number
         }
         Insert: {
+          ai_feedback?: string | null
+          ai_score?: number | null
+          course_id?: string | null
           created_at?: string
           creator_reasoning: string
+          denial_reason?: string | null
           depth: string
           description?: string | null
           id?: string
@@ -46,8 +127,12 @@ export type Database = {
           weekly_hours?: number
         }
         Update: {
+          ai_feedback?: string | null
+          ai_score?: number | null
+          course_id?: string | null
           created_at?: string
           creator_reasoning?: string
+          denial_reason?: string | null
           depth?: string
           description?: string | null
           id?: string
@@ -367,6 +452,65 @@ export type Database = {
           was_correct?: boolean | null
         }
         Relationships: []
+      }
+      user_courses: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          depth: string
+          enrolled_count: number
+          id: string
+          level: string
+          proposal_id: string | null
+          slug: string
+          status: string
+          structure: string
+          summary: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          depth?: string
+          enrolled_count?: number
+          id?: string
+          level?: string
+          proposal_id?: string | null
+          slug: string
+          status?: string
+          structure?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          depth?: string
+          enrolled_count?: number
+          id?: string
+          level?: string
+          proposal_id?: string | null
+          slug?: string
+          status?: string
+          structure?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_courses_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "course_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_ecliptars: {
         Row: {

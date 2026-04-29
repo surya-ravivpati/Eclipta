@@ -53,6 +53,7 @@ export function CertifiedCourses() {
     }
     setEnrolled(prev => new Set(prev).add(slug));
     toast.success(`Enrolled in ${title}`);
+    navigate({ to: "/certified/$slug", params: { slug } });
   };
 
   return (

@@ -29,6 +29,7 @@ import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authen
 import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authenticated.forum_.$threadId'
 import { Route as AuthenticatedCertifiedSlugRouteImport } from './routes/_authenticated.certified.$slug'
 import { Route as AuthenticatedAdminForumRouteImport } from './routes/_authenticated.admin.forum'
+import { Route as AuthenticatedCoursesCourseIdEditRouteImport } from './routes/_authenticated.courses.$courseId.edit'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -133,6 +134,12 @@ const AuthenticatedAdminForumRoute = AuthenticatedAdminForumRouteImport.update({
   path: '/admin/forum',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCoursesCourseIdEditRoute =
+  AuthenticatedCoursesCourseIdEditRouteImport.update({
+    id: '/courses/$courseId/edit',
+    path: '/courses/$courseId/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/admin/forum': typeof AuthenticatedAdminForumRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/courses/$courseId/edit': typeof AuthenticatedCoursesCourseIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -175,6 +183,7 @@ export interface FileRoutesByTo {
   '/admin/forum': typeof AuthenticatedAdminForumRoute
   '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/courses/$courseId/edit': typeof AuthenticatedCoursesCourseIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,6 +207,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/forum': typeof AuthenticatedAdminForumRoute
   '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
   '/_authenticated/forum_/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/_authenticated/courses/$courseId/edit': typeof AuthenticatedCoursesCourseIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin/forum'
     | '/certified/$slug'
     | '/forum/$threadId'
+    | '/courses/$courseId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/admin/forum'
     | '/certified/$slug'
     | '/forum/$threadId'
+    | '/courses/$courseId/edit'
   id:
     | '__root__'
     | '/'
@@ -264,6 +276,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/forum'
     | '/_authenticated/certified/$slug'
     | '/_authenticated/forum_/$threadId'
+    | '/_authenticated/courses/$courseId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminForumRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/courses/$courseId/edit': {
+      id: '/_authenticated/courses/$courseId/edit'
+      path: '/courses/$courseId/edit'
+      fullPath: '/courses/$courseId/edit'
+      preLoaderRoute: typeof AuthenticatedCoursesCourseIdEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -448,6 +468,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
   AuthenticatedAdminForumRoute: typeof AuthenticatedAdminForumRoute
   AuthenticatedForumThreadIdRoute: typeof AuthenticatedForumThreadIdRoute
+  AuthenticatedCoursesCourseIdEditRoute: typeof AuthenticatedCoursesCourseIdEditRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -462,6 +483,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
   AuthenticatedAdminForumRoute: AuthenticatedAdminForumRoute,
   AuthenticatedForumThreadIdRoute: AuthenticatedForumThreadIdRoute,
+  AuthenticatedCoursesCourseIdEditRoute: AuthenticatedCoursesCourseIdEditRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

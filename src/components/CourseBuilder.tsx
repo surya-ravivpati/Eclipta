@@ -437,14 +437,59 @@ export function CourseBuilder() {
                         className="p-4 border border-neon-purple/40 bg-neon-purple/10 text-center neon-glow-purple"
                       >
                         <Check className="w-6 h-6 text-neon-purple mx-auto mb-2" />
-                        <p className="font-display font-bold tracking-wide">PROPOSAL SUBMITTED</p>
-                        <p className="text-sm text-muted-foreground mt-1 mb-4">Your course is queued for editorial review.</p>
-                        <Link
-                          to="/profile"
+                        <p className="font-display font-bold tracking-wide">APPROVED — SCORE {verdict?.score}/100</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4 max-w-md mx-auto">{verdict?.reason}</p>
+                        <button
+                          onClick={goToEditor}
                           className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity"
                         >
-                          <ListChecks className="w-3.5 h-3.5" />VIEW MY PROPOSALS
-                        </Link>
+                          <Sparkles className="w-3.5 h-3.5" />OPEN COURSE EDITOR
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {reviewStatus === "denied" && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="p-4 border border-destructive/40 bg-destructive/10 text-center"
+                      >
+                        <AlertTriangle className="w-6 h-6 text-destructive mx-auto mb-2" />
+                        <p className="font-display font-bold tracking-wide text-destructive">PROPOSAL DENIED</p>
+                        <p className="text-sm text-foreground mt-2 mb-2 max-w-md mx-auto"><span className="text-muted-foreground">Why: </span>{verdict?.reason}</p>
+                        {verdict?.feedback && verdict.feedback !== verdict.reason && (
+                          <p className="text-xs text-muted-foreground mt-2 mb-4 max-w-md mx-auto italic">{verdict.feedback}</p>
+                        )}
+                        <div className="flex justify-center gap-2 mt-4">
+                          <button
+                            onClick={reset}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />REVISE & RESUBMIT
+                          </button>
+                          <Link
+                            to="/profile"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:border-foreground transition-colors"
+                          >
+                            <ListChecks className="w-3.5 h-3.5" />MY COURSES
+                          </Link>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {reviewStatus === "error" && (
+                      <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        className="p-4 border border-destructive/40 bg-destructive/10 text-center"
+                      >
+                        <p className="font-display font-bold text-destructive">REVIEW FAILED</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-3">Couldn't reach the AI review service. Please try again.</p>
+                        <button
+                          onClick={reset}
+                          className="px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                        >
+                          TRY AGAIN
+                        </button>
                       </motion.div>
                     )}
                   </div>

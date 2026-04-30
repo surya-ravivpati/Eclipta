@@ -356,13 +356,13 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
       <div className="max-w-5xl mx-auto px-6">
         <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
-            <Users className="w-3 h-3" />COMMUNITY
+            <Users className="w-3 h-3" />{lockCourse ? "COURSE COMMUNITY" : "COMMUNITY"}
           </div>
           <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-4">
-            The <span className="text-neon-pink">Forum</span>
+            {heading ?? <>The <span className="text-neon-pink">Forum</span></>}
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Ask questions, share insights, and learn from the community. The best answers rise to the top.
+            {subheading ?? "Ask questions, share insights, and learn from the community. The best answers rise to the top."}
           </p>
         </motion.div>
 
@@ -415,21 +415,23 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
           )}
         </div>
 
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-          {FILTER_TABS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setSelectedCourse(c)}
-              className={`px-3 py-1.5 text-[10px] font-bold tracking-widest border transition-colors whitespace-nowrap ${
-                selectedCourse === c
-                  ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
-                  : "border-border text-muted-foreground hover:border-neon-purple/40"
-              }`}
-            >
-              {c.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {!lockCourse && (
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+            {FILTER_TABS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setSelectedCourse(c)}
+                className={`px-3 py-1.5 text-[10px] font-bold tracking-widest border transition-colors whitespace-nowrap ${
+                  selectedCourse === c
+                    ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
+                    : "border-border text-muted-foreground hover:border-neon-purple/40"
+                }`}
+              >
+                {c.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center gap-4 mb-6 text-[10px] font-bold tracking-widest text-muted-foreground">
           <span>SORT BY:</span>
@@ -525,7 +527,7 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
         </motion.div>
       </div>
 
-      <NewThreadDialog open={showNew} onClose={() => setShowNew(false)} onCreated={fetchData} />
+      <NewThreadDialog open={showNew} onClose={() => setShowNew(false)} onCreated={fetchData} lockedCourse={lockCourse ? selectedCourse : undefined} />
     </section>
   );
 }

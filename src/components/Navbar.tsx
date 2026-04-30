@@ -40,12 +40,14 @@ const NAV_GROUPS = [
 export function Navbar() {
   const { user, isAuthenticated } = useAuth();
   const { xp } = usePlayerXp();
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const cycleTheme = () => {
     const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
     setTheme(next);
   };
-  const ThemeIcon = theme === "system" ? Monitor : resolvedTheme === "dark" ? Sun : Moon;
+  // Icon represents the CURRENT mode (so users see what's active),
+  // tooltip describes what clicking will switch to next.
+  const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
   const themeNext = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -103,8 +105,8 @@ export function Navbar() {
           <button
             onClick={cycleTheme}
             className="p-2 text-muted-foreground hover:text-neon-purple transition-colors"
-            title={`Theme: ${theme}. Click for ${themeNext}.`}
-            aria-label="Cycle theme (dark / light / system)"
+            title={`Theme: ${theme} — click to switch to ${themeNext}`}
+            aria-label={`Theme: ${theme}. Click to switch to ${themeNext}.`}
           >
             <ThemeIcon className="w-4 h-4" />
           </button>

@@ -27,17 +27,9 @@ function Hero() {
       <div className="absolute top-[40%] left-[40%] w-[22rem] h-[22rem] bg-neon-cyan/10 rounded-full blur-[120px]" />
 
       <div className="max-w-6xl mx-auto relative text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-3 py-1 mb-8 border border-neon-pink/40 text-neon-pink text-[10px] font-bold tracking-[0.2em] uppercase"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-          Season 01 — The Awakening
-        </motion.div>
-
         <motion.h1
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-          className="text-6xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-display"
+          className="pt-4 text-6xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-display"
         >
           LEARN LIKE <br />
           <span className="text-neon-purple">YOU PLAY.</span>
@@ -78,7 +70,6 @@ function Hero() {
           className="flex flex-wrap justify-center gap-2 mt-10 text-[10px] font-bold tracking-widest uppercase text-muted-foreground"
         >
           {[
-            "200 XP starter grant",
             "No credit card",
             "Free Luna sessions",
             "Web · mobile · tablet",
@@ -317,8 +308,8 @@ function FinalCta() {
             Step into the arena.
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-            New accounts start with 200 XP — enough to claim your first Ecliptar and play your first battle.
-            No card. No catch.
+            Free to start. No credit card. Jump into a tutoring session, take an adaptive
+            test, or duel a friend in under a minute.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {isAuthenticated ? (

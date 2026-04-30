@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ShieldCheck, Star, Clock, Users, BookOpen, ArrowLeft, Check, Layers } from "lucide-react";
+import { ShieldCheck, Star, Clock, Users, BookOpen, ArrowLeft, Check, Layers, PlayCircle, MessagesSquare } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { getCourseBySlug } from "@/lib/certified-courses";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,8 @@ function CourseDetail() {
     if (error) { toast.error(error.message); return; }
     setIsEnrolled(true);
     toast.success(`Enrolled in ${course.title}`);
+    // Send straight into the player on first enroll.
+    window.location.href = `/certified/${course.slug}/learn`;
   };
 
   return (
@@ -96,17 +98,32 @@ function CourseDetail() {
               ))}
             </div>
 
-            <button
-              onClick={enroll}
-              disabled={loading || isEnrolled}
-              className={`px-6 py-3 text-xs font-bold tracking-widest transition-all flex items-center gap-2 ${
-                isEnrolled
-                  ? "bg-neon-purple/15 border border-neon-purple/40 text-neon-purple cursor-default"
-                  : "bg-neon-purple text-primary-foreground hover:opacity-90 neon-glow-purple"
-              }`}
-            >
-              {loading ? "LOADING..." : isEnrolled ? (<><Check className="w-4 h-4" /> ENROLLED</>) : "ENROLL NOW"}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              {isEnrolled ? (
+                <Link
+                  to="/certified/$slug/learn"
+                  params={{ slug: course.slug }}
+                  className="px-6 py-3 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity neon-glow-purple flex items-center gap-2"
+                >
+                  <PlayCircle className="w-4 h-4" /> CONTINUE LEARNING
+                </Link>
+              ) : (
+                <button
+                  onClick={enroll}
+                  disabled={loading}
+                  className="px-6 py-3 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity neon-glow-purple flex items-center gap-2"
+                >
+                  {loading ? "LOADING..." : "ENROLL NOW"}
+                </button>
+              )}
+              <Link
+                to="/certified/$slug/forum"
+                params={{ slug: course.slug }}
+                className="px-6 py-3 text-xs font-bold tracking-widest border border-neon-pink/40 text-neon-pink hover:bg-neon-pink/10 transition-colors flex items-center gap-2"
+              >
+                <MessagesSquare className="w-4 h-4" /> COURSE FORUM
+              </Link>
+            </div>
           </motion.div>
 
           <div className="mt-12">

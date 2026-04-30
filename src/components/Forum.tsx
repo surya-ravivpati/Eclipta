@@ -252,8 +252,8 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
 export function Forum({ defaultCourse, lockCourse = false, heading, subheading }: {
   defaultCourse?: string;
   lockCourse?: boolean;
-  heading?: string;
-  subheading?: string;
+  heading?: React.ReactNode;
+  subheading?: React.ReactNode;
 } = {}) {
   const { user, isAuthenticated } = useAuth();
   const { isModerator } = useModerator();

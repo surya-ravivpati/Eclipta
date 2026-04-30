@@ -133,11 +133,11 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete }: {
   );
 }
 
-function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boolean; onClose: () => void; onCreated: () => void; lockedCourse?: string }) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [course, setCourse] = useState("General");
+  const [course, setCourse] = useState(lockedCourse ?? "General");
   const [tagsInput, setTagsInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -174,7 +174,7 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
       return;
     }
     toast.success("Thread posted");
-    setTitle(""); setBody(""); setTagsInput(""); setCourse("General");
+    setTitle(""); setBody(""); setTagsInput(""); setCourse(lockedCourse ?? "General");
     onCreated();
     onClose();
   };
@@ -200,13 +200,19 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Category</label>
-              <select
-                value={course}
-                onChange={(e) => setCourse(e.target.value)}
-                className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
-              >
-                {COURSES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {lockedCourse ? (
+                <div className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm text-neon-purple">
+                  {lockedCourse}
+                </div>
+              ) : (
+                <select
+                  value={course}
+                  onChange={(e) => setCourse(e.target.value)}
+                  className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                >
+                  {COURSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
             <div>
               <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Tags (comma separated, max 5)</label>

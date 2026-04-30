@@ -39,7 +39,7 @@ export function CertifiedCourses() {
       return;
     }
     if (enrolled.has(slug)) {
-      navigate({ to: "/certified/$slug", params: { slug } });
+      navigate({ to: "/certified/$slug/learn", params: { slug } });
       return;
     }
     const { error } = await supabase.from("enrollments").insert({
@@ -53,7 +53,7 @@ export function CertifiedCourses() {
     }
     setEnrolled(prev => new Set(prev).add(slug));
     toast.success(`Enrolled in ${title}`);
-    navigate({ to: "/certified/$slug", params: { slug } });
+    navigate({ to: "/certified/$slug/learn", params: { slug } });
   };
 
   return (

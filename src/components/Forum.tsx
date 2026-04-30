@@ -133,11 +133,11 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete }: {
   );
 }
 
-function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boolean; onClose: () => void; onCreated: () => void; lockedCourse?: string }) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [course, setCourse] = useState("General");
+  const [course, setCourse] = useState(lockedCourse ?? "General");
   const [tagsInput, setTagsInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -174,7 +174,7 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
       return;
     }
     toast.success("Thread posted");
-    setTitle(""); setBody(""); setTagsInput(""); setCourse("General");
+    setTitle(""); setBody(""); setTagsInput(""); setCourse(lockedCourse ?? "General");
     onCreated();
     onClose();
   };
@@ -200,13 +200,19 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Category</label>
-              <select
-                value={course}
-                onChange={(e) => setCourse(e.target.value)}
-                className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
-              >
-                {COURSES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {lockedCourse ? (
+                <div className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm text-neon-purple">
+                  {lockedCourse}
+                </div>
+              ) : (
+                <select
+                  value={course}
+                  onChange={(e) => setCourse(e.target.value)}
+                  className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                >
+                  {COURSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
             <div>
               <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Tags (comma separated, max 5)</label>
@@ -243,14 +249,19 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
   );
 }
 
-export function Forum() {
+export function Forum({ defaultCourse, lockCourse = false, heading, subheading }: {
+  defaultCourse?: string;
+  lockCourse?: boolean;
+  heading?: React.ReactNode;
+  subheading?: React.ReactNode;
+} = {}) {
   const { user, isAuthenticated } = useAuth();
   const { isModerator } = useModerator();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{ threads: number; answers: number; contributors: number } | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
-  const [selectedCourse, setSelectedCourse] = useState("All");
+  const [selectedCourse, setSelectedCourse] = useState(defaultCourse ?? "All");
   const [sortBy, setSortBy] = useState<"votes" | "recent" | "answers">("recent");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -345,13 +356,13 @@ export function Forum() {
       <div className="max-w-5xl mx-auto px-6">
         <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
-            <Users className="w-3 h-3" />COMMUNITY
+            <Users className="w-3 h-3" />{lockCourse ? "COURSE COMMUNITY" : "COMMUNITY"}
           </div>
           <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-4">
-            The <span className="text-neon-pink">Forum</span>
+            {heading ?? <>The <span className="text-neon-pink">Forum</span></>}
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Ask questions, share insights, and learn from the community. The best answers rise to the top.
+            {subheading ?? "Ask questions, share insights, and learn from the community. The best answers rise to the top."}
           </p>
         </motion.div>
 
@@ -404,21 +415,23 @@ export function Forum() {
           )}
         </div>
 
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-          {FILTER_TABS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setSelectedCourse(c)}
-              className={`px-3 py-1.5 text-[10px] font-bold tracking-widest border transition-colors whitespace-nowrap ${
-                selectedCourse === c
-                  ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
-                  : "border-border text-muted-foreground hover:border-neon-purple/40"
-              }`}
-            >
-              {c.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {!lockCourse && (
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+            {FILTER_TABS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setSelectedCourse(c)}
+                className={`px-3 py-1.5 text-[10px] font-bold tracking-widest border transition-colors whitespace-nowrap ${
+                  selectedCourse === c
+                    ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
+                    : "border-border text-muted-foreground hover:border-neon-purple/40"
+                }`}
+              >
+                {c.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center gap-4 mb-6 text-[10px] font-bold tracking-widest text-muted-foreground">
           <span>SORT BY:</span>
@@ -514,7 +527,7 @@ export function Forum() {
         </motion.div>
       </div>
 
-      <NewThreadDialog open={showNew} onClose={() => setShowNew(false)} onCreated={fetchData} />
+      <NewThreadDialog open={showNew} onClose={() => setShowNew(false)} onCreated={fetchData} lockedCourse={lockCourse ? selectedCourse : undefined} />
     </section>
   );
 }

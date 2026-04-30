@@ -32,6 +32,8 @@ import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedCertifiedSlugRouteImport } from './routes/_authenticated.certified.$slug'
 import { Route as AuthenticatedAdminForumRouteImport } from './routes/_authenticated.admin.forum'
 import { Route as AuthenticatedCoursesCourseIdEditRouteImport } from './routes/_authenticated.courses.$courseId.edit'
+import { Route as AuthenticatedCertifiedSlugLearnRouteImport } from './routes/_authenticated.certified.$slug.learn'
+import { Route as AuthenticatedCertifiedSlugForumRouteImport } from './routes/_authenticated.certified.$slug.forum'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -152,6 +154,18 @@ const AuthenticatedCoursesCourseIdEditRoute =
     path: '/courses/$courseId/edit',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCertifiedSlugLearnRoute =
+  AuthenticatedCertifiedSlugLearnRouteImport.update({
+    id: '/learn',
+    path: '/learn',
+    getParentRoute: () => AuthenticatedCertifiedSlugRoute,
+  } as any)
+const AuthenticatedCertifiedSlugForumRoute =
+  AuthenticatedCertifiedSlugForumRouteImport.update({
+    id: '/forum',
+    path: '/forum',
+    getParentRoute: () => AuthenticatedCertifiedSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -173,8 +187,10 @@ export interface FileRoutesByFullPath {
   '/courses/$slug': typeof CoursesSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/forum': typeof AuthenticatedAdminForumRoute
-  '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
+  '/certified/$slug': typeof AuthenticatedCertifiedSlugRouteWithChildren
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/certified/$slug/forum': typeof AuthenticatedCertifiedSlugForumRoute
+  '/certified/$slug/learn': typeof AuthenticatedCertifiedSlugLearnRoute
   '/courses/$courseId/edit': typeof AuthenticatedCoursesCourseIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -197,8 +213,10 @@ export interface FileRoutesByTo {
   '/courses/$slug': typeof CoursesSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/forum': typeof AuthenticatedAdminForumRoute
-  '/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
+  '/certified/$slug': typeof AuthenticatedCertifiedSlugRouteWithChildren
   '/forum/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/certified/$slug/forum': typeof AuthenticatedCertifiedSlugForumRoute
+  '/certified/$slug/learn': typeof AuthenticatedCertifiedSlugLearnRoute
   '/courses/$courseId/edit': typeof AuthenticatedCoursesCourseIdEditRoute
 }
 export interface FileRoutesById {
@@ -223,8 +241,10 @@ export interface FileRoutesById {
   '/courses/$slug': typeof CoursesSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/admin/forum': typeof AuthenticatedAdminForumRoute
-  '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRoute
+  '/_authenticated/certified/$slug': typeof AuthenticatedCertifiedSlugRouteWithChildren
   '/_authenticated/forum_/$threadId': typeof AuthenticatedForumThreadIdRoute
+  '/_authenticated/certified/$slug/forum': typeof AuthenticatedCertifiedSlugForumRoute
+  '/_authenticated/certified/$slug/learn': typeof AuthenticatedCertifiedSlugLearnRoute
   '/_authenticated/courses/$courseId/edit': typeof AuthenticatedCoursesCourseIdEditRoute
 }
 export interface FileRouteTypes {
@@ -251,6 +271,8 @@ export interface FileRouteTypes {
     | '/admin/forum'
     | '/certified/$slug'
     | '/forum/$threadId'
+    | '/certified/$slug/forum'
+    | '/certified/$slug/learn'
     | '/courses/$courseId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -275,6 +297,8 @@ export interface FileRouteTypes {
     | '/admin/forum'
     | '/certified/$slug'
     | '/forum/$threadId'
+    | '/certified/$slug/forum'
+    | '/certified/$slug/learn'
     | '/courses/$courseId/edit'
   id:
     | '__root__'
@@ -300,6 +324,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/forum'
     | '/_authenticated/certified/$slug'
     | '/_authenticated/forum_/$threadId'
+    | '/_authenticated/certified/$slug/forum'
+    | '/_authenticated/certified/$slug/learn'
     | '/_authenticated/courses/$courseId/edit'
   fileRoutesById: FileRoutesById
 }
@@ -478,16 +504,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCoursesCourseIdEditRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/certified/$slug/learn': {
+      id: '/_authenticated/certified/$slug/learn'
+      path: '/learn'
+      fullPath: '/certified/$slug/learn'
+      preLoaderRoute: typeof AuthenticatedCertifiedSlugLearnRouteImport
+      parentRoute: typeof AuthenticatedCertifiedSlugRoute
+    }
+    '/_authenticated/certified/$slug/forum': {
+      id: '/_authenticated/certified/$slug/forum'
+      path: '/forum'
+      fullPath: '/certified/$slug/forum'
+      preLoaderRoute: typeof AuthenticatedCertifiedSlugForumRouteImport
+      parentRoute: typeof AuthenticatedCertifiedSlugRoute
+    }
   }
 }
 
+interface AuthenticatedCertifiedSlugRouteChildren {
+  AuthenticatedCertifiedSlugForumRoute: typeof AuthenticatedCertifiedSlugForumRoute
+  AuthenticatedCertifiedSlugLearnRoute: typeof AuthenticatedCertifiedSlugLearnRoute
+}
+
+const AuthenticatedCertifiedSlugRouteChildren: AuthenticatedCertifiedSlugRouteChildren =
+  {
+    AuthenticatedCertifiedSlugForumRoute: AuthenticatedCertifiedSlugForumRoute,
+    AuthenticatedCertifiedSlugLearnRoute: AuthenticatedCertifiedSlugLearnRoute,
+  }
+
+const AuthenticatedCertifiedSlugRouteWithChildren =
+  AuthenticatedCertifiedSlugRoute._addFileChildren(
+    AuthenticatedCertifiedSlugRouteChildren,
+  )
+
 interface AuthenticatedCertifiedRouteChildren {
-  AuthenticatedCertifiedSlugRoute: typeof AuthenticatedCertifiedSlugRoute
+  AuthenticatedCertifiedSlugRoute: typeof AuthenticatedCertifiedSlugRouteWithChildren
 }
 
 const AuthenticatedCertifiedRouteChildren: AuthenticatedCertifiedRouteChildren =
   {
-    AuthenticatedCertifiedSlugRoute: AuthenticatedCertifiedSlugRoute,
+    AuthenticatedCertifiedSlugRoute:
+      AuthenticatedCertifiedSlugRouteWithChildren,
   }
 
 const AuthenticatedCertifiedRouteWithChildren =

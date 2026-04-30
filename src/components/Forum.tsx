@@ -243,14 +243,19 @@ function NewThreadDialog({ open, onClose, onCreated }: { open: boolean; onClose:
   );
 }
 
-export function Forum() {
+export function Forum({ defaultCourse, lockCourse = false, heading, subheading }: {
+  defaultCourse?: string;
+  lockCourse?: boolean;
+  heading?: string;
+  subheading?: string;
+} = {}) {
   const { user, isAuthenticated } = useAuth();
   const { isModerator } = useModerator();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{ threads: number; answers: number; contributors: number } | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
-  const [selectedCourse, setSelectedCourse] = useState("All");
+  const [selectedCourse, setSelectedCourse] = useState(defaultCourse ?? "All");
   const [sortBy, setSortBy] = useState<"votes" | "recent" | "answers">("recent");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNew, setShowNew] = useState(false);

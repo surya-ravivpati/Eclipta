@@ -10,6 +10,19 @@ export const Route = createFileRoute("/_authenticated")({
         search: { redirect: location.href },
       });
     }
+
+    // Skip the onboarding gate when already on the onboarding route
+    if (location.pathname.startsWith("/onboarding")) return;
+
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("onboarded_at")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (!profile?.onboarded_at) {
+      throw redirect({ to: "/onboarding" });
+    }
   },
   component: () => <Outlet />,
 });

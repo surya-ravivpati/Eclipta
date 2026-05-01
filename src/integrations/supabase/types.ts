@@ -544,14 +544,18 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           avg_completion_time: number | null
           best_streak: number
+          bio: string | null
           created_at: string
           current_streak: number
           equipped_ecliptar: string | null
           id: string
+          learning_goal: string | null
           luna_notes: string | null
+          onboarded_at: string | null
           preferred_pace: string
           preferred_style: string
           strong_areas: string[] | null
@@ -562,17 +566,22 @@ export type Database = {
           user_id: string
           username: string | null
           weak_areas: string[] | null
+          weekly_hours: number | null
           xp: number
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           avg_completion_time?: number | null
           best_streak?: number
+          bio?: string | null
           created_at?: string
           current_streak?: number
           equipped_ecliptar?: string | null
           id?: string
+          learning_goal?: string | null
           luna_notes?: string | null
+          onboarded_at?: string | null
           preferred_pace?: string
           preferred_style?: string
           strong_areas?: string[] | null
@@ -583,17 +592,22 @@ export type Database = {
           user_id: string
           username?: string | null
           weak_areas?: string[] | null
+          weekly_hours?: number | null
           xp?: number
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           avg_completion_time?: number | null
           best_streak?: number
+          bio?: string | null
           created_at?: string
           current_streak?: number
           equipped_ecliptar?: string | null
           id?: string
+          learning_goal?: string | null
           luna_notes?: string | null
+          onboarded_at?: string | null
           preferred_pace?: string
           preferred_style?: string
           strong_areas?: string[] | null
@@ -604,6 +618,7 @@ export type Database = {
           user_id?: string
           username?: string | null
           weak_areas?: string[] | null
+          weekly_hours?: number | null
           xp?: number
         }
         Relationships: []

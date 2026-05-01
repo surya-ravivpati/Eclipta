@@ -119,10 +119,11 @@ function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
-      const styleMap: Record<string, string> = {
-        hints: "guided",
-        examples: "examples",
-        challenge: "challenge",
+      // DB check constraint allows only: 'theory' | 'practice' | 'mixed'
+      const styleMap: Record<string, "theory" | "practice" | "mixed"> = {
+        hints: "mixed",
+        examples: "theory",
+        challenge: "practice",
       };
 
       const { error } = await supabase
@@ -265,8 +266,10 @@ function OnboardingPage() {
                       key={g.id}
                       type="button"
                       onClick={() => setForm({ ...form, goal: g.id })}
-                      className={`p-4 text-left glass-panel transition-colors ${
-                        active ? "border-neon-purple bg-neon-purple/10" : "hover:border-neon-purple/60"
+                      className={`p-4 text-left glass-panel transition-all rounded-md ${
+                        active
+                          ? "ring-2 ring-neon-purple bg-neon-purple/15 shadow-[0_0_20px_oklch(0.55_0.25_290/30%)]"
+                          : "hover:ring-1 hover:ring-neon-purple/60"
                       }`}
                     >
                       <div className="text-2xl mb-2">{g.emoji}</div>
@@ -286,8 +289,10 @@ function OnboardingPage() {
                       key={h.value}
                       type="button"
                       onClick={() => setForm({ ...form, hours: h.value })}
-                      className={`p-4 text-left glass-panel transition-colors flex items-center gap-3 ${
-                        active ? "border-neon-purple bg-neon-purple/10" : "hover:border-neon-purple/60"
+                      className={`p-4 text-left glass-panel transition-all rounded-md flex items-center gap-3 ${
+                        active
+                          ? "ring-2 ring-neon-purple bg-neon-purple/15 shadow-[0_0_20px_oklch(0.55_0.25_290/30%)]"
+                          : "hover:ring-1 hover:ring-neon-purple/60"
                       }`}
                     >
                       <Clock className={`w-5 h-5 ${active ? "text-neon-purple" : "text-muted-foreground"}`} />
@@ -311,8 +316,10 @@ function OnboardingPage() {
                       key={s.id}
                       type="button"
                       onClick={() => setForm({ ...form, style: s.id })}
-                      className={`w-full p-4 text-left glass-panel transition-colors flex items-start gap-4 ${
-                        active ? "border-neon-purple bg-neon-purple/10" : "hover:border-neon-purple/60"
+                      className={`w-full p-4 text-left glass-panel transition-all rounded-md flex items-start gap-4 ${
+                        active
+                          ? "ring-2 ring-neon-purple bg-neon-purple/15 shadow-[0_0_20px_oklch(0.55_0.25_290/30%)]"
+                          : "hover:ring-1 hover:ring-neon-purple/60"
                       }`}
                     >
                       <div className={`w-10 h-10 shrink-0 border flex items-center justify-center ${

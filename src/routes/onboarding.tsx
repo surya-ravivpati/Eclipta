@@ -266,11 +266,17 @@ function OnboardingPage() {
                       key={g.id}
                       type="button"
                       onClick={() => setForm({ ...form, goal: g.id })}
-                      className={`p-4 text-left glass-panel transition-all rounded-md ${
+                      style={
                         active
-                          ? "ring-2 ring-neon-purple bg-neon-purple/15 shadow-[0_0_20px_oklch(0.55_0.25_290/30%)]"
-                          : "hover:ring-1 hover:ring-neon-purple/60"
-                      }`}
+                          ? {
+                              background: "oklch(0.55 0.25 290 / 18%)",
+                              borderColor: "oklch(0.55 0.25 290)",
+                              boxShadow:
+                                "0 0 0 2px oklch(0.55 0.25 290), 0 0 24px oklch(0.55 0.25 290 / 45%)",
+                            }
+                          : undefined
+                      }
+                      className="p-4 text-left glass-panel transition-all rounded-md hover:border-neon-purple/60"
                     >
                       <div className="text-2xl mb-2">{g.emoji}</div>
                       <div className="font-bold text-sm">{g.label}</div>
@@ -289,11 +295,17 @@ function OnboardingPage() {
                       key={h.value}
                       type="button"
                       onClick={() => setForm({ ...form, hours: h.value })}
-                      className={`p-4 text-left glass-panel transition-all rounded-md flex items-center gap-3 ${
+                      style={
                         active
-                          ? "ring-2 ring-neon-purple bg-neon-purple/15 shadow-[0_0_20px_oklch(0.55_0.25_290/30%)]"
-                          : "hover:ring-1 hover:ring-neon-purple/60"
-                      }`}
+                          ? {
+                              background: "oklch(0.55 0.25 290 / 18%)",
+                              borderColor: "oklch(0.55 0.25 290)",
+                              boxShadow:
+                                "0 0 0 2px oklch(0.55 0.25 290), 0 0 24px oklch(0.55 0.25 290 / 45%)",
+                            }
+                          : undefined
+                      }
+                      className="p-4 text-left glass-panel transition-all rounded-md flex items-center gap-3 hover:border-neon-purple/60"
                     >
                       <Clock className={`w-5 h-5 ${active ? "text-neon-purple" : "text-muted-foreground"}`} />
                       <div>
@@ -316,11 +328,17 @@ function OnboardingPage() {
                       key={s.id}
                       type="button"
                       onClick={() => setForm({ ...form, style: s.id })}
-                      className={`w-full p-4 text-left glass-panel transition-all rounded-md flex items-start gap-4 ${
+                      style={
                         active
-                          ? "ring-2 ring-neon-purple bg-neon-purple/15 shadow-[0_0_20px_oklch(0.55_0.25_290/30%)]"
-                          : "hover:ring-1 hover:ring-neon-purple/60"
-                      }`}
+                          ? {
+                              background: "oklch(0.55 0.25 290 / 18%)",
+                              borderColor: "oklch(0.55 0.25 290)",
+                              boxShadow:
+                                "0 0 0 2px oklch(0.55 0.25 290), 0 0 24px oklch(0.55 0.25 290 / 45%)",
+                            }
+                          : undefined
+                      }
+                      className="w-full p-4 text-left glass-panel transition-all rounded-md flex items-start gap-4 hover:border-neon-purple/60"
                     >
                       <div className={`w-10 h-10 shrink-0 border flex items-center justify-center ${
                         active ? "border-neon-purple bg-neon-purple/15" : "border-border bg-secondary/30"

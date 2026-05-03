@@ -7,6 +7,7 @@ import {
   Apple, Atom,
   // Per-tier rank icons
   Hammer, Swords, Medal, Gem, Diamond as DiamondIcon, Flame, Sparkle, Sun,
+  ChevronDown,
 } from "lucide-react";
 
 // Distinct icon per rank tier (used for "rank" road nodes)

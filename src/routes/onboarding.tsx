@@ -31,7 +31,7 @@ type Form = {
   username: string;
   age: string;
   bio: string;
-  goal: string;
+  goals: string[];
   hours: number | null;
   style: "hints" | "examples" | "challenge" | "";
 };
@@ -68,7 +68,7 @@ function OnboardingPage() {
     username: "",
     age: "",
     bio: "",
-    goal: "",
+    goals: [],
     hours: null,
     style: "",
   });
@@ -85,7 +85,7 @@ function OnboardingPage() {
     () => [
       { id: "identity",   title: "Pick your handle",       sub: "How you'll show up in the arena." },
       { id: "about",      title: "Tell us a bit about you", sub: "Just the basics. You can edit anytime." },
-      { id: "goal",       title: "What do you want to learn?", sub: "We'll tune your roadmap around it." },
+      { id: "goal",       title: "What do you want to learn?", sub: "Pick everything that interests you — we'll tune your roadmap." },
       { id: "hours",      title: "How much time do you have?", sub: "Sets a realistic weekly pace." },
       { id: "style",      title: "How should Luna teach you?", sub: "She'll adapt over time — this is the starting point." },
     ],
@@ -103,7 +103,7 @@ function OnboardingPage() {
         const age = parseInt(form.age, 10);
         return Number.isFinite(age) && age >= 6 && age <= 120 && form.bio.trim().length <= 240;
       }
-      case 2: return !!form.goal;
+      case 2: return form.goals.length > 0;
       case 3: return form.hours !== null;
       case 4: return !!form.style;
       default: return false;
@@ -132,7 +132,7 @@ function OnboardingPage() {
           username: form.username.trim(),
           bio: form.bio.trim() || null,
           age: parseInt(form.age, 10),
-          learning_goal: form.goal,
+          learning_goal: form.goals.join(","),
           weekly_hours: form.hours,
           preferred_style: styleMap[form.style] ?? "mixed",
           onboarded_at: new Date().toISOString(),
@@ -260,12 +260,19 @@ function OnboardingPage() {
             {step === 2 && (
               <div className="grid grid-cols-2 gap-3">
                 {GOALS.map((g) => {
-                  const active = form.goal === g.id;
+                  const active = form.goals.includes(g.id);
                   return (
                     <button
                       key={g.id}
                       type="button"
-                      onClick={() => setForm({ ...form, goal: g.id })}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          goals: active
+                            ? form.goals.filter((x) => x !== g.id)
+                            : [...form.goals, g.id],
+                        })
+                      }
                       style={
                         active
                           ? {

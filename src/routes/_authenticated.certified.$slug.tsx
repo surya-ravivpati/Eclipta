@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Star, Clock, Users, BookOpen, ArrowLeft, Check, Layers, PlayCircle, MessagesSquare } from "lucide-react";
@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/certified/$slug")({
 function CourseDetail() {
   const { course } = Route.useLoaderData();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
 

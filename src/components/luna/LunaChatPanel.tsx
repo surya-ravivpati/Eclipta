@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, ArrowRight, Monitor, Loader2, RotateCcw } from "lucide-react";
+import { X, Send, ArrowRight, Monitor, Loader2, RotateCcw, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import { parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
@@ -9,6 +9,8 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { useXpMilestones } from "@/hooks/use-xp-milestones";
 import { useLunaConversation, type ConversationMessage } from "@/hooks/use-luna-conversation";
+import { LunaActions } from "./LunaActions";
+import { useLunaVoice } from "@/hooks/use-luna-voice";
 
 export type LunaMessage = ConversationMessage;
 
@@ -42,6 +44,30 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
     breakMessage: BREAK_MESSAGE,
     active: open,
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const voice = useLunaVoice({ onTranscript: (t) => { setInput(prev => (prev ? prev + " " : "") + t); } });
+
+  // Speak each newly-completed assistant turn (when TTS toggle is on).
+  const lastSpokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!voice.speakEnabled || isStreaming) return;
+    const last = messages[messages.length - 1];
+    if (last?.role === "assistant" && last.content && last.id !== lastSpokenRef.current) {
+      lastSpokenRef.current = last.id ?? last.content.slice(0, 32);
+      voice.speak(last.content);
+    }
+  }, [messages, isStreaming, voice]);
+
+  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f || !f.type.startsWith("image/")) return;
+    if (f.size > 5 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = () => setPendingImage(typeof reader.result === "string" ? reader.result : null);
+    reader.readAsDataURL(f);
+  };
 
   // Lift streaming status so the floating Luna icon can show the thinking emoji.
   useEffect(() => { onStreamingChange?.(isStreaming); }, [isStreaming, onStreamingChange]);
@@ -141,6 +167,9 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                     </div>
                   )}
+                  {msg.role === "assistant" && msg.actions && msg.actions.length > 0 && (
+                    <LunaActions actions={msg.actions} onSendBack={(t) => send({ text: t, image: null })} />
+                  )}
                   {msg.role === "assistant" && typeof msg.id === "string" && msg.id.startsWith("err-") && (
                     <button
                       type="button"
@@ -191,6 +220,37 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
               >
                 {capturing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Monitor className="w-3.5 h-3.5" />}
               </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isStreaming}
+                title="Upload an image"
+                className="p-2 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-sm"
+              >
+                <ImagePlus className="w-3.5 h-3.5" />
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
+              {voice.supported && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => voice.listening ? voice.stopListening() : voice.startListening()}
+                    disabled={isStreaming}
+                    title={voice.listening ? "Stop listening" : "Speak to Luna"}
+                    className={`p-2 border border-input transition-colors disabled:opacity-30 rounded-sm ${voice.listening ? "bg-neon-pink/20 border-neon-pink text-neon-pink" : "bg-secondary/30 hover:border-neon-pink/50 hover:text-neon-pink"}`}
+                  >
+                    {voice.listening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => voice.setSpeakEnabled(v => !v)}
+                    title={voice.speakEnabled ? "Mute Luna's voice" : "Hear Luna's replies"}
+                    className={`p-2 border border-input transition-colors rounded-sm ${voice.speakEnabled ? "bg-neon-purple/20 border-neon-purple text-neon-purple" : "bg-secondary/30 hover:border-neon-purple/50 hover:text-neon-purple"}`}
+                  >
+                    {voice.speakEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  </button>
+                </>
+              )}
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}

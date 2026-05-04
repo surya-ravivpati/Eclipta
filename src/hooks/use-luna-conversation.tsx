@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { streamLunaChat, parseLunaTag } from "@/lib/luna-api";
+import { streamLunaChat, parseLunaTag, parseLunaActions, type LunaAction } from "@/lib/luna-api";
 import { getLunaContext, getAccuracy, getSessionDuration, escalateHint, resetHintLevel, subscribeFatigue } from "@/lib/luna-context";
 import { captureScreenFrame } from "@/lib/luna-screen";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ export type ConversationMessage = {
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   imageDataUrl?: string;
   id?: string;
+  actions?: LunaAction[];
 };
 
 type SetMessages = React.Dispatch<React.SetStateAction<ConversationMessage[]>>;
@@ -144,12 +145,13 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
       // a no-op when value is already false, so calling every chunk is fine.
       setAwaitingFirstToken(false);
       const { tag, text: cleanText } = parseLunaTag(assistantSoFar);
+      const { text: textNoActions, actions } = parseLunaActions(cleanText);
       setMessages(prev => {
         const idx = prev.findIndex(m => m.id === streamId);
         if (idx !== -1) {
-          return prev.map((m, i) => i === idx ? { ...m, content: cleanText, tag } : m);
+          return prev.map((m, i) => i === idx ? { ...m, content: textNoActions, tag, actions } : m);
         }
-        return [...prev, { role: "assistant" as const, content: cleanText, tag, id: streamId }];
+        return [...prev, { role: "assistant" as const, content: textNoActions, tag, actions, id: streamId }];
       });
     };
 
@@ -201,6 +203,22 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
               hint_level_used: ctx.hintLevel,
               luna_summary: tag ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}` : cleanedSummary.slice(0, 200),
             });
+            // Background memory extraction — best effort, never blocks UI.
+            try {
+              const session = (await supabase.auth.getSession()).data.session;
+              if (session?.access_token && text) {
+                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-memory`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                  body: JSON.stringify({
+                    userTurn: text.slice(0, 600),
+                    assistantTurn: cleanedSummary.slice(0, 600),
+                    currentWeak: (profileRef.current?.weak_areas as string[] | undefined) || [],
+                    currentStrong: (profileRef.current?.strong_areas as string[] | undefined) || [],
+                  }),
+                }).catch(() => {});
+              }
+            } catch { /* ignore */ }
           } catch { /* non-critical, don't break chat */ }
         })();
         // Stream succeeded — clear the retry buffer entirely so we don't keep

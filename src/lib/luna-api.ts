@@ -238,3 +238,35 @@ export function parseLunaTag(content: string): {
   }
   return { tag: null, text: content };
 }
+
+export type LunaAction =
+  | { kind: "quiz"; topic: string; count: number }
+  | { kind: "open"; href: string; label: string }
+  | { kind: "resource"; title: string; url: string };
+
+const ALLOWED_OPEN_ROUTES = new Set([
+  "/battles", "/adaptive-tests", "/forum", "/certified", "/progress",
+  "/luna", "/build-course", "/collection",
+]);
+
+/** Pull `[[ACTION:...]]` lines out of a Luna reply and return them parsed. */
+export function parseLunaActions(content: string): { text: string; actions: LunaAction[] } {
+  const actions: LunaAction[] = [];
+  // Match [[ACTION:kind key="value" key="value"]] (also tolerates single brackets)
+  const rx = /\[{1,2}ACTION:(\w+)([^\]]*)\]{1,2}/gi;
+  const cleaned = content.replace(rx, (_full, kind: string, attrs: string) => {
+    const map: Record<string, string> = {};
+    for (const m of attrs.matchAll(/(\w+)=["“]([^"”]+)["”]/g)) map[m[1].toLowerCase()] = m[2].trim();
+    const k = kind.toLowerCase();
+    if (k === "quiz" && map.topic) {
+      const count = Math.min(Math.max(parseInt(map.count || "3", 10) || 3, 1), 5);
+      actions.push({ kind: "quiz", topic: map.topic, count });
+    } else if (k === "open" && map.href && ALLOWED_OPEN_ROUTES.has(map.href)) {
+      actions.push({ kind: "open", href: map.href, label: map.label || map.href });
+    } else if (k === "resource" && map.title && /^https:\/\//i.test(map.url || "")) {
+      actions.push({ kind: "resource", title: map.title, url: map.url });
+    }
+    return "";
+  });
+  return { text: cleaned.replace(/\n{3,}/g, "\n\n").trim(), actions };
+}

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X } from "lucide-react";
+import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { getAccuracy, getSessionDuration, detectFatigue } from "@/lib/luna-context";
@@ -12,6 +12,8 @@ import { Navbar } from "@/components/Navbar";
 import { useXpMilestones } from "@/hooks/use-xp-milestones";
 import { useLunaHistory } from "@/hooks/use-luna-history";
 import { useLunaConversation, type ConversationMessage } from "@/hooks/use-luna-conversation";
+import { LunaActions } from "./LunaActions";
+import { useLunaVoice } from "@/hooks/use-luna-voice";
 
 type LunaMessage = ConversationMessage;
 
@@ -44,6 +46,28 @@ export function LunaFullSession() {
     breakMessage: BREAK_MESSAGE,
     active: true,
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const voice = useLunaVoice({ onTranscript: (t: string) => setInput((prev: string) => (prev ? prev + " " : "") + t) });
+  const lastSpokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!voice.speakEnabled || isStreaming) return;
+    const last = messages[messages.length - 1];
+    if (last?.role === "assistant" && last.content && last.id !== lastSpokenRef.current) {
+      lastSpokenRef.current = last.id ?? last.content.slice(0, 32);
+      voice.speak(last.content);
+    }
+  }, [messages, isStreaming, voice]);
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f || !f.type.startsWith("image/")) return;
+    if (f.size > 5 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = () => setPendingImage(typeof reader.result === "string" ? reader.result : null);
+    reader.readAsDataURL(f);
+  };
 
   useXpMilestones({
     onLunaMessages: (msgs) => {
@@ -149,6 +173,9 @@ export function LunaFullSession() {
                   <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:mt-1 [&>ol]:mt-1">
                     <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
                   </div>
+                  {msg.role === "assistant" && msg.actions && msg.actions.length > 0 && (
+                    <LunaActions actions={msg.actions} onSendBack={(t) => send({ text: t, image: null })} />
+                  )}
                   {msg.role === "assistant" && typeof msg.id === "string" && msg.id.startsWith("err-") && (
                     <button
                       type="button"
@@ -195,6 +222,37 @@ export function LunaFullSession() {
             >
               {capturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Monitor className="w-4 h-4" />}
             </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isStreaming}
+              title="Upload an image"
+              className="p-3 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-md"
+            >
+              <ImagePlus className="w-4 h-4" />
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
+            {voice.supported && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => voice.listening ? voice.stopListening() : voice.startListening()}
+                  disabled={isStreaming}
+                  title={voice.listening ? "Stop listening" : "Speak to Luna"}
+                  className={`p-3 border border-input transition-colors disabled:opacity-30 rounded-md ${voice.listening ? "bg-neon-pink/20 border-neon-pink text-neon-pink" : "bg-secondary/30 hover:border-neon-pink/50 hover:text-neon-pink"}`}
+                >
+                  {voice.listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => voice.setSpeakEnabled((v: boolean) => !v)}
+                  title={voice.speakEnabled ? "Mute Luna" : "Hear Luna's replies"}
+                  className={`p-3 border border-input transition-colors rounded-md ${voice.speakEnabled ? "bg-neon-purple/20 border-neon-purple text-neon-purple" : "bg-secondary/30 hover:border-neon-purple/50 hover:text-neon-purple"}`}
+                >
+                  {voice.speakEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </button>
+              </>
+            )}
             <input
               ref={inputRef}
               value={input}

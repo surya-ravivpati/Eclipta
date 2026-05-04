@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LUNA_HISTORY_KEY } from "@/lib/luna-api";
+import type { LunaAction } from "@/lib/luna-api";
 
 export type StoredLunaMessage = {
   role: "assistant" | "user";
@@ -7,6 +8,7 @@ export type StoredLunaMessage = {
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   imageDataUrl?: string;
   id?: string;
+  actions?: LunaAction[];
 };
 
 const MAX_PERSISTED = 100;

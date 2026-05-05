@@ -846,36 +846,19 @@ export function KnowledgeBattles() {
               How Knowledge Battles work
             </DialogTitle>
             <DialogDescription>
-              Everything you need to know — matchmaking, combat, and rewards.
+              Everything you need to know — opponents, combat, and rewards.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 text-sm">
             <section>
               <h4 className="text-xs font-bold tracking-widest text-neon-pink mb-2 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5" /> MATCHMAKING
+                <Target className="w-3.5 h-3.5" /> OPPONENTS
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li>
-                  Your <span className="text-foreground font-bold">tier</span> is derived from your XP — the same tiers
-                  used on the Trophy Road (Bronze → God).
-                </li>
-                <li>
-                  Matchmaking starts at <span className="text-foreground font-bold">±1 tier</span>. If no opponent fits,
-                  it widens to <span className="text-foreground font-bold">±2</span>, then <span className="text-foreground font-bold">±3</span>.
-                </li>
-                <li>
-                  After ±3 with no match, an <span className="text-foreground font-bold">AI opponent</span> is dispatched
-                  so you never wait. The current search range is shown in the matchmaking screen.
-                </li>
-                <li>
-                  Whenever possible, the system picks an opponent of a <span className="text-foreground font-bold">different
-                  archetype</span> than yours for variety.
-                </li>
-                <li>
-                  Gods can't farm Bronze — the band is symmetric, so a higher-tier player won't be matched against someone
-                  far below them.
-                </li>
+                <li>Every duel pulls a <span className="text-foreground font-bold">random Ecliptar opponent</span> — no rank gating, jump in instantly.</li>
+                <li>Whenever possible, the opponent is a <span className="text-foreground font-bold">different archetype</span> than yours for variety.</li>
+                <li>Your <span className="text-foreground font-bold">tier</span> still shows on your profile — earned XP feeds the Trophy Road, not matchmaking.</li>
               </ul>
             </section>
 

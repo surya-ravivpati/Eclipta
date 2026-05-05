@@ -453,6 +453,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_chest_claims: {
+        Row: {
+          bonus_xp: number
+          chest_label: string
+          claimed_at: string
+          id: string
+          node_id: number
+          user_id: string
+        }
+        Insert: {
+          bonus_xp?: number
+          chest_label: string
+          claimed_at?: string
+          id?: string
+          node_id: number
+          user_id: string
+        }
+        Update: {
+          bonus_xp?: number
+          chest_label?: string
+          claimed_at?: string
+          id?: string
+          node_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_courses: {
         Row: {
           cover_image_url: string | null

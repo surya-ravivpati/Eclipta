@@ -87,7 +87,7 @@ export function checkMilestones(
           lunaMessages.push(msg);
         }
       } else if (node.type === "chest") {
-        toasts.push({ title: `🎁 ${node.label}`, description: "A reward chest awaits you!" });
+        toasts.push({ title: `🎁 ${node.label} ready`, description: "Open it on the Trophy Road to claim your bonus." });
       }
     }
   }

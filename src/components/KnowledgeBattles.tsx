@@ -882,7 +882,7 @@ export function KnowledgeBattles() {
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
                 <li>Each archetype tweaks HP, time, damage, multiplier, and question difficulty.</li>
-                <li>Win 3 battles in a day to unlock the <span className="text-foreground font-bold">2x XP daily bonus</span>.</li>
+                <li>Hit the <span className="text-foreground font-bold">daily challenge</span> goal to unlock today's bonus — the challenge changes every day.</li>
                 <li>XP earned advances your Trophy Road and unlocks new Ecliptars to claim.</li>
               </ul>
             </section>

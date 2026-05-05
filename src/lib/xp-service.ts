@@ -3,7 +3,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "./milestones";
-import { ROAD_NODES, type RoadNode } from "./trophy-road-data";
+import { ROAD_NODES } from "./trophy-road-data";
 
 /** Trophy road chest/reward definitions */
 export const CHEST_REWARDS: Record<string, { title: string; description: string; reward: string }> = {
@@ -16,7 +16,7 @@ export const CHEST_REWARDS: Record<string, { title: string; description: string;
   "Unreal Chest":    { title: "🎁 Unreal Chest",    description: "Beyond mortal comprehension!",        reward: "+1000 bonus XP + Time Warp" },
 };
 
-const CHEST_BONUS_XP: Record<string, number> = {
+export const CHEST_BONUS_XP: Record<string, number> = {
   "Bronze Chest": 50,
   "Silver Chest": 100,
   "Gold Chest": 200,
@@ -42,16 +42,8 @@ export async function awardXp(amount: number): Promise<{ lunaMessages: string[];
   const prevXp = (profile as any)?.xp ?? 0;
   markExistingMilestones(prevXp);
 
-  // Check for chest bonus XP
-  let bonusXp = 0;
-  for (const node of ROAD_NODES) {
-    if (node.type === "chest" && prevXp < node.xp && prevXp + amount >= node.xp) {
-      bonusXp += CHEST_BONUS_XP[node.label] ?? 0;
-    }
-  }
-
-  const totalGain = amount + bonusXp;
-  const newXp = prevXp + totalGain;
+  // Chests no longer auto-open — users claim them manually on the Trophy Road.
+  const newXp = prevXp + amount;
 
   await supabase
     .from("user_profiles")
@@ -60,12 +52,51 @@ export async function awardXp(amount: number): Promise<{ lunaMessages: string[];
 
   const { toasts, lunaMessages } = checkMilestones(prevXp, newXp);
 
-  if (bonusXp > 0) {
-    toasts.push({ title: "📦 Chest Opened!", description: `You earned +${bonusXp} bonus XP from chest rewards!` });
-    lunaMessages.push(`📦 **Chest Bonus!** You earned +${bonusXp} bonus XP from unlocking a trophy road chest!`);
-  }
-
   fireMilestoneToasts(toasts);
 
   return { lunaMessages, newXp };
+}
+
+/**
+ * Claim a trophy-road chest. Records the claim and credits the bonus XP.
+ * Returns the bonus XP awarded, or 0 if already claimed / not eligible.
+ */
+export async function claimChest(nodeId: number, chestLabel: string): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+  const node = ROAD_NODES.find((n) => n.id === nodeId && n.type === "chest");
+  if (!node) return 0;
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("xp")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const currentXp = (profile as any)?.xp ?? 0;
+  if (currentXp < node.xp) return 0;
+
+  const bonus = CHEST_BONUS_XP[chestLabel] ?? 0;
+  const { error: insertErr } = await supabase
+    .from("user_chest_claims" as any)
+    .insert({ user_id: user.id, node_id: nodeId, chest_label: chestLabel, bonus_xp: bonus });
+  if (insertErr) return 0; // already claimed (unique violation) or other error
+
+  if (bonus > 0) {
+    await supabase
+      .from("user_profiles")
+      .update({ xp: currentXp + bonus })
+      .eq("user_id", user.id);
+  }
+  return bonus;
+}
+
+/** Fetch the set of node_ids the current user has already claimed. */
+export async function fetchClaimedChestNodeIds(): Promise<Set<number>> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new Set();
+  const { data } = await supabase
+    .from("user_chest_claims" as any)
+    .select("node_id")
+    .eq("user_id", user.id);
+  return new Set(((data ?? []) as unknown as { node_id: number }[]).map((r) => r.node_id));
 }

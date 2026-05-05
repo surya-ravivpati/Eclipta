@@ -17,47 +17,16 @@ import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDia
 import { BattleReport } from "./battles/BattleReport";
 import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
-import { ROAD_NODES, type MonsterArchetypeKey } from "@/lib/trophy-road-data";
-
-/** Map each archetype → XP at which it is unlocked on the trophy road */
-const ARCHETYPE_UNLOCK_XP: Record<MonsterArchetypeKey, number> = ROAD_NODES.reduce(
-  (acc, n) => {
-    if (n.type === "monster" && n.archetype) acc[n.archetype] = n.xp;
-    return acc;
-  },
-  {} as Record<MonsterArchetypeKey, number>,
-);
+import { getTodayChallenge } from "@/lib/daily-challenge";
 
 /**
- * Pick an opponent Ecliptar within a tier band of the player (±band steps).
- * Returns the Ecliptar plus the band that actually produced it (for UI).
- * If no human-style opponent is available even at the widest band, returns null
- * so the caller can fall back to a pure-AI opponent.
+ * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
+ * Rank-based matchmaking has been removed — every battle is a fair random draw.
  */
-function matchmakeOpponent(
-  playerXp: number,
-  playerArch: ArchetypeId,
-  band: number,
-): { ecliptar: Ecliptar; band: number } | null {
-  const archKeys = Object.keys(ARCHETYPE_UNLOCK_XP) as MonsterArchetypeKey[];
-  const sorted = [...archKeys].sort(
-    (a, b) => (ARCHETYPE_UNLOCK_XP[a] ?? 0) - (ARCHETYPE_UNLOCK_XP[b] ?? 0),
-  );
-  const unlockedIdx = sorted.reduce(
-    (best, a, i) => (ARCHETYPE_UNLOCK_XP[a] <= playerXp ? i : best),
-    0,
-  );
-  const lo = Math.max(0, unlockedIdx - band);
-  const hi = Math.min(sorted.length - 1, unlockedIdx + band);
-  const allowed = new Set(sorted.slice(lo, hi + 1));
-  const candidates = ECLIPTARS.filter(
-    (e) => allowed.has(e.archetype) && e.archetype !== playerArch,
-  );
-  const pool = candidates.length > 0
-    ? candidates
-    : ECLIPTARS.filter((e) => allowed.has(e.archetype));
-  if (pool.length === 0) return null;
-  return { ecliptar: pool[Math.floor(Math.random() * pool.length)], band };
+function pickOpponent(playerArch: ArchetypeId): Ecliptar {
+  const candidates = ECLIPTARS.filter((e) => e.archetype !== playerArch);
+  const pool = candidates.length > 0 ? candidates : ECLIPTARS;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // ─── Action Config ───────────────────────────────────────────────────

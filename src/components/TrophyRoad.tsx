@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Lock, Star, CheckCircle, Crown, Zap, Shield, Skull,
@@ -30,6 +30,7 @@ import {
 } from "@/lib/trophy-road-data";
 import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { claimArchetypeReward, getEcliptarsByArchetype } from "@/lib/ecliptars";
+import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -111,22 +112,29 @@ function deriveNodes(playerXp: number): RoadNode[] {
 
 /* ── Node Component ────────────────────────────────────────── */
 
-function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
+function RoadNodeItem({ node, index, ownedSlugs, claimedChestIds, onClaimed, onChestClaimed }: {
   node: RoadNode;
   index: number;
   ownedSlugs: Set<string>;
+  claimedChestIds: Set<number>;
   onClaimed: () => void;
+  onChestClaimed: () => void;
 }) {
   const tier = TIERS[node.tier];
   const archetype = node.archetype ? ARCHETYPES[node.archetype] : null;
   const [hovered, setHovered] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [openingChest, setOpeningChest] = useState(false);
 
   // Determine if this monster node has unclaimed Ecliptars
   const isClaimable = node.type === "monster" && node.archetype && node.unlocked;
   const requiredSlugs = node.archetype ? getEcliptarsByArchetype(node.archetype).map(e => e.slug) : [];
   const allOwned = requiredSlugs.length > 0 && requiredSlugs.every(s => ownedSlugs.has(s));
   const showClaim = isClaimable && !allOwned;
+
+  const isChest = node.type === "chest";
+  const chestClaimed = isChest && claimedChestIds.has(node.id);
+  const showChestOpen = isChest && node.unlocked && !chestClaimed;
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -144,6 +152,23 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
         },
       });
       onClaimed();
+    }
+  };
+
+  const handleOpenChest = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isChest || openingChest) return;
+    setOpeningChest(true);
+    const bonus = await claimChest(node.id, node.label);
+    setOpeningChest(false);
+    if (bonus > 0) {
+      toast(`📦 ${node.label} opened!`, {
+        description: `+${bonus} bonus XP added to your total.`,
+        duration: 6000,
+      });
+      onChestClaimed();
+    } else {
+      toast("Couldn't open chest", { description: "It may already be claimed." });
     }
   };
 
@@ -277,6 +302,30 @@ function RoadNodeItem({ node, index, ownedSlugs, onClaimed }: {
       )}
       {isClaimable && allOwned && (
         <span className="mt-1 text-[9px] text-emerald-400 font-bold tracking-widest">CLAIMED</span>
+      )}
+
+      {/* Open button for chest nodes */}
+      {showChestOpen && (
+        <motion.button
+          onClick={handleOpenChest}
+          disabled={openingChest}
+          className={cn(
+            "mt-1.5 px-2 py-0.5 text-[9px] font-bold tracking-widest rounded-full",
+            "bg-tier-gold text-primary-foreground border border-tier-gold/60",
+            "hover:opacity-90 transition-opacity disabled:opacity-50"
+          )}
+          initial={{ scale: 0 }}
+          animate={{ scale: [1, 1.08, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          whileHover={{ scale: 1.12 }}
+          whileTap={{ scale: 0.95 }}
+          title={`+${CHEST_BONUS_XP[node.label] ?? 0} bonus XP`}
+        >
+          {openingChest ? "..." : "OPEN"}
+        </motion.button>
+      )}
+      {isChest && chestClaimed && (
+        <span className="mt-1 text-[9px] text-emerald-400 font-bold tracking-widest">OPENED</span>
       )}
 
       {/* Hover tooltip */}

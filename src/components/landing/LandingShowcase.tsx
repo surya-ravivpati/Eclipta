@@ -18,8 +18,8 @@ import {
 
 function Hero() {
   const { isAuthenticated } = useAuth();
-  const ctaTo = isAuthenticated ? "/luna" : "/signup";
-  const ctaLabel = isAuthenticated ? "OPEN LUNA" : "CREATE FREE ACCOUNT";
+  const ctaTo = isAuthenticated ? "/battles" : "/signup";
+  const ctaLabel = isAuthenticated ? "ENTER A BATTLE" : "CREATE FREE ACCOUNT";
   return (
     <section className="pt-32 pb-24 px-6 relative overflow-hidden">
       <div className="absolute top-[-15%] right-[-10%] w-[36rem] h-[36rem] bg-neon-purple/15 rounded-full blur-[140px] animate-pulse" />

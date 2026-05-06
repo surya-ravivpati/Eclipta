@@ -608,15 +608,22 @@ function BattleArena() {
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {
             const Icon = act.icon;
-            const disabled = phase !== "select" || (key === "wild" && player.focus < 10);
+            const cost = act.focusCost;
+            const disabled = phase !== "select" || (cost > 0 && player.focus < cost);
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
-                className={`glass-panel p-4 text-center transition-colors ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}
+                className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}
                 whileHover={!disabled ? { scale: 1.03, y: -2 } : {}} whileTap={!disabled ? { scale: 0.97 } : {}}
               >
-                <Icon className={`w-6 h-6 mx-auto mb-1 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
-                <div className="text-[10px] font-bold tracking-widest">{act.label.toUpperCase()}</div>
-                <div className="text-[9px] text-muted-foreground mt-0.5">{act.desc}</div>
+                <Icon className={`w-7 h-7 mx-auto mb-1.5 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
+                <div className="text-xs font-bold tracking-widest">{act.label.toUpperCase()}</div>
+                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">{act.desc}</div>
+                {cost > 0 && (
+                  <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1 rounded-sm">−{cost}</div>
+                )}
+                {FOCUS_GAIN[key] > 0 && (
+                  <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/30 px-1 rounded-sm">+{FOCUS_GAIN[key]}</div>
+                )}
               </motion.button>
             );
           })}

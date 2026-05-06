@@ -202,6 +202,12 @@ export function LunaFullSession() {
 
         {/* Input bar */}
         <div className="border-t border-border px-4 py-4">
+          {voice.voiceError && (
+            <div className="max-w-2xl mx-auto mb-2 flex items-center justify-between gap-2 px-2 py-1.5 border border-destructive/50 bg-destructive/10 rounded text-[10px] text-destructive font-medium">
+              <span>{voice.voiceError}</span>
+              <button type="button" onClick={voice.clearVoiceError} className="shrink-0 opacity-70 hover:opacity-100">✕</button>
+            </div>
+          )}
           {pendingImage && (
             <div className="max-w-2xl mx-auto mb-2 flex items-center gap-2 p-1.5 border border-neon-cyan/30 bg-neon-cyan/5 rounded">
               <img src={pendingImage} alt="screen preview" className="w-12 h-8 object-cover rounded-sm border border-border" />

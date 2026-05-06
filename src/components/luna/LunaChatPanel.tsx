@@ -195,6 +195,12 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
 
           {/* Input */}
           <div className="px-3 py-2 border-t border-border">
+            {voice.voiceError && (
+              <div className="mb-2 flex items-center justify-between gap-2 px-2 py-1.5 border border-destructive/50 bg-destructive/10 rounded text-[10px] text-destructive font-medium">
+                <span>{voice.voiceError}</span>
+                <button type="button" onClick={voice.clearVoiceError} className="shrink-0 opacity-70 hover:opacity-100">✕</button>
+              </div>
+            )}
             {pendingImage && (
               <div className="mb-2 flex items-center gap-2 p-1.5 border border-neon-cyan/30 bg-neon-cyan/5 rounded">
                 <img src={pendingImage} alt="screen preview" className="w-12 h-8 object-cover rounded-sm border border-border" />

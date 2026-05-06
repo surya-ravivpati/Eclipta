@@ -607,9 +607,11 @@ function BattleArena() {
       const playerName = eclip?.name ?? "You";
       const playerIcon = eclip?.icon ?? User;
       const oppHp = statToHp(oppArch.stats.health);
-      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 20, maxFocus: 100, icon: playerIcon });
-      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 20, maxFocus: 100, icon: oppEclip.icon });
-      setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
+      const playerPool = archetypeFocusPool(cls);
+      const oppPool = archetypeFocusPool(oppEclip.archetype);
+      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: archetypeStartFocus(cls), maxFocus: playerPool, icon: playerIcon });
+      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: archetypeStartFocus(oppEclip.archetype), maxFocus: oppPool, icon: oppEclip.icon });
+      setMomentum(0); setOpponentMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
       addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
       if (rolledGambler) {

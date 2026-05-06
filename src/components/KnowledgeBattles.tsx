@@ -442,9 +442,10 @@ function BattleArena() {
   }, [addLog, finishBattle, opponentArchetype, opponent.name]);
 
   const selectAction = (action: Action) => {
-    if (action === "wild" && player.focus < 10) { addLog("⚠️ Not enough Focus!"); return; }
+    const cost = ACTIONS[action].focusCost;
+    if (cost > 0 && player.focus < cost) { addLog(`⚠️ Need ${cost} Focus!`); return; }
     setCurrentAction(action);
-    if (action === "wild") setPlayer(prev => ({ ...prev, focus: prev.focus - 10 }));
+    if (cost > 0) setPlayer(prev => ({ ...prev, focus: Math.max(0, prev.focus - cost) }));
 
     const arch = getArch(archetype);
     const baseDiff = action === "wild" ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)] : ACTIONS[action].difficulty;

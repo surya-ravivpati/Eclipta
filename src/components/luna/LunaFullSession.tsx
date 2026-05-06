@@ -13,6 +13,7 @@ import { useXpMilestones } from "@/hooks/use-xp-milestones";
 import { useLunaHistory } from "@/hooks/use-luna-history";
 import { useLunaConversation, type ConversationMessage } from "@/hooks/use-luna-conversation";
 import { LunaActions } from "./LunaActions";
+import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { useLunaVoice } from "@/hooks/use-luna-voice";
 import { processUserImage } from "@/lib/luna-image";
 
@@ -190,10 +191,8 @@ export function LunaFullSession() {
             ))}
             {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex justify-start">
-                <div className="bg-secondary/40 border border-border px-4 py-3 text-sm text-muted-foreground rounded-lg">
-                  <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }}>
-                    Luna is thinking...
-                  </motion.span>
+                <div className="bg-secondary/40 border border-border rounded-lg">
+                  <LunaThinkingIndicator />
                 </div>
               </div>
             )}

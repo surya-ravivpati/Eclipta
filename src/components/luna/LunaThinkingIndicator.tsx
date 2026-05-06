@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const PHASES = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"] as const;
+const PHASES = ["🌘", "🌑", "🌒", "🌓", "🌓", "🌔", "🌔", "🌕", "🌕", "🌖", "🌗", "🌗", "🌘"] as const;
 
 /** Cycles through all 8 lunar phases while Luna is generating a reply. */
 export function LunaThinkingIndicator({ compact = false }: { compact?: boolean }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setPhase(p => (p + 1) % PHASES.length), 260);
+    const id = setInterval(() => setPhase((p) => (p + 1) % PHASES.length), 260);
     return () => clearInterval(id);
   }, []);
 

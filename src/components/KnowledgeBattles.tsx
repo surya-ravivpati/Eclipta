@@ -146,12 +146,12 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold font-display text-sm truncate">{fighter.name}</h4>
-            {side === "left" && arch && (
+            {arch && (
               <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-widest ${arch.color}`}>
                 <arch.icon className="w-3 h-3" /> {arch.name.toUpperCase()}
               </span>
             )}
-            {side === "left" && momentum > 0 && (
+            {momentum > 0 && (
               <motion.div className="flex items-center gap-1 text-neon-pink" key={momentum} initial={{ scale: 1.3 }} animate={{ scale: 1 }}>
                 <Flame className="w-3 h-3" />
                 <span className="text-[10px] font-bold tracking-widest">{momentum}x STREAK</span>
@@ -163,7 +163,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
         <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} /></div>
       </div>
       <AnimatePresence>
-        {side === "left" && momentum > 0 && momentum % comboThreshold === 0 && (
+        {momentum > 0 && momentum % comboThreshold === 0 && (
           <motion.div className="absolute top-2 right-2 text-neon-pink" initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}>
             <Sparkles className="w-6 h-6" />
           </motion.div>

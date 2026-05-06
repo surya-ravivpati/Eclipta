@@ -229,12 +229,35 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
 function BattleLog({ logs }: { logs: string[] }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [logs]);
+  const colorFor = (l: string) => {
+    if (l.startsWith("✅") || l.startsWith("⚔️") && l.includes("DMG")) return "text-foreground";
+    if (l.startsWith("⚔️")) return "text-neon-pink";
+    if (l.startsWith("❌")) return "text-neon-pink/80";
+    if (l.startsWith("💚") || l.includes("+") && l.includes("HP")) return "text-neon-cyan";
+    if (l.startsWith("🎲")) return "text-neon-purple";
+    if (l.startsWith("⚠️")) return "text-tier-gold";
+    return "text-muted-foreground";
+  };
   return (
-    <div ref={ref} className="glass-panel p-3 h-24 overflow-y-auto space-y-1">
-      {logs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Battle log will appear here...</p>}
-      {logs.map((l, i) => (
-        <motion.p key={i} className="text-[11px] text-muted-foreground" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}>{l}</motion.p>
-      ))}
+    <div className="glass-panel p-0 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-secondary/20">
+        <span className="text-[10px] font-bold tracking-widest text-muted-foreground">BATTLE LOG</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">Turn {Math.max(1, Math.ceil(logs.length / 2))}</span>
+      </div>
+      <div ref={ref} className="p-3 h-40 overflow-y-auto space-y-1">
+        {logs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Battle log will appear here…</p>}
+        {logs.map((l, i) => (
+          <motion.p
+            key={i}
+            className={`text-[11px] leading-snug ${colorFor(l)}`}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <span className="text-muted-foreground/60 tabular-nums mr-1.5">{String(i + 1).padStart(2, "0")}</span>
+            {l}
+          </motion.p>
+        ))}
+      </div>
     </div>
   );
 }

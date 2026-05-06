@@ -307,9 +307,10 @@ function BattleArena() {
       if (currentAction === "defend") {
         const healAmt = archetype === "healer" ? 20 : 10;
         const heal = Math.min(healAmt, player.maxHp - player.hp);
-        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt), focus: Math.min(prev.maxFocus, prev.focus + 10) }));
+        const gain = FOCUS_GAIN.defend;
+        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
         setShowPlayerHeal(true);
-        addLog(`✅ Correct! Defend: +${heal} HP, +10 Focus.`);
+        addLog(`✅ Defend: +${heal} HP, +${gain} Focus.`);
       } else if (currentAction === "wild") {
         const effects = [
           () => { const d = Math.floor(Math.random() * 30) + 10; setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) })); setShowOpponentHit(true); addLog(`🎲 Wild: ${d} random DMG!`); },
@@ -330,8 +331,13 @@ function BattleArena() {
         // Apply streak multiplier
         const dmg = Math.floor(baseDmg * currentStreakMult);
         setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
+        const focusGain = FOCUS_GAIN[currentAction];
+        if (focusGain > 0) {
+          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + focusGain) }));
+        }
         setShowOpponentHit(true);
-        addLog(`✅ ${action.label}: ${dmg} DMG!${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(1)}x STREAK!` : ""}`);
+        const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
+        addLog(`✅ ${action.label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(1)}x STREAK!` : ""}`);
       }
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {

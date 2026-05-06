@@ -221,8 +221,8 @@ function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
-  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, icon: User });
-  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, icon: Bot });
+  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: User });
+  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
   const [momentum, setMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
   const [question, setQuestion] = useState<MathQuestion | null>(null);
@@ -499,8 +499,8 @@ function BattleArena() {
       const playerName = eclip?.name ?? "You";
       const playerIcon = eclip?.icon ?? User;
       const oppHp = statToHp(oppArch.stats.health);
-      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, icon: playerIcon });
-      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 50, maxFocus: 50, icon: oppEclip.icon });
+      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 20, maxFocus: 100, icon: playerIcon });
+      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 20, maxFocus: 100, icon: oppEclip.icon });
       setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
       addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);

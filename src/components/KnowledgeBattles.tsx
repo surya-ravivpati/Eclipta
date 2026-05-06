@@ -36,7 +36,7 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
 const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, wild: 0 };
 const ACTIONS: Record<Action, ActionConfig> = {
   attack: { label: "Attack", icon: Swords, difficulty: "medium", dmg: 18, focusCost: 0,  desc: "18 DMG · +15 Focus" },
-  defend: { label: "Defend", icon: Shield, difficulty: "easy",   dmg: 0,  focusCost: 0,  desc: "Heal · +10 Focus" },
+  defend: { label: "Heal",   icon: Heart,  difficulty: "easy",   dmg: 0,  focusCost: 0,  desc: "Restore HP · +10 Focus" },
   charge: { label: "Charge", icon: Zap,    difficulty: "hard",   dmg: 32, focusCost: 25, desc: "32 DMG · −25 Focus" },
   wild:   { label: "Wild",   icon: Dices,  difficulty: "medium", dmg: 0,  focusCost: 15, desc: "Random · −15 Focus" },
 };

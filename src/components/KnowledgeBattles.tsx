@@ -1012,10 +1012,11 @@ export function KnowledgeBattles() {
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
                 <li><span className="text-foreground font-bold">Attack</span> — medium Q, 18 DMG and <span className="text-neon-cyan">+15 Focus</span>. Your bread-and-butter focus builder.</li>
-                <li><span className="text-foreground font-bold">Defend</span> — easy Q, heals HP and <span className="text-neon-cyan">+10 Focus</span>.</li>
+                <li><span className="text-foreground font-bold">Heal</span> — easy Q, restores HP and <span className="text-neon-cyan">+10 Focus</span>.</li>
                 <li><span className="text-foreground font-bold">Charge</span> — hard Q, 32 DMG but <span className="text-neon-purple">−25 Focus</span>. The payoff move.</li>
                 <li><span className="text-foreground font-bold">Wild</span> — random effect for <span className="text-neon-purple">−15 Focus</span>.</li>
-                <li><span className="text-neon-purple font-bold">Focus</span> is your resource — Attack/Defend build it, Charge/Wild spend it. Plan your rhythm.</li>
+                <li><span className="text-neon-purple font-bold">Focus</span> is the resource that <span className="text-foreground font-bold">unlocks Charge & Wild</span>. Without it you can only Attack/Heal — so building Focus = setting up your finisher. Each archetype has a different pool size (Speedster small, Chud huge).</li>
+                <li>Bots think too — they heal when low, save Focus for finishers, and gamble Wild only when it pays.</li>
                 <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span>; each streak hit multiplies your damage.</li>
                 <li>Wrong answers or timeouts reset Momentum and trigger a counter-attack.</li>
               </ul>

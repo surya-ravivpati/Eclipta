@@ -34,6 +34,29 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
 // This gives Attack a real role (cheap, fast focus build) and makes Charge
 // a payoff move that requires setup rather than a strictly-better Attack.
 const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, wild: 0 };
+
+/**
+ * Per-archetype Focus pool tuning. Focus is the resource that gates Charge / Wild.
+ * - Speedster: small pool, fast spender — encourages quick combos
+ * - Tank / Healer: large pool, slower payoff
+ * - Chud: huge pool because Charge is its identity
+ * - Gambler: standard 100 (its randomness lives elsewhere)
+ */
+function archetypeFocusPool(id: ArchetypeId): number {
+  switch (id) {
+    case "speedster": return 60;
+    case "tank": return 120;
+    case "healer": return 110;
+    case "chud": return 140;
+    case "fulcrum": return 100;
+    case "accelerator": return 90;
+    case "god": return 130;
+    case "gambler": return 100;
+  }
+}
+function archetypeStartFocus(id: ArchetypeId): number {
+  return id === "chud" ? 40 : id === "speedster" ? 10 : 20;
+}
 const ACTIONS: Record<Action, ActionConfig> = {
   attack: { label: "Attack", icon: Swords, difficulty: "medium", dmg: 18, focusCost: 0,  desc: "18 DMG · +15 Focus" },
   defend: { label: "Heal",   icon: Heart,  difficulty: "easy",   dmg: 0,  focusCost: 0,  desc: "Restore HP · +10 Focus" },

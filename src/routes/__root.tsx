@@ -46,6 +46,10 @@ export const Route = createRootRoute({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Eclipta – A Smarter Way to Learn" },
+      { name: "twitter:description", content: "Adaptive learning arena with AI guidance, knowledge battles, and personalized courses." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/90e3f2a3-56ad-49c1-9436-64fe4dea81b2/id-preview-2a5f5b94--94fe3209-1fa2-4291-84cb-22e764a6769a.lovable.app-1778039701316.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/90e3f2a3-56ad-49c1-9436-64fe4dea81b2/id-preview-2a5f5b94--94fe3209-1fa2-4291-84cb-22e764a6769a.lovable.app-1778039701316.png" },
     ],
     links: [
       {

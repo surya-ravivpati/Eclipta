@@ -29,7 +29,7 @@ import {
   type RoadNode as BaseRoadNode,
 } from "@/lib/trophy-road-data";
 import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
-import { claimArchetypeReward, getEcliptarsByArchetype } from "@/lib/ecliptars";
+import { claimArchetypeReward, claimEcliptarBySlug, getEcliptarsByArchetype } from "@/lib/ecliptars";
 import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
 
 /* ── Tier shadow OKLCH values for Framer Motion boxShadow ──── */
@@ -144,6 +144,11 @@ function RoadNodeItem({ node, index, ownedSlugs, claimedChestIds, onClaimed, onC
   const allOwned = requiredSlugs.length > 0 && requiredSlugs.every(s => ownedSlugs.has(s));
   const showClaim = isClaimable && !allOwned;
 
+  // Final-boss nodes (Newton / Ecliptadon) each grant a single God-archetype Ecliptar
+  const finalSlug = node.type === "final" ? node.finalMonster ?? null : null;
+  const finalOwned = finalSlug ? ownedSlugs.has(finalSlug) : false;
+  const showFinalClaim = node.type === "final" && node.unlocked && !!finalSlug && !finalOwned;
+
   const isChest = node.type === "chest";
   const chestClaimed = isChest && claimedChestIds.has(node.id);
   const showChestOpen = isChest && node.unlocked && !chestClaimed;
@@ -157,6 +162,25 @@ function RoadNodeItem({ node, index, ownedSlugs, claimedChestIds, onClaimed, onC
     if (granted.length > 0) {
       toast(`🎉 ${ARCHETYPES[node.archetype].name} Ecliptars unlocked!`, {
         description: `You now own ${granted.map(g => g.name).join(" & ")} for battle.`,
+        duration: 6000,
+        action: {
+          label: "View in Profile",
+          onClick: () => { window.location.href = "/profile"; },
+        },
+      });
+      onClaimed();
+    }
+  };
+
+  const handleClaimFinal = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!finalSlug || claiming) return;
+    setClaiming(true);
+    const granted = await claimEcliptarBySlug(finalSlug, node.id);
+    setClaiming(false);
+    if (granted) {
+      toast(`👑 ${granted.name} unlocked!`, {
+        description: `Equip ${granted.name} in your profile to wield the God archetype in battle.`,
         duration: 6000,
         action: {
           label: "View in Profile",
@@ -313,6 +337,27 @@ function RoadNodeItem({ node, index, ownedSlugs, claimedChestIds, onClaimed, onC
         </motion.button>
       )}
       {isClaimable && allOwned && (
+        <span className="mt-1 text-[9px] text-emerald-400 font-bold tracking-widest">CLAIMED</span>
+      )}
+
+      {showFinalClaim && (
+        <motion.button
+          onClick={handleClaimFinal}
+          disabled={claiming}
+          className={cn(
+            "mt-1.5 px-2 py-0.5 text-[9px] font-bold tracking-widest rounded-full",
+            "bg-tier-god text-primary-foreground border border-tier-god/60",
+            "hover:opacity-90 transition-opacity disabled:opacity-50"
+          )}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {claiming ? "..." : "CLAIM"}
+        </motion.button>
+      )}
+      {node.type === "final" && finalSlug && finalOwned && (
         <span className="mt-1 text-[9px] text-emerald-400 font-bold tracking-widest">CLAIMED</span>
       )}
 

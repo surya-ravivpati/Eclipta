@@ -1,11 +1,37 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
+/** Pick the most natural-sounding voice available in the browser. */
+function pickBestVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  const lang = (navigator.language || "en-US").toLowerCase();
+  const langMatches = voices.filter(v => v.lang?.toLowerCase().startsWith(lang.slice(0, 2)));
+  const pool = langMatches.length ? langMatches : voices;
+  // Prefer high-quality / neural / natural voices when available.
+  const preferredNames = [
+    "Google UK English Female", "Google US English",
+    "Microsoft Aria", "Microsoft Jenny", "Microsoft Guy",
+    "Samantha", "Karen", "Daniel", "Serena",
+  ];
+  for (const name of preferredNames) {
+    const v = pool.find(x => x.name.includes(name));
+    if (v) return v;
+  }
+  // Heuristic: prefer voices with "Natural", "Neural", "Online", "Premium" hints.
+  const enhanced = pool.find(v => /natural|neural|online|premium|enhanced/i.test(v.name));
+  if (enhanced) return enhanced;
+  // Fall back to the default-flagged voice, then first match.
+  return pool.find(v => v.default) ?? pool[0];
+}
+
 /** Web Speech API wrapper: push-to-talk dictation + optional spoken replies. */
 export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [speakEnabled, setSpeakEnabled] = useState<boolean>(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   // Stable ref so recognition callbacks always call the latest onTranscript
   // without needing to be recreated when the prop changes.
@@ -17,6 +43,21 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     setSupported(!!SR);
+  }, []);
+
+  // Voices load asynchronously in some browsers — listen for the change event.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const refresh = () => { voiceRef.current = pickBestVoice(); };
+    refresh();
+    window.speechSynthesis.onvoiceschanged = refresh;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
+
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
   }, []);
 
   const startListening = useCallback(() => {
@@ -88,10 +129,25 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     if (!clean) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(clean.slice(0, 800));
-    u.rate = 1.05;
-    u.pitch = 1.0;
+    const v = voiceRef.current ?? pickBestVoice();
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = 1.0;
+    u.pitch = 1.05;
+    u.volume = 1.0;
     window.speechSynthesis.speak(u);
   }, [speakEnabled]);
 
-  return { supported, listening, startListening, stopListening, speakEnabled, setSpeakEnabled, speak, voiceError, clearVoiceError: () => setVoiceError(null) };
+  // Wrap setSpeakEnabled to immediately silence ongoing speech when muting.
+  const setSpeakEnabledSafe: typeof setSpeakEnabled = useCallback((v) => {
+    setSpeakEnabled(prev => {
+      const next = typeof v === "function" ? (v as (p: boolean) => boolean)(prev) : v;
+      if (!next) stopSpeaking();
+      return next;
+    });
+  }, [stopSpeaking]);
+
+  // Always stop any in-flight TTS when the consumer unmounts (panel closed, page left).
+  useEffect(() => () => stopSpeaking(), [stopSpeaking]);
+
+  return { supported, listening, startListening, stopListening, speakEnabled, setSpeakEnabled: setSpeakEnabledSafe, speak, stopSpeaking, voiceError, clearVoiceError: () => setVoiceError(null) };
 }

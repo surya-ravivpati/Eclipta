@@ -50,6 +50,11 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
   const fileInputRef = useRef<HTMLInputElement>(null);
   const voice = useLunaVoice({ onTranscript: (t: string) => { setInput((prev: string) => (prev ? prev + " " : "") + t); } });
 
+  // Stop any in-flight TTS the moment the panel is hidden.
+  useEffect(() => {
+    if (!open) voice.stopSpeaking();
+  }, [open, voice]);
+
   // Speak each newly-completed assistant turn (when TTS toggle is on).
   const lastSpokenRef = useRef<string | null>(null);
   useEffect(() => {
@@ -121,11 +126,11 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
               <Link
                 to="/luna"
                 className="text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink transition-colors flex items-center gap-1"
-                onClick={() => { abort(); onClose(); }}
+                onClick={() => { abort(); voice.stopSpeaking(); onClose(); }}
               >
                 FULL SESSION <ArrowRight className="w-3 h-3" />
               </Link>
-              <button onClick={() => { abort(); onClose(); }} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => { abort(); voice.stopSpeaking(); onClose(); }} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>

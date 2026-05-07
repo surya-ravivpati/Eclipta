@@ -230,21 +230,23 @@ function BattleLog({ logs }: { logs: string[] }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [logs]);
   const colorFor = (l: string) => {
-    if (l.startsWith("✅") || l.startsWith("⚔️") && l.includes("DMG")) return "text-foreground";
-    if (l.startsWith("⚔️")) return "text-neon-pink";
-    if (l.startsWith("❌")) return "text-neon-pink/80";
-    if (l.startsWith("💚") || l.includes("+") && l.includes("HP")) return "text-neon-cyan";
-    if (l.startsWith("🎲")) return "text-neon-purple";
-    if (l.startsWith("⚠️")) return "text-tier-gold";
+    if (l.startsWith("⚔️")) return "text-neon-pink";          // attack / opponent action
+    if (l.startsWith("✅")) return "text-foreground";          // your hit landed
+    if (l.startsWith("❌")) return "text-neon-pink/80";        // miss / counter
+    if (l.startsWith("💚")) return "text-neon-cyan";           // heal
+    if (l.startsWith("🎲")) return "text-neon-purple";         // wild
+    if (l.startsWith("⚠️")) return "text-tier-gold";           // warning (low focus)
+    if (l.startsWith("🔰")) return "text-muted-foreground";    // turn separator
     return "text-muted-foreground";
   };
+  const turn = logs.filter(l => l.startsWith("🔰")).length || 1;
   return (
     <div className="glass-panel p-0 overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-secondary/20">
         <span className="text-[10px] font-bold tracking-widest text-muted-foreground">BATTLE LOG</span>
-        <span className="text-[10px] tabular-nums text-muted-foreground">Turn {Math.max(1, Math.ceil(logs.length / 2))}</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">Turn {turn}</span>
       </div>
-      <div ref={ref} className="p-3 h-40 overflow-y-auto space-y-1">
+      <div ref={ref} className="p-3 h-48 overflow-y-auto space-y-1">
         {logs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Battle log will appear here…</p>}
         {logs.map((l, i) => (
           <motion.p
@@ -583,6 +585,7 @@ function BattleArena() {
     if (cost > 0 && player.focus < cost) { addLog(`⚠️ Need ${cost} Focus!`); return; }
     setCurrentAction(action);
     if (cost > 0) setPlayer(prev => ({ ...prev, focus: Math.max(0, prev.focus - cost) }));
+    addLog(`🔰 You ${ACTIONS[action].label.toLowerCase()}…`);
 
     const arch = getArch(archetype);
     const baseDiff = action === "wild" ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)] : ACTIONS[action].difficulty;
@@ -935,7 +938,7 @@ export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
   return (
     <section className="min-h-screen pt-24 pb-16">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
             <Swords className="w-3 h-3" />
@@ -950,15 +953,17 @@ export function KnowledgeBattles() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 relative">
-            <button
-              onClick={() => setHowOpen(true)}
-              className="absolute -top-2 right-0 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-purple border border-neon-purple/40 bg-neon-purple/5 hover:bg-neon-purple/10 transition-colors"
-              aria-label="Battle info"
-            >
-              <Info className="w-3.5 h-3.5" /> INFO
-            </button>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 relative">
+            <div className="flex items-center justify-end mb-3">
+              <button
+                onClick={() => setHowOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-purple border border-neon-purple/40 bg-neon-purple/5 hover:bg-neon-purple/10 transition-colors rounded-sm"
+                aria-label="Battle info"
+              >
+                <Info className="w-3.5 h-3.5" /> INFO
+              </button>
+            </div>
             <BattleArena />
           </div>
           <div className="lg:col-span-1 space-y-4">

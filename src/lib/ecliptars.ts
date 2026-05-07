@@ -4,7 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { LucideIcon } from "lucide-react";
-import { Zap, Shield, Skull, Dice5, Heart, Scale, FastForward, Crown } from "lucide-react";
+import { Zap, Shield, Skull, Dice5, Heart, Scale, FastForward, Crown, Apple, Atom } from "lucide-react";
 import type { MonsterArchetypeKey } from "./trophy-road-data";
 import { ROAD_NODES } from "./trophy-road-data";
 
@@ -26,13 +26,25 @@ const ARCH_ICON: Record<MonsterArchetypeKey, LucideIcon> = {
   god: Crown,
 };
 
-/** Two placeholder Ecliptars per archetype (A and B). */
+/**
+ * Two Ecliptars per archetype. For the God archetype, the two slots are filled
+ * by the final-boss monsters Newton and Ecliptadon (claimed from their own
+ * trophy-road nodes), replacing the generic A/B placeholders.
+ */
 export const ECLIPTARS: Ecliptar[] = (
   Object.keys(ARCH_ICON) as MonsterArchetypeKey[]
-).flatMap((arch) => [
-  { slug: `${arch}-a`, name: `Ecliptar A`, archetype: arch, icon: ARCH_ICON[arch] },
-  { slug: `${arch}-b`, name: `Ecliptar B`, archetype: arch, icon: ARCH_ICON[arch] },
-]);
+).flatMap((arch): Ecliptar[] => {
+  if (arch === "god") {
+    return [
+      { slug: "newton",     name: "Newton",     archetype: "god", icon: Apple },
+      { slug: "ecliptadon", name: "Ecliptadon", archetype: "god", icon: Atom  },
+    ];
+  }
+  return [
+    { slug: `${arch}-a`, name: `Ecliptar A`, archetype: arch, icon: ARCH_ICON[arch] },
+    { slug: `${arch}-b`, name: `Ecliptar B`, archetype: arch, icon: ARCH_ICON[arch] },
+  ];
+});
 
 export function getEcliptarsByArchetype(arch: MonsterArchetypeKey): Ecliptar[] {
   return ECLIPTARS.filter((e) => e.archetype === arch);
@@ -40,6 +52,28 @@ export function getEcliptarsByArchetype(arch: MonsterArchetypeKey): Ecliptar[] {
 
 export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
   return ECLIPTARS.find((e) => e.slug === slug);
+}
+
+/** Claim a single specific Ecliptar by slug (used by trophy-road final nodes). */
+export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise<Ecliptar | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const ec = getEcliptarBySlug(slug);
+  if (!ec) return null;
+  const owned = await fetchOwnedEcliptarSlugs();
+  if (owned.has(slug)) return null;
+  const { error } = await supabase.from("user_ecliptars" as any).insert({
+    user_id: user.id,
+    archetype: ec.archetype,
+    ecliptar_slug: ec.slug,
+    ecliptar_name: ec.name,
+    node_id: nodeId,
+  });
+  if (error) {
+    console.error("Failed to claim ecliptar:", error);
+    return null;
+  }
+  return ec;
 }
 
 /** Fetch the slugs of Ecliptars owned by the current user. */

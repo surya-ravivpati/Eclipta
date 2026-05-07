@@ -33,7 +33,7 @@ const ARCH_ICON: Record<MonsterArchetypeKey, LucideIcon> = {
  */
 export const ECLIPTARS: Ecliptar[] = (
   Object.keys(ARCH_ICON) as MonsterArchetypeKey[]
-).flatMap((arch) => {
+).flatMap((arch): Ecliptar[] => {
   if (arch === "god") {
     return [
       { slug: "newton",     name: "Newton",     archetype: "god", icon: Apple },

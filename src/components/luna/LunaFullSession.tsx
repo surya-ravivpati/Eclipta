@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
+import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { getAccuracy, getSessionDuration, detectFatigue } from "@/lib/luna-context";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -190,10 +191,8 @@ export function LunaFullSession() {
             ))}
             {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex justify-start">
-                <div className="bg-secondary/40 border border-border px-4 py-3 text-sm text-muted-foreground rounded-lg">
-                  <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }}>
-                    Luna is thinking...
-                  </motion.span>
+                <div className="bg-secondary/40 border border-border rounded-lg">
+                  <LunaThinkingIndicator />
                 </div>
               </div>
             )}

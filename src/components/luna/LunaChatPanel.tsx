@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, ArrowRight, Monitor, Loader2, RotateCcw, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import { parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
+import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -184,10 +185,8 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
             ))}
             {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex justify-start">
-                <div className="bg-secondary/50 border border-border px-3 py-2 text-sm text-muted-foreground rounded">
-                  <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }}>
-                    Luna is thinking...
-                  </motion.span>
+                <div className="bg-secondary/50 border border-border rounded">
+                  <LunaThinkingIndicator compact />
                 </div>
               </div>
             )}

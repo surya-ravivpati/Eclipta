@@ -4,10 +4,7 @@ import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X, Mic, MicO
 import { Link } from "@tanstack/react-router";
 import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { getAccuracy, getSessionDuration, detectFatigue } from "@/lib/luna-context";
-import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
+import { LunaMarkdown } from "./LunaMarkdown";
 import { Navbar } from "@/components/Navbar";
 import { useXpMilestones } from "@/hooks/use-xp-milestones";
 import { useLunaHistory } from "@/hooks/use-luna-history";
@@ -137,9 +134,7 @@ export function LunaFullSession() {
             {messages.length === 0 && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed rounded-lg bg-secondary/40 border border-border text-foreground">
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{INTRO_CONTENT}</ReactMarkdown>
-                  </div>
+                  <LunaMarkdown>{INTRO_CONTENT}</LunaMarkdown>
                 </div>
               </div>
             )}
@@ -170,9 +165,7 @@ export function LunaFullSession() {
                   {msg.imageDataUrl && (
                     <img src={msg.imageDataUrl} alt="Shared screen" className="rounded mb-2 border border-border max-w-full" />
                   )}
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:mt-1 [&>ol]:mt-1">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
-                  </div>
+                  <LunaMarkdown className="[&>ul]:mt-1 [&>ol]:mt-1">{msg.content}</LunaMarkdown>
                   {msg.role === "assistant" && msg.actions && msg.actions.length > 0 && (
                     <LunaActions actions={msg.actions} onSendBack={(t) => send({ text: t, image: null })} />
                   )}

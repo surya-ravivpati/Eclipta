@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
+import { containsProfanity } from "@/lib/profanity";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -293,7 +294,8 @@ function SettingsPanel({ profile, userId, onSaved }: {
     setLunaNotes(profile?.luna_notes || "");
   }, [profile?.username, profile?.preferred_pace, profile?.preferred_style, profile?.luna_notes]);
 
-  const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v);
+  const validateUsername = (v: string) =>
+    /^[a-zA-Z0-9_]{3,20}$/.test(v) && !containsProfanity(v);
 
   // Debounced availability check
   useEffect(() => {
@@ -314,8 +316,11 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
   const saveUsername = async () => {
     const trimmed = username.trim();
-    if (!validateUsername(trimmed)) {
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
       return toast.error("Username must be 3–20 chars: letters, numbers, underscores");
+    }
+    if (containsProfanity(trimmed)) {
+      return toast.error("That username contains language we don't allow.");
     }
     if (trimmed === profile?.username) return;
     if (availability === "taken") return toast.error("That username is already taken");

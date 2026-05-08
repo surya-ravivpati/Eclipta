@@ -4,10 +4,7 @@ import { X, Send, ArrowRight, Monitor, Loader2, RotateCcw, Mic, MicOff, Volume2,
 import { parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { Link } from "@tanstack/react-router";
-import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
+import { LunaMarkdown } from "./LunaMarkdown";
 import { useXpMilestones } from "@/hooks/use-xp-milestones";
 import { useLunaConversation, type ConversationMessage } from "@/hooks/use-luna-conversation";
 import { LunaActions } from "./LunaActions";
@@ -141,9 +138,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
             {messages.length === 0 && introContent && (
               <div className="flex justify-start">
                 <div className="max-w-[85%] px-3 py-2 text-sm leading-relaxed rounded bg-secondary/50 border border-border text-foreground">
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{introContent}</ReactMarkdown>
-                  </div>
+                  <LunaMarkdown>{introContent}</LunaMarkdown>
                 </div>
               </div>
             )}
@@ -168,9 +163,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
                     />
                   )}
                   {msg.content && (
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
-                    </div>
+                    <LunaMarkdown>{msg.content}</LunaMarkdown>
                   )}
                   {msg.role === "assistant" && msg.actions && msg.actions.length > 0 && (
                     <LunaActions actions={msg.actions} onSendBack={(t) => send({ text: t, image: null })} />

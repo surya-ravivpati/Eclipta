@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useModerator } from "@/hooks/use-moderator";
 import { toast } from "sonner";
+import { findProfanity } from "@/lib/profanity";
 
 type Thread = {
   id: string;
@@ -148,6 +149,8 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
     if (!user) return;
     if (title.trim().length < 8) return toast.error("Title must be at least 8 characters");
     if (body.trim().length < 20) return toast.error("Body must be at least 20 characters");
+    const dirty = findProfanity(title) || findProfanity(body) || findProfanity(tagsInput);
+    if (dirty) return toast.error("Please rephrase — your post contains language we don't allow.");
 
     setSubmitting(true);
     const tags = tagsInput

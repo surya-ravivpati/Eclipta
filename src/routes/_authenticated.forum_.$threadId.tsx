@@ -9,6 +9,7 @@ import { useModerator } from "@/hooks/use-moderator";
 import { ReportDialog } from "@/components/forum/ReportDialog";
 import { AnswerComments } from "@/components/forum/AnswerComments";
 import { toast } from "sonner";
+import { containsProfanity } from "@/lib/profanity";
 
 export const Route = createFileRoute("/_authenticated/forum_/$threadId")({
   head: () => ({
@@ -123,6 +124,7 @@ function ThreadPage() {
     e.preventDefault();
     if (!user || !thread) return;
     if (reply.trim().length < 10) return toast.error("Answer must be at least 10 characters");
+    if (containsProfanity(reply)) return toast.error("Please rephrase — your answer contains language we don't allow.");
     setSubmitting(true);
     const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
     const author_name = prof?.username || user.email?.split("@")[0] || "Learner";

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Monitor, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera, ListChecks, Clock, Info, Pencil, XCircle } from "lucide-react";
+import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Monitor, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera, ListChecks, Clock, Info, Pencil, XCircle, Users, UserCheck } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
 import { useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { useTheme } from "@/hooks/use-theme";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 type Profile = {
   username: string | null;
+  bio: string | null;
   xp: number; current_streak: number; best_streak: number;
   total_correct: number; total_questions: number; total_sessions: number;
   preferred_pace: string; preferred_style: string;
@@ -51,18 +53,22 @@ function ProfilePage() {
   const [myCourses, setMyCourses] = useState<UserCourse[]>([]);
   const [deniedProposals, setDeniedProposals] = useState<ProposalFull[]>([]);
   const [pendingProposals, setPendingProposals] = useState<ProposalFull[]>([]);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const reload = async () => {
     if (!user) return;
-    const [p, e, en, t, a, pr, uc] = await Promise.all([
-      supabase.from("user_profiles").select("username,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar,avatar_url,luna_notes").eq("user_id", user.id).maybeSingle(),
+    const [p, e, en, t, a, pr, uc, fc, fgc] = await Promise.all([
+      supabase.from("user_profiles").select("username,bio,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar,avatar_url,luna_notes").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
       supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
       supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
       supabase.from("forum_answers").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("course_proposals").select("id,topic,status,created_at,denial_reason,course_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("user_courses").select("id,slug,title,status,updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
+      supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", user.id),
+      supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", user.id),
     ]);
     setProfile((p.data as Profile) || null);
     setEcliptars((e.data as Ecliptar[]) || []);
@@ -73,6 +79,8 @@ function ProfilePage() {
     setDeniedProposals(allProps.filter((p) => p.status === "denied"));
     setPendingProposals(allProps.filter((p) => p.status !== "denied" && p.status !== "approved"));
     setMyCourses((uc.data as UserCourse[]) || []);
+    setFollowerCount(fc.count || 0);
+    setFollowingCount(fgc.count || 0);
     setLoading(false);
   };
 
@@ -138,24 +146,27 @@ function ProfilePage() {
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-neon-purple" /></div>
           ) : (
-            <>
-              {/* Stats grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <StatCard icon={<Zap className="w-4 h-4" />} label="XP" value={profile?.xp ?? 0} color="text-neon-purple" />
-                <StatCard icon={<Flame className="w-4 h-4" />} label="Streak" value={profile?.current_streak ?? 0} color="text-neon-pink" />
-                <StatCard icon={<Trophy className="w-4 h-4" />} label="Best Streak" value={profile?.best_streak ?? 0} color="text-neon-cyan" />
-                <StatCard icon={<Target className="w-4 h-4" />} label="Accuracy" value={`${accuracy}%`} color="text-foreground" />
-              </div>
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="companions">Companions</TabsTrigger>
+                <TabsTrigger value="creator">Creator</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
 
-              {/* Settings */}
-              <SettingsPanel
-                profile={profile}
-                userId={user.id}
-                onSaved={reload}
-              />
+              <TabsContent value="overview" className="space-y-6 mt-0">
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <StatCard icon={<Zap className="w-4 h-4" />} label="XP" value={profile?.xp ?? 0} color="text-neon-purple" />
+                  <StatCard icon={<Flame className="w-4 h-4" />} label="Streak" value={profile?.current_streak ?? 0} color="text-neon-pink" />
+                  <StatCard icon={<Trophy className="w-4 h-4" />} label="Best" value={profile?.best_streak ?? 0} color="text-neon-cyan" />
+                  <StatCard icon={<Target className="w-4 h-4" />} label="Accuracy" value={`${accuracy}%`} color="text-foreground" />
+                  <StatCard icon={<Users className="w-4 h-4" />} label="Followers" value={followerCount} color="text-foreground" />
+                  <StatCard icon={<UserCheck className="w-4 h-4" />} label="Following" value={followingCount} color="text-foreground" />
+                </div>
 
-              {/* Activity cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Activity cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card title="Enrolled Courses" icon={<BookOpen className="w-4 h-4 text-neon-cyan" />} count={enrollments.length}>
                   {enrollments.length === 0 ? (
                     <EmptyState text="No courses enrolled." cta={<Link to="/certified" className="text-neon-cyan hover:underline">Browse certified →</Link>} />
@@ -197,20 +208,31 @@ function ProfilePage() {
                   </div>
                 </Card>
 
-                <Card title="Ecliptars Claimed" icon={<Sparkles className="w-4 h-4 text-neon-purple" />} count={ecliptars.length}>
+                <Card title="Companions Claimed" icon={<Sparkles className="w-4 h-4 text-neon-purple" />} count={ecliptars.length}>
                   {ecliptars.length === 0 ? (
-                    <EmptyState text="No ecliptars yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Walk the trophy road →</Link>} />
+                    <EmptyState text="No companions yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Walk the trophy road →</Link>} />
                   ) : (
-                    <p className="text-xs text-muted-foreground">Click any ecliptar below to equip ↓</p>
+                    <p className="text-xs text-muted-foreground">Open the Companions tab to equip one ↑</p>
                   )}
                 </Card>
+                </div>
+              </TabsContent>
 
+              <TabsContent value="companions" className="mt-0">
+                <CollectionSection
+                  equippedSlug={profile?.equipped_ecliptar ?? null}
+                  userId={user.id}
+                  onEquipped={reload}
+                />
+              </TabsContent>
+
+              <TabsContent value="creator" className="mt-0 space-y-4">
                 <Card title="Your Courses" icon={<ListChecks className="w-4 h-4 text-neon-purple" />} count={myCourses.length}>
                   {myCourses.length === 0 && pendingProposals.length === 0 ? (
                     <EmptyState text="No courses yet." cta={<Link to="/build-course" className="text-neon-purple hover:underline">Build a course →</Link>} />
                   ) : (
                     <ul className="space-y-2">
-                      {myCourses.slice(0, 5).map((c) => (
+                      {myCourses.map((c) => (
                         <li key={c.id} className="text-xs border-b border-border/50 pb-2 flex items-center justify-between gap-2">
                           <Link
                             to="/courses/$courseId/edit"
@@ -227,7 +249,7 @@ function ProfilePage() {
                           </span>
                         </li>
                       ))}
-                      {pendingProposals.slice(0, 3).map((p) => (
+                      {pendingProposals.map((p) => (
                         <li key={p.id} className="text-xs border-b border-border/50 pb-2 flex items-center justify-between gap-2">
                           <span className="font-medium truncate flex-1">{p.topic}</span>
                           <span className="text-[9px] font-bold tracking-widest uppercase text-muted-foreground inline-flex items-center gap-1 shrink-0">
@@ -242,7 +264,7 @@ function ProfilePage() {
                 {deniedProposals.length > 0 && (
                   <Card title="Denied Proposals" icon={<XCircle className="w-4 h-4 text-destructive" />} count={deniedProposals.length}>
                     <ul className="space-y-3">
-                      {deniedProposals.slice(0, 5).map((p) => (
+                      {deniedProposals.map((p) => (
                         <li key={p.id} className="text-xs border-b border-border/50 pb-2">
                           <p className="font-medium truncate">{p.topic}</p>
                           {p.denial_reason && (
@@ -256,15 +278,16 @@ function ProfilePage() {
                     </ul>
                   </Card>
                 )}
-              </div>
+              </TabsContent>
 
-              {/* Embedded Collection w/ click-to-equip */}
-              <CollectionSection
-                equippedSlug={profile?.equipped_ecliptar ?? null}
-                userId={user.id}
-                onEquipped={reload}
-              />
-            </>
+              <TabsContent value="settings" className="mt-0">
+                <SettingsPanel
+                  profile={profile}
+                  userId={user.id}
+                  onSaved={reload}
+                />
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </section>

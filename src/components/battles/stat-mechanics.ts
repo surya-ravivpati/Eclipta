@@ -1,43 +1,95 @@
-/**
- * Maps archetype stat values (0-4) to concrete battle mechanics.
- */
+import type { Archetype, Action } from "./types";
 import type { Difficulty } from "./types";
 
-/** Health stat → max HP */
-export function statToHp(health: number): number {
-  const map: Record<number, number> = { 0: 50, 1: 75, 2: 100, 3: 125, 4: 150 };
-  return map[health] ?? 100;
+/** Map a numeric difficulty level (1–10) to an easy/medium/hard question category. */
+export function levelToCategory(level: number): Difficulty {
+  if (level <= 3) return "easy";
+  if (level <= 7) return "medium";
+  return "hard";
 }
 
-/** Time stat → timer multiplier applied to base TIMER_DURATIONS */
-export function statToTimeMult(time: number): number {
-  const map: Record<number, number> = { 0: 0.6, 1: 0.75, 2: 1.0, 3: 1.25, 4: 1.5 };
-  return map[time] ?? 1.0;
+/**
+ * Pick a difficulty level (1–10) for the given action based on the archetype's range.
+ * - Defend  → diffMin  (easiest question — rewards safe play)
+ * - Attack  → midpoint (balanced question)
+ * - Charge  → diffMax  (hardest question — high risk, high reward)
+ * - Wild    → random in [diffMin, diffMax]
+ */
+export function getActionDifficultyLevel(arch: Archetype, action: Action): number {
+  const { diffMin, diffMax } = arch;
+  switch (action) {
+    case "defend": return diffMin;
+    case "attack": return Math.round((diffMin + diffMax) / 2);
+    case "charge": return diffMax;
+    case "wild":   return diffMin + Math.floor(Math.random() * (diffMax - diffMin + 1));
+  }
 }
 
-/** Damage stat → damage multiplier on base action damage */
-export function statToDmgMult(damage: number): number {
-  const map: Record<number, number> = { 0: 0.5, 1: 0.75, 2: 1.0, 3: 1.3, 4: 1.6 };
-  return map[damage] ?? 1.0;
+/**
+ * Effective base damage for an action before streak multiplier.
+ *
+ * Special cases:
+ * - Speedster: adds a speed bonus — `baseDamage × (1 − timeSpent/maxTime)` extra damage.
+ *   At full speed: 15+15 = 30. At timeout: 15+0 = 15.
+ * - Accelerator: damage scales 13→27 linearly over 10 questions answered.
+ * - Charge: 1.8× the base before other bonuses.
+ */
+export function getEffectiveDamage(
+  arch: Archetype,
+  opts: { action: Action; timeSpent?: number; maxTime?: number; recordCount?: number },
+): number {
+  let base = arch.baseDamage;
+
+  if (arch.multiplierScales && opts.recordCount !== undefined) {
+    base = 13 + Math.min(opts.recordCount / 10, 1) * 14;
+  }
+
+  if (opts.action === "charge") {
+    base *= 1.8;
+  }
+
+  if (arch.damageIsTimeScaled && opts.timeSpent !== undefined && opts.maxTime && opts.maxTime > 0) {
+    base += (1 - opts.timeSpent / opts.maxTime) * arch.baseDamage;
+  }
+
+  return Math.floor(base);
 }
 
-/** Multiplier stat → streak bonus per combo hit */
-export function statToStreakMult(multiplier: number): number {
-  const map: Record<number, number> = { 0: 1.0, 1: 1.1, 2: 1.2, 3: 1.35, 4: 1.5 };
-  return map[multiplier] ?? 1.2;
+/**
+ * Per-hit multiplier step for the current question count.
+ * Accelerator: scales from 0.15 → 0.40 over 10 questions.
+ */
+export function getEffectiveMultiplierStep(arch: Archetype, recordCount: number): number {
+  if (arch.multiplierScales) {
+    return 0.15 + Math.min(recordCount / 10, 1) * 0.25;
+  }
+  return arch.multiplierStep;
 }
 
-/** Difficulty stat → shift the action's base difficulty up/down */
-export function statToDifficulty(baseDiff: Difficulty, diffStat: number): Difficulty {
-  const order: Difficulty[] = ["easy", "medium", "hard"];
-  const baseIdx = order.indexOf(baseDiff);
-  if (diffStat <= 1) return order[Math.max(0, baseIdx - 1)]; // shift easier
-  if (diffStat >= 3) return order[Math.min(2, baseIdx + 1)]; // shift harder
-  return baseDiff; // stat 2 = no change
+/**
+ * Final streak damage multiplier.
+ * Formula: 1 + momentum × step
+ * e.g. momentum=3, step=0.20 → 1.60× damage
+ */
+export function streakToMultiplier(momentum: number, step: number): number {
+  return 1 + momentum * step;
 }
 
-/** Self-damage multiplier based on health stat (tankier = less self-damage) */
-export function statToSelfDmgMult(health: number): number {
-  const map: Record<number, number> = { 0: 1.3, 1: 1.0, 2: 0.85, 3: 0.7, 4: 0.5 };
-  return map[health] ?? 1.0;
+/**
+ * Self-damage multiplier when missing a question (tankier = less self-damage).
+ * Formula: 1.30 − ((maxHp − 75) / 175) × 0.80
+ * At  75 HP (Chud): 1.30  — glass cannons take extra punishment
+ * At 250 HP (Tank): 0.50  — heavily armored, barely stings
+ */
+export function hpToSelfDmgMult(maxHp: number): number {
+  return 1.30 - Math.max(0, (maxHp - 75) / 175) * 0.80;
+}
+
+/**
+ * Bot answer accuracy, derived from the archetype's difficulty range.
+ * Harder archetypes (higher avg diff) have lower bot success rates.
+ */
+export function botAccuracy(arch: Archetype): number {
+  const avg = (arch.diffMin + arch.diffMax) / 2;
+  return Math.max(0.42, 0.85 - ((avg - 1) / 9) * 0.38);
 }

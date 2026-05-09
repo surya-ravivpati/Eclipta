@@ -9,10 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-import type { Phase, Action, ArchetypeId, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig } from "./battles/types";
+import type { Phase, Action, ArchetypeId, Archetype, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig, GamblerRoll } from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
-import { statToHp, statToTimeMult, statToDmgMult, statToStreakMult, statToDifficulty, statToSelfDmgMult } from "./battles/stat-mechanics";
-import { ARCHETYPES } from "./battles/archetypes";
+import { levelToCategory, getActionDifficultyLevel, getEffectiveDamage, getEffectiveMultiplierStep, streakToMultiplier, hpToSelfDmgMult, botAccuracy } from "./battles/stat-mechanics";
+import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
 import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";
 import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
@@ -30,11 +30,16 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
 }
 
 // ─── Action Config ───────────────────────────────────────────────────
+// Focus economy: Attack & Defend BUILD focus, Charge & Wild SPEND it.
+// This gives Attack a real role (cheap, fast focus build) and makes Charge
+// a payoff move that requires setup rather than a strictly-better Attack.
+const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, wild: 0 };
+
 const ACTIONS: Record<Action, ActionConfig> = {
-  attack: { label: "Attack", icon: Swords, difficulty: "medium", dmg: 15, focusCost: 0, desc: "Deal 15 DMG" },
-  defend: { label: "Defend", icon: Shield, difficulty: "easy", dmg: 0, focusCost: 0, desc: "Heal 10 HP" },
-  charge: { label: "Charge", icon: Zap, difficulty: "hard", dmg: 25, focusCost: 0, desc: "Deal 25 DMG" },
-  wild:   { label: "Wild",   icon: Dices, difficulty: "medium", dmg: 0, focusCost: 10, desc: "Random effect" },
+  attack: { label: "Attack", icon: Swords, focusCost: 0,  desc: "Your base DMG · +15 Focus" },
+  defend: { label: "Heal",   icon: Heart,  focusCost: 0,  desc: "Restore HP · +10 Focus" },
+  charge: { label: "Charge", icon: Zap,    focusCost: 25, desc: "1.8× your DMG · −25 Focus" },
+  wild:   { label: "Wild",   icon: Dices,  focusCost: 15, desc: "Chaos effect · −15 Focus" },
 };
 
 type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string };
@@ -119,12 +124,12 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold font-display text-sm truncate">{fighter.name}</h4>
-            {side === "left" && arch && (
+            {arch && (
               <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-widest ${arch.color}`}>
                 <arch.icon className="w-3 h-3" /> {arch.name.toUpperCase()}
               </span>
             )}
-            {side === "left" && momentum > 0 && (
+            {momentum > 0 && (
               <motion.div className="flex items-center gap-1 text-neon-pink" key={momentum} initial={{ scale: 1.3 }} animate={{ scale: 1 }}>
                 <Flame className="w-3 h-3" />
                 <span className="text-[10px] font-bold tracking-widest">{momentum}x STREAK</span>
@@ -136,7 +141,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
         <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} /></div>
       </div>
       <AnimatePresence>
-        {side === "left" && momentum > 0 && momentum % comboThreshold === 0 && (
+        {momentum > 0 && momentum % comboThreshold === 0 && (
           <motion.div className="absolute top-2 right-2 text-neon-pink" initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}>
             <Sparkles className="w-6 h-6" />
           </motion.div>
@@ -202,12 +207,37 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
 function BattleLog({ logs }: { logs: string[] }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [logs]);
+  const colorFor = (l: string) => {
+    if (l.startsWith("⚔️")) return "text-neon-pink";          // attack / opponent action
+    if (l.startsWith("✅")) return "text-foreground";          // your hit landed
+    if (l.startsWith("❌")) return "text-neon-pink/80";        // miss / counter
+    if (l.startsWith("💚")) return "text-neon-cyan";           // heal
+    if (l.startsWith("🎲")) return "text-neon-purple";         // wild
+    if (l.startsWith("⚠️")) return "text-tier-gold";           // warning (low focus)
+    if (l.startsWith("🔰")) return "text-muted-foreground";    // turn separator
+    return "text-muted-foreground";
+  };
+  const turn = logs.filter(l => l.startsWith("🔰")).length || 1;
   return (
-    <div ref={ref} className="glass-panel p-3 h-24 overflow-y-auto space-y-1">
-      {logs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Battle log will appear here...</p>}
-      {logs.map((l, i) => (
-        <motion.p key={i} className="text-[11px] text-muted-foreground" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}>{l}</motion.p>
-      ))}
+    <div className="glass-panel p-0 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-secondary/20">
+        <span className="text-[10px] font-bold tracking-widest text-muted-foreground">BATTLE LOG</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">Turn {turn}</span>
+      </div>
+      <div ref={ref} className="p-3 h-48 overflow-y-auto space-y-1">
+        {logs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Battle log will appear here…</p>}
+        {logs.map((l, i) => (
+          <motion.p
+            key={i}
+            className={`text-[11px] leading-snug ${colorFor(l)}`}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <span className="text-muted-foreground/60 tabular-nums mr-1.5">{String(i + 1).padStart(2, "0")}</span>
+            {l}
+          </motion.p>
+        ))}
+      </div>
     </div>
   );
 }
@@ -217,9 +247,10 @@ function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
-  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, icon: User });
-  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 50, maxFocus: 50, icon: Bot });
+  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: User });
+  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
   const [momentum, setMomentum] = useState(0);
+  const [opponentMomentum, setOpponentMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
   const [question, setQuestion] = useState<MathQuestion | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -233,7 +264,7 @@ function BattleArena() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [fastestAnswer, setFastestAnswer] = useState(Infinity);
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
-  const [gamblerStats, setGamblerStats] = useState<{ health: number; time: number; damage: number; multiplier: number; difficulty: number } | null>(null);
+  const [gamblerStats, setGamblerStats] = useState<GamblerRoll | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
 
@@ -251,10 +282,9 @@ function BattleArena() {
     })();
   }, []);
 
-  // Returns archetype, with stats overridden by per-battle randomized stats for gambler
-  const getArch = useCallback((id: ArchetypeId) => {
+  const getArch = useCallback((id: ArchetypeId): Archetype => {
     const base = ARCHETYPES[id];
-    if (id === "gambler" && gamblerStats) return { ...base, stats: gamblerStats };
+    if (id === "gambler" && gamblerStats) return { ...base, ...gamblerStats };
     return base;
   }, [gamblerStats]);
 
@@ -287,11 +317,9 @@ function BattleArena() {
 
     if (correct && timeSpent < fastestAnswer) setFastestAnswer(timeSpent);
 
-    const action = ACTIONS[currentAction];
     const arch = getArch(archetype);
-    const streakMult = statToStreakMult(arch.stats.multiplier);
-    // Multiplier grows with streak length
-    const currentStreakMult = momentum > 0 ? 1 + (momentum * (streakMult - 1)) : 1;
+    const step = getEffectiveMultiplierStep(arch, records.length);
+    const currentStreakMult = streakToMultiplier(momentum, step);
 
     setPhase("animate");
 
@@ -301,11 +329,16 @@ function BattleArena() {
       if (newMom > longestStreak) setLongestStreak(newMom);
 
       if (currentAction === "defend") {
-        const healAmt = archetype === "healer" ? 20 : 10;
-        const heal = Math.min(healAmt, player.maxHp - player.hp);
-        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt), focus: Math.min(prev.maxFocus, prev.focus + 10) }));
-        setShowPlayerHeal(true);
-        addLog(`✅ Correct! Defend: +${heal} HP, +10 Focus.`);
+        const gain = FOCUS_GAIN.defend;
+        if (arch.healAmount !== null) {
+          const heal = Math.min(arch.healAmount, player.maxHp - player.hp);
+          setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
+          setShowPlayerHeal(true);
+          addLog(`✅ Defend: +${heal} HP, +${gain} Focus.`);
+        } else {
+          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
+          addLog(`✅ Defend: +${gain} Focus (Tank cannot heal).`);
+        }
       } else if (currentAction === "wild") {
         const effects = [
           () => { const d = Math.floor(Math.random() * 30) + 10; setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) })); setShowOpponentHit(true); addLog(`🎲 Wild: ${d} random DMG!`); },
@@ -314,27 +347,24 @@ function BattleArena() {
         ];
         effects[Math.floor(Math.random() * effects.length)]();
       } else {
-        let baseDmg = action.dmg;
-        // Apply damage stat multiplier
-        // Damage uses stat multiplier (gambler's damage stat is randomized per battle in startBattle)
-        const dmgMult = statToDmgMult(arch.stats.damage);
-        baseDmg = Math.floor(baseDmg * dmgMult);
-        // Accelerator scaling bonus
-        if (archetype === "accelerator") {
-          baseDmg = Math.floor(baseDmg * (1 + records.length * 0.1));
-        }
-        // Apply streak multiplier
-        const dmg = Math.floor(baseDmg * currentStreakMult);
+        const dmg = Math.floor(
+          getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: records.length })
+          * currentStreakMult
+        );
         setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
+        const focusGain = FOCUS_GAIN[currentAction];
+        if (focusGain > 0) {
+          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + focusGain) }));
+        }
         setShowOpponentHit(true);
-        addLog(`✅ ${action.label}: ${dmg} DMG!${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(1)}x STREAK!` : ""}`);
+        const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
+        addLog(`✅ ${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`);
       }
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {
       setMomentum(0);
       let counterDmg = Math.floor(Math.random() * 10) + 8;
-      // Apply self-damage reduction based on health stat
-      counterDmg = Math.floor(counterDmg * statToSelfDmgMult(arch.stats.health));
+      counterDmg = Math.floor(counterDmg * hpToSelfDmgMult(arch.maxHp));
       // Healer passive: recover some HP on getting hit
       if (archetype === "healer") {
         const healAmt = Math.floor(counterDmg * 0.3);
@@ -342,7 +372,7 @@ function BattleArena() {
       }
       setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
       setShowPlayerHit(true);
-      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.stats.health >= 3 ? " 🛡️ Reduced!" : ""}`);
+      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.maxHp >= 160 ? " 🛡️ Reduced!" : ""}`);
     }
 
     setTimeout(() => {
@@ -421,35 +451,117 @@ function BattleArena() {
 
   const aiTurn = useCallback(() => {
     const oppArch = getArch(opponentArchetype);
-    const dmgMult = statToDmgMult(oppArch.stats.damage);
-    const aiDmg = Math.floor((Math.floor(Math.random() * 8) + 5) * dmgMult);
+
     setTimeout(() => {
-      setPlayer(prev => {
-        const newHp = Math.max(0, prev.hp - aiDmg);
-        addLog(`${opponent.name} strikes: -${aiDmg} HP.`);
-        setShowPlayerHit(true);
-        setTimeout(() => {
-          setShowPlayerHit(false);
-          if (newHp <= 0) { finishBattle(false); } else { setPhase("select"); }
-        }, 600);
-        return { ...prev, hp: newHp };
+      // ── Bot decision logic: pick Attack / Heal / Charge / Wild based on state ──
+      setOpponent(prevOpp => {
+        setPlayer(prevPlayer => {
+          const hpPct = prevOpp.hp / prevOpp.maxHp;
+          const focus = prevOpp.focus;
+          const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
+
+          // Choose action
+          let choice: Action = "attack";
+          if (hpPct < 0.35 && prevOpp.hp < prevOpp.maxHp) {
+            // Low HP — prefer Heal if affordable, but finisher Charge if player almost dead
+            choice = (focus >= 25 && playerHpPct < 0.3) ? "charge" : "defend";
+          } else if (focus >= 25 && (playerHpPct < 0.5 || Math.random() < 0.45)) {
+            choice = "charge"; // payoff move
+          } else if (focus >= 15 && Math.random() < 0.12) {
+            choice = "wild"; // occasional gamble
+          } else {
+            choice = "attack"; // default focus builder
+          }
+          // Healer archetype loves to defend
+          if (opponentArchetype === "healer" && hpPct < 0.7 && Math.random() < 0.4) choice = "defend";
+          // Chud always charges if it can
+          if (opponentArchetype === "chud" && focus >= 25) choice = "charge";
+
+          const success = Math.random() < botAccuracy(oppArch);
+
+          let newPlayerHp = prevPlayer.hp;
+          let newOppHp = prevOpp.hp;
+          let newOppFocus = prevOpp.focus;
+          let nextOppMom = opponentMomentum;
+
+          if (success) {
+            nextOppMom = opponentMomentum + 1;
+            const oppStep = getEffectiveMultiplierStep(oppArch, 0);
+            const sMult = streakToMultiplier(nextOppMom, oppStep);
+
+            if (choice === "defend") {
+              newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
+              if (oppArch.healAmount !== null) {
+                newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + oppArch.healAmount);
+                addLog(`💚 ${prevOpp.name} heals: +${oppArch.healAmount} HP, +${FOCUS_GAIN.defend} Focus.`);
+              } else {
+                addLog(`💚 ${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`);
+              }
+            } else if (choice === "wild") {
+              newOppFocus = Math.max(0, prevOpp.focus - 15);
+              const roll = Math.random();
+              if (roll < 0.34) {
+                const d = Math.floor(Math.random() * 30) + 10;
+                newPlayerHp = Math.max(0, prevPlayer.hp - d);
+                setShowPlayerHit(true);
+                addLog(`🎲 ${prevOpp.name} Wild: ${d} chaos DMG!`);
+              } else if (roll < 0.67) {
+                newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + 20);
+                addLog(`🎲 ${prevOpp.name} Wild: +20 HP!`);
+              } else {
+                const d = 20;
+                newPlayerHp = Math.max(0, prevPlayer.hp - d);
+                setShowPlayerHit(true);
+                addLog(`🎲 ${prevOpp.name} Wild: ${d} DMG.`);
+              }
+            } else {
+              const dmg = Math.floor(getEffectiveDamage(oppArch, { action: choice, recordCount: 0 }) * sMult);
+              newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
+              const cost = ACTIONS[choice].focusCost;
+              if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
+              const gain = FOCUS_GAIN[choice];
+              if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
+              setShowPlayerHit(true);
+              const streakNote = sMult > 1.1 ? ` 🔥 ${sMult.toFixed(2)}x` : "";
+              addLog(`⚔️ ${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${streakNote}`);
+            }
+          } else {
+            nextOppMom = 0;
+            const flub = Math.floor((Math.floor(Math.random() * 6) + 4) * hpToSelfDmgMult(oppArch.maxHp));
+            newOppHp = Math.max(0, prevOpp.hp - flub);
+            addLog(`❌ ${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`);
+          }
+
+          setOpponentMomentum(nextOppMom);
+          setTimeout(() => {
+            setShowPlayerHit(false);
+            if (newPlayerHp <= 0) { finishBattle(false); }
+            else if (newOppHp <= 0) { finishBattle(true); }
+            else { setPhase("select"); }
+          }, 600);
+
+          // Update opponent in same pass
+          setOpponent(o => ({ ...o, hp: newOppHp, focus: newOppFocus }));
+          return { ...prevPlayer, hp: newPlayerHp };
+        });
+        return prevOpp;
       });
     }, 400);
-  }, [addLog, finishBattle, opponentArchetype, opponent.name]);
+  }, [addLog, finishBattle, opponentArchetype, opponentMomentum, getArch]);
 
   const selectAction = (action: Action) => {
-    if (action === "wild" && player.focus < 10) { addLog("⚠️ Not enough Focus!"); return; }
+    const cost = ACTIONS[action].focusCost;
+    if (cost > 0 && player.focus < cost) { addLog(`⚠️ Need ${cost} Focus!`); return; }
     setCurrentAction(action);
-    if (action === "wild") setPlayer(prev => ({ ...prev, focus: prev.focus - 10 }));
+    if (cost > 0) setPlayer(prev => ({ ...prev, focus: Math.max(0, prev.focus - cost) }));
+    addLog(`🔰 You ${ACTIONS[action].label.toLowerCase()}…`);
 
     const arch = getArch(archetype);
-    const baseDiff = action === "wild" ? (["easy", "medium", "hard"] as const)[Math.floor(Math.random() * 3)] : ACTIONS[action].difficulty;
-    const effectiveDiff = statToDifficulty(baseDiff, arch.stats.difficulty);
-    const q = generateQuestion(effectiveDiff);
+    const level = getActionDifficultyLevel(arch, action);
+    const category = levelToCategory(level);
+    const q = generateQuestion(category);
     setQuestion(q);
-    let t = TIMER_DURATIONS[effectiveDiff];
-    // Apply time stat multiplier (gambler's time stat is already randomized per battle)
-    t = Math.max(4, Math.round(t * statToTimeMult(arch.stats.time)));
+    const t = Math.max(4, Math.round(TIMER_DURATIONS[category] * arch.timeMultiplier));
     setMaxTime(t);
     setTimeLeft(t);
     setPhase("question");
@@ -463,19 +575,9 @@ function BattleArena() {
     if (selection?.archetype) setArchetype(selection.archetype);
     if (selection?.ecliptar) setEcliptar(selection.ecliptar);
 
-    // Randomize gambler stats per battle (each 0-4) — true gamble between godlike and garbage
-    const rolledGambler = cls === "gambler"
-      ? {
-          health: Math.floor(Math.random() * 5),
-          time: Math.floor(Math.random() * 5),
-          damage: Math.floor(Math.random() * 5),
-          multiplier: Math.floor(Math.random() * 5),
-          difficulty: Math.floor(Math.random() * 5),
-        }
-      : null;
+    const rolledGambler = cls === "gambler" ? rollGamblerStats() : null;
     setGamblerStats(rolledGambler);
 
-    // Random opponent — rank-based matchmaking removed.
     setPhase("searching");
     const oppEclip: Ecliptar = pickOpponent(cls);
     const oppArch = ARCHETYPES[oppEclip.archetype];
@@ -483,18 +585,19 @@ function BattleArena() {
 
     setTimeout(() => {
       const baseArch = ARCHETYPES[cls];
-      const playerStats = rolledGambler ?? baseArch.stats;
-      const playerHp = statToHp(playerStats.health);
+      const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
+      const playerHp = effectiveArch.maxHp;
       const playerName = eclip?.name ?? "You";
       const playerIcon = eclip?.icon ?? User;
-      const oppHp = statToHp(oppArch.stats.health);
-      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: 50, maxFocus: 50, icon: playerIcon });
-      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: 50, maxFocus: 50, icon: oppEclip.icon });
-      setMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
+      const oppHp = oppArch.maxHp;
+      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon });
+      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppEclip.icon });
+      setMomentum(0); setOpponentMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
       setPhase("select");
       addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
       if (rolledGambler) {
-        addLog(`🎲 Gambler rolled: HP ${rolledGambler.health}/4 · TIME ${rolledGambler.time}/4 · DMG ${rolledGambler.damage}/4 · MULT ${rolledGambler.multiplier}/4 · DIFF ${rolledGambler.difficulty}/4`);
+        const multPct = Math.round(rolledGambler.multiplierStep * 100);
+        addLog(`🎲 Gambler rolled: ${rolledGambler.maxHp} HP · ${rolledGambler.baseDamage} DMG · +${multPct}%/hit · Heal ${rolledGambler.healAmount} · Diff ${rolledGambler.diffMin}-${rolledGambler.diffMax} · ${rolledGambler.timeMultiplier}× time`);
       }
     }, 1100);
   };
@@ -572,7 +675,7 @@ function BattleArena() {
           </motion.div>
           <span className="text-[10px] font-bold tracking-widest text-muted-foreground mt-1">VS</span>
         </div>
-        <FighterCard fighter={opponent} side="right" momentum={0} showHit={showOpponentHit} showHeal={false} />
+        <FighterCard fighter={opponent} side="right" momentum={opponentMomentum} archetype={opponentArchetype} showHit={showOpponentHit} showHeal={false} />
       </div>
 
       <div className="space-y-3">
@@ -597,15 +700,22 @@ function BattleArena() {
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {
             const Icon = act.icon;
-            const disabled = phase !== "select" || (key === "wild" && player.focus < 10);
+            const cost = act.focusCost;
+            const disabled = phase !== "select" || (cost > 0 && player.focus < cost);
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
-                className={`glass-panel p-4 text-center transition-colors ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}
+                className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}
                 whileHover={!disabled ? { scale: 1.03, y: -2 } : {}} whileTap={!disabled ? { scale: 0.97 } : {}}
               >
-                <Icon className={`w-6 h-6 mx-auto mb-1 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
-                <div className="text-[10px] font-bold tracking-widest">{act.label.toUpperCase()}</div>
-                <div className="text-[9px] text-muted-foreground mt-0.5">{act.desc}</div>
+                <Icon className={`w-7 h-7 mx-auto mb-1.5 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
+                <div className="text-xs font-bold tracking-widest">{act.label.toUpperCase()}</div>
+                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">{act.desc}</div>
+                {cost > 0 && (
+                  <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1 rounded-sm">−{cost}</div>
+                )}
+                {FOCUS_GAIN[key] > 0 && (
+                  <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/30 px-1 rounded-sm">+{FOCUS_GAIN[key]}</div>
+                )}
               </motion.button>
             );
           })}
@@ -784,7 +894,7 @@ export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
   return (
     <section className="min-h-screen pt-24 pb-16">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
             <Swords className="w-3 h-3" />
@@ -799,27 +909,22 @@ export function KnowledgeBattles() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-3"><BattleArena /></div>
-          <div className="lg:col-span-2 space-y-4">
-            <motion.div className="glass-panel p-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-              <h3 className="text-sm font-bold font-display tracking-widest mb-4 text-neon-purple">ARCHETYPES</h3>
-              <div className="space-y-3">
-                {Object.values(ARCHETYPES).map(a => (
-                  <div key={a.id} className="flex items-start gap-3">
-                    <a.icon className={`w-4 h-4 mt-0.5 ${a.color}`} />
-                    <div>
-                      <span className={`text-xs font-bold ${a.color}`}>{a.name}</span>
-                      <p className="text-[10px] text-muted-foreground">{a.passive}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            <LeaderboardCard />
-
+        <div className="space-y-6">
+          <div className="relative">
+            <div className="flex items-center justify-end mb-3">
+              <button
+                onClick={() => setHowOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-purple border border-neon-purple/40 bg-neon-purple/5 hover:bg-neon-purple/10 transition-colors rounded-sm"
+                aria-label="Battle info"
+              >
+                <Info className="w-3.5 h-3.5" /> INFO
+              </button>
+            </div>
+            <BattleArena />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DailyChallengeCard />
+            <LeaderboardCard />
           </div>
         </div>
       </div>
@@ -867,12 +972,14 @@ export function KnowledgeBattles() {
                 <Swords className="w-3.5 h-3.5" /> COMBAT
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li><span className="text-foreground font-bold">Attack</span> — medium question, deals damage.</li>
-                <li><span className="text-foreground font-bold">Defend</span> — easy question, heals + builds Focus.</li>
-                <li><span className="text-foreground font-bold">Charge</span> — hard question, max damage.</li>
-                <li><span className="text-foreground font-bold">Wild</span> — costs 10 Focus, random outcome.</li>
-                <li>Correct answers grow your <span className="text-neon-pink font-bold">Streak</span>; combos amplify damage.</li>
-                <li>Wrong answers or timeouts reset your streak and trigger a counter-attack.</li>
+                <li><span className="text-foreground font-bold">Attack</span> — medium Q, 18 DMG and <span className="text-neon-cyan">+15 Focus</span>. Your bread-and-butter focus builder.</li>
+                <li><span className="text-foreground font-bold">Heal</span> — easy Q, restores HP and <span className="text-neon-cyan">+10 Focus</span>.</li>
+                <li><span className="text-foreground font-bold">Charge</span> — hard Q, 32 DMG but <span className="text-neon-purple">−25 Focus</span>. The payoff move.</li>
+                <li><span className="text-foreground font-bold">Wild</span> — random effect for <span className="text-neon-purple">−15 Focus</span>.</li>
+                <li><span className="text-neon-purple font-bold">Focus</span> is the resource that <span className="text-foreground font-bold">unlocks Charge & Wild</span>. Without it you can only Attack/Heal — so building Focus = setting up your finisher. Each archetype has a different pool size (Speedster small, Chud huge).</li>
+                <li>Bots think too — they heal when low, save Focus for finishers, and gamble Wild only when it pays.</li>
+                <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span>; each streak hit multiplies your damage.</li>
+                <li>Wrong answers or timeouts reset Momentum and trigger a counter-attack.</li>
               </ul>
             </section>
 

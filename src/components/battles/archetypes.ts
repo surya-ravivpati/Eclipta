@@ -1,5 +1,5 @@
 import { Zap, Shield, Skull, Dice5, Heart, Scale, FastForward, Crown, User, Bot } from "lucide-react";
-import type { Archetype, ArchetypeId } from "./types";
+import type { Archetype, ArchetypeId, GamblerRoll } from "./types";
 
 export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   speedster: {
@@ -8,9 +8,18 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: Zap,
     color: "text-neon-cyan",
     borderColor: "border-neon-cyan/40",
-    description: "Fast, pressured gameplay. Less time but higher damage when answering quickly.",
-    passive: "Low time · High damage · Streak king",
-    stats: { health: 1, time: 1, damage: 3, multiplier: 3, difficulty: 3 },
+    description: "Fast, pressured gameplay. Less time per question — but faster answers deal more damage.",
+    passive: "Speed bonus · Low time · High mult",
+    maxHp: 125,
+    baseDamage: 15,
+    multiplierStep: 0.35,
+    healAmount: 12,
+    timeMultiplier: 0.75,
+    diffMin: 3,
+    diffMax: 7,
+    focusPool: 60,
+    startFocus: 10,
+    damageIsTimeScaled: true,
   },
   tank: {
     id: "tank",
@@ -18,9 +27,17 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: Shield,
     color: "text-tier-silver",
     borderColor: "border-tier-silver/40",
-    description: "Heavy, durable, easy questions. Tons of HP but low damage output.",
-    passive: "Max HP · Easy Qs · Low DMG",
-    stats: { health: 4, time: 3, damage: 1, multiplier: 2, difficulty: 1 },
+    description: "Heavy, durable, easy questions. Tons of HP but low damage output. Cannot heal.",
+    passive: "Max HP · Cannot heal · Low DMG",
+    maxHp: 250,
+    baseDamage: 10,
+    multiplierStep: 0.10,
+    healAmount: null,
+    timeMultiplier: 1.25,
+    diffMin: 3,
+    diffMax: 7,
+    focusPool: 120,
+    startFocus: 20,
   },
   chud: {
     id: "chud",
@@ -30,7 +47,15 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     borderColor: "border-tier-champion/40",
     description: "Glass cannon. Ultra-high damage with hard questions and almost no HP.",
     passive: "Ultra DMG · Hard Qs · Glass cannon",
-    stats: { health: 0, time: 1, damage: 4, multiplier: 1, difficulty: 4 },
+    maxHp: 75,
+    baseDamage: 30,
+    multiplierStep: 0.30,
+    healAmount: 22,
+    timeMultiplier: 0.75,
+    diffMin: 6,
+    diffMax: 9,
+    focusPool: 140,
+    startFocus: 40,
   },
   gambler: {
     id: "gambler",
@@ -38,9 +63,18 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: Dice5,
     color: "text-tier-gold",
     borderColor: "border-tier-gold/40",
-    description: "All stats randomized each turn. High risk, high reward gameplay.",
+    description: "All stats randomized each battle. Could be godlike — could be garbage. Pure chaos.",
     passive: "Random stats · Chaos mode",
-    stats: { health: 2, time: 2, damage: 2, multiplier: 2, difficulty: 2 },
+    maxHp: 130,           // display placeholder — rolled at battle start
+    baseDamage: 18,
+    multiplierStep: 0.175,
+    healAmount: 15,
+    timeMultiplier: 1.0,
+    diffMin: 2,
+    diffMax: 9,
+    focusPool: 100,
+    startFocus: 20,
+    statsAreRandom: true,
   },
   healer: {
     id: "healer",
@@ -48,9 +82,17 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: Heart,
     color: "text-neon-pink",
     borderColor: "border-neon-pink/40",
-    description: "Sustain-focused with high HP, easy questions, but low damage.",
-    passive: "Heal on defend · Sustain king",
-    stats: { health: 3, time: 3, damage: 1, multiplier: 2, difficulty: 1 },
+    description: "Sustain-focused with high HP restore, easy questions, and passive HP regen on incoming hits.",
+    passive: "High heal · HP regen on hit · Sustain",
+    maxHp: 135,
+    baseDamage: 10,
+    multiplierStep: 0.20,
+    healAmount: 25,
+    timeMultiplier: 1.25,
+    diffMin: 2,
+    diffMax: 6,
+    focusPool: 110,
+    startFocus: 20,
   },
   fulcrum: {
     id: "fulcrum",
@@ -58,9 +100,17 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: Scale,
     color: "text-neon-purple",
     borderColor: "border-neon-purple/40",
-    description: "Balanced all-rounder with the highest multiplier. Rewards consistency.",
-    passive: "Max multiplier · Combo every 2 hits",
-    stats: { health: 2, time: 2, damage: 2, multiplier: 4, difficulty: 2 },
+    description: "Balanced all-rounder with the highest multiplier. Rewards consistency above all else.",
+    passive: "High multiplier · Balanced · Combo every 2",
+    maxHp: 150,
+    baseDamage: 18,
+    multiplierStep: 0.20,
+    healAmount: 15,
+    timeMultiplier: 1.0,
+    diffMin: 4,
+    diffMax: 6,
+    focusPool: 100,
+    startFocus: 20,
   },
   accelerator: {
     id: "accelerator",
@@ -68,9 +118,18 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: FastForward,
     color: "text-tier-platinum",
     borderColor: "border-tier-platinum/40",
-    description: "Scaling power over time. Damage increases every turn. Harder questions.",
-    passive: "DMG scales · Hard Qs · Big finish",
-    stats: { health: 2, time: 2, damage: 1, multiplier: 3, difficulty: 3 },
+    description: "Scaling power over time. Damage (13→27) and multiplier (+15→40%) grow with every question answered.",
+    passive: "DMG scales · MULT scales · Hard Qs",
+    maxHp: 160,
+    baseDamage: 13,       // scales to 27 over 10 questions
+    multiplierStep: 0.15, // scales to 0.40 over 10 questions
+    healAmount: 18,
+    timeMultiplier: 1.0,
+    diffMin: 3,
+    diffMax: 7,
+    focusPool: 90,
+    startFocus: 20,
+    multiplierScales: true,
   },
   god: {
     id: "god",
@@ -78,11 +137,40 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     icon: Crown,
     color: "text-tier-god",
     borderColor: "border-tier-god/40",
-    description: "Endgame archetype. Max stats across the board with hardest questions.",
-    passive: "All stats maxed · Ultimate form",
-    stats: { health: 4, time: 4, damage: 4, multiplier: 4, difficulty: 4 },
+    description: "Endgame archetype. Max stats across the board with the hardest questions.",
+    passive: "All maxed · Hard Qs · Ultimate form",
+    maxHp: 200,
+    baseDamage: 25,
+    multiplierStep: 0.20,
+    healAmount: 15,
+    timeMultiplier: 1.5,
+    diffMin: 8,
+    diffMax: 10,
+    focusPool: 130,
+    startFocus: 20,
   },
 };
+
+/**
+ * Weighted random stat roll for Gambler.
+ * A single `power` value (0-1) drives HP inversely and damage directly,
+ * creating a natural tradeoff between a tanky low-damage roll and a fragile
+ * high-damage roll. Other stats are independent.
+ */
+export function rollGamblerStats(): GamblerRoll {
+  const power = Math.random();
+  const diffMin = 2 + Math.floor(Math.random() * 5);             // 2–6
+  const diffMax = Math.min(9, diffMin + 1 + Math.floor(Math.random() * 4)); // diffMin+1 to diffMin+4
+  return {
+    maxHp: Math.round(80 + (1 - power) * 100),                   // 80–180 (inversely with power)
+    baseDamage: Math.round(8 + power * 20),                       // 8–28 (with power)
+    multiplierStep: parseFloat((0.05 + power * 0.25).toFixed(2)), // 0.05–0.30
+    healAmount: Math.round(5 + Math.random() * 20),               // 5–25 (independent)
+    timeMultiplier: [0.75, 1.0, 1.25][Math.floor(Math.random() * 3)],
+    diffMin,
+    diffMax,
+  };
+}
 
 export const PLAYER_AVATAR_ICON = User;
 export const AI_AVATAR_ICON = Bot;

@@ -9,6 +9,7 @@ import { useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { useTheme } from "@/hooks/use-theme";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { FollowingFeedCard } from "@/components/profile/FollowingFeedCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -215,6 +216,7 @@ function ProfilePage() {
                     <p className="text-xs text-muted-foreground">Open the Companions tab to equip one ↑</p>
                   )}
                 </Card>
+                <FollowingFeedCard userId={user.id} />
                 </div>
               </TabsContent>
 

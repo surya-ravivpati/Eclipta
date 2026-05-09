@@ -10,13 +10,34 @@ import { getEcliptarsByArchetype, getEcliptarBySlug, type Ecliptar } from "@/lib
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
-const STAT_LABELS: { key: "health" | "time" | "damage" | "multiplier" | "difficulty"; label: string }[] = [
-  { key: "health", label: "HP" },
-  { key: "time", label: "TIME" },
-  { key: "damage", label: "DMG" },
-  { key: "multiplier", label: "MULT" },
-  { key: "difficulty", label: "DIFF" },
-];
+function StatPill({ label, value, dim }: { label: string; value: string; dim?: boolean }) {
+  return (
+    <div className={cn("flex items-center gap-1", dim && "opacity-40")}>
+      <span className="text-[9px] font-bold tracking-widest text-muted-foreground w-8 shrink-0">{label}</span>
+      <span className="text-[10px] font-bold font-display text-foreground truncate">{value}</span>
+    </div>
+  );
+}
+
+function ArchStatGrid({ arch, isUnlocked }: { arch: import("./types").Archetype; isUnlocked: boolean }) {
+  const rnd = arch.statsAreRandom;
+  const dmgVal = rnd ? "???" : arch.multiplierScales ? "13→27" : String(arch.baseDamage);
+  const multVal = rnd ? "???" : arch.multiplierScales ? "+15→40%" : `+${Math.round(arch.multiplierStep * 100)}%`;
+  const healVal = rnd ? "???" : arch.healAmount === null ? "NONE" : String(arch.healAmount);
+  const diffVal = rnd ? "???" : `${arch.diffMin}–${arch.diffMax}`;
+  const timeVal = rnd ? "???" : `${arch.timeMultiplier}×`;
+  const hpVal   = rnd ? "???" : String(arch.maxHp);
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+      <StatPill label="HP"   value={hpVal}   dim={!isUnlocked} />
+      <StatPill label="DMG"  value={dmgVal}  dim={!isUnlocked} />
+      <StatPill label="MULT" value={multVal} dim={!isUnlocked} />
+      <StatPill label="HEAL" value={healVal} dim={!isUnlocked} />
+      <StatPill label="DIFF" value={diffVal} dim={!isUnlocked} />
+      <StatPill label="TIME" value={timeVal} dim={!isUnlocked} />
+    </div>
+  );
+}
 
 export interface ClassSelection {
   archetype: ArchetypeId;
@@ -208,28 +229,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mb-3">{arch.description}</p>
-
-              {/* Stat bars */}
-              <div className="space-y-1.5">
-                {STAT_LABELS.map(({ key, label }) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className="text-[9px] font-bold tracking-widest text-muted-foreground w-8">{label}</span>
-                    <div className="flex gap-0.5 flex-1">
-                      {[1, 2, 3, 4].map(lvl => (
-                        <div
-                          key={lvl}
-                          className={cn(
-                            "h-1.5 flex-1 transition-colors",
-                            lvl <= arch.stats[key]
-                              ? isUnlocked ? "bg-neon-purple" : "bg-muted-foreground/30"
-                              : "bg-secondary/30"
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ArchStatGrid arch={arch} isUnlocked={isUnlocked} />
             </motion.button>
           );
         })}

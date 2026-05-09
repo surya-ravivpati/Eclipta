@@ -38,14 +38,34 @@ export interface Archetype {
   borderColor: string;
   description: string;
   passive: string;
-  stats: { health: number; time: number; damage: number; multiplier: number; difficulty: number };
+  /** Direct mechanical values — no more 0-4 abstraction */
+  maxHp: number;
+  baseDamage: number;
+  multiplierStep: number;      // additive per-momentum bonus (e.g. 0.20 = +20% per streak hit)
+  healAmount: number | null;   // null = cannot heal (Tank)
+  timeMultiplier: number;      // multiplied against base TIMER_DURATIONS per category
+  diffMin: number;             // min difficulty level 1–10
+  diffMax: number;             // max difficulty level 1–10
+  focusPool: number;
+  startFocus: number;
+  damageIsTimeScaled?: boolean;  // Speedster: bonus damage for fast answers
+  multiplierScales?: boolean;    // Accelerator: damage & step grow with question count
+  statsAreRandom?: boolean;      // Gambler: roll overrides at battle start
+}
+
+export interface GamblerRoll {
+  maxHp: number;
+  baseDamage: number;
+  multiplierStep: number;
+  healAmount: number;
+  timeMultiplier: number;
+  diffMin: number;
+  diffMax: number;
 }
 
 export interface ActionConfig {
   label: string;
   icon: LucideIcon;
-  difficulty: Difficulty;
-  dmg: number;
   focusCost: number;
   desc: string;
 }

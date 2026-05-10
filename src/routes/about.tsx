@@ -114,7 +114,7 @@ export const Route = createFileRoute("/about")({
 const PILLARS = [
   { icon: Brain, title: "Adaptive AI", desc: "Luna learns your pace, your weak spots, and the way you think — then meets you there." },
   { icon: Swords, title: "Battles, Not Worksheets", desc: "Knowledge battles turn rote practice into competitive duels with real stakes." },
-  { icon: Trophy, title: "Trophy Road Progression", desc: "Every XP point unlocks new ranks, monsters, and Ecliptars worth claiming." },
+  { icon: Trophy, title: "Trophy Road Progression", desc: "Every XP point unlocks new ranks, Ecliptars, and rewards worth claiming." },
   { icon: Target, title: "Personalized Mastery", desc: "Adaptive tests and personalized courses target the exact skills you need next." },
   { icon: Users, title: "Built for Learners", desc: "Forums, leaderboards, and community challenges keep momentum alive." },
   { icon: Sparkles, title: "Designed to Delight", desc: "A neon arena aesthetic that makes you actually want to come back tomorrow." },

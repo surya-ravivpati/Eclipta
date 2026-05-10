@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Crown, Skull, Target, Zap, Flame, AlertTriangle, BookOpen, RotateCcw } from "lucide-react";
+import { Crown, Skull, Target, Zap, Flame, AlertTriangle, BookOpen, RotateCcw, Star } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ARCHETYPES } from "./archetypes";
 import type { BattleStats, Difficulty } from "./types";
 import { awardBattleXp } from "@/lib/xp-service";
+import { recordBattleMastery, fetchMastery, getMasteryRank, getMasteryStats, emptyMastery, type ArchetypeMastery } from "@/lib/archetype-mastery";
 import { supabase } from "@/integrations/supabase/client";
 
 export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack }: {
@@ -15,6 +16,8 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack 
 }) {
   const xpSavedRef = useRef(false);
   const [xpCount, setXpCount] = useState(0);
+  const [mastery, setMastery] = useState<ArchetypeMastery | null>(null);
+  const [prevBestStreak, setPrevBestStreak] = useState(0);
 
   // Animate XP count-up
   useEffect(() => {
@@ -88,6 +91,18 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack 
             luna_summary: `${stats.won ? "Won" : "Lost"} battle. ${stats.correctAnswers}/${stats.totalQuestions} correct. +${stats.xp} XP.`,
           });
         }
+
+        // Archetype mastery — record battle and expose updated stats
+        try {
+          const before = await fetchMastery(stats.archetype);
+          setPrevBestStreak(before?.best_streak ?? 0);
+          await recordBattleMastery(
+            stats.archetype, stats.won,
+            stats.longestStreak, stats.correctAnswers, stats.totalQuestions,
+          );
+          const after = await fetchMastery(stats.archetype);
+          setMastery(after ?? emptyMastery(stats.archetype));
+        } catch { /* non-critical */ }
       } catch { /* non-critical */ }
     })();
   }, []);
@@ -193,6 +208,83 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack 
               );
             })}
           </div>
+
+          {/* Archetype mastery panel — appears once the async upsert resolves */}
+          {mastery && (() => {
+            const m = mastery;
+            const rank = getMasteryRank(m, stats.archetype);
+            const { winRate, accuracy } = getMasteryStats(m);
+            const newBestStreak = stats.longestStreak > prevBestStreak && stats.longestStreak > 0;
+            const isPerfect = stats.won && stats.correctAnswers === stats.totalQuestions && stats.totalQuestions > 0;
+            return (
+              <motion.div
+                className={`mt-4 border glass-panel p-4 ${arch.borderColor}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <arch.icon className={`w-4 h-4 ${arch.color}`} />
+                  <span className="text-[10px] font-bold tracking-widest text-muted-foreground">
+                    {arch.name.toUpperCase()} MASTERY
+                  </span>
+                  {rank.level > 0 && (
+                    <span className={`ml-auto text-[10px] font-bold tracking-widest ${rank.color}`}>
+                      RANK {["", "I", "II", "III", "IV", "V"][rank.level]} · {rank.label.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {rank.level > 0 && rank.flavor && (
+                  <p className={`text-[10px] italic mb-3 ${rank.color}`}>"{rank.flavor}"</p>
+                )}
+
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { label: "BATTLES", value: String(m.battles_played) },
+                    { label: "WIN RATE", value: `${winRate}%` },
+                    { label: "BEST STK", value: String(m.best_streak) },
+                    { label: "ACCURACY", value: `${accuracy}%` },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="glass-panel p-2">
+                      <div className="text-sm font-bold font-display text-foreground">{value}</div>
+                      <div className="text-[8px] tracking-widest text-muted-foreground">{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Personal record callouts */}
+                {(newBestStreak || isPerfect) && (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {newBestStreak && (
+                      <motion.div
+                        className="flex items-center gap-1 px-2 py-1 border border-neon-pink/40 bg-neon-pink/10"
+                        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", bounce: 0.5 }}
+                      >
+                        <Star className="w-3 h-3 text-neon-pink" />
+                        <span className="text-[9px] font-bold text-neon-pink tracking-widest">NEW BEST STREAK</span>
+                      </motion.div>
+                    )}
+                    {isPerfect && (
+                      <motion.div
+                        className="flex items-center gap-1 px-2 py-1 border border-neon-cyan/40 bg-neon-cyan/10"
+                        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", bounce: 0.5, delay: 0.1 }}
+                      >
+                        <Star className="w-3 h-3 text-neon-cyan" />
+                        <span className="text-[9px] font-bold text-neon-cyan tracking-widest">PERFECT RUN</span>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
+                {m.perfect_battles > 0 && (
+                  <p className="text-[9px] text-muted-foreground mt-2">
+                    {m.perfect_battles} perfect {m.perfect_battles === 1 ? "run" : "runs"} · {m.total_correct}/{m.total_questions} total correct
+                  </p>
+                )}
+              </motion.div>
+            );
+          })()}
         </TabsContent>
 
         {/* Missed Questions */}

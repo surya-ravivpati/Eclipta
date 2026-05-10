@@ -9,6 +9,8 @@ import { useOwnedEcliptars, usePlayerXp } from "@/hooks/use-player-xp";
 import { getEcliptarsByArchetype, getEcliptarBySlug, type Ecliptar } from "@/lib/ecliptars";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useArchetypeMastery } from "@/hooks/use-archetype-mastery";
+import { getMasteryRank, getMasteryStats } from "@/lib/archetype-mastery";
 
 function StatPill({ label, value, dim }: { label: string; value: string; dim?: boolean }) {
   return (
@@ -47,6 +49,7 @@ export interface ClassSelection {
 export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection) => void }) {
   const { xp } = usePlayerXp();
   const { slugs: ownedSlugs } = useOwnedEcliptars();
+  const { mastery } = useArchetypeMastery();
   const unlocked = getUnlockedArchetypes(xp);
   const allArchetypes = Object.values(ARCHETYPES);
   const [pickedArch, setPickedArch] = useState<ArchetypeId | null>(null);
@@ -230,6 +233,24 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
               </div>
               <p className="text-xs text-muted-foreground mb-3">{arch.description}</p>
               <ArchStatGrid arch={arch} isUnlocked={isUnlocked} />
+
+              {/* Mastery rank — only for unlocked archetypes with at least one battle */}
+              {isUnlocked && (() => {
+                const m = mastery[arch.id];
+                if (!m || m.battles_played === 0) return null;
+                const rank = getMasteryRank(m, arch.id);
+                const { winRate } = getMasteryStats(m);
+                return (
+                  <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
+                    <span className={cn("text-[9px] font-bold tracking-widest", rank.color)}>
+                      {rank.level > 0 ? `${["", "I", "II", "III", "IV", "V"][rank.level]} · ${rank.label}` : "UNRANKED"}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground tabular-nums">
+                      {m.battles_played}B · {winRate}%W
+                    </span>
+                  </div>
+                );
+              })()}
             </motion.button>
           );
         })}

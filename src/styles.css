@@ -339,8 +339,8 @@
   .animate-rank-aura    { animation: rank-aura 2.2s ease-in-out infinite; }
 }
 
-/* Luna thinking indicator — CSS-only so they run on the compositor thread,
-   independent of the requestAnimationFrame path-mutation loop. */
+/* Luna thinking indicator — CSS-only animations so they run on the compositor
+   thread, independent of the requestAnimationFrame path-mutation loop. */
 @keyframes luna-thinking-glow {
   0%, 100% { filter: drop-shadow(0 0 2px oklch(0.65 0.22 290 / 0.20)); }
   50%       { filter: drop-shadow(0 0 8px oklch(0.65 0.22 290 / 0.58)); }

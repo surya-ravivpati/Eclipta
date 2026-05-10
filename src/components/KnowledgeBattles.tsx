@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
-  Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info,
+  Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info, FastForward,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 
 import type { Phase, Action, ArchetypeId, Archetype, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig, GamblerRoll } from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
-import { levelToCategory, getActionDifficultyLevel, getEffectiveDamage, getEffectiveMultiplierStep, streakToMultiplier, hpToSelfDmgMult, botAccuracy } from "./battles/stat-mechanics";
+import { levelToCategory, getActionDifficultyLevel, getEffectiveDamage, getEffectiveMultiplierStep, streakToMultiplier, hpToSelfDmgMult } from "./battles/stat-mechanics";
+import { createBattleMemory, updateBattleMemoryPlayerTurn, updateBattleMemoryAiTurn, AI_PERSONALITIES, pickAiAction, computeAiAccuracy, getPressureLogLine, type BattleMemory } from "./battles/ai-brain";
 import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
 import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";
@@ -129,12 +130,24 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
                 <arch.icon className="w-3 h-3" /> {arch.name.toUpperCase()}
               </span>
             )}
-            {momentum > 0 && (
-              <motion.div className="flex items-center gap-1 text-neon-pink" key={momentum} initial={{ scale: 1.3 }} animate={{ scale: 1 }}>
-                <Flame className="w-3 h-3" />
-                <span className="text-[10px] font-bold tracking-widest">{momentum}x STREAK</span>
-              </motion.div>
-            )}
+            {momentum > 0 && (() => {
+              const combos = Math.floor(momentum / comboThreshold);
+              const isHot  = combos >= 2;
+              const isWarm = combos >= 1;
+              return (
+                <motion.div
+                  className={`flex items-center gap-1 ${isHot ? "text-neon-pink" : isWarm ? "text-neon-pink/75" : "text-neon-pink/50"}`}
+                  key={momentum}
+                  initial={{ scale: 1.35, opacity: 0.7 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                >
+                  <Flame className={isHot ? "w-4 h-4" : "w-3 h-3"} />
+                  <span className={`font-bold tracking-widest ${isHot ? "text-[11px]" : "text-[10px]"}`}>
+                    {momentum}× STREAK
+                  </span>
+                </motion.div>
+              );
+            })()}
           </div>
         </div>
         <HpBar current={fighter.hp} max={fighter.maxHp} color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"} label="HP" />
@@ -142,8 +155,15 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
       </div>
       <AnimatePresence>
         {momentum > 0 && momentum % comboThreshold === 0 && (
-          <motion.div className="absolute top-2 right-2 text-neon-pink" initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}>
-            <Sparkles className="w-6 h-6" />
+          <motion.div
+            className="absolute top-2 right-2 text-neon-pink"
+            initial={{ scale: 0, rotate: -30, opacity: 0 }}
+            animate={{ scale: [0, 1.5, 1], rotate: [0, 12, -6, 0], opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            key={Math.floor(momentum / comboThreshold)}
+          >
+            <Sparkles className="w-7 h-7" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -242,6 +262,210 @@ function BattleLog({ logs }: { logs: string[] }) {
   );
 }
 
+// ─── Gambler Reveal ───────────────────────────────────────────────────
+// Stat definitions for the slot-machine reveal sequence.
+type RevealDef = {
+  key: keyof GamblerRoll;
+  label: string;
+  /** Formatted value shown once locked */
+  lockText: (s: GamblerRoll) => string;
+  /** Integer range cycled while unlocked (avoids floating-point flicker) */
+  cycleRange: [number, number];
+  /** Returns a 0–1 score for quality colouring (higher = better) */
+  qualityScore: (s: GamblerRoll) => number;
+  hasQuality: boolean;
+};
+
+const REVEAL_DEFS: RevealDef[] = [
+  { key: "maxHp",          label: "HP",    lockText: s => String(s.maxHp),                          cycleRange: [80, 180],  qualityScore: s => (s.maxHp - 80) / 100,                  hasQuality: true  },
+  { key: "baseDamage",     label: "DMG",   lockText: s => String(s.baseDamage),                     cycleRange: [8,  28],   qualityScore: s => (s.baseDamage - 8) / 20,               hasQuality: true  },
+  { key: "multiplierStep", label: "MULTI", lockText: s => `+${Math.round(s.multiplierStep * 100)}%`, cycleRange: [5,  30],   qualityScore: s => (s.multiplierStep - 0.05) / 0.25,      hasQuality: true  },
+  { key: "healAmount",     label: "HEAL",  lockText: s => `+${s.healAmount}`,                       cycleRange: [5,  25],   qualityScore: s => (s.healAmount - 5) / 20,               hasQuality: true  },
+  { key: "timeMultiplier", label: "TIME",  lockText: s => `${s.timeMultiplier}×`,                   cycleRange: [75, 125],  qualityScore: s => 1 - (s.timeMultiplier - 0.75) / 0.5,   hasQuality: true  },
+  { key: "diffMin",        label: "DIFF",  lockText: s => `${s.diffMin}–${s.diffMax}`,              cycleRange: [2,  9],    qualityScore: () => 0.5,                                  hasQuality: false },
+];
+
+type StatQuality = "poor" | "standard" | "good" | "legendary";
+
+function scoreToQuality(score: number): StatQuality {
+  if (score < 0.25) return "poor";
+  if (score < 0.55) return "standard";
+  if (score < 0.82) return "good";
+  return "legendary";
+}
+
+const QUALITY_STYLE: Record<StatQuality, { label: string; value: string; border: string; bg: string }> = {
+  poor:      { label: "LOW",       value: "text-muted-foreground/70", border: "border-border/50",      bg: ""                },
+  standard:  { label: "BASE",      value: "text-foreground",          border: "border-border/70",      bg: ""                },
+  good:      { label: "HIGH",      value: "text-neon-cyan",           border: "border-neon-cyan/50",   bg: "bg-neon-cyan/5"  },
+  legendary: { label: "MAX",       value: "text-neon-pink",           border: "border-neon-pink/60",   bg: "bg-neon-pink/5"  },
+};
+
+/** Pre-battle slot-machine reveal for the Gambler archetype. */
+function GamblerRevealScreen({ stats, opponentName, onComplete }: {
+  stats: GamblerRoll;
+  opponentName: string;
+  onComplete: () => void;
+}) {
+  const STAGGER = 1100; // ms between each stat locking
+
+  const [lockedCount, setLockedCount] = useState(0);
+  const lockedRef = useRef(0);
+  lockedRef.current = lockedCount;
+
+  const [cycleNums, setCycleNums] = useState<number[]>(() =>
+    REVEAL_DEFS.map(d => d.cycleRange[0])
+  );
+  const [allDone, setAllDone] = useState(false);
+
+  useEffect(() => {
+    // Cycle all not-yet-locked stats every 80 ms (slot-machine effect)
+    const interval = setInterval(() => {
+      setCycleNums(
+        REVEAL_DEFS.map((d, i) =>
+          i < lockedRef.current
+            ? 0
+            : d.cycleRange[0] + Math.floor(Math.random() * (d.cycleRange[1] - d.cycleRange[0] + 1))
+        )
+      );
+    }, 80);
+
+    // Lock one stat at a time with a staggered sequence
+    const lockTimers = REVEAL_DEFS.map((_, i) =>
+      setTimeout(() => {
+        lockedRef.current = i + 1;
+        setLockedCount(i + 1);
+      }, STAGGER * (i + 1))
+    );
+
+    // Show the CTA once all stats are locked
+    const doneTimer = setTimeout(() => {
+      clearInterval(interval);
+      setAllDone(true);
+    }, STAGGER * REVEAL_DEFS.length + 700);
+
+    return () => {
+      clearInterval(interval);
+      lockTimers.forEach(clearTimeout);
+      clearTimeout(doneTimer);
+    };
+  }, []);
+
+  // Overall build rating — average quality score across stats that have one
+  const qualityStats = REVEAL_DEFS.filter(d => d.hasQuality);
+  const avgQuality = qualityStats.reduce((s, d) => s + d.qualityScore(stats), 0) / qualityStats.length;
+
+  const runLabel =
+    avgQuality >= 0.78 ? "GOD ROLL ⚡"
+    : avgQuality >= 0.60 ? "BLESSED RUN"
+    : avgQuality >= 0.42 ? "SOLID BUILD"
+    : avgQuality >= 0.25 ? "BALANCED ODDS"
+    : "GLASS CANNON";
+
+  const runColor =
+    avgQuality >= 0.78 ? "text-neon-pink"
+    : avgQuality >= 0.60 ? "text-tier-gold"
+    : avgQuality >= 0.42 ? "text-neon-cyan"
+    : "text-foreground";
+
+  return (
+    <motion.div
+      className="glass-panel p-6 text-center"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+    >
+      {/* Header */}
+      <div className="mb-5">
+        <motion.div
+          className="w-14 h-14 mx-auto mb-3 border-2 border-tier-gold/50 bg-tier-gold/10 flex items-center justify-center"
+          animate={!allDone ? {
+            rotate: [0, 12, -12, 0],
+            borderColor: ["oklch(0.8 0.15 80 / 0.5)", "oklch(0.75 0.18 50 / 0.8)", "oklch(0.8 0.15 80 / 0.5)"],
+          } : {}}
+          transition={{ duration: 1.2, repeat: Infinity }}
+        >
+          <Dices className="w-7 h-7 text-tier-gold" />
+        </motion.div>
+        <h3 className="font-display text-xl font-bold tracking-tight mb-0.5">
+          {allDone ? "FATE HAS SPOKEN" : "ROLLING FATE…"}
+        </h3>
+        <p className="text-[10px] text-muted-foreground tracking-widest">
+          {allDone ? `vs ${opponentName}` : "YOUR BUILD IS BEING DETERMINED"}
+        </p>
+      </div>
+
+      {/* 2-column stat grid — each cell cycles then locks with a quality pop */}
+      <div className="grid grid-cols-2 gap-2 mb-4 text-left">
+        {REVEAL_DEFS.map((def, i) => {
+          const isLocked = i < lockedCount;
+          const justLocked = i === lockedCount - 1;
+          const quality = def.hasQuality
+            ? scoreToQuality(def.qualityScore(stats))
+            : "standard";
+          const qs = QUALITY_STYLE[quality];
+
+          return (
+            <motion.div
+              key={def.key}
+              className={`border p-3 transition-colors duration-300 ${
+                isLocked ? `${qs.border} ${qs.bg}` : "border-border/30 bg-secondary/10"
+              }`}
+              animate={justLocked ? { scale: [1, 1.07, 1] } : {}}
+              transition={{ duration: 0.35 }}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[9px] font-bold tracking-widest text-muted-foreground">{def.label}</span>
+                {isLocked && def.hasQuality && (
+                  <motion.span
+                    className={`text-[8px] font-bold tracking-widest ${qs.value}`}
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    {qs.label}
+                  </motion.span>
+                )}
+              </div>
+              {/* Value: cycling integers when unlocked, formatted text when locked */}
+              <div className={`text-2xl font-bold font-display tabular-nums ${
+                isLocked ? qs.value : "text-foreground/50"
+              }`}>
+                {isLocked ? def.lockText(stats) : cycleNums[i]}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Overall run rating + CTA — appears after all stats are locked */}
+      <AnimatePresence>
+        {allDone && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
+            <p className={`text-sm font-bold font-display tracking-widest ${runColor}`}>
+              {runLabel}
+            </p>
+            <motion.button
+              onClick={onComplete}
+              className="w-full py-3 bg-neon-pink text-primary-foreground font-bold text-sm tracking-widest hover:opacity-90 transition-opacity"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.35 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <Swords className="w-4 h-4 inline mr-2" />
+              ENTER BATTLE
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 // ─── Main Battle Engine ──────────────────────────────────────────────
 function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -266,6 +490,7 @@ function BattleArena() {
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const [gamblerStats, setGamblerStats] = useState<GamblerRoll | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const battleMemoryRef = useRef<BattleMemory | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
 
   // Fetch player XP for tier display only (no longer used for matchmaking)
@@ -307,6 +532,10 @@ function BattleArena() {
     if (timerRef.current) clearInterval(timerRef.current);
     if (!currentAction || !question) return;
 
+    if (battleMemoryRef.current) {
+      updateBattleMemoryPlayerTurn(battleMemoryRef.current, currentAction, correct);
+    }
+
     const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
     setRecords(prev => [...prev, record]);
     // Feed Luna's adaptive context (timeSpent is in seconds, recordAnswer expects ms).
@@ -327,6 +556,12 @@ function BattleArena() {
       const newMom = momentum + 1;
       setMomentum(newMom);
       if (newMom > longestStreak) setLongestStreak(newMom);
+
+      // Announce combo activations in the log with the actual live multiplier
+      if (newMom > 0 && newMom % comboThreshold === 0) {
+        const newMult = streakToMultiplier(newMom, step);
+        addLog(`🔥 COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!`);
+      }
 
       if (currentAction === "defend") {
         const gain = FOCUS_GAIN.defend;
@@ -450,44 +685,42 @@ function BattleArena() {
   }, [totalScore, records, longestStreak, fastestAnswer, archetype]);
 
   const aiTurn = useCallback(() => {
-    const oppArch = getArch(opponentArchetype);
+    const oppArch    = getArch(opponentArchetype);
+    const personality = AI_PERSONALITIES[opponentArchetype];
+    const memory     = battleMemoryRef.current;
 
     setTimeout(() => {
-      // ── Bot decision logic: pick Attack / Heal / Charge / Wild based on state ──
       setOpponent(prevOpp => {
         setPlayer(prevPlayer => {
-          const hpPct = prevOpp.hp / prevOpp.maxHp;
-          const focus = prevOpp.focus;
+          const oppHpPct    = prevOpp.hp    / prevOpp.maxHp;
           const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
+          const mem         = memory ?? createBattleMemory();
 
-          // Choose action
-          let choice: Action = "attack";
-          if (hpPct < 0.35 && prevOpp.hp < prevOpp.maxHp) {
-            // Low HP — prefer Heal if affordable, but finisher Charge if player almost dead
-            choice = (focus >= 25 && playerHpPct < 0.3) ? "charge" : "defend";
-          } else if (focus >= 25 && (playerHpPct < 0.5 || Math.random() < 0.45)) {
-            choice = "charge"; // payoff move
-          } else if (focus >= 15 && Math.random() < 0.12) {
-            choice = "wild"; // occasional gamble
-          } else {
-            choice = "attack"; // default focus builder
-          }
-          // Healer archetype loves to defend
-          if (opponentArchetype === "healer" && hpPct < 0.7 && Math.random() < 0.4) choice = "defend";
-          // Chud always charges if it can
-          if (opponentArchetype === "chud" && focus >= 25) choice = "charge";
+          const choice = pickAiAction(
+            mem,
+            personality,
+            { hp: prevOpp.hp, maxHp: prevOpp.maxHp, focus: prevOpp.focus, maxFocus: prevOpp.maxFocus, canHeal: oppArch.healAmount !== null },
+            { hp: prevPlayer.hp, maxHp: prevPlayer.maxHp, momentum: opponentMomentum },
+          );
 
-          const success = Math.random() < botAccuracy(oppArch);
+          const success = Math.random() < computeAiAccuracy(oppArch, personality, mem, oppHpPct, playerHpPct);
+
+          // Narrative pressure line — appears at meaningful moments only
+          const hasData       = mem.playerTurnCount >= 4;
+          const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
+          const pressureLine  = getPressureLogLine(mem, personality, prevOpp.name, oppHpPct, hasData && strongPattern);
+          if (pressureLine) addLog(pressureLine);
 
           let newPlayerHp = prevPlayer.hp;
-          let newOppHp = prevOpp.hp;
+          let newOppHp    = prevOpp.hp;
           let newOppFocus = prevOpp.focus;
-          let nextOppMom = opponentMomentum;
+          let nextOppMom  = opponentMomentum;
 
           if (success) {
             nextOppMom = opponentMomentum + 1;
-            const oppStep = getEffectiveMultiplierStep(oppArch, 0);
-            const sMult = streakToMultiplier(nextOppMom, oppStep);
+            // Fix: pass turnNumber so Accelerator's multiplier step actually ramps
+            const oppStep = getEffectiveMultiplierStep(oppArch, mem.turnNumber);
+            const sMult   = streakToMultiplier(nextOppMom, oppStep);
 
             if (choice === "defend") {
               newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
@@ -532,7 +765,9 @@ function BattleArena() {
             addLog(`❌ ${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`);
           }
 
+          if (memory) updateBattleMemoryAiTurn(memory, success);
           setOpponentMomentum(nextOppMom);
+
           setTimeout(() => {
             setShowPlayerHit(false);
             if (newPlayerHp <= 0) { finishBattle(false); }
@@ -540,7 +775,6 @@ function BattleArena() {
             else { setPhase("select"); }
           }, 600);
 
-          // Update opponent in same pass
           setOpponent(o => ({ ...o, hp: newOppHp, focus: newOppFocus }));
           return { ...prevPlayer, hp: newPlayerHp };
         });
@@ -592,12 +826,14 @@ function BattleArena() {
       const oppHp = oppArch.maxHp;
       setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon });
       setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppEclip.icon });
+      battleMemoryRef.current = createBattleMemory();
       setMomentum(0); setOpponentMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
-      setPhase("select");
-      addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
       if (rolledGambler) {
-        const multPct = Math.round(rolledGambler.multiplierStep * 100);
-        addLog(`🎲 Gambler rolled: ${rolledGambler.maxHp} HP · ${rolledGambler.baseDamage} DMG · +${multPct}%/hit · Heal ${rolledGambler.healAmount} · Diff ${rolledGambler.diffMin}-${rolledGambler.diffMax} · ${rolledGambler.timeMultiplier}× time`);
+        // Gambler routes through the ceremonial stat-reveal before battle starts
+        setPhase("gamblerReveal");
+      } else {
+        setPhase("select");
+        addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
       }
     }, 1100);
   };
@@ -652,6 +888,21 @@ function BattleArena() {
     );
   }
 
+  // ── Gambler Reveal ──
+  if (phase === "gamblerReveal" && gamblerStats) {
+    const baseArch = ARCHETYPES[archetype];
+    return (
+      <GamblerRevealScreen
+        stats={gamblerStats}
+        opponentName={opponent.name}
+        onComplete={() => {
+          setPhase("select");
+          addLog(`⚔️ ${player.name} (${baseArch.name}) vs ${opponent.name} (${ARCHETYPES[opponentArchetype].name})!`);
+        }}
+      />
+    );
+  }
+
   // ── Result ──
   if (phase === "result" && battleStats) {
     return (
@@ -679,23 +930,176 @@ function BattleArena() {
       </div>
 
       <div className="space-y-3">
-        <div className="glass-panel p-3 flex items-center gap-3">
-          <Flame className={`w-4 h-4 ${momentum > 0 ? "text-neon-pink" : "text-muted-foreground"}`} />
-          <span className="text-[10px] font-bold tracking-widest text-muted-foreground">MOMENTUM</span>
-          <div className="flex gap-1 flex-1">
-            {Array.from({ length: comboThreshold }).map((_, i) => (
-              <div key={i} className={`h-2 flex-1 transition-colors duration-300 ${
-                i < momentum % comboThreshold || (momentum > 0 && momentum % comboThreshold === 0 && i < comboThreshold)
-                  ? "bg-neon-pink" : "bg-secondary/40"
-              }`} />
-            ))}
-          </div>
-          {momentum >= comboThreshold && (
-            <motion.span className="text-[10px] font-bold text-neon-pink tracking-widest" initial={{ scale: 0 }} animate={{ scale: 1 }} key={Math.floor(momentum / comboThreshold)}>
-              x1.5 COMBO!
-            </motion.span>
-          )}
-        </div>
+        {/* Momentum bar with near-miss telegraphing and live multiplier readout */}
+        {(() => {
+          // How far into the current combo cycle are we?
+          // At threshold multiples (3, 6, 9…) show the bar fully filled.
+          const comboProgress = momentum > 0 && momentum % comboThreshold === 0
+            ? comboThreshold
+            : momentum % comboThreshold;
+          // One pip away from next combo activation
+          const isNearMiss = momentum > 0 && momentum % comboThreshold === comboThreshold - 1;
+          const comboActive = momentum >= comboThreshold;
+          const arch = getArch(archetype);
+          const step = getEffectiveMultiplierStep(arch, records.length);
+          const activeMult = streakToMultiplier(momentum, step);
+
+          return (
+            <div className="glass-panel p-3">
+              {/* Top row: label + live multiplier + COMBO badge */}
+              <div className="flex items-center gap-2 mb-2">
+                <motion.div
+                  animate={isNearMiss ? { scale: [1, 1.25, 1] } : {}}
+                  transition={{ duration: 0.55, repeat: isNearMiss ? Infinity : 0, repeatDelay: 0.35 }}
+                >
+                  <Flame className={`w-4 h-4 transition-colors ${
+                    comboActive ? "text-neon-pink" : momentum > 0 ? "text-neon-pink/60" : "text-muted-foreground"
+                  }`} />
+                </motion.div>
+                <span className="text-[10px] font-bold tracking-widest text-muted-foreground">MOMENTUM</span>
+                <div className="flex-1" />
+                {momentum > 0 && (
+                  <motion.span
+                    key={momentum}
+                    className={`text-[11px] font-bold font-display tabular-nums ${
+                      comboActive ? "text-neon-pink" : "text-foreground"
+                    }`}
+                    initial={{ scale: comboProgress === 0 ? 1.4 : 1.1, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                  >
+                    {activeMult.toFixed(2)}×
+                  </motion.span>
+                )}
+                {comboActive && (
+                  <motion.span
+                    key={`combo-${Math.floor(momentum / comboThreshold)}`}
+                    className="text-[9px] font-bold text-neon-pink tracking-widest bg-neon-pink/10 border border-neon-pink/30 px-1.5 py-0.5"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                  >
+                    COMBO
+                  </motion.span>
+                )}
+              </div>
+
+              {/* Pip bar — next empty pip pulses when one away from activation */}
+              <div className="flex gap-1">
+                {Array.from({ length: comboThreshold }).map((_, i) => {
+                  const isFilled  = i < comboProgress;
+                  // The first empty pip when one away from combo
+                  const isPulse   = isNearMiss && i === comboProgress;
+                  return (
+                    <motion.div
+                      key={i}
+                      className={`h-2.5 flex-1 rounded-sm ${isFilled ? "bg-neon-pink" : "bg-secondary/40"}`}
+                      animate={isPulse ? {
+                        backgroundColor: [
+                          "oklch(0.6 0.24 350 / 0.15)",
+                          "oklch(0.6 0.24 350 / 0.60)",
+                          "oklch(0.6 0.24 350 / 0.15)",
+                        ],
+                        boxShadow: [
+                          "0 0 0px oklch(0.6 0.24 350 / 0)",
+                          "0 0 7px oklch(0.6 0.24 350 / 0.55)",
+                          "0 0 0px oklch(0.6 0.24 350 / 0)",
+                        ],
+                      } : {}}
+                      transition={isPulse ? { duration: 0.75, repeat: Infinity, ease: "easeInOut" } : {}}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Near-miss cue label — subtle, disappears once threshold is hit */}
+              <AnimatePresence>
+                {isNearMiss && (
+                  <motion.p
+                    key="near-miss"
+                    className="text-[9px] font-bold text-neon-pink/60 tracking-widest text-right mt-1"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    ONE MORE →
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
+
+        {/* ── Accelerator Power-Scaling HUD ───────────────────────────────
+            Only visible when playing as Accelerator. Communicates the
+            core USP: sustained correct answers directly compound combat
+            power. Every question answered is ammunition for the future. */}
+        {archetype === "accelerator" && (() => {
+          const scalePct    = Math.min(records.length / 10, 1);           // 0 → 1 over 10 questions
+          const effectiveDmg  = Math.round(13 + scalePct * 14);           // 13 → 27
+          const effectiveMult = Math.round((0.15 + scalePct * 0.25) * 100); // 15% → 40%
+
+          // Stage labels communicate qualitative feel, not just a number
+          const stage =
+            scalePct >= 0.90 ? { label: "MAXIMUM POWER", color: "text-neon-pink",     bar: "bg-neon-pink" }
+            : scalePct >= 0.60 ? { label: "SURGING",      color: "text-tier-platinum", bar: "bg-tier-platinum" }
+            : scalePct >= 0.30 ? { label: "ASCENDING",    color: "text-tier-gold",     bar: "bg-tier-gold" }
+            : scalePct > 0    ? { label: "AWAKENING",    color: "text-neon-cyan",     bar: "bg-neon-cyan" }
+            :                   { label: "DORMANT",       color: "text-muted-foreground", bar: "bg-neon-cyan" };
+
+          return (
+            <div className="glass-panel p-3 border border-tier-platinum/30">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <FastForward className="w-3.5 h-3.5 text-tier-platinum" />
+                  <span className="text-[10px] font-bold tracking-widest text-tier-platinum">POWER SCALING</span>
+                </div>
+                <motion.span
+                  key={stage.label}
+                  className={`text-[9px] font-bold tracking-widest ${stage.color}`}
+                  initial={{ opacity: 0.6, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  {stage.label}
+                </motion.span>
+              </div>
+
+              {/* Scaling progress bar */}
+              <div className="h-2 bg-secondary/40 overflow-hidden rounded-sm mb-2">
+                <motion.div
+                  className={`h-full rounded-sm ${stage.bar}`}
+                  animate={{
+                    width: `${scalePct * 100}%`,
+                    // Pulse at maximum to signal explosive potential
+                    opacity: scalePct >= 0.90 ? [1, 0.65, 1] : 1,
+                  }}
+                  transition={{
+                    width:   { duration: 0.7, ease: "easeOut" },
+                    opacity: scalePct >= 0.90 ? { duration: 0.9, repeat: Infinity } : {},
+                  }}
+                />
+              </div>
+
+              {/* Live stat readout — the educational feedback loop made visible */}
+              <div className="flex items-center justify-between text-[9px] font-bold tabular-nums">
+                <span className="text-muted-foreground">
+                  DMG{" "}
+                  <span className={scalePct >= 0.60 ? "text-neon-pink" : "text-foreground"}>
+                    {effectiveDmg}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  MULTI{" "}
+                  <span className={scalePct >= 0.60 ? "text-neon-pink" : "text-foreground"}>
+                    +{effectiveMult}%
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Q{" "}
+                  <span className="text-foreground">{Math.min(records.length, 10)}/10</span>
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {

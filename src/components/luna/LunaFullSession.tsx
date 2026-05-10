@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
+import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { getAccuracy, getSessionDuration, detectFatigue } from "@/lib/luna-context";
 import { LunaMarkdown } from "./LunaMarkdown";
 import { Navbar } from "@/components/Navbar";

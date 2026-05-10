@@ -43,18 +43,14 @@ export async function awardXp(amount: number): Promise<{ lunaMessages: string[];
   markExistingMilestones(prevXp);
 
   // Chests no longer auto-open — users claim them manually on the Trophy Road.
-  const newXp = prevXp + amount;
+  // Use the server-side RPC to add XP — prevents arbitrary value injection.
+  const { data: newXp } = await supabase.rpc("award_xp" as any, { p_amount: amount });
 
-  await supabase
-    .from("user_profiles")
-    .update({ xp: newXp })
-    .eq("user_id", user.id);
-
-  const { toasts, lunaMessages } = checkMilestones(prevXp, newXp);
+  const { toasts, lunaMessages } = checkMilestones(prevXp, (newXp as number | null) ?? prevXp + amount);
 
   fireMilestoneToasts(toasts);
 
-  return { lunaMessages, newXp };
+  return { lunaMessages, newXp: (newXp as number | null) ?? prevXp + amount };
 }
 
 /**
@@ -82,10 +78,7 @@ export async function claimChest(nodeId: number, chestLabel: string): Promise<nu
   if (insertErr) return 0; // already claimed (unique violation) or other error
 
   if (bonus > 0) {
-    await supabase
-      .from("user_profiles")
-      .update({ xp: currentXp + bonus })
-      .eq("user_id", user.id);
+    await supabase.rpc("award_xp" as any, { p_amount: bonus });
   }
   return bonus;
 }

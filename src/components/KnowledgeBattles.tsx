@@ -741,18 +741,9 @@ function LeaderboardCard() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("user_profiles")
-        .select("user_id, xp")
-        .order("xp", { ascending: false })
-        .limit(6);
+      const { data } = await supabase.rpc("get_leaderboard" as any, { p_limit: 6 });
       if (cancelled) return;
-      const { data: data2 } = await supabase
-        .from("user_profiles")
-        .select("user_id, username, xp")
-        .order("xp", { ascending: false })
-        .limit(6);
-      const rows: LeaderboardEntry[] = (data2 ?? data ?? []).map((r: { user_id: string; username?: string | null; xp: number | null }, i) => ({
+      const rows: LeaderboardEntry[] = ((data ?? []) as { user_id: string; username?: string | null; xp: number | null }[]).map((r, i) => ({
         rank: i + 1,
         name: r.username || `learner_${r.user_id.slice(0, 6)}`,
         xp: r.xp ?? 0,

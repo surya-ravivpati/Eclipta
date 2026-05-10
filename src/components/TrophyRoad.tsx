@@ -675,8 +675,8 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                 Your <span className="text-neon-purple text-glow-purple">Trophy Road</span>
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                Rise from Bronze to God Tier. Unlock monsters, earn rewards, and ascend through
-                8 ranks — each with a distinct visual world and exclusive creatures to collect.
+                Rise from Bronze to God Tier. Unlock Ecliptars, earn rewards, and ascend through
+                8 ranks — each with a distinct visual world and exclusive Ecliptars to collect.
               </p>
               <div className="space-y-3">
                 {Object.values(TIERS).slice(0, 4).map((t) => (
@@ -800,17 +800,17 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
         </summary>
         <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">
           Earn XP through battles, lessons, and tests to climb 8 ranks — Bronze to God Tier.
-          Each stop on the road is a <span className="text-neon-purple font-bold">monster</span>,
+          Each stop on the road is an <span className="text-neon-purple font-bold">Ecliptar</span>,
           a <span className="text-neon-pink font-bold">reward chest</span>, or a
           <span className="text-tier-gold font-bold"> rank promotion</span>.
-          Defeat monsters to claim their Ecliptars and equip them in battle.
+          Defeat Ecliptars to claim them and equip one in battle.
         </div>
       </details>
 
       <details className="group mt-3 glass-panel rounded-2xl border border-border overflow-hidden">
         <summary className="flex items-center gap-2 p-4 cursor-pointer list-none hover:bg-white/[0.02]">
           <Sparkles className="w-4 h-4 text-neon-purple" />
-          <span className="font-display font-bold text-sm tracking-widest uppercase">Monster Archetypes</span>
+          <span className="font-display font-bold text-sm tracking-widest uppercase">Ecliptar Archetypes</span>
           <ChevronDown className="w-4 h-4 ml-auto transition-transform group-open:rotate-180" />
         </summary>
         <div className="px-5 pb-5">

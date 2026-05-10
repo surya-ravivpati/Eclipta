@@ -59,13 +59,14 @@ function PublicProfilePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: p } = await supabase
-        .from("user_profiles")
+      const { data: pRaw } = await supabase
+        .from("public_profiles" as any)
         .select("user_id,username,bio,xp,current_streak,best_streak,equipped_ecliptar,avatar_url,created_at")
         .eq("username", username)
         .maybeSingle();
+      const p = pRaw as unknown as PublicProfile | null;
       if (!p) { setNotFound(true); setLoading(false); return; }
-      setProfile(p as PublicProfile);
+      setProfile(p);
 
       const [{ data: e }, { data: t }, { data: a }, fc, fgc, isF] = await Promise.all([
         supabase.from("user_ecliptars").select("id,ecliptar_name,ecliptar_slug,archetype,claimed_at").eq("user_id", p.user_id).order("claimed_at", { ascending: false }),

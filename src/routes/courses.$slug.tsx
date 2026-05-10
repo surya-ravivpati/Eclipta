@@ -52,7 +52,7 @@ function CommunityCoursePage() {
 
       const [{ data: m }, { data: cr }] = await Promise.all([
         supabase.from("course_modules").select("id,title,position").eq("course_id", c.id).order("position"),
-        supabase.from("user_profiles").select("username").eq("user_id", c.user_id).maybeSingle(),
+        supabase.from("public_profiles" as any).select("username").eq("user_id", c.user_id).maybeSingle() as unknown as Promise<{ data: { username: string | null } | null }>,
       ]);
       const mods = (m as Module[]) || [];
       setModules(mods);

@@ -27,9 +27,11 @@ export const CHEST_BONUS_XP: Record<string, number> = {
 };
 
 /**
- * Award XP to the current user, check milestones, fire toasts, and return Luna messages.
+ * Award XP to the current user via a server-side event-based RPC.
+ * The amount is determined server-side from the event name — clients cannot
+ * inject arbitrary XP values.
  */
-export async function awardXp(amount: number): Promise<{ lunaMessages: string[]; newXp: number }> {
+export async function awardXp(event: string, fallbackAmount = 0): Promise<{ lunaMessages: string[]; newXp: number }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { lunaMessages: [], newXp: 0 };
 
@@ -42,15 +44,32 @@ export async function awardXp(amount: number): Promise<{ lunaMessages: string[];
   const prevXp = (profile as any)?.xp ?? 0;
   markExistingMilestones(prevXp);
 
-  // Chests no longer auto-open — users claim them manually on the Trophy Road.
-  // Use the server-side RPC to add XP — prevents arbitrary value injection.
-  const { data: newXp } = await supabase.rpc("award_xp" as any, { p_amount: amount });
+  const { data: newXp } = await supabase.rpc("award_xp" as any, { p_event: event });
 
-  const { toasts, lunaMessages } = checkMilestones(prevXp, (newXp as number | null) ?? prevXp + amount);
+  const { toasts, lunaMessages } = checkMilestones(prevXp, (newXp as number | null) ?? prevXp + fallbackAmount);
 
   fireMilestoneToasts(toasts);
 
-  return { lunaMessages, newXp: (newXp as number | null) ?? prevXp + amount };
+  return { lunaMessages, newXp: (newXp as number | null) ?? prevXp + fallbackAmount };
+}
+
+/**
+ * Server-computed battle XP. Caps and rate limit are enforced in Postgres.
+ */
+export async function awardBattleXp(correct: number, total: number, won: boolean): Promise<{ lunaMessages: string[]; newXp: number }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { lunaMessages: [], newXp: 0 };
+  const { data: profile } = await supabase
+    .from("user_profiles").select("xp").eq("user_id", user.id).maybeSingle();
+  const prevXp = (profile as any)?.xp ?? 0;
+  markExistingMilestones(prevXp);
+  const { data: newXp } = await supabase.rpc("award_battle_xp" as any, {
+    p_correct: correct, p_total: total, p_won: won,
+  });
+  const finalXp = (newXp as number | null) ?? prevXp;
+  const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
+  fireMilestoneToasts(toasts);
+  return { lunaMessages, newXp: finalXp };
 }
 
 /**
@@ -62,25 +81,13 @@ export async function claimChest(nodeId: number, chestLabel: string): Promise<nu
   if (!user) return 0;
   const node = ROAD_NODES.find((n) => n.id === nodeId && n.type === "chest");
   if (!node) return 0;
-
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("xp")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const currentXp = (profile as any)?.xp ?? 0;
-  if (currentXp < node.xp) return 0;
-
-  const bonus = CHEST_BONUS_XP[chestLabel] ?? 0;
-  const { error: insertErr } = await supabase
-    .from("user_chest_claims" as any)
-    .insert({ user_id: user.id, node_id: nodeId, chest_label: chestLabel, bonus_xp: bonus });
-  if (insertErr) return 0; // already claimed (unique violation) or other error
-
-  if (bonus > 0) {
-    await supabase.rpc("award_xp" as any, { p_amount: bonus });
-  }
-  return bonus;
+  // Server validates eligibility, prevents double-claim (unique index), and
+  // credits the chest's fixed bonus XP atomically.
+  const { data, error } = await supabase.rpc("claim_chest" as any, {
+    p_node_id: nodeId, p_chest_label: chestLabel,
+  });
+  if (error) return 0;
+  return (data as number | null) ?? 0;
 }
 
 /** Fetch the set of node_ids the current user has already claimed. */

@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
   Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info, FastForward,
-  Users, Ghost, Radio, TrendingUp, TrendingDown,
+  Users, Ghost, Radio, TrendingUp, TrendingDown, MessageSquare, VolumeX, Volume2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-import type { Phase, Action, ArchetypeId, Archetype, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig, GamblerRoll } from "./battles/types";
+import type { Phase, Action, ArchetypeId, Archetype, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig, GamblerRoll, LogEntry, LogActionType } from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
 import { levelToCategory, getActionDifficultyLevel, getEffectiveDamage, getEffectiveMultiplierStep, streakToMultiplier, hpToSelfDmgMult } from "./battles/stat-mechanics";
 import { createBattleMemory, updateBattleMemoryPlayerTurn, updateBattleMemoryAiTurn, AI_PERSONALITIES, pickAiAction, computeAiAccuracy, getPressureLogLine, type BattleMemory } from "./battles/ai-brain";
@@ -46,6 +46,57 @@ const ACTIONS: Record<Action, ActionConfig> = {
   charge: { label: "Charge", icon: Zap,    focusCost: 25, desc: "1.8× your DMG · −25 Focus" },
   wild:   { label: "Wild",   icon: Dices,  focusCost: 15, desc: "Chaos effect · −15 Focus" },
 };
+
+/**
+ * Issue 3: compute action button description from the active archetype's real stats.
+ * No hardcoded values — every number comes directly from the archetype definition.
+ */
+function getActionDesc(action: Action, arch: Archetype, recordCount: number): string {
+  switch (action) {
+    case "attack": {
+      if (arch.damageIsTimeScaled) {
+        // Speedster: base + up-to-base speed bonus → show range
+        return `${arch.baseDamage}–${arch.baseDamage * 2} DMG · +15 Focus`;
+      }
+      if (arch.multiplierScales) {
+        // Accelerator: damage grows with questions answered (13→27 over 10 Qs)
+        const dmg = Math.round(13 + Math.min(recordCount / 10, 1) * 14);
+        return `${dmg} DMG ↑ · +15 Focus`;
+      }
+      return `${arch.baseDamage} DMG · +15 Focus`;
+    }
+    case "defend": {
+      if (arch.healAmount === null) return `+10 Focus only`;
+      return `+${arch.healAmount} HP · +10 Focus`;
+    }
+    case "charge": {
+      if (arch.damageIsTimeScaled) {
+        const base = Math.floor(arch.baseDamage * 1.8);
+        return `${base}–${base * 2} DMG · −25 Focus`;
+      }
+      if (arch.multiplierScales) {
+        const base = Math.round(13 + Math.min(recordCount / 10, 1) * 14);
+        return `${Math.floor(base * 1.8)} DMG ↑ · −25 Focus`;
+      }
+      return `${Math.floor(arch.baseDamage * 1.8)} DMG · −25 Focus`;
+    }
+    case "wild":
+      return `Chaos effect · −15 Focus`;
+  }
+}
+
+// ─── Chat / Emoji Reaction constants ────────────────────────────────
+// Issue 2: preset-only — no free-text chat.
+const CHAT_PHRASES = ["hey", "thanks", "lol", "good luck", "nice", "wow"] as const;
+const EMOJI_REACTIONS = ["👍", "👎", "😂", "😮", "🔥", "💀"] as const;
+
+interface ChatItem {
+  id: number;
+  text: string;
+  fromPlayer: boolean;  // true = local player sent it
+  senderName: string;
+  ts: number;           // Date.now() at creation for TTL removal
+}
 
 type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string };
 
@@ -343,20 +394,39 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
   );
 }
 
-function BattleLog({ logs }: { logs: string[] }) {
+/**
+ * Issue 1: structured log renderer.
+ * Uses LogEntry.id as the React key (never the array index) so that entries
+ * are stable across re-renders and can never be reordered or deduplicated
+ * by React's reconciler. Color derives from actor + actionType — no emoji
+ * prefix parsing.
+ */
+function BattleLog({ logs }: { logs: LogEntry[] }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [logs]);
-  const colorFor = (l: string) => {
-    if (l.startsWith("⚔️")) return "text-neon-pink";          // attack / opponent action
-    if (l.startsWith("✅")) return "text-foreground";          // your hit landed
-    if (l.startsWith("❌")) return "text-neon-pink/80";        // miss / counter
-    if (l.startsWith("💚")) return "text-neon-cyan";           // heal
-    if (l.startsWith("🎲")) return "text-neon-purple";         // wild
-    if (l.startsWith("⚠️")) return "text-tier-gold";           // warning (low focus)
-    if (l.startsWith("🔰")) return "text-muted-foreground";    // turn separator
-    return "text-muted-foreground";
-  };
-  const turn = logs.filter(l => l.startsWith("🔰")).length || 1;
+
+  function colorFor(e: LogEntry): string {
+    if (e.actor === "system") {
+      if (e.actionType === "combo")     return "text-neon-pink";
+      if (e.actionType === "separator") return "text-muted-foreground";
+      if (e.actionType === "info")      return "text-tier-gold";
+      return "text-muted-foreground";
+    }
+    if (e.actor === "player") {
+      if (e.actionType === "miss")      return "text-neon-pink/80";
+      if (e.actionType === "heal")      return "text-neon-cyan";
+      if (e.actionType === "wild")      return "text-neon-purple";
+      return "text-foreground";
+    }
+    // opponent
+    if (e.actionType === "miss")        return "text-muted-foreground";
+    if (e.actionType === "heal")        return "text-neon-cyan";
+    if (e.actionType === "ghost")       return "text-neon-purple/70";
+    return "text-neon-pink";
+  }
+
+  const turn = logs.filter(e => e.actionType === "separator").length || 1;
+
   return (
     <div className="glass-panel p-0 overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-secondary/20">
@@ -364,16 +434,25 @@ function BattleLog({ logs }: { logs: string[] }) {
         <span className="text-[10px] tabular-nums text-muted-foreground">Turn {turn}</span>
       </div>
       <div ref={ref} className="p-3 h-48 overflow-y-auto space-y-1">
-        {logs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Battle log will appear here…</p>}
-        {logs.map((l, i) => (
+        {logs.length === 0 && (
+          <p className="text-[10px] text-muted-foreground italic">Battle log will appear here…</p>
+        )}
+        {logs.map((e) => (
           <motion.p
-            key={i}
-            className={`text-[11px] leading-snug ${colorFor(l)}`}
+            key={e.id}
+            className={`text-[11px] leading-snug ${colorFor(e)}`}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <span className="text-muted-foreground/60 tabular-nums mr-1.5">{String(i + 1).padStart(2, "0")}</span>
-            {l}
+            <span className="text-muted-foreground/60 tabular-nums mr-1.5 font-mono">
+              {String(e.id).padStart(2, "0")}
+            </span>
+            {e.result}
+            {e.value !== undefined && e.actor !== "system" && (
+              <span className="ml-1 text-[9px] text-muted-foreground/50 tabular-nums font-mono">
+                [{e.value}]
+              </span>
+            )}
           </motion.p>
         ))}
       </div>
@@ -410,6 +489,188 @@ function WildEventOverlay({ event }: { event: { type: WildEventType; sub: string
         <p className={`text-sm font-bold mt-1.5 ${cfg.color} opacity-75`}>{event.sub}</p>
       </motion.div>
     </motion.div>
+  );
+}
+
+// ─── Battle Chat + Emoji Reactions ───────────────────────────────────
+// Issue 2: lightweight preset-only expression system. No free-text, no
+// gameplay interruption. 3-second cooldown between sends prevents spam.
+// Works one-sided for bot/ghost (local display only, no broadcast).
+
+let _chatIdCounter = 0;
+
+function BattleChat({
+  pvpChannelRef,
+  opponentType,
+  opponentName,
+  playerName,
+  phase,
+  incomingItems,
+}: {
+  pvpChannelRef: React.MutableRefObject<any>;
+  opponentType: OpponentType;
+  opponentName: string;
+  playerName: string;
+  phase: Phase;
+  incomingItems: ChatItem[];
+}) {
+  const [sentItems, setSentItems]         = useState<ChatItem[]>([]);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [muted, setMuted]                 = useState(false);
+  const [showPanel, setShowPanel]         = useState(false);
+  const [tick, setTick]                   = useState(0);
+
+  // Drive cooldown countdown without excessive re-renders
+  useEffect(() => {
+    if (tick === 0) return;
+    const id = setInterval(() => setTick(Date.now()), 200);
+    return () => clearInterval(id);
+  }, [tick]);
+
+  // Auto-expire displayed items after 4 s
+  const allItems = [
+    ...sentItems,
+    ...(muted ? [] : incomingItems),
+  ].sort((a, b) => a.ts - b.ts);
+
+  const visibleItems = allItems.filter((item) => Date.now() - item.ts < 4000);
+
+  // Only visible during active battle phases — zero footprint otherwise
+  const isActive =
+    phase === "select" || phase === "question" || phase === "animate";
+  if (!isActive) return null;
+
+  const now = Date.now();
+  const onCooldown = now < cooldownUntil;
+  const cooldownSec = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+
+  const send = (text: string) => {
+    if (onCooldown) return;
+    const item: ChatItem = {
+      id: ++_chatIdCounter,
+      text,
+      fromPlayer: true,
+      senderName: playerName,
+      ts: Date.now(),
+    };
+    setSentItems((prev) => [...prev, item]);
+    setCooldownUntil(Date.now() + 3000);
+    setTick(Date.now()); // kick countdown interval
+
+    if (opponentType === "live" && pvpChannelRef.current) {
+      pvpChannelRef.current.send({
+        type: "broadcast",
+        event: "chat",
+        payload: { text, sender_name: playerName },
+      });
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Floating message bubbles — up to 2 visible at once */}
+      <div className="absolute bottom-full mb-1 w-full pointer-events-none z-10 space-y-1">
+        <AnimatePresence>
+          {visibleItems.slice(-2).map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 6, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.94 }}
+              transition={{ duration: 0.18 }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 border text-[11px] font-bold tracking-wide ${
+                item.fromPlayer
+                  ? "float-right ml-auto border-neon-purple/50 bg-neon-purple/10 text-neon-purple"
+                  : "border-neon-pink/50 bg-neon-pink/10 text-neon-pink"
+              }`}
+              style={{ float: item.fromPlayer ? "right" : "left", clear: "both" }}
+            >
+              {!item.fromPlayer && (
+                <span className="text-muted-foreground text-[9px] font-normal">
+                  {item.senderName}:
+                </span>
+              )}
+              {item.text}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {/* clearfix */}
+        <div style={{ clear: "both" }} />
+      </div>
+
+      {/* Toolbar */}
+      <div className="glass-panel p-2 flex items-center gap-2 flex-wrap">
+        {/* Toggle + mute controls */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setShowPanel((v) => !v)}
+            title="Quick chat"
+            className={`p-1.5 border text-[10px] font-bold transition-colors ${
+              showPanel
+                ? "border-neon-purple/60 text-neon-purple bg-neon-purple/10"
+                : "border-border/40 text-muted-foreground hover:border-border"
+            }`}
+          >
+            <MessageSquare className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setMuted((v) => !v)}
+            title={muted ? "Unmute opponent" : "Mute opponent"}
+            className={`p-1.5 border text-[10px] font-bold transition-colors ${
+              muted
+                ? "border-neon-pink/60 text-neon-pink bg-neon-pink/10"
+                : "border-border/40 text-muted-foreground hover:border-border"
+            }`}
+          >
+            {muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {showPanel && (
+            <motion.div
+              initial={{ opacity: 0, maxWidth: 0 }}
+              animate={{ opacity: 1, maxWidth: 600 }}
+              exit={{ opacity: 0, maxWidth: 0 }}
+              transition={{ duration: 0.18 }}
+              className="flex items-center gap-1 flex-wrap overflow-hidden"
+            >
+              {/* Preset phrases */}
+              {CHAT_PHRASES.map((phrase) => (
+                <button
+                  key={phrase}
+                  onClick={() => send(phrase)}
+                  disabled={onCooldown}
+                  className="px-2 py-1 border border-border/40 hover:border-neon-purple/50 text-[10px] font-bold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {phrase}
+                </button>
+              ))}
+
+              <span className="w-px h-4 bg-border/40 shrink-0" />
+
+              {/* Emoji reactions */}
+              {EMOJI_REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => send(emoji)}
+                  disabled={onCooldown}
+                  className="px-1.5 py-1 border border-border/40 hover:border-neon-pink/40 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {emoji}
+                </button>
+              ))}
+
+              {onCooldown && (
+                <span className="text-[9px] font-mono text-muted-foreground ml-1 tabular-nums">
+                  {cooldownSec}s
+                </span>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
@@ -630,7 +891,7 @@ function BattleArena() {
   const [question, setQuestion] = useState<MathQuestion | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [maxTime, setMaxTime] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showPlayerHit, setShowPlayerHit] = useState(false);
   const [showOpponentHit, setShowOpponentHit] = useState(false);
   const [showPlayerHeal, setShowPlayerHeal] = useState(false);
@@ -644,6 +905,21 @@ function BattleArena() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const battleMemoryRef = useRef<BattleMemory | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
+
+  // Issue 1: ref-based log pipeline — prevents React batching from swallowing
+  // multiple synchronous addLog calls and eliminates nested-setState side-effects.
+  const logCounterRef  = useRef(0);
+  const pendingLogsRef = useRef<LogEntry[]>([]);
+
+  // Issue 1: snapshot refs so aiTurn/ghostTurn can read current HP without
+  // calling setState inside another setState's updater function.
+  const playerRef   = useRef(player);
+  const opponentRef = useRef(opponent);
+
+  // Issue 2: incoming chat items populated by the PvP channel subscription.
+  const [incomingChats, setIncomingChats]   = useState<ChatItem[]>([]);
+  const chatCounterRef                       = useRef(0);
+  const chatMutedRef                         = useRef(false);
 
   // PvP / matchmaking state
   const [opponentType, setOpponentType]     = useState<OpponentType>("bot");
@@ -692,7 +968,7 @@ function BattleArena() {
         const dmg = payload.damage as number;
         setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
         setShowPlayerHit(true);
-        addLog(`⚔️ Opponent: ${dmg} DMG!`);
+        addLog({ actor: "opponent", actionType: "attack", result: `⚔️ Opponent: ${dmg} DMG!`, value: dmg });
         setTimeout(() => setShowPlayerHit(false), 600);
       })
       .on("broadcast", { event: "heal" }, ({ payload }) => {
@@ -701,6 +977,17 @@ function BattleArena() {
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
         const weWon = payload.winner_id !== payload.sender_id;
         finishBattle(weWon);
+      })
+      // Issue 2: receive opponent chat / emoji reactions
+      .on("broadcast", { event: "chat" }, ({ payload }) => {
+        if (chatMutedRef.current) return;
+        setIncomingChats(prev => [...prev, {
+          id: ++chatCounterRef.current,
+          text:        payload.text as string,
+          fromPlayer:  false,
+          senderName:  opponentRef.current.name,
+          ts:          Date.now(),
+        }]);
       })
       .subscribe();
 
@@ -712,6 +999,11 @@ function BattleArena() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pvpBattleId, opponentType]);
 
+  // Keep snapshot refs in sync after every render so async callbacks always
+  // read the latest HP without nesting setState inside another updater.
+  useEffect(() => { playerRef.current   = player;   }, [player]);
+  useEffect(() => { opponentRef.current = opponent; }, [opponent]);
+
   const getArch = useCallback((id: ArchetypeId): Archetype => {
     const base = ARCHETYPES[id];
     if (id === "gambler" && gamblerStats) return { ...base, ...gamblerStats };
@@ -719,7 +1011,30 @@ function BattleArena() {
   }, [gamblerStats]);
 
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
-  const addLog = useCallback((msg: string) => setLogs(prev => [...prev, msg]), []);
+
+  /**
+   * Issue 1 — single-pipeline addLog.
+   *
+   * All synchronous addLog calls within the same execution frame are
+   * batched into one setLogs via queueMicrotask, preserving insertion order
+   * and preventing React's automatic batching from collapsing multiple
+   * functional-updater calls into a single stale-prev read.
+   *
+   * Deduplication by id ensures entries are never doubled even if the
+   * microtask fires more than once (e.g. Strict-Mode double-invocation).
+   */
+  const addLog = useCallback((entry: Omit<LogEntry, "id">) => {
+    const id = ++logCounterRef.current;
+    pendingLogsRef.current = [...pendingLogsRef.current, { ...entry, id }];
+    queueMicrotask(() => {
+      if (pendingLogsRef.current.length === 0) return;
+      const batch = pendingLogsRef.current.splice(0); // drain atomically
+      setLogs(prev => {
+        const existingIds = new Set(prev.map(e => e.id));
+        return [...prev, ...batch.filter(e => !existingIds.has(e.id))];
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (phase === "question" && timeLeft > 0) {
@@ -766,7 +1081,7 @@ function BattleArena() {
       // Announce combo activations in the log with the actual live multiplier
       if (newMom > 0 && newMom % comboThreshold === 0) {
         const newMult = streakToMultiplier(newMom, step);
-        addLog(`🔥 COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!`);
+        addLog({ actor: "system", actionType: "combo", result: `🔥 COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!` });
         sfxCombo();
       }
 
@@ -776,10 +1091,10 @@ function BattleArena() {
           const heal = Math.min(arch.healAmount, player.maxHp - player.hp);
           setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           setShowPlayerHeal(true);
-          addLog(`✅ Defend: +${heal} HP, +${gain} Focus.`);
+          addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
         } else {
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
-          addLog(`✅ Defend: +${gain} Focus (Tank cannot heal).`);
+          addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (Tank cannot heal).`, value: gain });
         }
       } else if (currentAction === "wild") {
         // Three distinct event types — each with unique visual/audio identity
@@ -790,19 +1105,19 @@ function BattleArena() {
           setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
           setShowOpponentHit(true);
           setWildEvent({ type: "chaos", sub: `${d} DMG` });
-          addLog(`🎲 CHAOS STRIKE: ${d} DMG!`);
+          addLog({ actor: "player", actionType: "wild", result: `CHAOS STRIKE: ${d} DMG!`, value: d });
         } else if (roll < 0.667) {
           setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 20) }));
           setShowPlayerHeal(true);
           setWildEvent({ type: "mend", sub: "+20 HP" });
-          addLog(`🎲 WILD MEND: +20 HP!`);
+          addLog({ actor: "player", actionType: "wild", result: `WILD MEND: +20 HP!`, value: 20 });
         } else {
           const d = 20;
           setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
           setShowOpponentHit(true);
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + 20) }));
           setWildEvent({ type: "surge", sub: `${d} DMG + Focus` });
-          addLog(`🎲 ARCANE SURGE: ${d} DMG + Focus!`);
+          addLog({ actor: "player", actionType: "wild", result: `ARCANE SURGE: ${d} DMG + Focus!`, value: d });
         }
         setTimeout(() => setWildEvent(null), 1400);
       } else {
@@ -817,7 +1132,7 @@ function BattleArena() {
         }
         setShowOpponentHit(true);
         const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
-        addLog(`✅ ${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`);
+        addLog({ actor: "player", actionType: currentAction as LogActionType, result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`, value: dmg });
         // Broadcast damage to live opponent via Realtime
         if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
           pvpChannelRef.current.send({ type: "broadcast", event: "damage", payload: { damage: dmg, action: currentAction } });
@@ -836,7 +1151,7 @@ function BattleArena() {
       }
       setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
       setShowPlayerHit(true);
-      addLog(`❌ ${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.maxHp >= 160 ? " 🛡️ Reduced!" : ""}`);
+      addLog({ actor: "player", actionType: "miss", result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.maxHp >= 160 ? " Shield reduced!" : ""}`, value: counterDmg });
     }
 
     setTimeout(() => {
@@ -844,26 +1159,21 @@ function BattleArena() {
       setShowOpponentHit(false);
       setShowPlayerHeal(false);
 
-      setOpponent(prev => {
-        if (prev.hp <= 0) {
-          finishBattle(true);
-          return prev;
-        }
-        setPlayer(prevP => {
-          if (prevP.hp <= 0) { finishBattle(false); return prevP; }
-          // Route to opponent turn based on match type
-          if (opponentTypeRef.current === "live") {
-            // Opponent plays independently via Realtime — just return to select
-            setPhase("select");
-          } else if (opponentTypeRef.current === "ghost") {
-            ghostTurn();
-          } else {
-            aiTurn();
-          }
-          return prevP;
-        });
-        return prev;
-      });
+      const curOpp    = opponentRef.current;
+      const curPlayer = playerRef.current;
+
+      if (curOpp.hp <= 0) {
+        finishBattle(true);
+      } else if (curPlayer.hp <= 0) {
+        finishBattle(false);
+      } else if (opponentTypeRef.current === "live") {
+        // Opponent plays independently via Realtime — just return to select
+        setPhase("select");
+      } else if (opponentTypeRef.current === "ghost") {
+        ghostTurn();
+      } else {
+        aiTurn();
+      }
     }, 800);
   }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
 
@@ -952,96 +1262,92 @@ function BattleArena() {
     const memory     = battleMemoryRef.current;
 
     setTimeout(() => {
-      setOpponent(prevOpp => {
-        setPlayer(prevPlayer => {
-          const oppHpPct    = prevOpp.hp    / prevOpp.maxHp;
-          const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
-          const mem         = memory ?? createBattleMemory();
+      const prevOpp    = opponentRef.current;
+      const prevPlayer = playerRef.current;
+      const oppHpPct    = prevOpp.hp    / prevOpp.maxHp;
+      const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
+      const mem         = memory ?? createBattleMemory();
 
-          const choice = pickAiAction(
-            mem,
-            personality,
-            { hp: prevOpp.hp, maxHp: prevOpp.maxHp, focus: prevOpp.focus, maxFocus: prevOpp.maxFocus, canHeal: oppArch.healAmount !== null },
-            { hp: prevPlayer.hp, maxHp: prevPlayer.maxHp, momentum: opponentMomentum },
-          );
+      const choice = pickAiAction(
+        mem,
+        personality,
+        { hp: prevOpp.hp, maxHp: prevOpp.maxHp, focus: prevOpp.focus, maxFocus: prevOpp.maxFocus, canHeal: oppArch.healAmount !== null },
+        { hp: prevPlayer.hp, maxHp: prevPlayer.maxHp, momentum: opponentMomentum },
+      );
 
-          const success = Math.random() < computeAiAccuracy(oppArch, personality, mem, oppHpPct, playerHpPct);
+      const success = Math.random() < computeAiAccuracy(oppArch, personality, mem, oppHpPct, playerHpPct);
 
-          // Narrative pressure line — appears at meaningful moments only
-          const hasData       = mem.playerTurnCount >= 4;
-          const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
-          const pressureLine  = getPressureLogLine(mem, personality, prevOpp.name, oppHpPct, hasData && strongPattern);
-          if (pressureLine) addLog(pressureLine);
+      // Narrative pressure line — appears at meaningful moments only
+      const hasData       = mem.playerTurnCount >= 4;
+      const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
+      const pressureLine  = getPressureLogLine(mem, personality, prevOpp.name, oppHpPct, hasData && strongPattern);
+      if (pressureLine) addLog({ actor: "system", actionType: "info", result: pressureLine });
 
-          let newPlayerHp = prevPlayer.hp;
-          let newOppHp    = prevOpp.hp;
-          let newOppFocus = prevOpp.focus;
-          let nextOppMom  = opponentMomentum;
+      let newPlayerHp = prevPlayer.hp;
+      let newOppHp    = prevOpp.hp;
+      let newOppFocus = prevOpp.focus;
+      let nextOppMom  = opponentMomentum;
 
-          if (success) {
-            nextOppMom = opponentMomentum + 1;
-            // Fix: pass turnNumber so Accelerator's multiplier step actually ramps
-            const oppStep = getEffectiveMultiplierStep(oppArch, mem.turnNumber);
-            const sMult   = streakToMultiplier(nextOppMom, oppStep);
+      if (success) {
+        nextOppMom = opponentMomentum + 1;
+        // Fix: pass turnNumber so Accelerator's multiplier step actually ramps
+        const oppStep = getEffectiveMultiplierStep(oppArch, mem.turnNumber);
+        const sMult   = streakToMultiplier(nextOppMom, oppStep);
 
-            if (choice === "defend") {
-              newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
-              if (oppArch.healAmount !== null) {
-                newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + oppArch.healAmount);
-                addLog(`💚 ${prevOpp.name} heals: +${oppArch.healAmount} HP, +${FOCUS_GAIN.defend} Focus.`);
-              } else {
-                addLog(`💚 ${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`);
-              }
-            } else if (choice === "wild") {
-              newOppFocus = Math.max(0, prevOpp.focus - 15);
-              const roll = Math.random();
-              if (roll < 0.34) {
-                const d = Math.floor(Math.random() * 30) + 10;
-                newPlayerHp = Math.max(0, prevPlayer.hp - d);
-                setShowPlayerHit(true);
-                addLog(`🎲 ${prevOpp.name} Wild: ${d} chaos DMG!`);
-              } else if (roll < 0.67) {
-                newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + 20);
-                addLog(`🎲 ${prevOpp.name} Wild: +20 HP!`);
-              } else {
-                const d = 20;
-                newPlayerHp = Math.max(0, prevPlayer.hp - d);
-                setShowPlayerHit(true);
-                addLog(`🎲 ${prevOpp.name} Wild: ${d} DMG.`);
-              }
-            } else {
-              const dmg = Math.floor(getEffectiveDamage(oppArch, { action: choice, recordCount: 0 }) * sMult);
-              newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
-              const cost = ACTIONS[choice].focusCost;
-              if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
-              const gain = FOCUS_GAIN[choice];
-              if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
-              setShowPlayerHit(true);
-              const streakNote = sMult > 1.1 ? ` 🔥 ${sMult.toFixed(2)}x` : "";
-              addLog(`⚔️ ${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${streakNote}`);
-            }
+        if (choice === "defend") {
+          newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
+          if (oppArch.healAmount !== null) {
+            newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + oppArch.healAmount);
+            addLog({ actor: "opponent", actionType: "heal", result: `${prevOpp.name} heals: +${oppArch.healAmount} HP, +${FOCUS_GAIN.defend} Focus.`, value: oppArch.healAmount });
           } else {
-            nextOppMom = 0;
-            const flub = Math.floor((Math.floor(Math.random() * 6) + 4) * hpToSelfDmgMult(oppArch.maxHp));
-            newOppHp = Math.max(0, prevOpp.hp - flub);
-            addLog(`❌ ${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`);
+            addLog({ actor: "opponent", actionType: "heal", result: `${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`, value: FOCUS_GAIN.defend });
           }
+        } else if (choice === "wild") {
+          newOppFocus = Math.max(0, prevOpp.focus - 15);
+          const roll = Math.random();
+          if (roll < 0.34) {
+            const d = Math.floor(Math.random() * 30) + 10;
+            newPlayerHp = Math.max(0, prevPlayer.hp - d);
+            setShowPlayerHit(true);
+            addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: ${d} chaos DMG!`, value: d });
+          } else if (roll < 0.67) {
+            newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + 20);
+            addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: +20 HP!`, value: 20 });
+          } else {
+            const d = 20;
+            newPlayerHp = Math.max(0, prevPlayer.hp - d);
+            setShowPlayerHit(true);
+            addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: ${d} DMG.`, value: d });
+          }
+        } else {
+          const dmg = Math.floor(getEffectiveDamage(oppArch, { action: choice, recordCount: 0 }) * sMult);
+          newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
+          const cost = ACTIONS[choice].focusCost;
+          if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
+          const gain = FOCUS_GAIN[choice];
+          if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
+          setShowPlayerHit(true);
+          const streakNote = sMult > 1.1 ? ` ${sMult.toFixed(2)}x STREAK` : "";
+          addLog({ actor: "opponent", actionType: choice as LogActionType, result: `${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${streakNote}`, value: dmg });
+        }
+      } else {
+        nextOppMom = 0;
+        const flub = Math.floor((Math.floor(Math.random() * 6) + 4) * hpToSelfDmgMult(oppArch.maxHp));
+        newOppHp = Math.max(0, prevOpp.hp - flub);
+        addLog({ actor: "opponent", actionType: "miss", result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`, value: flub });
+      }
 
-          if (memory) updateBattleMemoryAiTurn(memory, success);
-          setOpponentMomentum(nextOppMom);
+      if (memory) updateBattleMemoryAiTurn(memory, success);
+      setOpponentMomentum(nextOppMom);
+      setPlayer(p => ({ ...p, hp: newPlayerHp }));
+      setOpponent(o => ({ ...o, hp: newOppHp, focus: newOppFocus }));
 
-          setTimeout(() => {
-            setShowPlayerHit(false);
-            if (newPlayerHp <= 0) { finishBattle(false); }
-            else if (newOppHp <= 0) { finishBattle(true); }
-            else { setPhase("select"); }
-          }, 600);
-
-          setOpponent(o => ({ ...o, hp: newOppHp, focus: newOppFocus }));
-          return { ...prevPlayer, hp: newPlayerHp };
-        });
-        return prevOpp;
-      });
+      setTimeout(() => {
+        setShowPlayerHit(false);
+        if (newPlayerHp <= 0) { finishBattle(false); }
+        else if (newOppHp <= 0) { finishBattle(true); }
+        else { setPhase("select"); }
+      }, 600);
     }, 400);
   }, [addLog, finishBattle, opponentArchetype, opponentMomentum, getArch]);
 
@@ -1065,48 +1371,45 @@ function BattleArena() {
     const delay   = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
 
     setTimeout(() => {
-      setOpponent(prevOpp => {
-        setPlayer(prevPlayer => {
-          let newPlayerHp = prevPlayer.hp;
-          let newOppHp    = prevOpp.hp;
+      const prevOpp    = opponentRef.current;
+      const prevPlayer = playerRef.current;
+      let newPlayerHp = prevPlayer.hp;
+      let newOppHp    = prevOpp.hp;
 
-          if (record.correct) {
-            const dmg = Math.floor(
-              getEffectiveDamage(oppArch, {
-                action: record.action as Action,
-                recordCount: ghostTurnIndexRef.current,
-              })
-            );
-            newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
-            setShowPlayerHit(true);
-            addLog(`👻 ${prevOpp.name}: ${dmg} DMG (ghost replay)`);
-          } else {
-            const flub = Math.floor(Math.random() * 6) + 3;
-            newOppHp = Math.max(0, prevOpp.hp - flub);
-            addLog(`👻 ${prevOpp.name} missed (-${flub} self)`);
-          }
+      if (record.correct) {
+        const dmg = Math.floor(
+          getEffectiveDamage(oppArch, {
+            action: record.action as Action,
+            recordCount: ghostTurnIndexRef.current,
+          })
+        );
+        newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
+        setShowPlayerHit(true);
+        addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name}: ${dmg} DMG (ghost replay)`, value: dmg });
+      } else {
+        const flub = Math.floor(Math.random() * 6) + 3;
+        newOppHp = Math.max(0, prevOpp.hp - flub);
+        addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name} missed (-${flub} self)`, value: flub });
+      }
 
-          setTimeout(() => {
-            setShowPlayerHit(false);
-            if (newPlayerHp <= 0) finishBattle(false);
-            else if (newOppHp <= 0) finishBattle(true);
-            else setPhase("select");
-          }, 600);
+      setPlayer(p => ({ ...p, hp: newPlayerHp }));
+      setOpponent(o => ({ ...o, hp: newOppHp }));
 
-          setOpponent(o => ({ ...o, hp: newOppHp }));
-          return { ...prevPlayer, hp: newPlayerHp };
-        });
-        return prevOpp;
-      });
+      setTimeout(() => {
+        setShowPlayerHit(false);
+        if (newPlayerHp <= 0) finishBattle(false);
+        else if (newOppHp <= 0) finishBattle(true);
+        else setPhase("select");
+      }, 600);
     }, delay);
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
   const selectAction = (action: Action) => {
     const cost = ACTIONS[action].focusCost;
-    if (cost > 0 && player.focus < cost) { addLog(`⚠️ Need ${cost} Focus!`); return; }
+    if (cost > 0 && player.focus < cost) { addLog({ actor: "system", actionType: "info", result: `⚠️ Need ${cost} Focus!` }); return; }
     setCurrentAction(action);
     if (cost > 0) setPlayer(prev => ({ ...prev, focus: Math.max(0, prev.focus - cost) }));
-    addLog(`🔰 You ${ACTIONS[action].label.toLowerCase()}…`);
+    addLog({ actor: "player", actionType: "info", result: `You ${ACTIONS[action].label.toLowerCase()}…` });
 
     const arch = getArch(archetype);
     const level = getActionDifficultyLevel(arch, action);
@@ -1205,7 +1508,7 @@ function BattleArena() {
       } else {
         setPhase("select");
         const typeTag = match.type === "live" ? "⚡ LIVE" : match.type === "ghost" ? "👻 GHOST" : "🤖 BOT";
-        addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}`);
+        addLog({ actor: "system", actionType: "info", result: `⚔️ ${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}` });
       }
     })();
   };
@@ -1318,7 +1621,7 @@ function BattleArena() {
         opponentName={opponent.name}
         onComplete={() => {
           setPhase("select");
-          addLog(`⚔️ ${player.name} (${baseArch.name}) vs ${opponent.name} (${ARCHETYPES[opponentArchetype].name})!`);
+          addLog({ actor: "system", actionType: "info", result: `⚔️ ${player.name} (${baseArch.name}) vs ${opponent.name} (${ARCHETYPES[opponentArchetype].name})!` });
         }}
       />
     );
@@ -1563,7 +1866,7 @@ function BattleArena() {
               >
                 <Icon className={`w-7 h-7 mx-auto mb-1.5 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
                 <div className="text-xs font-bold tracking-widest">{act.label.toUpperCase()}</div>
-                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">{act.desc}</div>
+                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">{getActionDesc(key, getArch(archetype), records.length)}</div>
                 {cost > 0 && (
                   <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1 rounded-sm">−{cost}</div>
                 )}
@@ -1574,6 +1877,15 @@ function BattleArena() {
             );
           })}
         </div>
+
+        <BattleChat
+          pvpChannelRef={pvpChannelRef}
+          opponentType={opponentType}
+          opponentName={opponent.name}
+          playerName={player.name}
+          phase={phase}
+          incomingItems={incomingChats}
+        />
 
         <BattleLog logs={logs} />
       </div>

@@ -70,6 +70,31 @@ export interface ActionConfig {
   desc: string;
 }
 
+// ─── Battle Log ──────────────────────────────────────────────────────
+// Structured event type so every log entry maps 1:1 to a resolved combat
+// action with a stable ID, actor, action type, result string, and optional
+// numeric value. The ID is monotonically increasing — never reordered.
+export type LogActor = "player" | "opponent" | "system";
+export type LogActionType =
+  | "attack"     // deal damage (Attack action)
+  | "heal"       // restore HP (Defend action)
+  | "charge"     // power attack (Charge action)
+  | "wild"       // wild event (Wild action)
+  | "miss"       // wrong answer or timeout
+  | "combo"      // streak milestone reached
+  | "separator"  // turn-start indicator
+  | "info"       // match start, pressure lines, warnings
+  | "ghost";     // ghost-replay opponent action
+
+export interface LogEntry {
+  id: number;              // monotonically increasing — stable React key, never reordered
+  actor: LogActor;
+  actionType: LogActionType;
+  result: string;          // human-readable description
+  value?: number;          // primary numeric value (damage / heal amount)
+}
+
+// ─── Battle Stats ────────────────────────────────────────────────────
 export interface BattleStats {
   totalQuestions: number;
   correctAnswers: number;

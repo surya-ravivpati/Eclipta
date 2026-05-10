@@ -222,12 +222,12 @@ function LiveBattleHUD() {
 function FighterRow(props: {
   name: string; sub: string; hp: number;
   icon: React.ComponentType<{ className?: string }>;
-  colorClass: string; barClass: string; alignRight: boolean;
+  colorClass: string; borderClass: string; barClass: string; alignRight: boolean;
 }) {
-  const { name, sub, hp, icon: Icon, colorClass, barClass, alignRight } = props;
+  const { name, sub, hp, icon: Icon, colorClass, borderClass, barClass, alignRight } = props;
   return (
     <div className={`flex items-center gap-3 ${alignRight ? "flex-row-reverse text-right" : ""}`}>
-      <div className={`w-12 h-12 shrink-0 border ${colorClass.replace("text-", "border-")}/40 bg-secondary/40 flex items-center justify-center`}>
+      <div className={`w-12 h-12 shrink-0 border ${borderClass} bg-secondary/40 flex items-center justify-center`}>
         <Icon className={`w-5 h-5 ${colorClass}`} />
       </div>
       <div className="flex-1 min-w-0">

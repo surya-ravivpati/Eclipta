@@ -44,11 +44,12 @@ function PublicProfilePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: p } = await supabase
-        .from("user_profiles")
-        .select("user_id,username,xp,current_streak,best_streak,equipped_ecliptar,avatar_url,created_at")
-        .eq("username", username)
-        .maybeSingle();
+      // Use the SECURITY DEFINER RPC so only the 8 safe public fields are
+      // returned regardless of who is calling (anon or authenticated).
+      // Direct user_profiles SELECT is now restricted to own row only.
+      const { data: rows } = await supabase
+        .rpc("get_public_profile" as any, { p_username: username });
+      const p = Array.isArray(rows) ? rows[0] ?? null : rows ?? null;
       if (!p) { setNotFound(true); setLoading(false); return; }
       setProfile(p as PublicProfile);
 

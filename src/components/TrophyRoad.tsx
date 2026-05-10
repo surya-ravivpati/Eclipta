@@ -20,7 +20,6 @@ const TIER_ICONS: Record<TierId, typeof Crown> = {
   champion: Flame,
   unreal: Sparkle,
   god: Sun,
-  apex: Trophy,
 };
 import { cn } from "@/lib/utils";
 import {
@@ -43,7 +42,6 @@ const TIER_SHADOW: Record<TierId, string> = {
   champion: "0.65 0.22 25",
   unreal:   "0.6 0.28 310",
   god:      "0.85 0.12 90",
-  apex:     "0.55 0.25 290",
 };
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -91,15 +89,14 @@ interface RoadNode {
 /* ── Data ──────────────────────────────────────────────────── */
 
 const TIERS: Record<TierId, RankTier> = {
-  bronze:   { id: "bronze",   name: "Bronze",    xpRequired: 0,       colorClass: "text-tier-bronze",   bgClass: "bg-tier-bronze",   glowClass: "neon-glow-bronze",   borderClass: "border-tier-bronze/40",   description: "Rugged stone, warm glow" },
-  silver:   { id: "silver",   name: "Silver",    xpRequired: 1000,    colorClass: "text-tier-silver",   bgClass: "bg-tier-silver",   glowClass: "neon-glow-silver",   borderClass: "border-tier-silver/40",   description: "Sleek metal, cool shine" },
-  gold:     { id: "gold",     name: "Gold",      xpRequired: 3000,    colorClass: "text-tier-gold",     bgClass: "bg-tier-gold",     glowClass: "neon-glow-gold",     borderClass: "border-tier-gold/40",     description: "Radiant, sparkling" },
-  diamond:  { id: "diamond",  name: "Diamond",   xpRequired: 6000,    colorClass: "text-tier-diamond",  bgClass: "bg-tier-diamond",  glowClass: "neon-glow-diamond",  borderClass: "border-tier-diamond/40",  description: "Crystalline, blue energy" },
-  platinum: { id: "platinum", name: "Platinum",  xpRequired: 10000,   colorClass: "text-tier-platinum", bgClass: "bg-tier-platinum", glowClass: "neon-glow-platinum", borderClass: "border-tier-platinum/40", description: "Futuristic white/teal" },
-  champion: { id: "champion", name: "Champion",  xpRequired: 16000,   colorClass: "text-tier-champion", bgClass: "bg-tier-champion", glowClass: "neon-glow-champion", borderClass: "border-tier-champion/40", description: "Fiery, heroic aura" },
-  unreal:   { id: "unreal",   name: "Unreal",    xpRequired: 25000,   colorClass: "text-tier-unreal",   bgClass: "bg-tier-unreal",   glowClass: "neon-glow-unreal",   borderClass: "border-tier-unreal/40",   description: "Cosmic, glitchy, surreal" },
-  god:      { id: "god",      name: "God Tier",  xpRequired: 40000,   colorClass: "text-tier-god",      bgClass: "bg-tier-god",      glowClass: "neon-glow-god",      borderClass: "border-tier-god/40",      description: "Divine light, heavenly" },
-  apex:     { id: "apex",     name: "Apex",      xpRequired: 750000,  colorClass: "text-neon-purple",   bgClass: "bg-neon-purple",   glowClass: "neon-glow-purple",   borderClass: "border-neon-purple/40",   description: "Beyond god — the true summit" },
+  bronze:   { id: "bronze",   name: "Bronze",    xpRequired: 0,      colorClass: "text-tier-bronze",   bgClass: "bg-tier-bronze",   glowClass: "neon-glow-bronze",   borderClass: "border-tier-bronze/40",   description: "Rugged stone, warm glow" },
+  silver:   { id: "silver",   name: "Silver",    xpRequired: 7500,   colorClass: "text-tier-silver",   bgClass: "bg-tier-silver",   glowClass: "neon-glow-silver",   borderClass: "border-tier-silver/40",   description: "Sleek metal, cool shine" },
+  gold:     { id: "gold",     name: "Gold",      xpRequired: 20000,  colorClass: "text-tier-gold",     bgClass: "bg-tier-gold",     glowClass: "neon-glow-gold",     borderClass: "border-tier-gold/40",     description: "Radiant, sparkling" },
+  diamond:  { id: "diamond",  name: "Diamond",   xpRequired: 43000,  colorClass: "text-tier-diamond",  bgClass: "bg-tier-diamond",  glowClass: "neon-glow-diamond",  borderClass: "border-tier-diamond/40",  description: "Crystalline, blue energy" },
+  platinum: { id: "platinum", name: "Platinum",  xpRequired: 78000,  colorClass: "text-tier-platinum", bgClass: "bg-tier-platinum", glowClass: "neon-glow-platinum", borderClass: "border-tier-platinum/40", description: "Futuristic white/teal" },
+  champion: { id: "champion", name: "Champion",  xpRequired: 145000, colorClass: "text-tier-champion", bgClass: "bg-tier-champion", glowClass: "neon-glow-champion", borderClass: "border-tier-champion/40", description: "Fiery, heroic aura" },
+  unreal:   { id: "unreal",   name: "Unreal",    xpRequired: 265000, colorClass: "text-tier-unreal",   bgClass: "bg-tier-unreal",   glowClass: "neon-glow-unreal",   borderClass: "border-tier-unreal/40",   description: "Cosmic, glitchy, surreal" },
+  god:      { id: "god",      name: "God Tier",  xpRequired: 460000, colorClass: "text-tier-god",      bgClass: "bg-tier-god",      glowClass: "neon-glow-god",      borderClass: "border-tier-god/40",      description: "Divine light — the final rank" },
 };
 
 const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
@@ -224,6 +221,7 @@ function RoadNodeItem({ node, index, ownedSlugs, claimedChestIds, onClaimed, onC
       return <RankIcon className="w-5 h-5" />;
     }
     if (node.type === "chest") return <Gift className="w-5 h-5" />;
+    if (node.type === "boss") return <Skull className="w-5 h-5" />;
     if (node.type === "monster" && archetype) {
       const Icon = archetype.icon;
       return <Icon className="w-5 h-5" />;
@@ -678,8 +676,8 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                 Your <span className="text-neon-purple text-glow-purple">Trophy Road</span>
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                Rise from Bronze to Apex. Unlock Ecliptars, earn rewards, and ascend through
-                9 ranks — each with a distinct visual world and exclusive Ecliptars to collect.
+                Rise from Bronze to God Tier. Unlock Ecliptars, earn rewards, and ascend through
+                8 ranks — each packed with rank milestones, archetype unlocks, reward chests, and boss encounters.
               </p>
               <div className="space-y-3">
                 {Object.values(TIERS).slice(0, 4).map((t) => (
@@ -689,7 +687,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                     <span className="text-xs text-muted-foreground">— {t.description}</span>
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground pl-6 italic">…and 5 more legendary tiers</p>
+                <p className="text-xs text-muted-foreground pl-6 italic">…and 4 more legendary tiers</p>
               </div>
             </motion.div>
 
@@ -803,10 +801,11 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
         </summary>
         <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">
           Earn XP through battles, lessons, and tests to climb 8 ranks — Bronze to God Tier.
-          Each stop on the road is an <span className="text-neon-purple font-bold">Ecliptar</span>,
-          a <span className="text-neon-pink font-bold">reward chest</span>, or a
-          <span className="text-tier-gold font-bold"> rank promotion</span>.
-          Defeat Ecliptars to claim them and equip one in battle.
+          Each rank has multiple milestones: <span className="text-tier-gold font-bold">rank promotions</span>,{" "}
+          <span className="text-neon-purple font-bold">archetype unlocks</span>,{" "}
+          <span className="text-neon-pink font-bold">reward chests</span>, and{" "}
+          <span className="text-tier-champion font-bold">boss encounters</span>.
+          God Tier III is the final destination — earned by the elite few.
         </div>
       </details>
 

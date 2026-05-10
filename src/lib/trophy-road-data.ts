@@ -1,6 +1,6 @@
 /** Shared progression data used by both TrophyRoad UI and Battle system */
 
-export type TierId = "bronze" | "silver" | "gold" | "diamond" | "platinum" | "champion" | "unreal" | "god" | "apex";
+export type TierId = "bronze" | "silver" | "gold" | "diamond" | "platinum" | "champion" | "unreal" | "god";
 export type MonsterArchetypeKey = "speedster" | "tank" | "chud" | "gambler" | "healer" | "fulcrum" | "accelerator" | "god";
 
 export interface RoadNode {
@@ -12,7 +12,7 @@ export interface RoadNode {
   archetype?: MonsterArchetypeKey;
   finalMonster?: "newton" | "ecliptadon";
   /** Thematic band — used for visual section headers in the UI */
-  band?: "training" | "trials" | "ascension" | "mastery" | "apex";
+  band?: "training" | "trials" | "ascension" | "mastery" | "summit";
 }
 
 // Current player XP (will come from DB later)
@@ -20,77 +20,105 @@ export const PLAYER_XP = 4200;
 
 export const ROAD_NODES: RoadNode[] = [
   // ══════════════════════════════════════════════════════════════════
-  // BAND 1 — TRAINING GROUNDS  (0 – 22,000 XP)
-  // Fast early wins, archetype unlocks, learn the ropes.
-  // Reward cadence: every 500–1,500 XP.
+  // BAND 1 — TRAINING GROUNDS  (0 – 18,000 XP)
+  // Learn the ropes. Two full tiers with rank milestones, archetype
+  // unlocks, reward chests, and a boss encounter per tier.
   // ══════════════════════════════════════════════════════════════════
+
+  // ── Bronze ──────────────────────────────────────────────────────
   { id:  1, tier: "bronze",   type: "rank",    label: "Bronze I",        xp:      0, band: "training" },
-  { id:  2, tier: "bronze",   type: "monster", label: "Speedster",       xp:    200, band: "training", archetype: "speedster" },
-  { id:  3, tier: "bronze",   type: "chest",   label: "Bronze Chest",    xp:    500, band: "training" },
-  { id:  4, tier: "silver",   type: "rank",    label: "Silver I",        xp:   1000, band: "training" },
-  { id:  5, tier: "silver",   type: "monster", label: "Tank",            xp:   1500, band: "training", archetype: "tank" },
-  { id:  6, tier: "silver",   type: "chest",   label: "Silver Chest",    xp:   2000, band: "training" },
-  { id:  7, tier: "gold",     type: "rank",    label: "Gold I",          xp:   3000, band: "training" },
-  { id:  8, tier: "gold",     type: "monster", label: "Chud",            xp:   3500, band: "training", archetype: "chud" },
-  { id:  9, tier: "gold",     type: "chest",   label: "Gold Chest",      xp:   4000, band: "training" },
-  { id: 10, tier: "diamond",  type: "rank",    label: "Diamond I",       xp:   6000, band: "training" },
-  { id: 11, tier: "diamond",  type: "monster", label: "Gambler",         xp:   7000, band: "training", archetype: "gambler" },
-  { id: 12, tier: "diamond",  type: "chest",   label: "Diamond Chest",   xp:   8500, band: "training" },
-  { id: 13, tier: "platinum", type: "rank",    label: "Platinum I",      xp:  10000, band: "training" },
-  { id: 14, tier: "platinum", type: "monster", label: "Healer",          xp:  12000, band: "training", archetype: "healer" },
-  { id: 15, tier: "platinum", type: "chest",   label: "Platinum Chest",  xp:  14000, band: "training" },
-  { id: 16, tier: "champion", type: "rank",    label: "Champion I",      xp:  16000, band: "training" },
-  { id: 17, tier: "champion", type: "monster", label: "Fulcrum",         xp:  19000, band: "training", archetype: "fulcrum" },
-  { id: 18, tier: "champion", type: "chest",   label: "Champion Chest",  xp:  22000, band: "training" },
+  { id:  2, tier: "bronze",   type: "monster", label: "Speedster",       xp:    400, band: "training", archetype: "speedster" },
+  { id:  3, tier: "bronze",   type: "chest",   label: "Bronze Chest",    xp:    900, band: "training" },
+  { id:  4, tier: "bronze",   type: "rank",    label: "Bronze II",       xp:   1800, band: "training" },
+  { id:  5, tier: "bronze",   type: "chest",   label: "Bronze Cache",    xp:   3000, band: "training" },
+  { id:  6, tier: "bronze",   type: "boss",    label: "Bronze Boss",     xp:   4500, band: "training" },
+  { id:  7, tier: "bronze",   type: "rank",    label: "Bronze III",      xp:   6000, band: "training" },
+
+  // ── Silver ──────────────────────────────────────────────────────
+  { id:  8, tier: "silver",   type: "rank",    label: "Silver I",        xp:   7500, band: "training" },
+  { id:  9, tier: "silver",   type: "monster", label: "Tank",            xp:   9000, band: "training", archetype: "tank" },
+  { id: 10, tier: "silver",   type: "chest",   label: "Silver Chest",    xp:  10500, band: "training" },
+  { id: 11, tier: "silver",   type: "rank",    label: "Silver II",       xp:  12500, band: "training" },
+  { id: 12, tier: "silver",   type: "chest",   label: "Silver Cache",    xp:  14500, band: "training" },
+  { id: 13, tier: "silver",   type: "boss",    label: "Silver Boss",     xp:  16500, band: "training" },
+  { id: 14, tier: "silver",   type: "rank",    label: "Silver III",      xp:  18000, band: "training" },
 
   // ══════════════════════════════════════════════════════════════════
-  // BAND 2 — BATTLE TRIALS  (25,000 – 65,000 XP)
-  // Skill meets endurance. Reward cadence: every 2,000–5,000 XP.
+  // BAND 2 — BATTLE TRIALS  (20,000 – 70,000 XP)
+  // Skill meets endurance. Two tiers, harder bosses, double chests.
   // ══════════════════════════════════════════════════════════════════
-  { id: 19, tier: "unreal",   type: "rank",    label: "Unreal I",        xp:  25000, band: "trials" },
-  { id: 20, tier: "unreal",   type: "monster", label: "Accelerator",     xp:  30000, band: "trials", archetype: "accelerator" },
-  { id: 21, tier: "unreal",   type: "chest",   label: "Unreal Chest",    xp:  35000, band: "trials" },
-  { id: 22, tier: "god",      type: "rank",    label: "God Tier I",      xp:  40000, band: "trials" },
-  { id: 23, tier: "god",      type: "monster", label: "God Archetype",   xp:  45000, band: "trials", archetype: "god" },
-  { id: 24, tier: "god",      type: "final",   label: "Newton",          xp:  48000, band: "trials", finalMonster: "newton" },
-  { id: 25, tier: "god",      type: "final",   label: "ECLIPTADON",      xp:  50000, band: "trials", finalMonster: "ecliptadon" },
+
+  // ── Gold ────────────────────────────────────────────────────────
+  { id: 15, tier: "gold",     type: "rank",    label: "Gold I",          xp:  20000, band: "trials" },
+  { id: 16, tier: "gold",     type: "monster", label: "Chud",            xp:  22000, band: "trials", archetype: "chud" },
+  { id: 17, tier: "gold",     type: "chest",   label: "Gold Chest",      xp:  24000, band: "trials" },
+  { id: 18, tier: "gold",     type: "rank",    label: "Gold II",         xp:  27000, band: "trials" },
+  { id: 19, tier: "gold",     type: "chest",   label: "Gold Cache",      xp:  30000, band: "trials" },
+  { id: 20, tier: "gold",     type: "boss",    label: "Gold Boss",       xp:  34000, band: "trials" },
+  { id: 21, tier: "gold",     type: "rank",    label: "Gold III",        xp:  38000, band: "trials" },
+
+  // ── Diamond ─────────────────────────────────────────────────────
+  { id: 22, tier: "diamond",  type: "rank",    label: "Diamond I",       xp:  43000, band: "trials" },
+  { id: 23, tier: "diamond",  type: "monster", label: "Gambler",         xp:  46000, band: "trials", archetype: "gambler" },
+  { id: 24, tier: "diamond",  type: "chest",   label: "Diamond Chest",   xp:  49500, band: "trials" },
+  { id: 25, tier: "diamond",  type: "rank",    label: "Diamond II",      xp:  54000, band: "trials" },
+  { id: 26, tier: "diamond",  type: "chest",   label: "Diamond Cache",   xp:  59000, band: "trials" },
+  { id: 27, tier: "diamond",  type: "boss",    label: "Diamond Boss",    xp:  65000, band: "trials" },
+  { id: 28, tier: "diamond",  type: "rank",    label: "Diamond III",     xp:  70000, band: "trials" },
 
   // ══════════════════════════════════════════════════════════════════
-  // BAND 3 — COMPETITIVE ASCENSION  (55,000 – 285,000 XP)
-  // Dedicated players separate from casuals. Reward cadence: ~10–35k XP.
+  // BAND 3 — COMPETITIVE ASCENSION  (78,000 – 240,000 XP)
+  // Dedicated players separate from casuals. Long tiers, stiff bosses.
   // ══════════════════════════════════════════════════════════════════
-  { id: 26, tier: "god",      type: "rank",    label: "God Tier II",     xp:  55000, band: "ascension" },
-  { id: 27, tier: "god",      type: "chest",   label: "God Cache",       xp:  65000, band: "ascension" },
-  { id: 28, tier: "god",      type: "rank",    label: "God Tier III",    xp:  78000, band: "ascension" },
-  { id: 29, tier: "god",      type: "chest",   label: "God Vault",       xp:  94000, band: "ascension" },
-  { id: 30, tier: "god",      type: "rank",    label: "God Tier IV",     xp: 115000, band: "ascension" },
-  { id: 31, tier: "champion", type: "rank",    label: "Champion II",     xp: 140000, band: "ascension" },
-  { id: 32, tier: "champion", type: "chest",   label: "Champion Cache",  xp: 168000, band: "ascension" },
-  { id: 33, tier: "champion", type: "rank",    label: "Champion III",    xp: 200000, band: "ascension" },
-  { id: 34, tier: "champion", type: "chest",   label: "Champion Vault",  xp: 238000, band: "ascension" },
-  { id: 35, tier: "champion", type: "rank",    label: "Champion IV",     xp: 285000, band: "ascension" },
+
+  // ── Platinum ────────────────────────────────────────────────────
+  { id: 29, tier: "platinum", type: "rank",    label: "Platinum I",      xp:  78000, band: "ascension" },
+  { id: 30, tier: "platinum", type: "monster", label: "Healer",          xp:  84000, band: "ascension", archetype: "healer" },
+  { id: 31, tier: "platinum", type: "chest",   label: "Platinum Chest",  xp:  90000, band: "ascension" },
+  { id: 32, tier: "platinum", type: "rank",    label: "Platinum II",     xp:  98000, band: "ascension" },
+  { id: 33, tier: "platinum", type: "chest",   label: "Platinum Cache",  xp: 107000, band: "ascension" },
+  { id: 34, tier: "platinum", type: "boss",    label: "Platinum Boss",   xp: 118000, band: "ascension" },
+  { id: 35, tier: "platinum", type: "rank",    label: "Platinum III",    xp: 130000, band: "ascension" },
+
+  // ── Champion ────────────────────────────────────────────────────
+  { id: 36, tier: "champion", type: "rank",    label: "Champion I",      xp: 145000, band: "ascension" },
+  { id: 37, tier: "champion", type: "monster", label: "Fulcrum",         xp: 157000, band: "ascension", archetype: "fulcrum" },
+  { id: 38, tier: "champion", type: "chest",   label: "Champion Chest",  xp: 170000, band: "ascension" },
+  { id: 39, tier: "champion", type: "rank",    label: "Champion II",     xp: 186000, band: "ascension" },
+  { id: 40, tier: "champion", type: "chest",   label: "Champion Cache",  xp: 202000, band: "ascension" },
+  { id: 41, tier: "champion", type: "boss",    label: "Champion Boss",   xp: 220000, band: "ascension" },
+  { id: 42, tier: "champion", type: "rank",    label: "Champion III",    xp: 240000, band: "ascension" },
 
   // ══════════════════════════════════════════════════════════════════
-  // BAND 4 — ELITE MASTERY PATH  (340,000 – 640,000 XP)
-  // The true gauntlet. Long-form dedication + skill required.
-  // Reward cadence: ~50–100k XP.
+  // BAND 4 — ELITE MASTERY  (265,000 – 420,000 XP)
+  // The true gauntlet. Long-form dedication + consistent skill.
   // ══════════════════════════════════════════════════════════════════
-  { id: 36, tier: "unreal",   type: "rank",    label: "Unreal II",       xp: 340000, band: "mastery" },
-  { id: 37, tier: "unreal",   type: "chest",   label: "Unreal Cache",    xp: 400000, band: "mastery" },
-  { id: 38, tier: "unreal",   type: "rank",    label: "Unreal III",      xp: 470000, band: "mastery" },
-  { id: 39, tier: "unreal",   type: "chest",   label: "Unreal Vault",    xp: 550000, band: "mastery" },
-  { id: 40, tier: "unreal",   type: "rank",    label: "Unreal IV",       xp: 640000, band: "mastery" },
+
+  // ── Unreal ──────────────────────────────────────────────────────
+  { id: 43, tier: "unreal",   type: "rank",    label: "Unreal I",        xp: 265000, band: "mastery" },
+  { id: 44, tier: "unreal",   type: "monster", label: "Accelerator",     xp: 285000, band: "mastery", archetype: "accelerator" },
+  { id: 45, tier: "unreal",   type: "chest",   label: "Unreal Chest",    xp: 308000, band: "mastery" },
+  { id: 46, tier: "unreal",   type: "rank",    label: "Unreal II",       xp: 335000, band: "mastery" },
+  { id: 47, tier: "unreal",   type: "chest",   label: "Unreal Cache",    xp: 365000, band: "mastery" },
+  { id: 48, tier: "unreal",   type: "boss",    label: "Unreal Boss",     xp: 392000, band: "mastery" },
+  { id: 49, tier: "unreal",   type: "rank",    label: "Unreal III",      xp: 420000, band: "mastery" },
 
   // ══════════════════════════════════════════════════════════════════
-  // BAND 5 — APEX PRESTIGE  (750,000 – 1,350,000 XP)
-  // Endgame mastery. Visible to all, reachable by few.
-  // Reward cadence: ~125–200k XP.
+  // BAND 5 — THE SUMMIT  (460,000 – 800,000 XP)
+  // God Tier — the final rank. Visible to all, earned by few.
+  // Two legendary bosses guard the ultimate milestones.
   // ══════════════════════════════════════════════════════════════════
-  { id: 41, tier: "apex",     type: "rank",    label: "Apex Initiate",   xp:  750000, band: "apex" },
-  { id: 42, tier: "apex",     type: "chest",   label: "Apex Cache",      xp:  875000, band: "apex" },
-  { id: 43, tier: "apex",     type: "rank",    label: "Apex Warrior",    xp: 1000000, band: "apex" },
-  { id: 44, tier: "apex",     type: "chest",   label: "Apex Vault",      xp: 1150000, band: "apex" },
-  { id: 45, tier: "apex",     type: "rank",    label: "Apex Legend",     xp: 1350000, band: "apex" },
+
+  // ── God ─────────────────────────────────────────────────────────
+  { id: 50, tier: "god",      type: "rank",    label: "God Tier I",      xp: 460000, band: "summit" },
+  { id: 51, tier: "god",      type: "monster", label: "God Archetype",   xp: 495000, band: "summit", archetype: "god" },
+  { id: 52, tier: "god",      type: "final",   label: "Newton",          xp: 535000, band: "summit", finalMonster: "newton" },
+  { id: 53, tier: "god",      type: "chest",   label: "God Cache",       xp: 580000, band: "summit" },
+  { id: 54, tier: "god",      type: "rank",    label: "God Tier II",     xp: 628000, band: "summit" },
+  { id: 55, tier: "god",      type: "final",   label: "ECLIPTADON",      xp: 678000, band: "summit", finalMonster: "ecliptadon" },
+  { id: 56, tier: "god",      type: "chest",   label: "God Vault",       xp: 728000, band: "summit" },
+  { id: 57, tier: "god",      type: "boss",    label: "God Boss",        xp: 764000, band: "summit" },
+  { id: 58, tier: "god",      type: "rank",    label: "God Tier III",    xp: 800000, band: "summit" },
 ];
 
 /** Returns the set of archetype keys the player has unlocked based on XP */

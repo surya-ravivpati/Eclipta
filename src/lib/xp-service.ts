@@ -14,6 +14,14 @@ export const CHEST_REWARDS: Record<string, { title: string; description: string;
   "Platinum Chest":  { title: "🎁 Platinum Chest",  description: "Elite-tier loot!",                    reward: "+500 bonus XP + Focus Regen" },
   "Champion Chest":  { title: "🎁 Champion Chest",  description: "A champion's treasure trove!",        reward: "+750 bonus XP + Double Streak" },
   "Unreal Chest":    { title: "🎁 Unreal Chest",    description: "Beyond mortal comprehension!",        reward: "+1000 bonus XP + Time Warp" },
+  "God Cache":       { title: "🎁 God Cache",       description: "Divine knowledge crystallized.",      reward: "+1500 bonus XP" },
+  "God Vault":       { title: "🎁 God Vault",       description: "Secrets of the divine realm.",        reward: "+2000 bonus XP" },
+  "Champion Cache":  { title: "🎁 Champion Cache",  description: "The spoils of a true champion.",      reward: "+900 bonus XP" },
+  "Champion Vault":  { title: "🎁 Champion Vault",  description: "Hoarded glory from countless wins.",  reward: "+1100 bonus XP" },
+  "Unreal Cache":    { title: "🎁 Unreal Cache",    description: "Loot from beyond reality.",           reward: "+1400 bonus XP" },
+  "Unreal Vault":    { title: "🎁 Unreal Vault",    description: "A treasure beyond comprehension.",    reward: "+1800 bonus XP" },
+  "Apex Cache":      { title: "🎁 Apex Cache",      description: "Only the elite reach this cache.",    reward: "+2500 bonus XP" },
+  "Apex Vault":      { title: "🎁 Apex Vault",      description: "The final vault. True mastery.",      reward: "+3500 bonus XP" },
 };
 
 export const CHEST_BONUS_XP: Record<string, number> = {
@@ -24,6 +32,14 @@ export const CHEST_BONUS_XP: Record<string, number> = {
   "Platinum Chest": 500,
   "Champion Chest": 750,
   "Unreal Chest": 1000,
+  "God Cache": 1500,
+  "God Vault": 2000,
+  "Champion Cache": 900,
+  "Champion Vault": 1100,
+  "Unreal Cache": 1400,
+  "Unreal Vault": 1800,
+  "Apex Cache": 2500,
+  "Apex Vault": 3500,
 };
 
 /**

@@ -1,0 +1,136 @@
+/**
+ * Tiered matchmaking: Live PvP → Ghost PvP → Bot (last resort).
+ * Priority is strictly enforced — bots are never preferred over real data.
+ */
+import { supabase } from "@/integrations/supabase/client";
+import { fetchGhostSession, type GhostSession } from "./battle-replay";
+import type { ArchetypeId } from "@/components/battles/types";
+
+export type OpponentType = "live" | "ghost" | "bot";
+
+export interface MatchResult {
+  type: OpponentType;
+  opponentName: string;
+  /** null only for bot — caller picks archetype via pickOpponent() */
+  opponentArchetype: ArchetypeId | null;
+  opponentRating: number;
+  /** Supabase Realtime channel name for live battles */
+  pvpChannelName?: string;
+  pvpBattleId?: string;
+  ghostSession?: GhostSession;
+}
+
+const QUEUE_TIMEOUT_MS  = 8_000;
+const POLL_INTERVAL_MS  = 1_500;
+
+// ── Queue management ─────────────────────────────────────────────────────
+
+export async function joinQueue(
+  archetype: ArchetypeId,
+  rating: number,
+  username: string | null,
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("pvp_queue" as any).upsert(
+    {
+      user_id:   user.id,
+      username:  username ?? `player_${user.id.slice(0, 6)}`,
+      archetype,
+      rating,
+      queued_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+}
+
+export async function leaveQueue(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("pvp_queue" as any).delete().eq("user_id", user.id);
+}
+
+// ── Live match attempt ───────────────────────────────────────────────────
+
+async function tryLiveMatch(
+  archetype: ArchetypeId,
+  rating: number,
+): Promise<MatchResult | null> {
+  const { data } = await supabase.rpc("find_pvp_match" as any, {
+    p_archetype: archetype,
+    p_rating:    rating,
+  });
+  if (!data || !(data as any).matched) return null;
+
+  const d = data as any;
+  return {
+    type:              "live",
+    opponentName:      d.opponent_username ?? `Player_${(d.opponent_user_id as string).slice(0, 6)}`,
+    opponentArchetype: d.opponent_archetype as ArchetypeId,
+    opponentRating:    d.opponent_rating ?? 1000,
+    pvpBattleId:       d.battle_id as string,
+    pvpChannelName:    `pvp-battle:${d.battle_id}`,
+  };
+}
+
+// ── Main matchmaking entry point ─────────────────────────────────────────
+
+/**
+ * Runs the full Tier 1 → 2 → 3 matchmaking sequence.
+ *
+ * @param onStatus - callback that receives human-readable status strings
+ *                   so the searching UI can update in real time.
+ */
+export async function findMatch(
+  archetype: ArchetypeId,
+  playerRating: number,
+  username: string | null,
+  onStatus: (msg: string, tier: OpponentType) => void,
+): Promise<MatchResult> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // ── Tier 1: Live PvP ─────────────────────────────────────────────────
+  if (user) {
+    onStatus("Scanning for live opponents…", "live");
+    await joinQueue(archetype, playerRating, username);
+
+    const deadline = Date.now() + QUEUE_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+      const liveMatch = await tryLiveMatch(archetype, playerRating);
+      if (liveMatch) {
+        onStatus(`Live match found — ${liveMatch.opponentName}`, "live");
+        return liveMatch;
+      }
+
+      const remaining = Math.ceil((deadline - Date.now()) / 1000);
+      onStatus(`Searching… ${remaining}s`, "live");
+    }
+
+    await leaveQueue();
+
+    // ── Tier 2: Ghost PvP ───────────────────────────────────────────────
+    onStatus("No live opponent — loading ghost replay…", "ghost");
+    const ghost = await fetchGhostSession(playerRating);
+    if (ghost) {
+      onStatus("Ghost match loaded — real player data", "ghost");
+      return {
+        type:              "ghost",
+        opponentName:      `Ghost_${ghost.id.slice(0, 6)}`,
+        opponentArchetype: ghost.archetype,
+        opponentRating:    ghost.rating,
+        ghostSession:      ghost,
+      };
+    }
+  }
+
+  // ── Tier 3: Bot (last resort) ────────────────────────────────────────
+  onStatus("Matched with AI bot", "bot");
+  return {
+    type:              "bot",
+    opponentName:      "AI_Nemesis",
+    opponentArchetype: null,
+    opponentRating:    playerRating,
+  };
+}

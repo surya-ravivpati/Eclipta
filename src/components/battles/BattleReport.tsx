@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Crown, Skull, Target, Zap, Flame, AlertTriangle, BookOpen, RotateCcw, Star, TrendingUp } from "lucide-react";
+import { Crown, Skull, Target, Zap, Flame, AlertTriangle, BookOpen, RotateCcw, Star, TrendingUp, TrendingDown, Radio, Ghost, Bot } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ARCHETYPES } from "./archetypes";
 import type { BattleStats, Difficulty } from "./types";
@@ -8,11 +8,13 @@ import { awardBattleXp } from "@/lib/xp-service";
 import { recordBattleMastery, fetchMastery, getMasteryRank, getMasteryStats, emptyMastery, type ArchetypeMastery } from "@/lib/archetype-mastery";
 import { supabase } from "@/integrations/supabase/client";
 
-export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack }: {
+export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack, ratingChange, opponentType }: {
   stats: BattleStats;
   onRematch: () => void;
   onContinueWithEcliptar?: () => void;
   onBack: () => void;
+  ratingChange?: number | null;
+  opponentType?: string;
 }) {
   const xpSavedRef = useRef(false);
   const [xpCount, setXpCount] = useState(0);
@@ -174,6 +176,23 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack 
           </motion.div>
           <div className="text-[10px] tracking-widest text-muted-foreground">EARNED</div>
         </div>
+        {ratingChange != null && opponentType !== "bot" && (
+          <div className="text-center">
+            <motion.div
+              className={`text-2xl font-bold font-display tabular-nums ${ratingChange >= 0 ? "text-neon-cyan" : "text-neon-pink"}`}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.5, type: "spring" }}
+            >
+              {ratingChange >= 0 ? <TrendingUp className="inline w-5 h-5 mr-0.5" /> : <TrendingDown className="inline w-5 h-5 mr-0.5" />}
+              {ratingChange >= 0 ? `+${ratingChange}` : ratingChange}
+            </motion.div>
+            <div className="text-[10px] tracking-widest text-muted-foreground flex items-center gap-0.5 justify-center">
+              {opponentType === "live" && <><Radio className="w-2.5 h-2.5" /> LIVE RATING</>}
+              {opponentType === "ghost" && <><Ghost className="w-2.5 h-2.5" /> GHOST RATING</>}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

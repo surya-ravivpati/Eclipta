@@ -68,37 +68,128 @@ const tierColors: Record<string, string> = {
   Bronze: "text-tier-bronze",
 };
 
+// ─── Audio Engine ─────────────────────────────────────────────────────
+// Web Audio API tone synthesizer — runs on the main thread, no external deps.
+// AudioContext is created lazily on first use (requires prior user gesture).
+let _audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  if (!_audioCtx) { try { _audioCtx = new AudioContext(); } catch { return null; } }
+  if (_audioCtx.state === "suspended") void _audioCtx.resume();
+  return _audioCtx;
+}
+function playTone(freq: number, dur: number, type: OscillatorType = "sine", vol = 0.10) {
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator(); const gain = ctx.createGain();
+  osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+}
+// Pitch rises with streak (220 Hz base + 22 Hz per streak hit, capped at 880 Hz)
+function sfxStreak(streak: number) { playTone(Math.min(220 + streak * 22, 880), 0.11, "sine", 0.09); }
+function sfxBreak()   { playTone(160, 0.22, "triangle", 0.11); setTimeout(() => playTone(110, 0.28, "triangle", 0.07), 90); }
+function sfxCombo()   { playTone(660, 0.08, "sine", 0.13); setTimeout(() => playTone(880, 0.14, "sine", 0.10), 80); }
+function sfxWild()    { [0, 55, 110].forEach((ms, i) => setTimeout(() => playTone(300 + i * 130, 0.18, "sawtooth", 0.07), ms)); }
+
 // ─── Sub-components ──────────────────────────────────────────────────
 function HpBar({ current, max, color, label }: { current: number; max: number; color: string; label: string }) {
   const pct = Math.max(0, (current / max) * 100);
+  const isCritical = max > 0 && current / max < 0.20;
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-1">
-        <span className="text-[10px] font-bold tracking-widest text-muted-foreground">{label}</span>
+        <span className={`text-[10px] font-bold tracking-widest transition-colors ${isCritical ? "text-neon-pink" : "text-muted-foreground"}`}>{label}</span>
         <div className="flex items-center gap-1">
-          <Heart className="w-3 h-3 text-neon-pink" />
-          <span className="text-xs font-bold font-display">{current}/{max}</span>
+          <motion.span
+            animate={isCritical ? { scale: [1, 1.25, 1] } : {}}
+            transition={{ repeat: Infinity, duration: 0.65 }}
+          >
+            <Heart className={`w-3 h-3 ${isCritical ? "text-neon-pink" : "text-neon-pink/70"}`} />
+          </motion.span>
+          <span className={`text-xs font-bold font-display transition-colors ${isCritical ? "text-neon-pink" : ""}`}>{current}/{max}</span>
         </div>
       </div>
-      <div className="h-3 bg-secondary/60 overflow-hidden border border-border/50">
-        <motion.div className={`h-full ${color}`} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
-      </div>
+      <motion.div
+        className={`h-3 bg-secondary/60 overflow-hidden border transition-colors ${isCritical ? "border-neon-pink/60" : "border-border/50"}`}
+        animate={isCritical ? { x: [0, -1.5, 1.5, -1, 0] } : {}}
+        transition={isCritical ? { repeat: Infinity, duration: 0.42, ease: "easeInOut" } : {}}
+        style={isCritical ? { boxShadow: "0 0 10px oklch(0.6 0.24 350 / 0.45)" } : {}}
+      >
+        <motion.div
+          className={`h-full transition-colors ${isCritical ? "bg-neon-pink" : color}`}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </motion.div>
     </div>
   );
 }
 
 function FocusBar({ current, max }: { current: number; max: number }) {
+  const isCharged = current >= 25;
+  const isWarm    = current >= 15;
+  const fillRatio = max > 0 ? current / max : 0;
+  const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-1">
-        <span className="text-[10px] font-bold tracking-widest text-muted-foreground">FOCUS</span>
-        <span className="text-xs font-bold font-display text-neon-purple">{current}/{max}</span>
+        <motion.span
+          className={`text-[10px] font-bold tracking-widest transition-colors ${isCharged ? "text-neon-pink" : isWarm ? "text-neon-purple" : "text-muted-foreground"}`}
+          animate={isCharged ? { opacity: [1, 0.6, 1] } : {}}
+          transition={{ repeat: Infinity, duration: pulseSpeed }}
+        >
+          {isCharged ? "CHARGED" : "FOCUS"}
+        </motion.span>
+        <motion.span
+          className={`text-xs font-bold font-display transition-colors ${isCharged ? "text-neon-pink" : "text-neon-purple"}`}
+          animate={isCharged ? { scale: [1, 1.06, 1] } : {}}
+          transition={{ repeat: Infinity, duration: pulseSpeed }}
+        >
+          {current}/{max}
+        </motion.span>
       </div>
       <div className="flex gap-0.5">
-        {Array.from({ length: max / 10 }).map((_, i) => (
-          <div key={i} className={`h-2 flex-1 transition-colors duration-300 ${i < current / 10 ? "bg-neon-purple" : "bg-secondary/40"}`} />
-        ))}
+        {Array.from({ length: max / 10 }).map((_, i) => {
+          const filled = i < current / 10;
+          const glowAmt = filled ? Math.min(fillRatio * 1.4, 0.85) : 0;
+          return (
+            <motion.div
+              key={i}
+              className={`h-2 flex-1 transition-colors duration-300 ${
+                filled
+                  ? isCharged  ? "bg-neon-pink"
+                  : isWarm     ? "bg-neon-purple"
+                  :              "bg-neon-purple/60"
+                  : "bg-secondary/40"
+              }`}
+              animate={filled && isCharged ? { opacity: [1, 0.65, 1] } : {}}
+              transition={{ repeat: Infinity, duration: pulseSpeed, delay: i * 0.04 }}
+              style={filled ? {
+                boxShadow: isCharged
+                  ? `0 0 5px oklch(0.6 0.24 350 / ${glowAmt})`
+                  : isWarm
+                  ? `0 0 3px oklch(0.55 0.25 290 / ${glowAmt * 0.6})`
+                  : "none",
+              } : {}}
+            />
+          );
+        })}
       </div>
+      <AnimatePresence>
+        {isCharged && (
+          <motion.p
+            className="text-[8px] font-bold tracking-widest text-neon-pink mt-0.5 text-right"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            exit={{ opacity: 0 }}
+            transition={{ repeat: Infinity, duration: 0.55 }}
+          >
+            CHARGE READY ⚡
+          </motion.p>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -283,6 +374,38 @@ function BattleLog({ logs }: { logs: string[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+// ─── Wild Event Overlay ───────────────────────────────────────────────
+// Each Wild outcome has a distinct visual identity so the event reads as a
+// force of nature, not a plain attack. Three event types, three color lanes.
+type WildEventType = "chaos" | "mend" | "surge";
+const WILD_CONFIGS: Record<WildEventType, { headline: string; color: string; border: string; bg: string }> = {
+  chaos: { headline: "CHAOS STRIKE",  color: "text-tier-gold",    border: "border-tier-gold/50",    bg: "bg-tier-gold/10"    },
+  mend:  { headline: "WILD MEND",     color: "text-neon-cyan",    border: "border-neon-cyan/50",    bg: "bg-neon-cyan/10"    },
+  surge: { headline: "ARCANE SURGE",  color: "text-neon-purple",  border: "border-neon-purple/50",  bg: "bg-neon-purple/10"  },
+};
+
+function WildEventOverlay({ event }: { event: { type: WildEventType; sub: string } }) {
+  const cfg = WILD_CONFIGS[event.type];
+  return (
+    <motion.div
+      className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 1, 0] }}
+      transition={{ duration: 1.3, times: [0, 0.08, 0.72, 1] }}
+    >
+      <motion.div
+        className={`px-10 py-6 border-2 ${cfg.border} ${cfg.bg} text-center backdrop-blur-sm`}
+        initial={{ scale: 0.55, y: 24 }}
+        animate={{ scale: [0.55, 1.12, 1], y: [24, -4, 0] }}
+        transition={{ duration: 0.38, ease: "easeOut" }}
+      >
+        <p className={`text-2xl font-bold font-display tracking-widest ${cfg.color}`}>{cfg.headline}</p>
+        <p className={`text-sm font-bold mt-1.5 ${cfg.color} opacity-75`}>{event.sub}</p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -513,6 +636,7 @@ function BattleArena() {
   const [fastestAnswer, setFastestAnswer] = useState(Infinity);
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const [gamblerStats, setGamblerStats] = useState<GamblerRoll | null>(null);
+  const [wildEvent, setWildEvent] = useState<{ type: WildEventType; sub: string } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const battleMemoryRef = useRef<BattleMemory | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
@@ -580,11 +704,13 @@ function BattleArena() {
       const newMom = momentum + 1;
       setMomentum(newMom);
       if (newMom > longestStreak) setLongestStreak(newMom);
+      sfxStreak(newMom);
 
       // Announce combo activations in the log with the actual live multiplier
       if (newMom > 0 && newMom % comboThreshold === 0) {
         const newMult = streakToMultiplier(newMom, step);
         addLog(`🔥 COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!`);
+        sfxCombo();
       }
 
       if (currentAction === "defend") {
@@ -599,12 +725,29 @@ function BattleArena() {
           addLog(`✅ Defend: +${gain} Focus (Tank cannot heal).`);
         }
       } else if (currentAction === "wild") {
-        const effects = [
-          () => { const d = Math.floor(Math.random() * 30) + 10; setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) })); setShowOpponentHit(true); addLog(`🎲 Wild: ${d} random DMG!`); },
-          () => { setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 20) })); setShowPlayerHeal(true); addLog(`🎲 Wild: +20 HP!`); },
-          () => { const d = 20; setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) })); setShowOpponentHit(true); addLog(`🎲 Wild: ${d} DMG + 20 Focus!`); },
-        ];
-        effects[Math.floor(Math.random() * effects.length)]();
+        // Three distinct event types — each with unique visual/audio identity
+        sfxWild();
+        const roll = Math.random();
+        if (roll < 0.333) {
+          const d = Math.floor(Math.random() * 30) + 10;
+          setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
+          setShowOpponentHit(true);
+          setWildEvent({ type: "chaos", sub: `${d} DMG` });
+          addLog(`🎲 CHAOS STRIKE: ${d} DMG!`);
+        } else if (roll < 0.667) {
+          setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 20) }));
+          setShowPlayerHeal(true);
+          setWildEvent({ type: "mend", sub: "+20 HP" });
+          addLog(`🎲 WILD MEND: +20 HP!`);
+        } else {
+          const d = 20;
+          setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
+          setShowOpponentHit(true);
+          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + 20) }));
+          setWildEvent({ type: "surge", sub: `${d} DMG + Focus` });
+          addLog(`🎲 ARCANE SURGE: ${d} DMG + Focus!`);
+        }
+        setTimeout(() => setWildEvent(null), 1400);
       } else {
         const dmg = Math.floor(
           getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: records.length })
@@ -622,6 +765,7 @@ function BattleArena() {
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {
       setMomentum(0);
+      sfxBreak();
       let counterDmg = Math.floor(Math.random() * 10) + 8;
       counterDmg = Math.floor(counterDmg * hpToSelfDmgMult(arch.maxHp));
       // Healer passive: recover some HP on getting hit
@@ -942,6 +1086,10 @@ function BattleArena() {
   // ── Battle ──
   return (
     <div className="relative">
+      {/* Wild event overlay — appears on the battle field, not inside the question panel */}
+      <AnimatePresence>
+        {wildEvent && <WildEventOverlay event={wildEvent} />}
+      </AnimatePresence>
       <div className="flex gap-4 mb-4">
         <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} />
         <div className="flex flex-col items-center justify-center px-2">

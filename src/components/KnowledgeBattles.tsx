@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
   Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info, FastForward,
+  Users, Ghost, Radio, TrendingUp, TrendingDown,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -19,6 +20,9 @@ import { BattleReport } from "./battles/BattleReport";
 import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodayChallenge } from "@/lib/daily-challenge";
+import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
+import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
+import { fetchPlayerRating, updateRating, ratingToTier, formatRatingDelta } from "@/lib/rating";
 
 /**
  * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
@@ -47,13 +51,13 @@ type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string }
 
 // Aligned with Trophy Road tier thresholds in src/lib/trophy-road-data.ts
 function xpToTier(xp: number): string {
-  if (xp >= 40000) return "God Tier";
-  if (xp >= 25000) return "Unreal";
-  if (xp >= 16000) return "Champion";
-  if (xp >= 10000) return "Platinum";
-  if (xp >= 6000) return "Diamond";
-  if (xp >= 3000) return "Gold";
-  if (xp >= 1000) return "Silver";
+  if (xp >= 460000) return "God Tier";
+  if (xp >= 265000) return "Unreal";
+  if (xp >= 145000) return "Champion";
+  if (xp >= 78000)  return "Platinum";
+  if (xp >= 43000)  return "Diamond";
+  if (xp >= 20000)  return "Gold";
+  if (xp >= 7500)   return "Silver";
   return "Bronze";
 }
 
@@ -641,19 +645,72 @@ function BattleArena() {
   const battleMemoryRef = useRef<BattleMemory | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
 
-  // Fetch player XP for tier display only (no longer used for matchmaking)
+  // PvP / matchmaking state
+  const [opponentType, setOpponentType]     = useState<OpponentType>("bot");
+  const [matchStatus, setMatchStatus]       = useState("Finding opponent…");
+  const [matchTier, setMatchTier]           = useState<OpponentType>("live");
+  const [pvpBattleId, setPvpBattleId]       = useState<string | null>(null);
+  const [playerRating, setPlayerRating]     = useState(1000);
+  const [playerUsername, setPlayerUsername] = useState<string | null>(null);
+  const [opponentRating, setOpponentRating] = useState(1000);
+  const [ratingChange, setRatingChange]     = useState<number | null>(null);
+
+  // Refs for async-safe access inside callbacks
+  const pvpChannelRef     = useRef<any>(null);
+  const ghostSessionRef   = useRef<GhostSession | null>(null);
+  const ghostTurnIndexRef = useRef(0);
+  const playerRatingRef   = useRef(1000);
+  const opponentRatingRef = useRef(1000);
+  const opponentTypeRef   = useRef<OpponentType>("bot");
+
+  // Fetch player profile (XP + rating + username)
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from("user_profiles")
-        .select("xp")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setPlayerXp((data as any)?.xp ?? 0);
+      const [profileRes, ratingData] = await Promise.all([
+        supabase.from("user_profiles").select("xp, username").eq("user_id", user.id).maybeSingle(),
+        fetchPlayerRating(),
+      ]);
+      setPlayerXp((profileRes.data as any)?.xp ?? 0);
+      setPlayerUsername((profileRes.data as any)?.username ?? null);
+      setPlayerRating(ratingData.rating);
+      playerRatingRef.current = ratingData.rating;
     })();
   }, []);
+
+  // Live PvP: subscribe to Realtime channel when a live battle is active
+  useEffect(() => {
+    if (!pvpBattleId || opponentType !== "live") return;
+
+    const channel = supabase.channel(`pvp-battle:${pvpBattleId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "damage" }, ({ payload }) => {
+        const dmg = payload.damage as number;
+        setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
+        setShowPlayerHit(true);
+        addLog(`⚔️ Opponent: ${dmg} DMG!`);
+        setTimeout(() => setShowPlayerHit(false), 600);
+      })
+      .on("broadcast", { event: "heal" }, ({ payload }) => {
+        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
+      })
+      .on("broadcast", { event: "battle_end" }, ({ payload }) => {
+        const weWon = payload.winner_id !== payload.sender_id;
+        finishBattle(weWon);
+      })
+      .subscribe();
+
+    pvpChannelRef.current = channel;
+    return () => {
+      void supabase.removeChannel(channel);
+      pvpChannelRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pvpBattleId, opponentType]);
 
   const getArch = useCallback((id: ArchetypeId): Archetype => {
     const base = ARCHETYPES[id];
@@ -761,6 +818,10 @@ function BattleArena() {
         setShowOpponentHit(true);
         const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
         addLog(`✅ ${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` 🔥 ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`);
+        // Broadcast damage to live opponent via Realtime
+        if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
+          pvpChannelRef.current.send({ type: "broadcast", event: "damage", payload: { damage: dmg, action: currentAction } });
+        }
       }
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {
@@ -790,7 +851,15 @@ function BattleArena() {
         }
         setPlayer(prevP => {
           if (prevP.hp <= 0) { finishBattle(false); return prevP; }
-          aiTurn();
+          // Route to opponent turn based on match type
+          if (opponentTypeRef.current === "live") {
+            // Opponent plays independently via Realtime — just return to select
+            setPhase("select");
+          } else if (opponentTypeRef.current === "ghost") {
+            ghostTurn();
+          } else {
+            aiTurn();
+          }
           return prevP;
         });
         return prev;
@@ -799,6 +868,14 @@ function BattleArena() {
   }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
 
   const finishBattle = useCallback((won: boolean) => {
+    // Broadcast result to live opponent before tearing down
+    if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
+      pvpChannelRef.current.send({
+        type: "broadcast", event: "battle_end",
+        payload: { winner_id: won ? "me" : "them", sender_id: "me" },
+      });
+    }
+
     const xp = won ? Math.floor(totalScore * 0.8) + 200 : Math.floor(totalScore * 0.2);
     setBattleStats({
       totalQuestions: records.length + 1, // +1 for the final answer
@@ -848,6 +925,23 @@ function BattleArena() {
           });
         }
         window.dispatchEvent(new Event("daily-challenge-updated"));
+      }
+
+      // Record session as ghost replay data for future opponents
+      void recordBattleSession({
+        archetype,
+        won,
+        rating: playerRatingRef.current,
+        records,
+        bestStreak: longestStreak,
+      });
+
+      // Update ELO rating for live and ghost matches (never bots)
+      if (opponentTypeRef.current !== "bot") {
+        const newRating = await updateRating(opponentRatingRef.current, won);
+        setRatingChange(newRating - playerRatingRef.current);
+        setPlayerRating(newRating);
+        playerRatingRef.current = newRating;
       }
     })();
   }, [totalScore, records, longestStreak, fastestAnswer, archetype]);
@@ -951,6 +1045,62 @@ function BattleArena() {
     }, 400);
   }, [addLog, finishBattle, opponentArchetype, opponentMomentum, getArch]);
 
+  /**
+   * Ghost turn: replays actions from a real player's recorded session.
+   * Accuracy and timing come from the stored question_records — no procedural AI.
+   */
+  const ghostTurn = useCallback(() => {
+    const ghost = ghostSessionRef.current;
+    if (!ghost || ghost.questionRecords.length === 0) {
+      // Degenerate case: fall back to AI if ghost data is empty
+      aiTurn();
+      return;
+    }
+
+    const idx    = ghostTurnIndexRef.current % ghost.questionRecords.length;
+    const record = ghost.questionRecords[idx];
+    ghostTurnIndexRef.current += 1;
+
+    const oppArch = getArch(opponentArchetype);
+    const delay   = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
+
+    setTimeout(() => {
+      setOpponent(prevOpp => {
+        setPlayer(prevPlayer => {
+          let newPlayerHp = prevPlayer.hp;
+          let newOppHp    = prevOpp.hp;
+
+          if (record.correct) {
+            const dmg = Math.floor(
+              getEffectiveDamage(oppArch, {
+                action: record.action as Action,
+                recordCount: ghostTurnIndexRef.current,
+              })
+            );
+            newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
+            setShowPlayerHit(true);
+            addLog(`👻 ${prevOpp.name}: ${dmg} DMG (ghost replay)`);
+          } else {
+            const flub = Math.floor(Math.random() * 6) + 3;
+            newOppHp = Math.max(0, prevOpp.hp - flub);
+            addLog(`👻 ${prevOpp.name} missed (-${flub} self)`);
+          }
+
+          setTimeout(() => {
+            setShowPlayerHit(false);
+            if (newPlayerHp <= 0) finishBattle(false);
+            else if (newOppHp <= 0) finishBattle(true);
+            else setPhase("select");
+          }, 600);
+
+          setOpponent(o => ({ ...o, hp: newOppHp }));
+          return { ...prevPlayer, hp: newPlayerHp };
+        });
+        return prevOpp;
+      });
+    }, delay);
+  }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
+
   const selectAction = (action: Action) => {
     const cost = ACTIONS[action].focusCost;
     if (cost > 0 && player.focus < cost) { addLog(`⚠️ Need ${cost} Focus!`); return; }
@@ -972,41 +1122,103 @@ function BattleArena() {
   const [ecliptar, setEcliptar] = useState<Ecliptar | null>(null);
 
   const startBattle = (selection?: ClassSelection) => {
-    const cls = selection?.archetype || archetype;
+    const cls  = selection?.archetype || archetype;
     const eclip = selection?.ecliptar ?? ecliptar;
     if (selection?.archetype) setArchetype(selection.archetype);
     if (selection?.ecliptar) setEcliptar(selection.ecliptar);
 
     const rolledGambler = cls === "gambler" ? rollGamblerStats() : null;
     setGamblerStats(rolledGambler);
-
+    setRatingChange(null);
     setPhase("searching");
-    const oppEclip: Ecliptar = pickOpponent(cls);
-    const oppArch = ARCHETYPES[oppEclip.archetype];
-    setOpponentArchetype(oppEclip.archetype);
 
-    setTimeout(() => {
-      const baseArch = ARCHETYPES[cls];
+    // Reset ghost state
+    ghostSessionRef.current   = null;
+    ghostTurnIndexRef.current = 0;
+    pvpChannelRef.current     = null;
+    setPvpBattleId(null);
+
+    // Run full Tier 1→2→3 matchmaking asynchronously
+    void (async () => {
+      const match: MatchResult = await findMatch(
+        cls,
+        playerRatingRef.current,
+        playerUsername,
+        (msg, tier) => { setMatchStatus(msg); setMatchTier(tier); },
+      );
+
+      // Resolve opponent from match result
+      let oppArchetype: ArchetypeId;
+      let oppName: string;
+      let oppIcon = Bot;
+
+      if (match.opponentArchetype) {
+        oppArchetype = match.opponentArchetype;
+        oppName = match.opponentName;
+      } else {
+        // Bot: pick a random ecliptar opponent
+        const oppEclip = pickOpponent(cls);
+        oppArchetype = oppEclip.archetype;
+        oppName      = oppEclip.name;
+        oppIcon      = oppEclip.icon;
+      }
+
+      // Ghost: prime the replay buffer
+      if (match.type === "ghost" && match.ghostSession) {
+        ghostSessionRef.current   = match.ghostSession;
+        ghostTurnIndexRef.current = 0;
+      }
+
+      // Live: store battle ID so the Realtime useEffect subscribes
+      if (match.type === "live" && match.pvpBattleId) {
+        setPvpBattleId(match.pvpBattleId);
+      }
+
+      // Sync refs for async-safe use inside callbacks
+      setOpponentType(match.type);
+      opponentTypeRef.current    = match.type;
+      setOpponentRating(match.opponentRating);
+      opponentRatingRef.current  = match.opponentRating;
+
+      const baseArch      = ARCHETYPES[cls];
       const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
-      const playerHp = effectiveArch.maxHp;
-      const playerName = eclip?.name ?? "You";
-      const playerIcon = eclip?.icon ?? User;
-      const oppHp = oppArch.maxHp;
-      setPlayer({ name: playerName, hp: playerHp, maxHp: playerHp, focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon });
-      setOpponent({ name: oppEclip.name, hp: oppHp, maxHp: oppHp, focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppEclip.icon });
+      const playerName    = eclip?.name ?? "You";
+      const playerIcon    = eclip?.icon ?? User;
+      const oppArch       = ARCHETYPES[oppArchetype];
+
+      setPlayer({
+        name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
+        focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+      });
+      setOpponent({
+        name: oppName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
+        focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppIcon,
+      });
+      setOpponentArchetype(oppArchetype);
       battleMemoryRef.current = createBattleMemory();
-      setMomentum(0); setOpponentMomentum(0); setLogs([]); setTotalScore(0); setRecords([]); setLongestStreak(0); setFastestAnswer(Infinity); setBattleStats(null);
+      setMomentum(0); setOpponentMomentum(0); setLogs([]);
+      setTotalScore(0); setRecords([]); setLongestStreak(0);
+      setFastestAnswer(Infinity); setBattleStats(null);
+
       if (rolledGambler) {
-        // Gambler routes through the ceremonial stat-reveal before battle starts
         setPhase("gamblerReveal");
       } else {
         setPhase("select");
-        addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppEclip.name} (${oppArch.name})!`);
+        const typeTag = match.type === "live" ? "⚡ LIVE" : match.type === "ghost" ? "👻 GHOST" : "🤖 BOT";
+        addLog(`⚔️ ${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}`);
       }
-    }, 1100);
+    })();
   };
 
-  const reset = () => { setPhase("idle"); setBattleStats(null); };
+  const reset = () => {
+    setPhase("idle");
+    setBattleStats(null);
+    setPvpBattleId(null);
+    setOpponentType("bot");
+    setRatingChange(null);
+    ghostSessionRef.current   = null;
+    pvpChannelRef.current     = null;
+  };
 
   // ── Idle ──
   if (phase === "idle") {
@@ -1039,16 +1251,57 @@ function BattleArena() {
   // ── Searching ──
   if (phase === "searching") {
     const arch = ARCHETYPES[archetype];
+    const tierConfig = {
+      live:  { label: "LIVE PvP",    icon: Users,  color: "text-neon-cyan",    glow: "border-neon-cyan/60"    },
+      ghost: { label: "GHOST",       icon: Ghost,  color: "text-neon-purple",  glow: "border-neon-purple/60"  },
+      bot:   { label: "AI BOT",      icon: Bot,    color: "text-muted-foreground", glow: "border-border"      },
+    } as const;
     return (
       <motion.div className="glass-panel p-10 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <motion.div className="w-20 h-20 mx-auto mb-6 border-2 border-neon-pink/50 flex items-center justify-center"
-          animate={{ rotate: 360, borderColor: ["oklch(0.6 0.24 350)", "oklch(0.55 0.25 290)", "oklch(0.75 0.15 180)", "oklch(0.6 0.24 350)"] }}
+        <motion.div
+          className="w-20 h-20 mx-auto mb-6 border-2 flex items-center justify-center"
+          animate={{
+            borderColor: ["oklch(0.6 0.24 350)", "oklch(0.55 0.25 290)", "oklch(0.75 0.15 180)", "oklch(0.6 0.24 350)"],
+            rotate: 360,
+          }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         >
           <Target className="w-8 h-8 text-neon-pink" />
         </motion.div>
+
         <h3 className="text-xl font-bold font-display mb-1">Finding an opponent…</h3>
-        <p className={`inline-flex items-center gap-1 text-xs font-bold ${arch.color}`}><arch.icon className="w-3.5 h-3.5" /> {arch.name}</p>
+        <p className={`inline-flex items-center gap-1 text-xs font-bold ${arch.color} mb-6`}>
+          <arch.icon className="w-3.5 h-3.5" /> {arch.name}
+        </p>
+
+        {/* Tier priority indicator */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          {(["live", "ghost", "bot"] as const).map((tier, i) => {
+            const cfg     = tierConfig[tier];
+            const Icon    = cfg.icon;
+            const active  = matchTier === tier;
+            const passed  = (["live", "ghost", "bot"] as const).indexOf(matchTier) > i;
+            return (
+              <div key={tier} className="flex items-center gap-2">
+                <motion.div
+                  className={`flex items-center gap-1 px-2 py-1 border text-[10px] font-bold tracking-widest transition-all ${
+                    active  ? `${cfg.color} ${cfg.glow} bg-white/5` :
+                    passed  ? "text-emerald-500 border-emerald-500/40 bg-emerald-500/5" :
+                              "text-muted-foreground/30 border-border/30"
+                  }`}
+                  animate={active ? { opacity: [0.7, 1, 0.7] } : {}}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                >
+                  <Icon className="w-3 h-3" />
+                  {cfg.label}
+                </motion.div>
+                {i < 2 && <span className="text-muted-foreground/30 text-xs">→</span>}
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-muted-foreground tabular-nums">{matchStatus}</p>
         <motion.div className="flex justify-center gap-1 mt-4" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}>
           {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 bg-neon-pink rounded-full" />)}
         </motion.div>
@@ -1079,6 +1332,8 @@ function BattleArena() {
         onRematch={() => setPhase("classSelect")}
         onContinueWithEcliptar={ecliptar ? () => startBattle({ archetype, ecliptar }) : undefined}
         onBack={reset}
+        ratingChange={ratingChange}
+        opponentType={opponentType}
       />
     );
   }
@@ -1092,11 +1347,34 @@ function BattleArena() {
       </AnimatePresence>
       <div className="flex gap-4 mb-4">
         <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} />
-        <div className="flex flex-col items-center justify-center px-2">
+        <div className="flex flex-col items-center justify-center px-2 gap-1">
           <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
             <Swords className="w-6 h-6 text-neon-pink" />
           </motion.div>
-          <span className="text-[10px] font-bold tracking-widest text-muted-foreground mt-1">VS</span>
+          <span className="text-[10px] font-bold tracking-widest text-muted-foreground">VS</span>
+          {/* Opponent type badge */}
+          {opponentType === "live" && (
+            <motion.div
+              className="flex items-center gap-0.5 px-1.5 py-0.5 border border-neon-cyan/50 bg-neon-cyan/10 text-neon-cyan"
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ repeat: Infinity, duration: 1.4 }}
+            >
+              <Radio className="w-2.5 h-2.5" />
+              <span className="text-[8px] font-bold tracking-widest">LIVE</span>
+            </motion.div>
+          )}
+          {opponentType === "ghost" && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 border border-neon-purple/50 bg-neon-purple/10 text-neon-purple">
+              <Ghost className="w-2.5 h-2.5" />
+              <span className="text-[8px] font-bold tracking-widest">GHOST</span>
+            </div>
+          )}
+          {opponentType === "bot" && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 border border-border/50 text-muted-foreground/50">
+              <Bot className="w-2.5 h-2.5" />
+              <span className="text-[8px] font-bold tracking-widest">BOT</span>
+            </div>
+          )}
         </div>
         <FighterCard fighter={opponent} side="right" momentum={opponentMomentum} archetype={opponentArchetype} showHit={showOpponentHit} showHeal={false} />
       </div>
@@ -1309,23 +1587,40 @@ function BattleArena() {
   );
 }
 
-// ─── Leaderboard (live) ───────────────────────────────────────────────
+type RatingEntry = { rank: number; name: string; rating: number; wins: number; losses: number };
+
+// ─── Leaderboard (XP + PvP Rating tabs) ──────────────────────────────
 function LeaderboardCard() {
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab]             = useState<"xp" | "rating">("rating");
+  const [xpEntries, setXpEntries] = useState<LeaderboardEntry[]>([]);
+  const [pvpEntries, setPvpEntries] = useState<RatingEntry[]>([]);
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc("get_leaderboard" as any, { p_limit: 6 });
+      const [xpRes, pvpRes] = await Promise.all([
+        supabase.rpc("get_leaderboard" as any, { p_limit: 6 }),
+        supabase.rpc("get_pvp_leaderboard" as any, { p_limit: 6 }),
+      ]);
       if (cancelled) return;
-      const rows: LeaderboardEntry[] = ((data ?? []) as { user_id: string; username?: string | null; xp: number | null }[]).map((r, i) => ({
-        rank: i + 1,
-        name: r.username || `learner_${r.user_id.slice(0, 6)}`,
-        xp: r.xp ?? 0,
-        tier: xpToTier(r.xp ?? 0),
-      }));
-      setEntries(rows);
+      setXpEntries(
+        ((xpRes.data ?? []) as { user_id: string; username?: string | null; xp: number | null }[]).map((r, i) => ({
+          rank: i + 1,
+          name: r.username || `learner_${r.user_id.slice(0, 6)}`,
+          xp:   r.xp ?? 0,
+          tier: xpToTier(r.xp ?? 0),
+        }))
+      );
+      setPvpEntries(
+        ((pvpRes.data ?? []) as { user_id: string; username?: string | null; rating: number; wins: number; losses: number }[]).map((r, i) => ({
+          rank:   i + 1,
+          name:   r.username || `player_${r.user_id.slice(0, 6)}`,
+          rating: r.rating,
+          wins:   r.wins,
+          losses: r.losses,
+        }))
+      );
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -1335,35 +1630,83 @@ function LeaderboardCard() {
     <motion.div className="glass-panel p-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold font-display tracking-widest text-neon-cyan">LEADERBOARD</h3>
-        <Trophy className="w-4 h-4 text-neon-cyan" />
+        <div className="flex gap-1">
+          {(["rating", "xp"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-2 py-0.5 text-[9px] font-bold tracking-widest border transition-colors ${
+                tab === t
+                  ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan"
+                  : "border-border/40 text-muted-foreground hover:border-border"
+              }`}
+            >
+              {t === "rating" ? "PvP RATING" : "XP"}
+            </button>
+          ))}
+        </div>
       </div>
+
       <div className="space-y-2">
         {loading && <p className="text-[10px] text-muted-foreground italic px-3">Loading rankings…</p>}
-        {!loading && entries.length < 3 && (
-          <div className="px-3 py-4 border border-dashed border-neon-pink/40 bg-neon-pink/5 text-center">
-            <p className="text-xs font-bold text-neon-pink mb-1">CLAIM THE THRONE</p>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              The arena is fresh. Win battles to be among the first names etched into the leaderboard.
-            </p>
-          </div>
-        )}
-        {entries.map(p => {
-          const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(p.name);
-          return (
-            <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
-              <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
-              <div className="flex-1 min-w-0">
-                {isUsername ? (
-                  <a href={`/u/${p.name}`} className="text-xs font-bold text-foreground truncate hover:text-neon-purple transition-colors">{p.name}</a>
-                ) : (
-                  <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
-                )}
-                <span className={`text-[10px] ml-2 font-bold ${tierColors[p.tier]}`}>{p.tier}</span>
-              </div>
-              <div className="text-xs font-bold text-foreground">{p.xp.toLocaleString()} XP</div>
+
+        {/* PvP Rating tab */}
+        {!loading && tab === "rating" && (
+          pvpEntries.length < 1 ? (
+            <div className="px-3 py-4 border border-dashed border-neon-cyan/40 bg-neon-cyan/5 text-center">
+              <p className="text-xs font-bold text-neon-cyan mb-1">NO RANKED MATCHES YET</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Complete a live or ghost battle to appear on the rating ladder.
+              </p>
             </div>
-          );
-        })}
+          ) : pvpEntries.map(p => {
+            const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(p.name);
+            const tier = ratingToTier(p.rating);
+            return (
+              <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
+                <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
+                <div className="flex-1 min-w-0">
+                  {isUsername
+                    ? <a href={`/u/${p.name}`} className="text-xs font-bold text-foreground truncate hover:text-neon-purple transition-colors">{p.name}</a>
+                    : <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+                  }
+                  <span className={`text-[10px] ml-2 font-bold ${tierColors[tier] ?? "text-muted-foreground"}`}>{tier}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-bold font-display text-foreground">{p.rating}</div>
+                  <div className="text-[9px] text-muted-foreground tabular-nums">{p.wins}W {p.losses}L</div>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* XP tab */}
+        {!loading && tab === "xp" && (
+          xpEntries.length < 3 ? (
+            <div className="px-3 py-4 border border-dashed border-neon-pink/40 bg-neon-pink/5 text-center">
+              <p className="text-xs font-bold text-neon-pink mb-1">CLAIM THE THRONE</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Win battles to be among the first names etched into the leaderboard.
+              </p>
+            </div>
+          ) : xpEntries.map(p => {
+            const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(p.name);
+            return (
+              <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
+                <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
+                <div className="flex-1 min-w-0">
+                  {isUsername
+                    ? <a href={`/u/${p.name}`} className="text-xs font-bold text-foreground truncate hover:text-neon-purple transition-colors">{p.name}</a>
+                    : <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+                  }
+                  <span className={`text-[10px] ml-2 font-bold ${tierColors[p.tier]}`}>{p.tier}</span>
+                </div>
+                <div className="text-xs font-bold text-foreground">{p.xp.toLocaleString()} XP</div>
+              </div>
+            );
+          })
+        )}
       </div>
     </motion.div>
   );
@@ -1528,9 +1871,10 @@ export function KnowledgeBattles() {
                 <Target className="w-3.5 h-3.5" /> OPPONENTS
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li>Every duel pulls a <span className="text-foreground font-bold">random Ecliptar opponent</span> — no rank gating, jump in instantly.</li>
-                <li>Whenever possible, the opponent is a <span className="text-foreground font-bold">different archetype</span> than yours for variety.</li>
-                <li>Your <span className="text-foreground font-bold">tier</span> still shows on your profile — earned XP feeds the Trophy Road, not matchmaking.</li>
+                <li><span className="text-neon-cyan font-bold">LIVE PvP</span> — the system first scans for a real player currently in queue. If one is found, you battle head-to-head in real time via a live channel. Rating is at stake.</li>
+                <li><span className="text-neon-purple font-bold">GHOST PvP</span> — if no live opponent is found in 8 seconds, you face a replay of a real player's past session. Their actions, timing, and accuracy are replayed authentically. Rating still applies.</li>
+                <li><span className="text-muted-foreground font-bold">AI Bot</span> — last resort only, when no real player data exists at your rating range. Bots never affect your rating.</li>
+                <li>Priority is always <span className="text-foreground font-bold">Live → Ghost → Bot</span>. You will never be matched with a bot when real player data is available.</li>
               </ul>
             </section>
 

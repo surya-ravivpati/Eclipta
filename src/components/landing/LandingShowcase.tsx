@@ -391,7 +391,7 @@ function ClassPicker() {
               >
                 <Link
                   to="/battles"
-                  className={`group block glass-panel p-4 h-full ${a.borderColor.replace("/40", "/20")} hover:${a.borderColor.replace("border-", "border-")} transition-all hover:-translate-y-1`}
+                  className="group block glass-panel p-4 h-full hover:border-neon-pink/40 transition-all hover:-translate-y-1"
                 >
                   <div className={`w-10 h-10 border ${a.borderColor} bg-background/30 flex items-center justify-center mb-3`}>
                     <Icon className={`w-5 h-5 ${a.color}`} />

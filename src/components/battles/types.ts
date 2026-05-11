@@ -105,4 +105,6 @@ export interface BattleStats {
   won: boolean;
   score: number;
   xp: number;
+  opponentType?: "live" | "ghost" | "bot";
+  ratingChange?: number | null;
 }

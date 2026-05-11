@@ -182,9 +182,10 @@ function HpBar({ current, max, color, label }: { current: number; max: number; c
   );
 }
 
-function FocusBar({ current, max }: { current: number; max: number }) {
-  const isCharged = current >= 25;
-  const isWarm    = current >= 15;
+function FocusBar({ current, max, isPlayer = false }: { current: number; max: number; isPlayer?: boolean }) {
+  const chargeCost = ACTIONS.charge.focusCost;
+  const isCharged = current >= chargeCost;
+  const isWarm    = current >= chargeCost - 10;
   const fillRatio = max > 0 ? current / max : 0;
   const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
@@ -233,7 +234,7 @@ function FocusBar({ current, max }: { current: number; max: number }) {
         })}
       </div>
       <AnimatePresence>
-        {isCharged && (
+        {isCharged && isPlayer && (
           <motion.p
             className="text-[8px] font-bold tracking-widest text-neon-pink mt-0.5 text-right"
             initial={{ opacity: 0 }}

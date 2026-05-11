@@ -20,7 +20,7 @@ export interface MatchResult {
   ghostSession?: GhostSession;
 }
 
-const QUEUE_TIMEOUT_MS  = 8_000;
+const QUEUE_TIMEOUT_MS  = 12_000;
 const POLL_INTERVAL_MS  = 1_500;
 
 // ── Queue management ─────────────────────────────────────────────────────
@@ -56,21 +56,67 @@ async function tryLiveMatch(
   archetype: ArchetypeId,
   rating: number,
 ): Promise<MatchResult | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // Case 1: We initiate and find a match (challenger side).
   const { data } = await supabase.rpc("find_pvp_match" as any, {
     p_archetype: archetype,
     p_rating:    rating,
   });
-  if (!data || !(data as any).matched) return null;
+  if (data && (data as any).matched) {
+    const d = data as any;
+    return {
+      type:              "live",
+      opponentName:      d.opponent_username ?? `Player_${(d.opponent_user_id as string).slice(0, 6)}`,
+      opponentArchetype: d.opponent_archetype as ArchetypeId,
+      opponentRating:    d.opponent_rating ?? 1000,
+      pvpBattleId:       d.battle_id as string,
+      pvpChannelName:    `pvp-battle:${d.battle_id}`,
+    };
+  }
 
-  const d = data as any;
-  return {
-    type:              "live",
-    opponentName:      d.opponent_username ?? `Player_${(d.opponent_user_id as string).slice(0, 6)}`,
-    opponentArchetype: d.opponent_archetype as ArchetypeId,
-    opponentRating:    d.opponent_rating ?? 1000,
-    pvpBattleId:       d.battle_id as string,
-    pvpChannelName:    `pvp-battle:${d.battle_id}`,
-  };
+  // Case 2: Someone already matched us. The find_pvp_match RPC only delivers
+  // the battle_id to the challenger. The opponent is removed from the queue
+  // silently, so they must detect the match by polling pvp_battles directly.
+  const since = new Date(Date.now() - 30_000).toISOString();
+  const { data: battles } = await supabase
+    .from("pvp_battles" as any)
+    .select("id,challenger_id,opponent_id,challenger_archetype,opponent_archetype,status")
+    .or(`challenger_id.eq.${user.id},opponent_id.eq.${user.id}`)
+    .eq("status", "active")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (battles && (battles as any[]).length > 0) {
+    const b = (battles as any[])[0];
+    const isChallenger = b.challenger_id === user.id;
+    const oppId   = isChallenger ? b.opponent_id        : b.challenger_id;
+    const oppArch = isChallenger ? b.opponent_archetype : b.challenger_archetype;
+
+    const { data: oppProfile } = await supabase
+      .from("user_profiles" as any)
+      .select("username")
+      .eq("user_id", oppId)
+      .maybeSingle();
+    const { data: oppRating } = await supabase
+      .from("player_ratings" as any)
+      .select("rating")
+      .eq("user_id", oppId)
+      .maybeSingle();
+
+    return {
+      type:              "live",
+      opponentName:      (oppProfile as any)?.username ?? `Player_${(oppId as string).slice(0, 6)}`,
+      opponentArchetype: oppArch as ArchetypeId,
+      opponentRating:    (oppRating as any)?.rating ?? 1000,
+      pvpBattleId:       b.id as string,
+      pvpChannelName:    `pvp-battle:${b.id}`,
+    };
+  }
+
+  return null;
 }
 
 // ── Main matchmaking entry point ─────────────────────────────────────────

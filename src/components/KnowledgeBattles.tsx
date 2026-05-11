@@ -250,8 +250,8 @@ function FocusBar({ current, max, isPlayer = false, canAct = false }: { current:
   );
 }
 
-function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: {
-  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean;
+function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, canAct = false }: {
+  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean; canAct?: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
@@ -298,7 +298,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal }: 
           </div>
         </div>
         <HpBar current={fighter.hp} max={fighter.maxHp} color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"} label="HP" />
-        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} /></div>
+        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} canAct={canAct && side === "left"} /></div>
       </div>
       <AnimatePresence>
         {momentum > 0 && momentum % comboThreshold === 0 && (

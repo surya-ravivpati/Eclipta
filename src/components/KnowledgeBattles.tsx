@@ -1650,7 +1650,7 @@ function BattleArena() {
         {wildEvent && <WildEventOverlay event={wildEvent} />}
       </AnimatePresence>
       <div className="flex gap-4 mb-4">
-        <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} />
+        <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} canAct={phase === "select"} />
         <div className="flex flex-col items-center justify-center px-2 gap-1">
           <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
             <Swords className="w-6 h-6 text-neon-pink" />

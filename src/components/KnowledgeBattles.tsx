@@ -357,7 +357,7 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
             <motion.div className={`h-full ${timeLeft <= 3 ? "bg-neon-pink" : "bg-neon-purple"}`} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
           </div>
         </div>
-        <h3 className="text-3xl font-bold font-display text-center mb-8 text-foreground">{question.q} = ?</h3>
+        <h3 className="text-3xl font-bold font-display text-center mb-8 text-foreground">{question.q.trimEnd().endsWith("?") ? question.q : `${question.q} = ?`}</h3>
         <div className="grid grid-cols-2 gap-3">
           {question.options.map((opt, i) => {
             let style = "border-border hover:border-neon-purple/60 hover:bg-neon-purple/5";

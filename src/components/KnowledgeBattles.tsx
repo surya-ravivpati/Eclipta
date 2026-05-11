@@ -182,7 +182,7 @@ function HpBar({ current, max, color, label }: { current: number; max: number; c
   );
 }
 
-function FocusBar({ current, max, isPlayer = false }: { current: number; max: number; isPlayer?: boolean }) {
+function FocusBar({ current, max, isPlayer = false, canAct = false }: { current: number; max: number; isPlayer?: boolean; canAct?: boolean }) {
   const chargeCost = ACTIONS.charge.focusCost;
   const isCharged = current >= chargeCost;
   const isWarm    = current >= chargeCost - 10;
@@ -234,7 +234,7 @@ function FocusBar({ current, max, isPlayer = false }: { current: number; max: nu
         })}
       </div>
       <AnimatePresence>
-        {isCharged && isPlayer && (
+        {isCharged && isPlayer && canAct && (
           <motion.p
             className="text-[8px] font-bold tracking-widest text-neon-pink mt-0.5 text-right"
             initial={{ opacity: 0 }}

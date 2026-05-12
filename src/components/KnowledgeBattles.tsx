@@ -1921,7 +1921,7 @@ function LeaderboardCard() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const [xpRes, pvpRes] = await Promise.all([
         supabase.rpc("get_leaderboard" as any, { p_limit: 6 }),
         supabase.rpc("get_pvp_leaderboard" as any, { p_limit: 6 }),
@@ -1945,8 +1945,36 @@ function LeaderboardCard() {
         }))
       );
       setLoading(false);
-    })();
-    return () => { cancelled = true; };
+    };
+    void load();
+
+    // Debounced refresh on any XP / rating change anywhere — keeps the board
+    // close to live without hammering RPCs on every event.
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (pending) return;
+      pending = setTimeout(() => { pending = null; void load(); }, 500);
+    };
+
+    const xpChan = supabase
+      .channel(`leaderboard-xp:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "user_profiles" }, scheduleRefresh)
+      .subscribe();
+    const pvpChan = supabase
+      .channel(`leaderboard-pvp:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "player_ratings" }, scheduleRefresh)
+      .subscribe();
+
+    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      if (pending) clearTimeout(pending);
+      document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(xpChan);
+      supabase.removeChannel(pvpChan);
+    };
   }, []);
 
   return (

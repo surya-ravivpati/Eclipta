@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_sessions: {
+        Row: {
+          archetype: string
+          best_streak: number
+          correct_answers: number
+          created_at: string
+          id: string
+          question_records: Json
+          rating: number
+          total_questions: number
+          user_id: string
+          won: boolean
+        }
+        Insert: {
+          archetype: string
+          best_streak?: number
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          question_records?: Json
+          rating?: number
+          total_questions?: number
+          user_id: string
+          won: boolean
+        }
+        Update: {
+          archetype?: string
+          best_streak?: number
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          question_records?: Json
+          rating?: number
+          total_questions?: number
+          user_id?: string
+          won?: boolean
+        }
+        Relationships: []
+      }
       course_blocks: {
         Row: {
           created_at: string
@@ -525,6 +564,90 @@ export type Database = {
         }
         Relationships: []
       }
+      player_ratings: {
+        Row: {
+          losses: number
+          peak_rating: number
+          rating: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          losses?: number
+          peak_rating?: number
+          rating?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          losses?: number
+          peak_rating?: number
+          rating?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: []
+      }
+      pvp_battles: {
+        Row: {
+          challenger_archetype: string
+          challenger_id: string
+          created_at: string
+          id: string
+          opponent_archetype: string
+          opponent_id: string
+          status: string
+          winner_id: string | null
+        }
+        Insert: {
+          challenger_archetype: string
+          challenger_id: string
+          created_at?: string
+          id?: string
+          opponent_archetype: string
+          opponent_id: string
+          status?: string
+          winner_id?: string | null
+        }
+        Update: {
+          challenger_archetype?: string
+          challenger_id?: string
+          created_at?: string
+          id?: string
+          opponent_archetype?: string
+          opponent_id?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
+      pvp_queue: {
+        Row: {
+          archetype: string
+          queued_at: string
+          rating: number
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          archetype: string
+          queued_at?: string
+          rating?: number
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          archetype?: string
+          queued_at?: string
+          rating?: number
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       user_chest_claims: {
         Row: {
           bonus_xp: number
@@ -838,6 +961,10 @@ export type Database = {
         Returns: number
       }
       contains_profanity: { Args: { t: string }; Returns: boolean }
+      find_pvp_match: {
+        Args: { p_archetype: string; p_rating: number }
+        Returns: Json
+      }
       get_forum_stats: {
         Args: never
         Returns: {
@@ -846,6 +973,7 @@ export type Database = {
           threads: number
         }[]
       }
+      get_ghost_session: { Args: { p_player_rating: number }; Returns: Json }
       get_leaderboard: {
         Args: { p_limit?: number }
         Returns: {
@@ -861,6 +989,16 @@ export type Database = {
           battles: number
           ecliptars: number
           learners: number
+        }[]
+      }
+      get_pvp_leaderboard: {
+        Args: { p_limit?: number }
+        Returns: {
+          losses: number
+          rating: number
+          user_id: string
+          username: string
+          wins: number
         }[]
       }
       has_role: {
@@ -891,6 +1029,10 @@ export type Database = {
           p_won: boolean
         }
         Returns: undefined
+      }
+      update_pvp_rating: {
+        Args: { p_opponent_rating: number; p_won: boolean }
+        Returns: number
       }
     }
     Enums: {

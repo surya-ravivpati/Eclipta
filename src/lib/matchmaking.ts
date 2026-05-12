@@ -20,8 +20,8 @@ export interface MatchResult {
   ghostSession?: GhostSession;
 }
 
-const QUEUE_TIMEOUT_MS  = 12_000;
-const POLL_INTERVAL_MS  = 1_500;
+const QUEUE_TIMEOUT_MS  = 8_000;
+const POLL_INTERVAL_MS  = 800;
 
 // ── Queue management ─────────────────────────────────────────────────────
 

@@ -1187,10 +1187,15 @@ function BattleArena() {
       });
     }
 
-    const xp = won ? Math.floor(totalScore * 0.8) + 200 : Math.floor(totalScore * 0.2);
+    // Mirror the server-side formula in award_battle_xp so the number we
+    // animate up to in the report matches what actually lands on the profile:
+    //   xp = min(1000, correct*15 + (won ? 50 : 0))
+    const totalQuestions = records.length + 1; // +1 for the final answer
+    const correctAnswers = records.filter(r => r.correct).length + (won ? 1 : 0);
+    const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
     setBattleStats({
-      totalQuestions: records.length + 1, // +1 for the final answer
-      correctAnswers: records.filter(r => r.correct).length + (won ? 1 : 0),
+      totalQuestions,
+      correctAnswers,
       longestStreak,
       fastestAnswer,
       records: [...records],
@@ -1225,14 +1230,14 @@ function BattleArena() {
           const newWins = (existing.wins ?? 0) + 1;
           await supabase
             .from("daily_challenge_progress")
-            .update({ wins: newWins, bonus_claimed: existing.bonus_claimed || newWins >= challenge.target })
+            .update({ wins: newWins })
             .eq("id", existing.id);
         } else {
           await supabase.from("daily_challenge_progress").insert({
             user_id: user.id,
             challenge_date: today,
             wins: 1,
-            bonus_claimed: 1 >= challenge.target,
+            bonus_claimed: false,
           });
         }
         window.dispatchEvent(new Event("daily-challenge-updated"));

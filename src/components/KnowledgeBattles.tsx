@@ -23,6 +23,8 @@ import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
 import { fetchPlayerRating, updateRating, ratingToTier, formatRatingDelta } from "@/lib/rating";
+import { awardXp } from "@/lib/xp-service";
+import { toast } from "sonner";
 
 /**
  * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
@@ -1187,10 +1189,15 @@ function BattleArena() {
       });
     }
 
-    const xp = won ? Math.floor(totalScore * 0.8) + 200 : Math.floor(totalScore * 0.2);
+    // Mirror the server-side formula in award_battle_xp so the number we
+    // animate up to in the report matches what actually lands on the profile:
+    //   xp = min(1000, correct*15 + (won ? 50 : 0))
+    const totalQuestions = records.length + 1; // +1 for the final answer
+    const correctAnswers = records.filter(r => r.correct).length + (won ? 1 : 0);
+    const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
     setBattleStats({
-      totalQuestions: records.length + 1, // +1 for the final answer
-      correctAnswers: records.filter(r => r.correct).length + (won ? 1 : 0),
+      totalQuestions,
+      correctAnswers,
       longestStreak,
       fastestAnswer,
       records: [...records],
@@ -1225,14 +1232,14 @@ function BattleArena() {
           const newWins = (existing.wins ?? 0) + 1;
           await supabase
             .from("daily_challenge_progress")
-            .update({ wins: newWins, bonus_claimed: existing.bonus_claimed || newWins >= challenge.target })
+            .update({ wins: newWins })
             .eq("id", existing.id);
         } else {
           await supabase.from("daily_challenge_progress").insert({
             user_id: user.id,
             challenge_date: today,
             wins: 1,
-            bonus_claimed: 1 >= challenge.target,
+            bonus_claimed: false,
           });
         }
         window.dispatchEvent(new Event("daily-challenge-updated"));
@@ -2031,6 +2038,8 @@ function LeaderboardCard() {
 // ─── Daily Challenge (live) ───────────────────────────────────────────
 function DailyChallengeCard() {
   const [wins, setWins] = useState(0);
+  const [claimed, setClaimed] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [countdown, setCountdown] = useState("");
   const challenge = getTodayChallenge();
@@ -2047,6 +2056,7 @@ function DailyChallengeCard() {
       .eq("challenge_date", today)
       .maybeSingle();
     setWins(data?.wins ?? 0);
+    setClaimed(!!data?.bonus_claimed);
   }, []);
 
   useEffect(() => {
@@ -2078,6 +2088,33 @@ function DailyChallengeCard() {
   const display = Math.min(wins, target);
   const complete = wins >= target;
 
+  const handleClaim = useCallback(async () => {
+    if (claiming || claimed || !complete) return;
+    setClaiming(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Sign in to claim your reward"); return; }
+      const today = new Date().toISOString().slice(0, 10);
+      // Mark claimed FIRST (unique per user/day) so concurrent clicks can't double-claim.
+      const { error: updErr } = await supabase
+        .from("daily_challenge_progress")
+        .update({ bonus_claimed: true })
+        .eq("user_id", user.id)
+        .eq("challenge_date", today)
+        .eq("bonus_claimed", false);
+      if (updErr) { toast.error("Couldn't claim — try again"); return; }
+      // Award the XP via the rate-limited server RPC. The amount (100) is
+      // enforced server-side; the client cannot inflate it.
+      await awardXp("daily_challenge", 100);
+      setClaimed(true);
+      toast.success("Daily Challenge complete!", { description: "+100 XP added to your profile." });
+    } catch {
+      toast.error("Couldn't claim — try again");
+    } finally {
+      setClaiming(false);
+    }
+  }, [claiming, claimed, complete]);
+
   return (
     <motion.div className="glass-panel p-5 border border-neon-purple/20" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
       <div className="flex items-center gap-3">
@@ -2089,9 +2126,11 @@ function DailyChallengeCard() {
           <p className="text-[10px] text-muted-foreground">
             {!authed
               ? `Sign in to track today's challenge`
-              : complete
-                ? `Bonus unlocked! 🎉 ${challenge.reward}`
-                : `${challenge.goal} → ${challenge.reward}`}
+              : claimed
+                ? `Reward claimed. Come back tomorrow for a new challenge.`
+                : complete
+                  ? `Reward ready to claim — +100 XP 🎉`
+                  : `${challenge.goal} → +100 XP`}
           </p>
         </div>
         <div className={`text-lg font-bold font-display ${complete ? "text-neon-cyan" : "text-neon-purple"}`}>
@@ -2106,6 +2145,19 @@ function DailyChallengeCard() {
             transition={{ duration: 0.5 }}
           />
         </div>
+      )}
+      {authed && complete && (
+        <button
+          onClick={handleClaim}
+          disabled={claimed || claiming}
+          className={`mt-3 w-full px-3 py-2 text-[11px] font-bold tracking-widest rounded-sm transition-colors ${
+            claimed
+              ? "bg-secondary/40 text-muted-foreground cursor-default"
+              : "bg-neon-cyan text-background hover:bg-neon-cyan/90 disabled:opacity-60"
+          }`}
+        >
+          {claimed ? "✓ CLAIMED" : claiming ? "CLAIMING…" : "CLAIM +100 XP"}
+        </button>
       )}
       <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-muted-foreground">
         <Timer className="w-3 h-3" />

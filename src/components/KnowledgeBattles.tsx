@@ -1542,6 +1542,74 @@ function BattleArena() {
     battleFinishedRef.current = false;
   };
 
+  // Direct PvP challenge: bypass matchmaking and drop straight into a live
+  // battle using a pre-created pvp_battles row. Triggered by ChallengeInbox
+  // and the challenger-side realtime "accepted" listener.
+  const startDirectBattle = useCallback((opts: {
+    battleId: string;
+    myArchetype: ArchetypeId;
+    opponentArchetype: ArchetypeId;
+    opponentName: string;
+    opponentRating?: number;
+  }) => {
+    setArchetype(opts.myArchetype);
+    setRatingChange(null);
+    battleFinishedRef.current = false;
+    ghostSessionRef.current   = null;
+    ghostTurnIndexRef.current = 0;
+    pvpChannelRef.current     = null;
+    setGamblerStats(opts.myArchetype === "gambler" ? rollGamblerStats() : null);
+
+    setOpponentType("live");
+    opponentTypeRef.current   = "live";
+    setOpponentRating(opts.opponentRating ?? 1000);
+    opponentRatingRef.current = opts.opponentRating ?? 1000;
+    setPvpBattleId(opts.battleId);
+
+    const baseArch = ARCHETYPES[opts.myArchetype];
+    const oppArch  = ARCHETYPES[opts.opponentArchetype];
+    const playerName = ecliptar?.name ?? "You";
+    const playerIcon = ecliptar?.icon ?? User;
+
+    setPlayer({
+      name: playerName, hp: baseArch.maxHp, maxHp: baseArch.maxHp,
+      focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+    });
+    setOpponent({
+      name: opts.opponentName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
+      focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: User,
+    });
+    setOpponentArchetype(opts.opponentArchetype);
+    battleMemoryRef.current = createBattleMemory();
+    setMomentum(0); setOpponentMomentum(0); setLogs([]);
+    setTotalScore(0); setRecords([]); setLongestStreak(0);
+    setFastestAnswer(Infinity); setBattleStats(null);
+    setPhase("select");
+    addLog({
+      actor: "system", actionType: "info",
+      result: `⚔️ Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · ⚡ LIVE`,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecliptar]);
+
+  // Listen for direct-challenge events fired by ChallengeInbox / accepted
+  // notifications elsewhere on the page.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        battleId: string;
+        myArchetype: ArchetypeId;
+        opponentArchetype: ArchetypeId;
+        opponentName: string;
+        opponentRating?: number;
+      } | undefined;
+      if (!detail) return;
+      startDirectBattle(detail);
+    };
+    window.addEventListener("eclipta:direct-battle", handler);
+    return () => window.removeEventListener("eclipta:direct-battle", handler);
+  }, [startDirectBattle]);
+
   // ── Idle ──
   if (phase === "idle") {
     return (

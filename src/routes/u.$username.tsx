@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Sparkles, MessageSquare, Loader2, Zap, Calendar, UserPlus, UserCheck } from "lucide-react";
+import { User, Trophy, Flame, Sparkles, MessageSquare, Loader2, Zap, Calendar, UserPlus, UserCheck, Swords } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { ECLIPTARS } from "@/lib/ecliptars";
@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { ARCHETYPES } from "@/components/battles/archetypes";
+import type { ArchetypeId } from "@/components/battles/types";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({
@@ -46,6 +48,8 @@ function PublicProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followBusy, setFollowBusy] = useState(false);
+  const [challengeBusy, setChallengeBusy] = useState(false);
+  const [challengeArch, setChallengeArch] = useState<ArchetypeId>("speedster");
 
   useEffect(() => {
     (async () => {
@@ -98,6 +102,24 @@ function PublicProfilePage() {
       toast.error((e as Error)?.message ?? "Couldn't update follow.");
     } finally {
       setFollowBusy(false);
+    }
+  };
+
+  const sendChallenge = async () => {
+    if (!user || !profile || challengeBusy) return;
+    if (user.id === profile.user_id) return;
+    setChallengeBusy(true);
+    try {
+      const { error } = await supabase.rpc("create_pvp_challenge" as any, {
+        p_challenged_id: profile.user_id,
+        p_archetype: challengeArch,
+      });
+      if (error) throw error;
+      toast.success(`Challenge sent to ${profile.username}`);
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message ?? "Couldn't send challenge.");
+    } finally {
+      setChallengeBusy(false);
     }
   };
 
@@ -159,19 +181,39 @@ function PublicProfilePage() {
               <Stat icon={<UserCheck className="w-3.5 h-3.5" />} label="Followers" value={followerCount} color="text-foreground" />
             </div>
             {user && user.id !== profile.user_id && (
-              <button
-                onClick={toggleFollow}
-                disabled={followBusy}
-                className={cn(
-                  "mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border transition-colors disabled:opacity-50",
-                  isFollowing
-                    ? "border-border bg-secondary/40 text-foreground hover:bg-destructive/20 hover:border-destructive/50"
-                    : "border-neon-purple/60 bg-neon-purple/10 text-neon-purple hover:bg-neon-purple/20"
-                )}
-              >
-                {followBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : isFollowing ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
-                {isFollowing ? "Following" : "Follow"}
-              </button>
+              <div className="mt-4 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                <button
+                  onClick={toggleFollow}
+                  disabled={followBusy}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border transition-colors disabled:opacity-50",
+                    isFollowing
+                      ? "border-border bg-secondary/40 text-foreground hover:bg-destructive/20 hover:border-destructive/50"
+                      : "border-neon-purple/60 bg-neon-purple/10 text-neon-purple hover:bg-neon-purple/20"
+                  )}
+                >
+                  {followBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : isFollowing ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                  {isFollowing ? "Following" : "Follow"}
+                </button>
+                <select
+                  value={challengeArch}
+                  onChange={(e) => setChallengeArch(e.target.value as ArchetypeId)}
+                  className="bg-secondary/60 border border-border/60 px-2 py-2 text-[11px] font-bold tracking-widest uppercase"
+                  aria-label="Your class for the challenge"
+                >
+                  {(Object.keys(ARCHETYPES) as ArchetypeId[]).map(id => (
+                    <option key={id} value={id}>{ARCHETYPES[id].name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={sendChallenge}
+                  disabled={challengeBusy}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border border-neon-pink/60 bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20 transition-colors disabled:opacity-50"
+                >
+                  {challengeBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Swords className="w-3.5 h-3.5" />}
+                  Challenge
+                </button>
+              </div>
             )}
           </div>
         </motion.div>

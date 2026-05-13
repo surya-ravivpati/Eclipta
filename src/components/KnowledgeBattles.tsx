@@ -944,6 +944,10 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
+  // Idempotency guard so finishBattle runs exactly once per battle, even if
+  // both the local HP-zero check and the opponent's broadcast battle_end
+  // arrive. Without this, updateRating() runs twice and W/L double-counts.
+  const battleFinishedRef = useRef(false);
 
   // Fetch player profile (XP + rating + username)
   useEffect(() => {

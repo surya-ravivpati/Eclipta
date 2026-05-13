@@ -1457,6 +1457,7 @@ function BattleArena() {
     ghostTurnIndexRef.current = 0;
     pvpChannelRef.current     = null;
     setPvpBattleId(null);
+    battleFinishedRef.current = false;
 
     // Run full Tier 1→2→3 matchmaking asynchronously
     void (async () => {
@@ -1538,6 +1539,7 @@ function BattleArena() {
     setRatingChange(null);
     ghostSessionRef.current   = null;
     pvpChannelRef.current     = null;
+    battleFinishedRef.current = false;
   };
 
   // ── Idle ──

@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { ARCHETYPES } from "@/components/battles/archetypes";
 import type { ArchetypeId } from "@/components/battles/types";
 
 export const Route = createFileRoute("/u/$username")({

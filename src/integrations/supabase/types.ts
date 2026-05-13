@@ -624,6 +624,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pvp_challenges: {
+        Row: {
+          battle_id: string | null
+          challenged_id: string
+          challenger_archetype: string
+          challenger_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          status: string
+        }
+        Insert: {
+          battle_id?: string | null
+          challenged_id: string
+          challenger_archetype: string
+          challenger_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          battle_id?: string | null
+          challenged_id?: string
+          challenger_archetype?: string
+          challenger_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       pvp_queue: {
         Row: {
           archetype: string
@@ -961,6 +994,10 @@ export type Database = {
         Returns: number
       }
       contains_profanity: { Args: { t: string }; Returns: boolean }
+      create_pvp_challenge: {
+        Args: { p_archetype: string; p_challenged_id: string }
+        Returns: string
+      }
       find_pvp_match: {
         Args: { p_archetype: string; p_rating: number }
         Returns: Json
@@ -1042,6 +1079,24 @@ export type Database = {
           p_won: boolean
         }
         Returns: undefined
+      }
+      respond_pvp_challenge: {
+        Args: {
+          p_accept: boolean
+          p_archetype?: string
+          p_challenge_id: string
+        }
+        Returns: Json
+      }
+      search_users: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          avatar_url: string
+          equipped_ecliptar: string
+          user_id: string
+          username: string
+          xp: number
+        }[]
       }
       update_pvp_rating: {
         Args: { p_opponent_rating: number; p_won: boolean }

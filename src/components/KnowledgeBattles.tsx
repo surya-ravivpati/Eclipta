@@ -17,6 +17,8 @@ import { createBattleMemory, updateBattleMemoryPlayerTurn, updateBattleMemoryAiT
 import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
 import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";
+import { UserSearchDialog } from "./battles/UserSearchDialog";
+import { ChallengeInbox } from "./battles/ChallengeInbox";
 import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodayChallenge } from "@/lib/daily-challenge";
@@ -944,6 +946,10 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
+  // Idempotency guard so finishBattle runs exactly once per battle, even if
+  // both the local HP-zero check and the opponent's broadcast battle_end
+  // arrive. Without this, updateRating() runs twice and W/L double-counts.
+  const battleFinishedRef = useRef(false);
 
   // Fetch player profile (XP + rating + username)
   useEffect(() => {
@@ -1184,6 +1190,8 @@ function BattleArena() {
   }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
 
   const finishBattle = useCallback((won: boolean) => {
+    if (battleFinishedRef.current) return;
+    battleFinishedRef.current = true;
     // Broadcast result to live opponent before tearing down
     if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
       pvpChannelRef.current.send({
@@ -1451,6 +1459,7 @@ function BattleArena() {
     ghostTurnIndexRef.current = 0;
     pvpChannelRef.current     = null;
     setPvpBattleId(null);
+    battleFinishedRef.current = false;
 
     // Run full Tier 1→2→3 matchmaking asynchronously
     void (async () => {
@@ -1532,7 +1541,76 @@ function BattleArena() {
     setRatingChange(null);
     ghostSessionRef.current   = null;
     pvpChannelRef.current     = null;
+    battleFinishedRef.current = false;
   };
+
+  // Direct PvP challenge: bypass matchmaking and drop straight into a live
+  // battle using a pre-created pvp_battles row. Triggered by ChallengeInbox
+  // and the challenger-side realtime "accepted" listener.
+  const startDirectBattle = useCallback((opts: {
+    battleId: string;
+    myArchetype: ArchetypeId;
+    opponentArchetype: ArchetypeId;
+    opponentName: string;
+    opponentRating?: number;
+  }) => {
+    setArchetype(opts.myArchetype);
+    setRatingChange(null);
+    battleFinishedRef.current = false;
+    ghostSessionRef.current   = null;
+    ghostTurnIndexRef.current = 0;
+    pvpChannelRef.current     = null;
+    setGamblerStats(opts.myArchetype === "gambler" ? rollGamblerStats() : null);
+
+    setOpponentType("live");
+    opponentTypeRef.current   = "live";
+    setOpponentRating(opts.opponentRating ?? 1000);
+    opponentRatingRef.current = opts.opponentRating ?? 1000;
+    setPvpBattleId(opts.battleId);
+
+    const baseArch = ARCHETYPES[opts.myArchetype];
+    const oppArch  = ARCHETYPES[opts.opponentArchetype];
+    const playerName = ecliptar?.name ?? "You";
+    const playerIcon = ecliptar?.icon ?? User;
+
+    setPlayer({
+      name: playerName, hp: baseArch.maxHp, maxHp: baseArch.maxHp,
+      focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+    });
+    setOpponent({
+      name: opts.opponentName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
+      focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: User,
+    });
+    setOpponentArchetype(opts.opponentArchetype);
+    battleMemoryRef.current = createBattleMemory();
+    setMomentum(0); setOpponentMomentum(0); setLogs([]);
+    setTotalScore(0); setRecords([]); setLongestStreak(0);
+    setFastestAnswer(Infinity); setBattleStats(null);
+    setPhase("select");
+    addLog({
+      actor: "system", actionType: "info",
+      result: `⚔️ Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · ⚡ LIVE`,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecliptar]);
+
+  // Listen for direct-challenge events fired by ChallengeInbox / accepted
+  // notifications elsewhere on the page.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        battleId: string;
+        myArchetype: ArchetypeId;
+        opponentArchetype: ArchetypeId;
+        opponentName: string;
+        opponentRating?: number;
+      } | undefined;
+      if (!detail) return;
+      startDirectBattle(detail);
+    };
+    window.addEventListener("eclipta:direct-battle", handler);
+    return () => window.removeEventListener("eclipta:direct-battle", handler);
+  }, [startDirectBattle]);
 
   // ── Idle ──
   if (phase === "idle") {
@@ -2201,6 +2279,7 @@ function DailyChallengeCard() {
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   return (
     <section className="min-h-screen pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-6">
@@ -2219,8 +2298,16 @@ export function KnowledgeBattles() {
         </motion.div>
 
         <div className="space-y-6">
+          <ChallengeInbox />
           <div className="relative">
-            <div className="flex items-center justify-end mb-3">
+            <div className="flex items-center justify-end gap-2 mb-3">
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-cyan border border-neon-cyan/40 bg-neon-cyan/5 hover:bg-neon-cyan/10 transition-colors rounded-sm"
+                aria-label="Find player"
+              >
+                <Users className="w-3.5 h-3.5" /> FIND PLAYER
+              </button>
               <button
                 onClick={() => setHowOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-purple border border-neon-purple/40 bg-neon-purple/5 hover:bg-neon-purple/10 transition-colors rounded-sm"
@@ -2237,6 +2324,8 @@ export function KnowledgeBattles() {
           </div>
         </div>
       </div>
+
+      <UserSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Floating "How to Play" button */}
       <motion.button

@@ -991,6 +991,19 @@ export type Database = {
           learners: number
         }[]
       }
+      get_public_profile: {
+        Args: { p_username: string }
+        Returns: {
+          avatar_url: string
+          best_streak: number
+          created_at: string
+          current_streak: number
+          equipped_ecliptar: string
+          user_id: string
+          username: string
+          xp: number
+        }[]
+      }
       get_pvp_leaderboard: {
         Args: { p_limit?: number }
         Returns: {

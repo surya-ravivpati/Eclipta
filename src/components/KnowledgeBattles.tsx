@@ -990,6 +990,11 @@ function BattleArena() {
       .on("broadcast", { event: "heal" }, ({ payload }) => {
         setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
       })
+      .on("broadcast", { event: "turn_end" }, () => {
+        // Opponent finished their action — unlock our turn.
+        liveAwaitingRef.current = false;
+        setLiveAwaitingOpponent(false);
+      })
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
         const weWon = payload.winner_id !== payload.sender_id;
         finishBattle(weWon);

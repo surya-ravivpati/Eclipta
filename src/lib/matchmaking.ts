@@ -17,6 +17,8 @@ export interface MatchResult {
   /** Supabase Realtime channel name for live battles */
   pvpChannelName?: string;
   pvpBattleId?: string;
+  /** True when the local player created the pvp_battles row (challenger). Drives initial turn order. */
+  iAmChallenger?: boolean;
   ghostSession?: GhostSession;
 }
 
@@ -73,6 +75,7 @@ async function tryLiveMatch(
       opponentRating:    d.opponent_rating ?? 1000,
       pvpBattleId:       d.battle_id as string,
       pvpChannelName:    `pvp-battle:${d.battle_id}`,
+      iAmChallenger:     true,
     };
   }
 
@@ -113,6 +116,7 @@ async function tryLiveMatch(
       opponentRating:    (oppRating as any)?.rating ?? 1000,
       pvpBattleId:       b.id as string,
       pvpChannelName:    `pvp-battle:${b.id}`,
+      iAmChallenger:     isChallenger,
     };
   }
 

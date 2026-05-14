@@ -160,10 +160,11 @@ export async function findMatch(
     onStatus("No live opponent — loading ghost replay…", "ghost");
     const ghost = await fetchGhostSession(playerRating);
     if (ghost) {
-      onStatus("Ghost match loaded — real player data", "ghost");
+      const ghostLabel = `${ghost.username?.trim() || "Anonymous"} — Ghost`;
+      onStatus(`Ghost match loaded — ${ghostLabel}`, "ghost");
       return {
         type:              "ghost",
-        opponentName:      `Ghost_${ghost.id.slice(0, 6)}`,
+        opponentName:      ghostLabel,
         opponentArchetype: ghost.archetype,
         opponentRating:    ghost.rating,
         ghostSession:      ghost,
@@ -175,7 +176,7 @@ export async function findMatch(
   onStatus("Matched with AI bot", "bot");
   return {
     type:              "bot",
-    opponentName:      "AI_Nemesis",
+    opponentName:      "AI Nemesis",
     opponentArchetype: null,
     opponentRating:    playerRating,
   };

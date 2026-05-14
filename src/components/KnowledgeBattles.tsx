@@ -1988,6 +1988,20 @@ function BattleArena() {
           );
         })()}
 
+        {liveAwaitingOpponent && phase === "select" && (
+          <motion.div
+            className="glass-panel p-3 border border-neon-cyan/40 bg-neon-cyan/5 text-center"
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+          >
+            <motion.span
+              className="text-[11px] font-bold tracking-widest text-neon-cyan"
+              animate={{ opacity: [0.55, 1, 0.55] }}
+              transition={{ duration: 1.4, repeat: Infinity }}
+            >
+              ⏳ WAITING FOR {opponent.name.toUpperCase()}'S MOVE…
+            </motion.span>
+          </motion.div>
+        )}
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {
             const Icon = act.icon;

@@ -892,7 +892,7 @@ function BattleArena() {
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
   const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: User });
-  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
+  const [opponent, setOpponent] = useState<Fighter>({ name: "AI Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
   const [momentum, setMomentum] = useState(0);
   const [opponentMomentum, setOpponentMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
@@ -938,6 +938,9 @@ function BattleArena() {
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
   const [opponentRating, setOpponentRating] = useState(1000);
   const [ratingChange, setRatingChange]     = useState<number | null>(null);
+  // Live PvP turn-based lock: while true the local player has already played
+  // this round and must wait for the opponent's broadcast before acting again.
+  const [liveAwaitingOpponent, setLiveAwaitingOpponent] = useState(false);
 
   // Refs for async-safe access inside callbacks
   const pvpChannelRef     = useRef<any>(null);
@@ -946,6 +949,7 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
+  const liveAwaitingRef   = useRef(false);
   // Idempotency guard so finishBattle runs exactly once per battle, even if
   // both the local HP-zero check and the opponent's broadcast battle_end
   // arrive. Without this, updateRating() runs twice and W/L double-counts.
@@ -985,6 +989,11 @@ function BattleArena() {
       })
       .on("broadcast", { event: "heal" }, ({ payload }) => {
         setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
+      })
+      .on("broadcast", { event: "turn_end" }, () => {
+        // Opponent finished their action — unlock our turn.
+        liveAwaitingRef.current = false;
+        setLiveAwaitingOpponent(false);
       })
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
         const weWon = payload.winner_id !== payload.sender_id;
@@ -1179,7 +1188,13 @@ function BattleArena() {
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
       } else if (opponentTypeRef.current === "live") {
-        // Opponent plays independently via Realtime — just return to select
+        // Round-based PvP: lock our turn and wait for the opponent's
+        // turn_end broadcast before letting us act again.
+        liveAwaitingRef.current = true;
+        setLiveAwaitingOpponent(true);
+        if (pvpChannelRef.current) {
+          pvpChannelRef.current.send({ type: "broadcast", event: "turn_end", payload: {} });
+        }
         setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
@@ -1424,6 +1439,11 @@ function BattleArena() {
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
   const selectAction = (action: Action) => {
+    // Hard block in live PvP while it's the opponent's round.
+    if (opponentTypeRef.current === "live" && liveAwaitingRef.current) {
+      addLog({ actor: "system", actionType: "info", result: `⏳ Waiting for opponent's move…` });
+      return;
+    }
     const cost = ACTIONS[action].focusCost;
     if (cost > 0 && player.focus < cost) { addLog({ actor: "system", actionType: "info", result: `⚠️ Need ${cost} Focus!` }); return; }
     setCurrentAction(action);
@@ -1473,18 +1493,19 @@ function BattleArena() {
       // Resolve opponent from match result
       let oppArchetype: ArchetypeId;
       let oppName: string;
-      let oppIcon = Bot;
 
       if (match.opponentArchetype) {
         oppArchetype = match.opponentArchetype;
         oppName = match.opponentName;
       } else {
-        // Bot: pick a random ecliptar opponent
+        // Bot: pick a random ecliptar so the opponent has a real archetype identity
         const oppEclip = pickOpponent(cls);
         oppArchetype = oppEclip.archetype;
         oppName      = oppEclip.name;
-        oppIcon      = oppEclip.icon;
       }
+      // Always use the archetype's icon so ghost / bot / live opponents
+      // visually reflect their build instead of a generic robot.
+      const oppIcon = ARCHETYPES[oppArchetype].icon;
 
       // Ghost: prime the replay buffer
       if (match.type === "ghost" && match.ghostSession) {
@@ -1495,6 +1516,16 @@ function BattleArena() {
       // Live: store battle ID so the Realtime useEffect subscribes
       if (match.type === "live" && match.pvpBattleId) {
         setPvpBattleId(match.pvpBattleId);
+      }
+
+      // Round-based PvP: challenger acts first; the opponent waits.
+      if (match.type === "live") {
+        const iStart = match.iAmChallenger === true;
+        liveAwaitingRef.current = !iStart;
+        setLiveAwaitingOpponent(!iStart);
+      } else {
+        liveAwaitingRef.current = false;
+        setLiveAwaitingOpponent(false);
       }
 
       // Sync refs for async-safe use inside callbacks
@@ -1542,6 +1573,8 @@ function BattleArena() {
     ghostSessionRef.current   = null;
     pvpChannelRef.current     = null;
     battleFinishedRef.current = false;
+    liveAwaitingRef.current   = false;
+    setLiveAwaitingOpponent(false);
   };
 
   // Direct PvP challenge: bypass matchmaking and drop straight into a live
@@ -1553,6 +1586,7 @@ function BattleArena() {
     opponentArchetype: ArchetypeId;
     opponentName: string;
     opponentRating?: number;
+    iAmChallenger?: boolean;
   }) => {
     setArchetype(opts.myArchetype);
     setRatingChange(null);
@@ -1560,7 +1594,8 @@ function BattleArena() {
     ghostSessionRef.current   = null;
     ghostTurnIndexRef.current = 0;
     pvpChannelRef.current     = null;
-    setGamblerStats(opts.myArchetype === "gambler" ? rollGamblerStats() : null);
+    const rolledGambler = opts.myArchetype === "gambler" ? rollGamblerStats() : null;
+    setGamblerStats(rolledGambler);
 
     setOpponentType("live");
     opponentTypeRef.current   = "live";
@@ -1568,29 +1603,39 @@ function BattleArena() {
     opponentRatingRef.current = opts.opponentRating ?? 1000;
     setPvpBattleId(opts.battleId);
 
+    // Direct challenges: challenger acts first, defender waits.
+    const iStart = opts.iAmChallenger === true;
+    liveAwaitingRef.current = !iStart;
+    setLiveAwaitingOpponent(!iStart);
+
     const baseArch = ARCHETYPES[opts.myArchetype];
     const oppArch  = ARCHETYPES[opts.opponentArchetype];
     const playerName = ecliptar?.name ?? "You";
     const playerIcon = ecliptar?.icon ?? User;
+    const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
 
     setPlayer({
-      name: playerName, hp: baseArch.maxHp, maxHp: baseArch.maxHp,
+      name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
       focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
     });
     setOpponent({
       name: opts.opponentName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
-      focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: User,
+      focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppArch.icon,
     });
     setOpponentArchetype(opts.opponentArchetype);
     battleMemoryRef.current = createBattleMemory();
     setMomentum(0); setOpponentMomentum(0); setLogs([]);
     setTotalScore(0); setRecords([]); setLongestStreak(0);
     setFastestAnswer(Infinity); setBattleStats(null);
-    setPhase("select");
-    addLog({
-      actor: "system", actionType: "info",
-      result: `⚔️ Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · ⚡ LIVE`,
-    });
+    if (rolledGambler) {
+      setPhase("gamblerReveal");
+    } else {
+      setPhase("select");
+      addLog({
+        actor: "system", actionType: "info",
+        result: `⚔️ Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · ⚡ LIVE`,
+      });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ecliptar]);
 
@@ -1943,12 +1988,26 @@ function BattleArena() {
           );
         })()}
 
+        {liveAwaitingOpponent && phase === "select" && (
+          <motion.div
+            className="glass-panel p-3 border border-neon-cyan/40 bg-neon-cyan/5 text-center"
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+          >
+            <motion.span
+              className="text-[11px] font-bold tracking-widest text-neon-cyan"
+              animate={{ opacity: [0.55, 1, 0.55] }}
+              transition={{ duration: 1.4, repeat: Infinity }}
+            >
+              ⏳ WAITING FOR {opponent.name.toUpperCase()}'S MOVE…
+            </motion.span>
+          </motion.div>
+        )}
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {
             const Icon = act.icon;
             const cost = act.focusCost;
             const cannotHeal = key === "defend" && getArch(archetype).healAmount === null;
-            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal;
+            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveAwaitingOpponent;
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
                 className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}

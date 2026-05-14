@@ -179,7 +179,38 @@ serve(async (req) => {
       });
     }
 
-    const { messages, context, reasoning } = await req.json();
+    // Cap raw request body so a malicious client can't ship megabytes of text
+    // or base64 images that we'd then forward to the AI gateway.
+    const MAX_BODY_BYTES = 600 * 1024; // 600 KB
+    const rawBody = await req.text();
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return new Response(JSON.stringify({ error: "Request too large" }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    let parsed: any;
+    try { parsed = JSON.parse(rawBody); } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    let { messages, context, reasoning } = parsed ?? {};
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "messages must be an array" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Hard caps: at most 30 turns, 4000 chars per text message, 1 MB per image data URL.
+    const MAX_TURNS = 30;
+    const MAX_TEXT = 4000;
+    const MAX_IMAGE_BYTES = 1024 * 1024;
+    messages = messages.slice(-MAX_TURNS).map((m: any) => {
+      const role = m?.role === "assistant" ? "assistant" : "user";
+      const content = typeof m?.content === "string" ? m.content.slice(0, MAX_TEXT) : "";
+      const imageDataUrl = typeof m?.imageDataUrl === "string" && m.imageDataUrl.length <= MAX_IMAGE_BYTES
+        ? m.imageDataUrl : undefined;
+      return { role, content, ...(imageDataUrl ? { imageDataUrl } : {}) };
+    });
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 

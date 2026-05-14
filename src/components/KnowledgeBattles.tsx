@@ -1188,7 +1188,13 @@ function BattleArena() {
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
       } else if (opponentTypeRef.current === "live") {
-        // Opponent plays independently via Realtime — just return to select
+        // Round-based PvP: lock our turn and wait for the opponent's
+        // turn_end broadcast before letting us act again.
+        liveAwaitingRef.current = true;
+        setLiveAwaitingOpponent(true);
+        if (pvpChannelRef.current) {
+          pvpChannelRef.current.send({ type: "broadcast", event: "turn_end", payload: {} });
+        }
         setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
@@ -1433,6 +1439,11 @@ function BattleArena() {
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
   const selectAction = (action: Action) => {
+    // Hard block in live PvP while it's the opponent's round.
+    if (opponentTypeRef.current === "live" && liveAwaitingRef.current) {
+      addLog({ actor: "system", actionType: "info", result: `⏳ Waiting for opponent's move…` });
+      return;
+    }
     const cost = ACTIONS[action].focusCost;
     if (cost > 0 && player.focus < cost) { addLog({ actor: "system", actionType: "info", result: `⚠️ Need ${cost} Focus!` }); return; }
     setCurrentAction(action);

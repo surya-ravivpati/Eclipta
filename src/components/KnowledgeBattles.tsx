@@ -1993,7 +1993,7 @@ function BattleArena() {
             const Icon = act.icon;
             const cost = act.focusCost;
             const cannotHeal = key === "defend" && getArch(archetype).healAmount === null;
-            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal;
+            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveAwaitingOpponent;
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
                 className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}

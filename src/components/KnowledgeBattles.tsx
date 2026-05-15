@@ -982,6 +982,7 @@ function BattleArena() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      myUserIdRef.current = user.id;
       const [profileRes, ratingData] = await Promise.all([
         supabase.from("user_profiles").select("xp, username").eq("user_id", user.id).maybeSingle(),
         fetchPlayerRating(),

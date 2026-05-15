@@ -1,1274 +1,627 @@
 /**
- * Eclipta homepage — identity-first redesign.
+ * LandingShowcase — Cinematic homepage (v11 design).
  *
- * Product decisions (see PR description for full spec):
- *   — ClassPicker moved to #3: identity before mechanics drives retention
- *   — BattleAnatomy now lives after class selection (context-aware)
- *   — RankLadder redesigned as aspiration staircase with tier descriptors
- *   — "Beyond Battles" → "Training Ground" (competitive framing, not supplement)
- *   — SocialProof section added: Season leaders + live player count
- *   — DailyChallenge gets countdown timer (urgency loop)
- *   — Hero gets active-player signal (social proof above fold)
+ * Three-act scroll film:
+ *   Act 1 (440vh) — Glass tower hero that splits into 8 class plates
+ *   Act 2 (380vh) — The Loop: sequential stat reveals
+ *   Act 3 (280vh) — The Climb: tier rack with traveling pin
+ *   Training / Enter CTA / Footer
  *
- * Section order (deliberate narrative arc):
- *   1. Hero          — "Study is dead. Fight for it." + live active count
- *   2. Live Ticker   — platform is alive / FOMO
- *   3. Class Picker  — WHO are you as a fighter? (identity first)
- *   4. Battle Anatomy— HOW do you fight? (mechanics after identity)
- *   5. Rank Ladder   — WHERE are you going? (aspiration staircase)
- *   6. Mastery Engine— HOW do you improve? (training ground framing)
- *   7. Trophy Road   — collection / long-term identity
- *   8. Daily Challenge— daily retention loop with countdown
- *   9. Social Proof  — Season leaders + "arena is full" signal
- *  10. Final CTA
+ * The animation engine runs entirely in a requestAnimationFrame loop
+ * with direct DOM writes (no React state) for smooth 60 fps motion.
+ * Tower is left-shifted via CSS (padding-left on .cl-tower-stage) so
+ * the composition balances the right-anchored hero copy.
  */
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight, Swords, Zap, Heart, Flame, Target, Crown, Trophy, Shield,
-  Brain, GraduationCap, MessagesSquare, Sparkles, Timer, ChevronRight,
-  PlayCircle, Activity, Users, TrendingUp, Scale, FastForward, Skull,
-} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { ARCHETYPES } from "@/components/battles/archetypes";
-import { getTodayChallenge } from "@/lib/daily-challenge";
+import "./CinematicLanding.css";
 
-/* ════════════════════════════════════════════════════════════════════
-   SHARED UTILITIES
-   ════════════════════════════════════════════════════════════════════ */
-
-function SectionLabel({ text, color = "text-neon-pink" }: { text: string; color?: string }) {
+/* ─── Arrow SVG helpers ─────────────────────────────────────── */
+function Arrow({ className }: { className?: string }) {
   return (
-    <p className={`text-[11px] font-bold tracking-[0.3em] uppercase ${color} mb-3`}>{text}</p>
+    <svg className={className ?? "cl-arrow"} viewBox="0 0 16 10" fill="none">
+      <path d="M0 5 H13 M10 1 L14 5 L10 9" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
   );
 }
-
-/** Countdown hook — seconds until next UTC midnight */
-function useUTCCountdown() {
-  const [hms, setHms] = useState({ h: 0, m: 0, s: 0 });
-  useEffect(() => {
-    function tick() {
-      const now = Date.now();
-      const midnight = new Date();
-      midnight.setUTCHours(24, 0, 0, 0);
-      const totalSec = Math.max(0, Math.floor((midnight.getTime() - now) / 1000));
-      setHms({
-        h: Math.floor(totalSec / 3600),
-        m: Math.floor((totalSec % 3600) / 60),
-        s: totalSec % 60,
-      });
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return hms;
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   1. HERO — "Study is dead. Fight for it."
-   ════════════════════════════════════════════════════════════════════ */
-
-function Hero() {
-  const { isAuthenticated } = useAuth();
-  const ctaTo = isAuthenticated ? "/battles" : "/signup";
-  const ctaLabel = isAuthenticated ? "BATTLE NOW" : "FIGHT FREE";
-
-  /* Oscillate active count ±3 every 2.8 s for liveness signal */
-  const [activeCount, setActiveCount] = useState(1284);
-  useEffect(() => {
-    const id = setInterval(
-      () => setActiveCount((c) => Math.max(1200, c + Math.floor(Math.random() * 7) - 3)),
-      2800,
-    );
-    return () => clearInterval(id);
-  }, []);
-
+function SmallArrow() {
   return (
-    <section className="pt-28 pb-16 px-6 relative overflow-hidden">
-      {/* Ambient arena glow */}
-      <div className="absolute top-[-20%] right-[-10%] w-[42rem] h-[42rem] bg-neon-pink/15 rounded-full blur-[140px] animate-arena-drift" />
-      <div className="absolute bottom-[-15%] left-[-15%] w-[36rem] h-[36rem] bg-neon-purple/15 rounded-full blur-[140px] animate-arena-drift [animation-delay:-7s]" />
-
-      <div className="max-w-7xl mx-auto relative grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        {/* ── Left: copy ── */}
-        <div className="lg:col-span-7">
-          {/* Season badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 border border-neon-pink/40 bg-neon-pink/5 text-neon-pink text-[10px] font-bold tracking-[0.25em] uppercase"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-neon-pink opacity-60 animate-ping" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-pink" />
-            </span>
-            Season 01 · Live ·{" "}
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={activeCount}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.25 }}
-                className="tabular-nums"
-              >
-                {activeCount.toLocaleString()}
-              </motion.span>
-            </AnimatePresence>{" "}
-            in queue
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[3.4rem] md:text-[5.5rem] lg:text-[6.2rem] font-bold tracking-tighter leading-[0.88] mb-6 font-display"
-          >
-            STUDY IS DEAD.
-            <br />
-            <span className="text-neon-pink animate-neon-flicker">FIGHT FOR IT.</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="max-w-xl text-base md:text-lg text-muted-foreground mb-9 leading-relaxed"
-          >
-            The first knowledge arena. Pick a class, queue for a match, land combos,
-            and climb the ranked ladder — with AI coaching sharpening your edge between
-            every fight.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.2 }}
-            className="flex flex-wrap gap-3 items-center"
-          >
-            <Link
-              to={ctaTo}
-              className="px-8 py-4 bg-neon-pink text-foreground font-bold text-sm tracking-[0.2em] inline-flex items-center gap-3 group hover:scale-[1.03] transition-transform animate-battle-charge"
-            >
-              <Swords className="w-4 h-4" />
-              {ctaLabel}
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <a
-              href="#battle-anatomy"
-              className="px-6 py-4 border border-border hover:border-neon-purple text-foreground font-bold text-sm tracking-[0.2em] inline-flex items-center gap-2 transition-colors"
-            >
-              <PlayCircle className="w-4 h-4" />
-              SEE A BATTLE
-            </a>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.35 }}
-            className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <Zap className="w-3 h-3 text-neon-purple" /> Free to play
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Trophy className="w-3 h-3 text-neon-pink" /> 8 classes · 16 Ecliptars
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Crown className="w-3 h-3 text-tier-gold" /> 8 ranked tiers
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="w-3 h-3 text-neon-cyan" />
-              <span className="tabular-nums">{activeCount.toLocaleString()}</span> active now
-            </span>
-          </motion.div>
-        </div>
-
-        {/* ── Right: live battle HUD ── */}
-        <div className="lg:col-span-5">
-          <LiveBattleHUD />
-        </div>
-      </div>
-    </section>
+    <svg viewBox="0 0 12 8" width="12" height="8" fill="none">
+      <path d="M0 4 H9 M7 1 L10 4 L7 7" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
   );
 }
 
-/* ────────── Live Battle HUD ────────── */
+/* ─── Animation engine (vanilla JS, runs in useEffect) ─────── */
+function initCinematicEngine(root: HTMLElement) {
+  const qs  = (sel: string) => root.querySelector<HTMLElement>(sel);
+  const qsa = (sel: string) => Array.from(root.querySelectorAll<HTMLElement>(sel));
 
-function LiveBattleHUD() {
-  const [playerHp, setPlayerHp] = useState(78);
-  const [oppHp, setOppHp] = useState(54);
-  const [combo, setCombo] = useState(3);
-  const [popup, setPopup] = useState<{ id: number; text: string; crit?: boolean } | null>(null);
-  const [logIdx, setLogIdx] = useState(0);
-  const log = useMemo(
-    () => [
-      { text: "+34 DMG · Algebra · 2x combo",   crit: false, opp: true,  hp: -34 },
-      { text: "CRIT! +52 DMG · Derivatives",    crit: true,  opp: true,  hp: -52 },
-      { text: "Healed +18 HP · Focus spent",    crit: false, opp: false, hp: +18, mine: true },
-      { text: "+28 DMG · Vectors · 3x combo",   crit: false, opp: true,  hp: -28 },
-      { text: "BLOCKED · Wrong answer −12 HP",  crit: false, opp: false, hp: -12, mine: true },
-    ],
-    [],
-  );
+  const progress      = qs(".cl-progress")!;
+  const bgAurora      = qs(".cl-bg-aurora")!;
+  const bgGrid        = qs(".cl-bg-grid")!;
+  const bgVignette    = qs(".cl-bg-vignette")!;
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      const entry = log[logIdx % log.length];
-      setPopup({ id: Date.now(), text: entry.text, crit: entry.crit });
-      if (entry.mine) {
-        setPlayerHp((h) => Math.min(100, Math.max(0, h + entry.hp)));
-      } else {
-        setOppHp((h) => Math.min(100, Math.max(0, h + entry.hp)));
-        if (entry.crit) setCombo((c) => c + 2);
-        else setCombo((c) => c + 1);
+  // Act 1
+  const act1          = qs(".cl-act1")!;
+  const tower         = qs(".cl-tower")!;
+  const towerShell    = qs(".cl-tower-shell")!;
+  const towerCore     = qs(".cl-tower-core")!;
+  const towerHalo     = qs(".cl-tower-halo")!;
+  const plates        = qsa(".cl-plate");
+  const ch0           = qs("#cl-ch0")!;
+  const ch1           = qs("#cl-ch1")!;
+  const ch2           = qs("#cl-ch2")!;
+  const huds          = qsa(".cl-hud");
+  const gridBars      = qs(".cl-grid-bars")!;
+  const scrollHint    = qs(".cl-scroll-hint")!;
+  const strike        = qs(".cl-chapter h1 .strike")!;
+
+  // Act 2
+  const act2          = qs(".cl-act2")!;
+  const act2Head      = qs(".cl-act2-head")!;
+  const statRows      = qsa(".cl-stat-row");
+
+  // Act 3
+  const act3          = qs(".cl-act3")!;
+  const climbEl       = qs("#cl-climbEl")!;
+  const climbPin      = qs(".cl-climb-pin")!;
+
+  // Reveal elements
+  const reveals       = qsa(".cl-reveal");
+
+  let targetY = window.scrollY;
+  let smoothY = targetY;
+  const EASE = 0.10;
+
+  const onScroll = () => { targetY = window.scrollY; };
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const lerp    = (a: number, b: number, t: number) => a + (b - a) * t;
+  const ss      = (t: number) => t * t * (3 - 2 * t);     // smoothstep
+
+  // 4×2 final grid positions in viewport-% from centre
+  const finalGrid = [
+    { x: -37.5, y: -18 }, { x: -12.5, y: -18 }, { x: 12.5, y: -18 }, { x: 37.5, y: -18 },
+    { x: -37.5, y:  18 }, { x: -12.5, y:  18 }, { x: 12.5, y:  18 }, { x: 37.5, y:  18 },
+  ];
+
+  function setAurora(p01: number) {
+    if (!bgAurora) return;
+    const hue1 = 250 + p01 * 80;
+    const hue2 = 320 - p01 * 60;
+    const ax   = 30 + p01 * 10;
+    const ay   = 22 + p01 * 12;
+    bgAurora.style.setProperty("--ah",  hue1.toFixed(1));
+    bgAurora.style.setProperty("--ah2", hue2.toFixed(1));
+    bgAurora.style.setProperty("--ax",  ax + "%");
+    bgAurora.style.setProperty("--ay",  ay + "%");
+  }
+
+  // Measure how far tower center is from viewport center (accounts for CSS left-shift)
+  // Called each frame so it updates on resize too.
+  function getTowerOffsetX(vw: number) {
+    if (!tower) return 0;
+    const r = tower.getBoundingClientRect();
+    return r.left + r.width / 2 - vw / 2;
+  }
+
+  let rafId = 0;
+
+  function tick() {
+    smoothY = lerp(smoothY, targetY, EASE);
+    if (Math.abs(targetY - smoothY) < 0.05) smoothY = targetY;
+
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const docH = document.documentElement.scrollHeight - vh;
+    const sY = smoothY;
+
+    // Progress bar
+    if (progress) progress.style.setProperty("--p", (100 * sY / docH).toFixed(2) + "%");
+
+    // Background grid parallax
+    if (bgGrid) bgGrid.style.transform = `translate3d(0, ${(sY * 0.04).toFixed(1)}px, 0)`;
+
+    // ─── ACT 1 — Hero → Classes ────────────────────────────────
+    if (act1 && tower) {
+      const rect  = act1.getBoundingClientRect();
+      const total = act1.offsetHeight - vh;
+      const p     = clamp01(-rect.top / total);
+
+      const idleP   = clamp01((p - 0.00) / 0.18);
+      const pushP   = clamp01((p - 0.18) / 0.24);
+      const openP   = clamp01((p - 0.42) / 0.28);
+      const settleP = clamp01((p - 0.70) / 0.15);
+
+      // Tower transform
+      const tScale = 1.0 + pushP * 0.5 + openP * 0.2;
+      const tRotY  = (p * 6) - 3;
+      const tY     = -pushP * 30 - openP * 80;
+      tower.style.transform =
+        `translate3d(0, ${tY.toFixed(1)}px, 0) scale(${tScale.toFixed(3)}) rotateY(${tRotY.toFixed(2)}deg)`;
+
+      if (towerShell) towerShell.style.opacity = (1 - openP * 1.05).toFixed(3);
+      if (towerCore) {
+        towerCore.style.opacity = (1 - openP * 0.9).toFixed(3);
+        towerCore.style.filter  = `brightness(${(1 + pushP * 0.3).toFixed(2)}) blur(${(openP * 8).toFixed(1)}px)`;
       }
-      setLogIdx((i) => i + 1);
-      setTimeout(() => {
-        setPlayerHp((h) => (h <= 5 ? 78 : h));
-        setOppHp((h) => (h <= 5 ? 64 : h));
-      }, 2200);
-    }, 2400);
-    return () => clearInterval(id);
-  }, [log, logIdx]);
+      if (towerHalo) {
+        towerHalo.style.opacity   = (1 - openP * 0.7 + pushP * 0.2).toFixed(3);
+        towerHalo.style.transform = `translate(-50%,-50%) scale(${(1 + pushP * 0.2 + openP * 0.3).toFixed(3)})`;
+      }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 28, skewX: -3 }}
-      animate={{ opacity: 1, x: 0, skewX: 0 }}
-      transition={{ duration: 0.55, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="relative"
-    >
-      <div className="absolute -inset-2 bg-gradient-to-tr from-neon-pink/30 via-neon-purple/20 to-neon-cyan/20 blur-2xl opacity-60" />
-      <div className="relative glass-panel p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-neon-pink" />
-            <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-neon-pink">
-              Live · Round 3
-            </span>
-          </div>
-          <span className="text-[10px] font-mono tracking-widest text-muted-foreground">
-            BO5 · RANKED
-          </span>
-        </div>
+      // Plate dimensions
+      const plateW      = Math.min(vw * 0.22, 360);
+      const plateH      = Math.min(vh * 0.14, 130);
+      const towerInnerW = Math.min(Math.max(vw * 0.14, 96), 180);
+      const towerInnerH = Math.min(Math.max(vh * 0.70, 380), 640);
 
-        <FighterRow
-          name="YOU"
-          sub="Speedster · Diamond II"
-          hp={playerHp}
-          icon={Zap}
-          colorClass="text-neon-cyan"
-          borderClass="border-neon-cyan/40"
-          barClass="bg-neon-cyan"
-          alignRight={false}
-        />
+      // startX = offset of tower center from viewport center (for the left-shift)
+      const towerOffsetX = getTowerOffsetX(vw);
 
-        <div className="relative my-4 h-14 flex items-center justify-center border-y border-border/60">
-          <div className="flex items-center gap-3">
-            <Flame className="w-4 h-4 text-neon-pink" />
-            <span className="text-2xl font-bold font-display tabular-nums text-neon-pink">
-              {combo}
-              <span className="text-xs text-muted-foreground">x COMBO</span>
-            </span>
-            <span className="hidden sm:inline w-px h-5 bg-border" />
-            <span className="hidden sm:inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Timer className="w-3 h-3" /> 0:08
-            </span>
-          </div>
-          <AnimatePresence>
-            {popup && (
-              <motion.div
-                key={popup.id}
-                initial={{ opacity: 0, y: 8, scale: 0.9 }}
-                animate={{ opacity: 1, y: -18, scale: 1 }}
-                exit={{ opacity: 0, y: -36, scale: 0.95 }}
-                transition={{ duration: 0.7 }}
-                className={`absolute right-2 top-1 px-2 py-0.5 text-[10px] font-bold tracking-wider ${
-                  popup.crit
-                    ? "bg-neon-pink text-foreground"
-                    : "bg-neon-purple/20 text-neon-purple border border-neon-purple/40"
-                }`}
-              >
-                {popup.text}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+      for (let i = 0; i < plates.length; i++) {
+        const plate = plates[i];
+        const seg   = towerInnerH / 8.4;
+        const startY = (i - 3.5) * seg;
+        const startX = towerOffsetX;          // plates start at tower's shifted center
+        const startW = towerInnerW;
+        const startH = seg * 0.95;
+        const end    = finalGrid[i];
+        const endX   = (end.x / 100) * vw;   // grid spreads from viewport center
+        const endY   = (end.y / 100) * vh;
 
-        <FighterRow
-          name="@kazu_47"
-          sub="Chud · Diamond I"
-          hp={oppHp}
-          icon={Crown}
-          colorClass="text-tier-champion"
-          borderClass="border-tier-champion/40"
-          barClass="bg-tier-champion"
-          alignRight
-        />
+        const t  = ss(openP);
+        const cx = lerp(startX, endX, t);
+        const cy = lerp(startY, endY, t);
+        const cw = lerp(startW, plateW, t);
+        const ch = lerp(startH, plateH, t);
 
-        <div className="mt-5 flex items-center justify-between text-[10px] font-bold tracking-widest uppercase">
-          <span className="text-muted-foreground">
-            Reward · <span className="text-neon-cyan">+185 XP</span>
-          </span>
-          <span className="text-muted-foreground">
-            On the line · <span className="text-neon-pink">Diamond Promo</span>
-          </span>
-        </div>
-      </div>
-    </motion.div>
-  );
+        plate.style.width  = cw.toFixed(1) + "px";
+        plate.style.height = ch.toFixed(1) + "px";
+        plate.style.transform =
+          `translate3d(${cx.toFixed(1)}px, calc(-50% + ${cy.toFixed(1)}px), 0) translateX(-50%)`;
+        plate.style.opacity = clamp01((openP - 0.05) / 0.25).toFixed(3);
+        plate.classList.toggle("labeled", settleP > 0.4);
+      }
+
+      // Chapter overlays
+      if (ch0) {
+        ch0.style.opacity   = (1 - pushP).toFixed(3);
+        ch0.style.transform = `translate(0, ${(-pushP * 40).toFixed(1)}px)`;
+        ch0.style.filter    = `blur(${(pushP * 6).toFixed(1)}px)`;
+        if (strike) strike.style.setProperty("--strike", idleP.toFixed(3));
+      }
+      if (ch1) {
+        ch1.style.opacity   = (pushP * (1 - openP * 0.9)).toFixed(3);
+        ch1.style.transform = `translate(-50%, calc(-50% + ${(-openP * 30).toFixed(1)}px))`;
+        ch1.style.filter    = `blur(${(openP * 8).toFixed(1)}px)`;
+      }
+      if (ch2) {
+        ch2.style.opacity   = settleP.toFixed(3);
+        ch2.style.transform = `translate(-50%, calc(-50% + ${((1 - settleP) * 30).toFixed(1)}px))`;
+      }
+
+      // HUD bars
+      const hudOn = clamp01((p - 0.20) / 0.15);
+      const holdP = clamp01((p - 0.85) / 0.15);
+      for (const hud of huds) {
+        hud.style.opacity = (hudOn * (1 - holdP * 0.5)).toFixed(3);
+        const cls = hud.classList;
+        const ax  = cls.contains("tl") || cls.contains("bl") ? -8 : 8;
+        const ay  = cls.contains("bl") || cls.contains("br") ? 8 : 0;
+        hud.style.transform =
+          `translate(${((1 - hudOn) * ax).toFixed(1)}px, ${((1 - hudOn) * ay).toFixed(1)}px)`;
+      }
+
+      // Grid pill
+      if (gridBars) gridBars.classList.toggle("in", settleP > 0.3);
+
+      // Scroll hint
+      if (scrollHint) scrollHint.classList.toggle("in", p > 0.02 && p < 0.16);
+
+      // Lighting
+      setAurora(p);
+      if (bgVignette) bgVignette.style.opacity = (0.7 + p * 0.3).toFixed(3);
+    }
+
+    // ─── ACT 2 — Loop (stats light in sequence) ───────────────
+    if (act2 && statRows.length) {
+      const rect  = act2.getBoundingClientRect();
+      const total = act2.offsetHeight - vh;
+      const p     = clamp01(-rect.top / total);
+      const startP = 0.12, endP = 0.85;
+      const range  = endP - startP;
+      const step   = range / statRows.length;
+      for (let i = 0; i < statRows.length; i++) {
+        statRows[i].classList.toggle("lit", p >= startP + i * step);
+      }
+      if (act2Head) {
+        const op = p < 0.05 ? p / 0.05 : p > 0.92 ? 1 - (p - 0.92) / 0.08 : 1;
+        act2Head.style.opacity = clamp01(op).toFixed(3);
+      }
+    }
+
+    // ─── ACT 3 — Climb (pin travels down the rail) ────────────
+    if (act3 && climbEl && climbPin) {
+      const rect  = act3.getBoundingClientRect();
+      const total = act3.offsetHeight - vh;
+      const p     = clamp01(-rect.top / total);
+      const climbH = climbEl.offsetHeight;
+      const pinH   = climbPin.offsetHeight || 26;
+      const y      = clamp01(p * 1.05) * (climbH - pinH);
+      climbPin.style.transform = `translateY(${y.toFixed(1)}px)`;
+    }
+
+    rafId = requestAnimationFrame(tick);
+  }
+
+  rafId = requestAnimationFrame(tick);
+
+  // ── Scroll reveals for normal-flow sections ────────────────
+  const activeReveals = [...reveals];
+  function checkReveals() {
+    const vh = window.innerHeight;
+    for (let i = activeReveals.length - 1; i >= 0; i--) {
+      const el = activeReveals[i];
+      const r  = el.getBoundingClientRect();
+      if (r.top < vh * 0.92 && r.bottom > 0) {
+        el.classList.add("in");
+        activeReveals.splice(i, 1);
+      }
+    }
+  }
+  try {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add("in");
+          io.unobserve(e.target);
+          const idx = activeReveals.indexOf(e.target as HTMLElement);
+          if (idx >= 0) activeReveals.splice(idx, 1);
+        }
+      });
+    }, { threshold: 0.18, rootMargin: "0px 0px -8% 0px" });
+    activeReveals.forEach(el => io.observe(el));
+  } catch (_) { /* noop */ }
+  window.addEventListener("scroll", checkReveals, { passive: true });
+  window.addEventListener("resize", checkReveals);
+  requestAnimationFrame(checkReveals);
+  const t1 = setTimeout(checkReveals, 60);
+  const t2 = setTimeout(checkReveals, 300);
+  const t3 = setTimeout(checkReveals, 700);
+
+  // Live counter flicker
+  const liveEls = [root.querySelector<HTMLElement>("#cl-liveCount"), root.querySelector<HTMLElement>("#cl-liveCount2")];
+  let liveN = 1407;
+  const liveInterval = setInterval(() => {
+    liveN += Math.round((Math.random() - 0.5) * 6);
+    if (liveN < 1380) liveN = 1380;
+    if (liveN > 1470) liveN = 1470;
+    liveEls.forEach(el => { if (el) el.textContent = liveN.toLocaleString("en-US"); });
+  }, 2400);
+
+  return () => {
+    cancelAnimationFrame(rafId);
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("scroll", checkReveals);
+    window.removeEventListener("resize", checkReveals);
+    clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+    clearInterval(liveInterval);
+  };
 }
 
-function FighterRow(props: {
-  name: string;
-  sub: string;
-  hp: number;
-  icon: React.ComponentType<{ className?: string }>;
-  colorClass: string;
-  borderClass: string;
-  barClass: string;
-  alignRight: boolean;
-}) {
-  const { name, sub, hp, icon: Icon, colorClass, borderClass, barClass, alignRight } = props;
+/* ═══════════════════════════════════════════════════════════════
+   COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+export function LandingShowcase() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated } = useAuth();
+  const ctaTo    = isAuthenticated ? "/battles" : "/signup";
+  const ctaLabel = "Battle now";
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    return initCinematicEngine(containerRef.current);
+  }, []);
+
   return (
-    <div className={`flex items-center gap-3 ${alignRight ? "flex-row-reverse text-right" : ""}`}>
-      <div
-        className={`w-12 h-12 shrink-0 border ${borderClass} bg-secondary/40 flex items-center justify-center`}
-      >
-        <Icon className={`w-5 h-5 ${colorClass}`} />
+    <div className="cl-root" ref={containerRef}>
+
+      {/* ── Fixed atmospheric background ── */}
+      <div className="cl-bg" aria-hidden="true">
+        <div className="cl-bg-aurora" />
+        <div className="cl-bg-grid" />
+        <div className="cl-bg-vignette" />
+        <div className="cl-bg-noise" />
       </div>
-      <div className="flex-1 min-w-0">
-        <div
-          className={`flex items-baseline justify-between gap-2 ${alignRight ? "flex-row-reverse" : ""}`}
-        >
-          <span className="font-bold text-sm font-display tracking-wider truncate">{name}</span>
-          <span className="text-[10px] font-mono tabular-nums text-muted-foreground">
-            {Math.round(hp)}/100
-          </span>
-        </div>
-        <p className="text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-1.5 truncate">
-          {sub}
-        </p>
-        <div className="h-2 bg-secondary/60 relative overflow-hidden">
-          <motion.div
-            className={`h-full ${barClass}`}
-            animate={{ width: `${hp}%` }}
-            transition={{ type: "spring", stiffness: 120, damping: 18 }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-xp-shimmer pointer-events-none" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
-/* ════════════════════════════════════════════════════════════════════
-   2. LIVE TICKER — recent results scroll (social proof / FOMO)
-   ════════════════════════════════════════════════════════════════════ */
+      {/* Scroll progress bar */}
+      <div className="cl-progress" aria-hidden="true" />
 
-const TICKER = [
-  { winner: "@nova_q",  klass: "Speedster",   loser: "@brio",   time: "0:47", topic: "Calculus"  },
-  { winner: "@kira_x",  klass: "Healer",      loser: "@hyx",    time: "1:12", topic: "Vocab"     },
-  { winner: "@orin",    klass: "Chud",        loser: "@drei_v", time: "0:38", topic: "Physics"   },
-  { winner: "@zee",     klass: "Fulcrum",     loser: "@mara",   time: "1:02", topic: "Geometry"  },
-  { winner: "@tav",     klass: "Accelerator", loser: "@ilya",   time: "0:55", topic: "French"    },
-  { winner: "@mio",     klass: "Tank",        loser: "@cyx_r",  time: "1:24", topic: "Chemistry" },
-  { winner: "@ren_44",  klass: "Gambler",     loser: "@noor",   time: "0:29", topic: "History"   },
-  { winner: "@aki",     klass: "God",         loser: "@silas",  time: "1:41", topic: "Linear Alg." },
-] as const;
+      {/* ═══════════════════════════════════════════════════════
+          ACT 1 — Hero → Classes (440vh pinned scene)
+          ═══════════════════════════════════════════════════════ */}
+      <section className="cl-act1" id="cl-top" data-screen-label="01 Hero · Classes">
+        <div className="cl-act1-pin">
 
-function LiveTicker() {
-  const items = [...TICKER, ...TICKER];
-  return (
-    <div className="border-y border-border bg-arena-light/40 overflow-hidden">
-      <div className="relative flex items-center h-12">
-        <div className="absolute left-0 top-0 bottom-0 z-10 px-4 flex items-center gap-2 bg-arena-light border-r border-border">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-neon-pink opacity-60 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-pink" />
-          </span>
-          <span className="text-[10px] font-bold tracking-[0.25em] uppercase">Live Feed</span>
-        </div>
-        <div className="absolute left-0 right-0 overflow-hidden pl-32">
-          <div className="flex items-center gap-8 animate-[ticker_45s_linear_infinite] whitespace-nowrap">
-            {items.map((t, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <Swords className="w-3 h-3 text-neon-pink shrink-0" />
-                <span className="text-foreground font-medium">{t.winner}</span>
-                <span className="text-[10px] uppercase tracking-widest text-neon-cyan font-bold">
-                  {t.klass}
-                </span>
-                <span className="text-muted-foreground">defeated</span>
-                <span className="text-foreground">{t.loser}</span>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">{t.topic}</span>
-                <span className="text-muted-foreground">·</span>
-                <span className="font-mono text-neon-pink tabular-nums">{t.time}</span>
+          {/* HUD corner labels */}
+          <div className="cl-hud tl">
+            <strong>System / Eclipta</strong>
+            v 01 · cohort 142 open
+          </div>
+          <div className="cl-hud tr">
+            <strong>Live</strong>
+            <span style={{
+              display: "inline-block", width: 6, height: 6, borderRadius: "50%",
+              background: "var(--cl-accent)", boxShadow: "0 0 8px var(--cl-accent-halo)",
+              marginRight: 4, verticalAlign: "middle",
+            }} />
+            <span id="cl-liveCount2">1,407</span> in arena
+          </div>
+          <div className="cl-hud bl">
+            <strong>8 classes</strong>
+            16 Ecliptars · free to play
+          </div>
+          <div className="cl-hud br">
+            <strong>3:00</strong>
+            avg. match length
+          </div>
+
+          {/* Glass tower (splits open during scroll) */}
+          <div className="cl-tower-stage">
+            <div className="cl-tower">
+              <div className="cl-tower-halo" />
+              <div className="cl-tower-shell" />
+              <div className="cl-tower-core" />
+            </div>
+          </div>
+
+          {/* 8 plates: stacked inside tower → spread to grid */}
+          <div className="cl-plates">
+            {[
+              { cls: "p1", name: "Speedster",  tag: "Speed · Mult" },
+              { cls: "p2", name: "Tank",        tag: "Max HP" },
+              { cls: "p3", name: "Chud",        tag: "Glass cannon" },
+              { cls: "p4", name: "Healer",      tag: "Regen · Sustain" },
+              { cls: "p5", name: "Fulcrum",     tag: "Balanced" },
+              { cls: "p6", name: "Accel.",      tag: "Scales up" },
+              { cls: "p7", name: "Gambler",     tag: "Chaos" },
+              { cls: "p8", name: "God",         tag: "Endgame" },
+            ].map((p) => (
+              <div key={p.cls} className={`cl-plate ${p.cls}`}>
+                <div className="cl-plate-body" />
+                <div className="cl-plate-label">
+                  <span className="tg">{p.tag}</span>
+                  <span className="nm">{p.name}</span>
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-      <style>{`@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
-    </div>
-  );
-}
 
-/* ════════════════════════════════════════════════════════════════════
-   3. CLASS PICKER — identity hook (MOVED BEFORE ANATOMY)
-   Who are you as a fighter? Commit before you understand mechanics.
-   This mirrors how LoL/Valorant drive early identity attachment.
-   ════════════════════════════════════════════════════════════════════ */
-
-/* Explicit bg mapping so Tailwind JIT can scan literal class names */
-const ARCHETYPE_BAR: Record<string, string> = {
-  speedster:   "bg-neon-cyan",
-  tank:        "bg-tier-silver",
-  chud:        "bg-tier-champion",
-  gambler:     "bg-tier-gold",
-  healer:      "bg-neon-pink",
-  fulcrum:     "bg-neon-purple",
-  accelerator: "bg-tier-platinum",
-  god:         "bg-tier-god",
-};
-
-const CLASS_TAGS: Record<string, { label: string; color: string }> = {
-  speedster:   { label: "MOST PLAYED",      color: "border-neon-cyan/50 text-neon-cyan" },
-  tank:        { label: "EASY START",       color: "border-tier-silver/50 text-tier-silver" },
-  chud:        { label: "GLASS CANNON",     color: "border-tier-champion/50 text-tier-champion" },
-  gambler:     { label: "CHAOS MODE",       color: "border-tier-gold/50 text-tier-gold" },
-  healer:      { label: "HIGH SUSTAIN",     color: "border-neon-pink/50 text-neon-pink" },
-  fulcrum:     { label: "BALANCED",         color: "border-neon-purple/50 text-neon-purple" },
-  accelerator: { label: "SCALES UP",        color: "border-tier-platinum/50 text-tier-platinum" },
-  god:         { label: "ENDGAME",          color: "border-tier-god/50 text-tier-god" },
-};
-
-function StatMini({ label, pct, colorClass }: { label: string; pct: number; colorClass: string }) {
-  return (
-    <div className="flex-1 min-w-0">
-      <p className="text-[8px] font-bold tracking-widest uppercase text-muted-foreground mb-0.5">
-        {label}
-      </p>
-      <div className="h-1 bg-secondary/60 overflow-hidden">
-        <motion.div
-          className={`h-full ${colorClass}`}
-          initial={{ width: 0 }}
-          whileInView={{ width: `${pct}%` }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function ClassPicker() {
-  const order: (keyof typeof ARCHETYPES)[] = [
-    "speedster", "tank", "chud", "healer", "fulcrum", "accelerator", "gambler", "god",
-  ];
-
-  return (
-    <section className="px-6 py-24 border-y border-border bg-secondary/15">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <SectionLabel text="Eight Classes · One Identity" color="text-neon-cyan" />
-          <h2 className="text-4xl md:text-6xl font-bold font-display tracking-tight mb-4">
-            Your class is your identity.
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Choose how you fight — then make it a personality. Glass-cannon Chuds,
-            immortal Tanks, chaos-roll Gamblers. Your archetype changes the rules of
-            every match you play.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          {order.map((id, i) => {
-            const a = ARCHETYPES[id];
-            const Icon = a.icon;
-            const tag = CLASS_TAGS[id];
-            /* Normalised stat bars */
-            const hpPct   = Math.round((a.maxHp / 250) * 100);
-            const dmgPct  = Math.round((a.baseDamage / 30) * 100);
-            /* Speed = inverse of time multiplier (lower mult = faster) */
-            const spdPct  = Math.round(((1.5 - a.timeMultiplier) / 0.75) * 100);
-            const barColor = ARCHETYPE_BAR[id] ?? "bg-neon-purple";
-
-            return (
-              <motion.div
-                key={id}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: (i % 4) * 0.06, duration: 0.4 }}
-              >
-                <Link
-                  to="/battles"
-                  className="group block glass-panel p-5 h-full hover:border-neon-pink/40 transition-all hover:-translate-y-1"
-                >
-                  {/* Header row */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div
-                      className={`w-10 h-10 border ${a.borderColor} bg-background/30 flex items-center justify-center shrink-0`}
-                    >
-                      <Icon className={`w-5 h-5 ${a.color}`} />
-                    </div>
-                    {tag && (
-                      <span
-                        className={`text-[7px] font-bold tracking-widest uppercase px-1.5 py-0.5 border ${tag.color}`}
-                      >
-                        {tag.label}
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className={`text-sm font-bold font-display tracking-wider mb-0.5 ${a.color}`}>
-                    {a.name.replace("The ", "").toUpperCase()}
-                  </h3>
-                  <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-3 leading-relaxed">
-                    {a.passive}
-                  </p>
-
-                  {/* Stat bars */}
-                  <div className="flex gap-2 border-t border-border/50 pt-3">
-                    <StatMini label="HP"  pct={hpPct}  colorClass={barColor} />
-                    <StatMini label="DMG" pct={dmgPct} colorClass={barColor} />
-                    <StatMini label="SPD" pct={spdPct} colorClass={barColor} />
-                  </div>
+          {/* Chapter overlays */}
+          <div className="cl-chapters">
+            {/* Chapter 0 — initial hero copy, RIGHT side */}
+            <div className="cl-chapter right" id="cl-ch0">
+              <span className="ch-tag">Chapter 01 · Origin</span>
+              <h1>
+                <span className="strike">Study</span> is dead.<br />
+                <em>Fight for it.</em>
+              </h1>
+              <p>
+                The first knowledge arena. Pick a class. Queue a match.
+                Land combos in real time. Climb the ranked ladder with an AI coach in your corner.
+              </p>
+              <div className="ch-cta">
+                <Link to={ctaTo} className="cl-btn">
+                  {ctaLabel}
+                  <Arrow />
                 </Link>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        <div className="text-center">
-          <Link
-            to="/battles"
-            className="inline-flex items-center gap-2 px-7 py-3.5 bg-neon-pink text-foreground font-bold text-xs tracking-[0.25em] hover:scale-[1.03] transition-transform animate-battle-charge"
-          >
-            <Swords className="w-3.5 h-3.5" />
-            PICK YOUR CLASS AND ENTER THE ARENA
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   4. BATTLE ANATOMY — the core hook (after identity is set)
-   ════════════════════════════════════════════════════════════════════ */
-
-const MECHANICS = [
-  {
-    icon: Heart,
-    label: "HP",
-    accent: "text-neon-pink",
-    rule: "Wrong answers cost HP. Run out and you're knocked out.",
-    detail: "Your class determines your starting HP — Tank gets 250, Chud starts at 75.",
-  },
-  {
-    icon: Flame,
-    label: "COMBO",
-    accent: "text-neon-pink",
-    rule: "Streaks compound damage. Break the chain and you reset.",
-    detail: "A 5x combo can turn a losing battle around in two correct answers.",
-  },
-  {
-    icon: Zap,
-    label: "FOCUS",
-    accent: "text-neon-cyan",
-    rule: "Spent on heals and abilities. Earned by clutch correct answers.",
-    detail: "Healers regenerate focus passively. Speedsters burn through it fast.",
-  },
-  {
-    icon: Timer,
-    label: "TIME",
-    accent: "text-neon-purple",
-    rule: "Faster answers deal more damage. Hesitation halves your hit.",
-    detail: "Sub-3s answers can crit. Over 15s and your damage floors at 30%.",
-  },
-] as const;
-
-function BattleAnatomy() {
-  return (
-    <section id="battle-anatomy" className="px-6 py-24 scroll-mt-20">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-14">
-          <SectionLabel text="The Core Loop" color="text-neon-pink" />
-          <h2 className="text-4xl md:text-6xl font-bold font-display tracking-tight mb-4">
-            Three minutes. Live stakes.
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Knowledge checks fire in real-time. Combos compound damage. Every hesitation
-            costs HP. Knowing the answer is just the starting point — execution is
-            everything.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
-          {MECHANICS.map((m, i) => {
-            const Icon = m.icon;
-            return (
-              <motion.div
-                key={m.label}
-                initial={{ opacity: 0, y: 22 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08, duration: 0.45 }}
-                className="glass-panel p-6 group hover:border-neon-pink/40 transition-colors"
-              >
-                <Icon className={`w-6 h-6 ${m.accent} mb-4 group-hover:scale-110 transition-transform`} />
-                <p className={`text-[10px] font-bold tracking-[0.3em] uppercase ${m.accent} mb-2`}>
-                  {m.label}
-                </p>
-                <p className="text-sm font-semibold text-foreground mb-2 leading-snug">{m.rule}</p>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">{m.detail}</p>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        <div className="text-center">
-          <Link
-            to="/battles"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-neon-pink/50 text-neon-pink hover:bg-neon-pink hover:text-foreground text-xs font-bold tracking-[0.25em] transition-colors"
-          >
-            QUEUE FOR A MATCH <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   5. RANK LADDER — aspiration staircase with tier descriptors
-   Redesigned from equal-weight grid → ascending story with glow
-   that intensifies toward God tier.
-   ════════════════════════════════════════════════════════════════════ */
-
-const TIERS = [
-  {
-    name: "Bronze",
-    color: "text-tier-bronze",
-    glow: "neon-glow-bronze",
-    tier: "T1",
-    desc: "Finding your footing",
-    pct: "~60% of new players",
-  },
-  {
-    name: "Silver",
-    color: "text-tier-silver",
-    glow: "neon-glow-silver",
-    tier: "T2",
-    desc: "Reading the fight",
-    pct: "~25% of players",
-  },
-  {
-    name: "Gold",
-    color: "text-tier-gold",
-    glow: "neon-glow-gold",
-    tier: "T3",
-    desc: "Combo discipline",
-    pct: "~10% of players",
-  },
-  {
-    name: "Platinum",
-    color: "text-tier-platinum",
-    glow: "neon-glow-platinum",
-    tier: "T4",
-    desc: "Class mastery",
-    pct: "~4% of players",
-  },
-  {
-    name: "Diamond",
-    color: "text-tier-diamond",
-    glow: "neon-glow-diamond",
-    tier: "T5",
-    desc: "Pressure consistency",
-    pct: "~1.5% of players",
-  },
-  {
-    name: "Champion",
-    color: "text-tier-champion",
-    glow: "neon-glow-champion",
-    tier: "T6",
-    desc: "Season cosmetics unlocked",
-    pct: "~0.4% of players",
-  },
-  {
-    name: "Unreal",
-    color: "text-tier-unreal",
-    glow: "neon-glow-unreal",
-    tier: "T7",
-    desc: "Top 1% this season",
-    pct: "~0.08% of players",
-  },
-  {
-    name: "God",
-    color: "text-tier-god",
-    glow: "neon-glow-god",
-    tier: "T8",
-    desc: "Name on the global wall",
-    pct: "284 players this season",
-    featured: true,
-  },
-] as const;
-
-function RankLadder() {
-  return (
-    <section className="px-6 py-24 border-y border-border bg-arena-light/30">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <SectionLabel text="The Climb" color="text-tier-gold" />
-          <h2 className="text-4xl md:text-6xl font-bold font-display tracking-tight mb-4">
-            Bronze → God.
-            <br />
-            <span className="text-tier-gold text-glow-gold">One throne.</span>
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Every win moves you up. Every loss costs. Hit Champion to unlock seasonal
-            cosmetics. Hit God and your username appears on the global leaderboard — permanently.
-          </p>
-        </div>
-
-        {/* Tier grid: 7 equal + 1 featured God tier */}
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-6">
-          {TIERS.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06, duration: 0.4 }}
-              className={`glass-panel p-3 text-center group hover:-translate-y-1 transition-transform ${
-                t.name === "God" ? "col-span-2 md:col-span-1 border-tier-god/30" : ""
-              }`}
-            >
-              <div
-                className={`w-10 h-10 mx-auto mb-2 rounded-full bg-background/40 flex items-center justify-center ${t.glow}`}
-              >
-                <Crown className={`w-5 h-5 ${t.color}`} />
+                <Link to="/battles" className="cl-btn-ghost">See the system</Link>
               </div>
-              <p className={`text-[10px] font-bold tracking-widest uppercase ${t.color}`}>
-                {t.name}
-              </p>
-              <p className="text-[8px] font-mono tabular-nums text-muted-foreground mt-0.5 mb-1">
-                {t.tier}
-              </p>
-              <p className="text-[8px] text-muted-foreground leading-tight hidden md:block">
-                {t.desc}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* God tier call-out bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="glass-panel border-tier-god/20 p-5 flex flex-col md:flex-row items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-background/40 flex items-center justify-center neon-glow-god shrink-0">
-              <Crown className="w-6 h-6 text-tier-god" />
             </div>
-            <div>
-              <p className="text-sm font-bold font-display tracking-wider text-tier-god text-glow-god">
-                GOD TIER — T8
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                284 players reached God this season. Their names live on the leaderboard forever.
-              </p>
+
+            {/* Chapter 1 — reveal phase */}
+            <div className="cl-chapter" id="cl-ch1">
+              <span className="ch-tag">Chapter 02 · Reveal</span>
+              <h2>Inside the tower, <em>eight</em> ways to fight.</h2>
+            </div>
+
+            {/* Chapter 2 — settle phase */}
+            <div className="cl-chapter" id="cl-ch2" style={{ top: "12vh" }}>
+              <span className="ch-tag">Chapter 03 · Identity</span>
+              <h2>Eight archetypes, <em>one arena.</em></h2>
             </div>
           </div>
-          <Link
-            to="/battles"
-            className="shrink-0 px-5 py-2.5 border border-tier-god/50 text-tier-god hover:bg-tier-god/10 text-xs font-bold tracking-[0.25em] transition-colors whitespace-nowrap"
-          >
-            START THE CLIMB <ChevronRight className="inline w-3.5 h-3.5" />
-          </Link>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
-/* ════════════════════════════════════════════════════════════════════
-   6. MASTERY ENGINE — "The Training Ground" (replaces "Beyond Battles")
-   Reframed: these are competitive weapons, not supplementary features.
-   ════════════════════════════════════════════════════════════════════ */
+          {/* "Pick your class" pill */}
+          <div className="cl-grid-bars">
+            <span className="pill">
+              <span className="dot" />
+              Pick your class &nbsp;·&nbsp; choose wisely
+            </span>
+          </div>
 
-const TRAINING_TOOLS = [
-  {
-    icon: Brain,
-    label: "Luna",
-    tag: "AI Training Partner",
-    blurb: "Hint-first AI coach. Forces you to reason through answers — won't hand them to you.",
-    edge: "Your opponent is prepping. Are you?",
-    to: "/luna" as const,
-    accent: "text-neon-purple",
-    border: "hover:border-neon-purple/40",
-  },
-  {
-    icon: Target,
-    label: "Adaptive Tests",
-    tag: "Gap Analysis",
-    blurb: "Branches on every answer to find your blind spots. No two sessions are the same.",
-    edge: "Knows what the arena will punish before you do.",
-    to: "/adaptive-tests" as const,
-    accent: "text-neon-cyan",
-    border: "hover:border-neon-cyan/40",
-  },
-  {
-    icon: GraduationCap,
-    label: "Courses",
-    tag: "Structured Knowledge",
-    blurb: "Curated tracks and custom syllabi. Build the foundations the arena will expose.",
-    edge: "Gaps in knowledge show up as HP losses in battle.",
-    to: "/certified" as const,
-    accent: "text-neon-pink",
-    border: "hover:border-neon-pink/40",
-  },
-  {
-    icon: MessagesSquare,
-    label: "Forum",
-    tag: "Community Intel",
-    blurb: "Stack-Exchange-style threads tagged by subject. Ask, argue, and learn from every fight.",
-    edge: "The strongest players discuss strategy publicly.",
-    to: "/forum" as const,
-    accent: "text-tier-gold",
-    border: "hover:border-tier-gold/40",
-  },
-] as const;
-
-function MasteryEngine() {
-  return (
-    <section className="px-6 py-24">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <SectionLabel text="The Training Ground" color="text-neon-cyan" />
-          <h2 className="text-3xl md:text-5xl font-bold font-display tracking-tight mb-4">
-            The arena exposes weakness.
-            <br />
-            <span className="text-neon-cyan">These tools fix it.</span>
-          </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Every tool between matches is a competitive weapon. Use them or
-            face opponents who did.
-          </p>
+          {/* Scroll hint */}
+          <div className="cl-scroll-hint">
+            <span className="line" />
+            Scroll
+          </div>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {TRAINING_TOOLS.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06, duration: 0.4 }}
-              >
-                <Link
-                  to={s.to}
-                  className={`block glass-panel p-6 h-full ${s.border} transition-colors group`}
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-10 h-10 bg-secondary/40 flex items-center justify-center shrink-0">
-                      <Icon className={`w-5 h-5 ${s.accent} group-hover:scale-110 transition-transform`} />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-bold tracking-widest uppercase text-muted-foreground">
-                        {s.tag}
-                      </p>
-                      <h3 className="text-sm font-bold font-display tracking-wider">{s.label}</h3>
-                    </div>
-                  </div>
-                  <p className="text-sm text-foreground/80 leading-relaxed mb-3">{s.blurb}</p>
-                  <p className={`text-[10px] font-bold tracking-wider uppercase ${s.accent} flex items-center gap-1.5`}>
-                    <TrendingUp className="w-3 h-3" /> {s.edge}
-                  </p>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   7. TROPHY ROAD & ECLIPTARS — collection / long-term identity
-   ════════════════════════════════════════════════════════════════════ */
-
-function TrophyTease() {
-  const tiles = [
-    { icon: Zap,          name: "Velo",       color: "text-neon-cyan",     role: "Speedster"    },
-    { icon: Shield,       name: "Aegis",      color: "text-tier-silver",   role: "Tank"         },
-    { icon: Skull,        name: "Pyre",       color: "text-tier-champion", role: "Chud"         },
-    { icon: Heart,        name: "Soren",      color: "text-neon-pink",     role: "Healer"       },
-    { icon: Scale,        name: "Axion",      color: "text-neon-purple",   role: "Fulcrum"      },
-    { icon: FastForward,  name: "Comet",      color: "text-tier-platinum", role: "Accelerator"  },
-    { icon: Trophy,       name: "Newton",     color: "text-tier-gold",     role: "God · Boss"   },
-    { icon: Crown,        name: "Ecliptadon", color: "text-tier-god",      role: "God · Boss"   },
-  ];
-
-  return (
-    <section className="px-6 py-24 border-y border-border bg-secondary/15">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        <div className="lg:col-span-5">
-          <SectionLabel text="Trophy Road" color="text-neon-purple" />
-          <h2 className="text-4xl md:text-5xl font-bold font-display tracking-tight mb-5">
-            Win battles.
-            <br />
-            Build your legacy.
-          </h2>
-          <p className="text-muted-foreground mb-4 leading-relaxed">
-            Hit checkpoints on the Trophy Road to unlock Ecliptars — collectible creatures
-            tied to every archetype you've mastered. Equip one as your profile sigil.
-          </p>
-          <p className="text-sm text-foreground font-semibold mb-6">
-            16 total. Two are end-game boss-tier — only claimable by beating them in battle.
-          </p>
-          <Link
-            to="/progress"
-            className="inline-flex items-center gap-2 px-5 py-3 border border-neon-purple/50 text-neon-purple hover:bg-neon-purple hover:text-background text-xs font-bold tracking-[0.25em] transition-colors"
-          >
-            VIEW THE ROAD <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <div className="lg:col-span-7 grid grid-cols-4 gap-3">
-          {tiles.map((t, i) => {
-            const Icon = t.icon;
-            return (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05, type: "spring", stiffness: 240, damping: 20 }}
-                className={`glass-panel aspect-square flex flex-col items-center justify-center p-3 group hover:-translate-y-1 transition-transform ${
-                  t.role.includes("Boss") ? "border-tier-god/30" : ""
-                }`}
-              >
-                <Icon
-                  className={`w-7 h-7 ${t.color} mb-2 group-hover:scale-110 transition-transform`}
-                />
-                <p className="text-[10px] font-bold font-display tracking-wider text-center">
-                  {t.name}
-                </p>
-                <p className="text-[8px] uppercase tracking-widest text-muted-foreground mt-0.5">
-                  {t.role}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   8. DAILY CHALLENGE — retention loop with live countdown
-   ════════════════════════════════════════════════════════════════════ */
-
-function DailyChallenge() {
-  const ch = getTodayChallenge();
-  const { h, m, s } = useUTCCountdown();
-
-  return (
-    <section className="px-6 py-20">
-      <div className="max-w-5xl mx-auto">
-        <div className="relative glass-panel p-8 md:p-12 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-72 h-72 bg-neon-pink/20 rounded-full blur-[100px]" />
-
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            <div className="md:col-span-2">
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 border border-neon-pink/40 bg-neon-pink/5 text-neon-pink text-[10px] font-bold tracking-[0.25em] uppercase">
-                  <Sparkles className="w-3 h-3" /> Today's Challenge
-                </div>
-                {/* Countdown */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-border bg-secondary/30 text-[10px] font-mono tabular-nums text-muted-foreground font-bold">
-                  <Timer className="w-3 h-3" />
-                  RESETS IN{" "}
-                  <span className="text-foreground">
-                    {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:
-                    {String(s).padStart(2, "0")}
-                  </span>
-                </div>
-              </div>
-
-              <h3 className="text-3xl md:text-4xl font-bold font-display tracking-tight mb-2">
-                {ch.title}
-              </h3>
-              <p className="text-muted-foreground mb-4">{ch.goal}</p>
-              {ch.modifier && (
-                <p className="text-sm text-foreground/70 italic mb-4">{ch.modifier}</p>
-              )}
-              <div className="flex flex-wrap gap-2 text-[10px] font-bold tracking-widest uppercase">
-                <span className="px-2.5 py-1 border border-neon-cyan/40 text-neon-cyan">
-                  +{ch.target} {ch.unit} required
-                </span>
-                <span className="px-2.5 py-1 border border-neon-pink/40 text-neon-pink">
-                  Reward · {ch.reward}
-                </span>
-              </div>
+      {/* ═══════════════════════════════════════════════════════
+          ACT 2 — The Loop (stats light up in sequence)
+          ═══════════════════════════════════════════════════════ */}
+      <section className="cl-act2" id="cl-loop" data-screen-label="02 Loop">
+        <div className="cl-act2-pin">
+          <div className="cl-act2-inner">
+            <div className="cl-act2-head">
+              <div className="cl-label">04 · The Loop</div>
+              <h2 className="cl-title" style={{ marginTop: 22 }}>
+                Three minutes. <em>Live stakes.</em>
+              </h2>
+              <p className="cl-sub" style={{ marginTop: 24 }}>
+                Knowledge checks fire in real time. Combos compound damage.
+                Every hesitation costs HP — and every clutch answer can turn the fight.
+              </p>
             </div>
 
-            <div className="flex md:justify-end">
-              <Link
-                to="/battles"
-                className="px-7 py-4 bg-neon-pink text-foreground font-bold text-sm tracking-[0.2em] inline-flex items-center gap-2 hover:scale-105 transition-transform animate-battle-charge"
-              >
-                ACCEPT <ArrowRight className="w-4 h-4" />
+            <div className="cl-stats-stack">
+              {[
+                { r: "r1", i: "— 01", k: "HP",    v: <>Wrong answers cost HP. <em>Run out</em> and you&apos;re knocked out — instantly.</> },
+                { r: "r2", i: "— 02", k: "Combo", v: <>Streaks compound damage. <em>Break the chain</em> and the multiplier resets to zero.</> },
+                { r: "r3", i: "— 03", k: "Focus", v: <>Spent on heals. <em>Earned by clutch</em> correct answers under pressure.</> },
+                { r: "r4", i: "— 04", k: "Time",  v: <>Faster answers deal more damage. <em>Hesitation halves</em> your hit.</> },
+              ].map((row, idx) => (
+                <div key={row.r} className={`cl-stat-row ${row.r}`} data-i={idx}>
+                  <span className="ix">{row.i}</span>
+                  <div className="k">{row.k}</div>
+                  <p className="v">{row.v}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          ACT 3 — The Climb (vertical tier track)
+          ═══════════════════════════════════════════════════════ */}
+      <section className="cl-act3" id="cl-climb" data-screen-label="03 Climb">
+        <div className="cl-act3-pin">
+          <div className="cl-act3-inner">
+
+            <div className="cl-climb-right">
+              <div className="cl-label">05 · Ranked</div>
+              <h2 className="cl-title" style={{ marginTop: 22, marginBottom: 32 }}>
+                Bronze to <em>God.</em> One throne.
+              </h2>
+              <div className="stat">
+                <em>284</em>
+                <br />reached God this season.
+              </div>
+              <p className="note">
+                Their names live on the leaderboard until the world ends —
+                not until next season&apos;s reset.
+              </p>
+              <Link to={ctaTo} className="cl-btn-ghost">
+                Start the climb &nbsp;<SmallArrow />
               </Link>
             </div>
+
+            <div className="cl-climb" id="cl-climbEl">
+              <span className="cl-climb-pin" />
+              {[
+                { t: "",    c: "var(--cl-c1)", n: "T1", label: "Bronze",   dx: "Finding footing"          },
+                { t: "",    c: "var(--cl-c2)", n: "T2", label: "Silver",   dx: "Reading the fight"        },
+                { t: "",    c: "var(--cl-c3)", n: "T3", label: "Gold",     dx: "Combo discipline"         },
+                { t: "",    c: "var(--cl-c4)", n: "T4", label: "Platinum", dx: "Class mastery"            },
+                { t: "",    c: "var(--cl-c5)", n: "T5", label: "Diamond",  dx: "Pressure consistency"     },
+                { t: "",    c: "var(--cl-c6)", n: "T6", label: "Champion", dx: "Season cosmetics"         },
+                { t: "",    c: "var(--cl-c7)", n: "T7", label: "Unreal",   dx: "Top 1% this season"       },
+                { t: "god", c: "var(--cl-c8)", n: "T8", label: "God",      dx: "Name on the global wall"  },
+              ].map((tier) => (
+                <div
+                  key={tier.n}
+                  className={`cl-tier${tier.t ? " " + tier.t : ""}`}
+                  style={{ "--tier-c": tier.c } as React.CSSProperties}
+                >
+                  <div className="nm">
+                    <span className="num">{tier.n}</span>{tier.label}
+                  </div>
+                  <div className="dx">{tier.dx}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-/* ════════════════════════════════════════════════════════════════════
-   9. SOCIAL PROOF — Season leaders + "the arena is full" signal
-   NEW SECTION: validates the platform is alive and worth joining
-   ════════════════════════════════════════════════════════════════════ */
-
-const SEASON_LEADERS = [
-  { handle: "@sable_x",  klass: "God",       wins: 847, streak: 12, tier: "text-tier-god",      glow: "neon-glow-god",      icon: Crown },
-  { handle: "@nova_q",   klass: "Speedster", wins: 631, streak: 8,  tier: "text-neon-cyan",     glow: "neon-glow-purple",   icon: Zap   },
-  { handle: "@kira_ix",  klass: "Chud",      wins: 512, streak: 5,  tier: "text-tier-champion", glow: "neon-glow-champion", icon: Skull },
-] as const;
-
-function StatBlock({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="glass-panel p-4 text-center">
-      <p className="text-2xl font-bold font-display tabular-nums">{value}</p>
-      <p className="text-[9px] font-bold tracking-widest uppercase text-muted-foreground mt-1">{label}</p>
-    </div>
-  );
-}
-
-function SocialProof() {
-  const [active, setActive] = useState(1284);
-  useEffect(() => {
-    const id = setInterval(
-      () => setActive((c) => Math.max(1100, c + Math.floor(Math.random() * 7) - 3)),
-      3100,
-    );
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <section className="px-6 py-24 border-y border-border bg-arena-light/30">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* Left: Season stats */}
-          <div>
-            <SectionLabel text="Season 01 · Live" color="text-neon-purple" />
-            <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight mb-2">
-              The arena is full.
-            </h2>
-            <div className="flex items-center gap-2 mb-8">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-neon-pink opacity-60 animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-pink" />
-              </span>
-              <span className="text-sm text-muted-foreground">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={active}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="font-bold text-foreground tabular-nums"
-                  >
-                    {active.toLocaleString()}
-                  </motion.span>
-                </AnimatePresence>{" "}
-                players battling right now
-              </span>
+      {/* ═══════════════════════════════════════════════════════
+          TRAINING — normal scroll section
+          ═══════════════════════════════════════════════════════ */}
+      <section className="cl-training-sec" id="cl-training" data-screen-label="04 Training">
+        <div className="cl-wrap">
+          <div className="cl-sec-head">
+            <div className="left">
+              <div className="cl-label cl-reveal">06 · Training</div>
+              <h2 className="cl-title cl-reveal" style={{ marginTop: 22, "--rd": "120ms" } as React.CSSProperties}>
+                The arena exposes weakness. <em>These tools fix it.</em>
+              </h2>
             </div>
-
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              <StatBlock value="47K+" label="Active players" />
-              <StatBlock value="2.1M" label="Battles fought" />
-              <StatBlock value="284"  label="God tier reached" />
+            <div className="right">
+              <p className="cl-sub cl-reveal" style={{ "--rd": "240ms" } as React.CSSProperties}>
+                Every tool between matches is a competitive weapon.
+                Use them — or face opponents who did.
+              </p>
             </div>
+          </div>
 
-            <Link
-              to="/battles"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-neon-purple text-foreground font-bold text-xs tracking-[0.25em] hover:scale-[1.02] transition-transform"
-            >
-              <Users className="w-3.5 h-3.5" />
-              JOIN THE QUEUE
-              <ArrowRight className="w-3.5 h-3.5" />
+          <div className="cl-training">
+            {[
+              { cls: "t1", n: "— 01", name: <><em>Luna</em></>, desc: "Hint-first AI coach. Forces you to reason through answers — won't hand them to you.", to: "/luna", rd: "0ms" },
+              { cls: "t2", n: "— 02", name: <>Adaptive tests</>,  desc: "Branches on every answer to find your blind spots. No two sessions are the same.", to: "/adaptive-tests", rd: "60ms" },
+              { cls: "t3", n: "— 03", name: <>Courses</>,         desc: "Curated tracks and custom syllabi. Build the foundations the arena will expose.", to: "/courses", rd: "120ms" },
+              { cls: "t4", n: "— 04", name: <>Forum</>,           desc: "Stack-Exchange threads tagged by subject. Ask, argue, and learn from every fight.", to: "/forum", rd: "180ms" },
+            ].map((tool) => (
+              <Link
+                key={tool.cls}
+                to={tool.to}
+                className={`cl-tool ${tool.cls} cl-reveal`}
+                style={{ "--rd": tool.rd } as React.CSSProperties}
+              >
+                <span className="ix">{tool.n}</span>
+                <div className="nm">{tool.name}</div>
+                <p className="dx">{tool.desc}</p>
+                <span className="go">
+                  Open &nbsp;<SmallArrow />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          ENTER — Final CTA
+          ═══════════════════════════════════════════════════════ */}
+      <section className="cl-enter" id="cl-enter">
+        <div className="glow" />
+        <div className="cl-wrap">
+          <h2 className="cl-reveal">
+            Enter the <em>arena.</em>
+          </h2>
+          <p className="cl-sub cl-reveal" style={{ "--rd": "180ms", marginLeft: "auto", marginRight: "auto" } as React.CSSProperties}>
+            Free to play. Pick a class. Land your first combo in three minutes.
+          </p>
+          <div className="cl-reveal" style={{ "--rd": "320ms" } as React.CSSProperties}>
+            <Link to={ctaTo} className="cl-btn">
+              {ctaLabel}
+              <Arrow />
             </Link>
           </div>
-
-          {/* Right: Season leaderboard tease */}
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-tier-god mb-4 flex items-center gap-2">
-              <Crown className="w-3.5 h-3.5" /> God Tier · Season Leaders
-            </p>
-            <div className="space-y-2">
-              {SEASON_LEADERS.map((p, i) => {
-                const Icon = p.icon;
-                return (
-                  <motion.div
-                    key={p.handle}
-                    initial={{ opacity: 0, x: 16 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.08, duration: 0.4 }}
-                    className="glass-panel p-4 flex items-center gap-4"
-                  >
-                    <span className="text-[11px] font-mono font-bold text-muted-foreground w-5 shrink-0">
-                      #{i + 1}
-                    </span>
-                    <div
-                      className={`w-10 h-10 rounded-full bg-background/40 flex items-center justify-center ${p.glow} shrink-0`}
-                    >
-                      <Icon className={`w-5 h-5 ${p.tier}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold font-display tracking-wider ${p.tier} truncate`}>
-                        {p.handle}
-                      </p>
-                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground">
-                        {p.klass} · {p.wins} wins this season
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-[10px] font-bold text-neon-pink">
-                        {p.streak}
-                        <span className="text-muted-foreground font-normal"> streak</span>
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <p className="text-[10px] text-muted-foreground mt-3 text-right">
-              Your name could be here.{" "}
-              <Link to="/battles" className="text-neon-pink hover:underline font-bold">
-                Start climbing →
-              </Link>
-            </p>
-          </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-/* ════════════════════════════════════════════════════════════════════
-   10. FINAL CTA
-   ════════════════════════════════════════════════════════════════════ */
-
-function FinalCta() {
-  const { isAuthenticated } = useAuth();
-  return (
-    <section className="px-6 pt-8 pb-24">
-      <div className="max-w-5xl mx-auto relative overflow-hidden glass-panel p-12 md:p-16 text-center">
-        <div className="absolute -top-20 -right-20 w-72 h-72 bg-neon-pink/25 rounded-full blur-[100px]" />
-        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-neon-purple/25 rounded-full blur-[100px]" />
-
-        <div className="relative">
-          <motion.div
-            animate={{ rotate: [0, 6, -6, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="mx-auto mb-5 w-fit"
-          >
-            <Swords className="w-9 h-9 text-neon-pink" />
-          </motion.div>
-
-          <h2 className="text-4xl md:text-6xl font-bold font-display tracking-tight mb-3">
-            Your first match is free.
-          </h2>
-          <p className="text-xl md:text-2xl font-display font-bold text-neon-pink mb-4">
-            Forever.
-          </p>
-          <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-            No credit card. No tutorial you have to sit through. Pick a class, queue up, and
-            find out what kind of fighter you actually are.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <Link
-                  to="/battles"
-                  className="px-8 py-4 bg-neon-pink text-foreground font-bold text-sm tracking-[0.2em] inline-flex items-center gap-2 hover:scale-105 transition-transform animate-battle-charge"
-                >
-                  <Swords className="w-4 h-4" /> BATTLE NOW{" "}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/progress"
-                  className="px-7 py-4 border border-border hover:border-neon-purple text-foreground font-bold text-sm tracking-[0.2em] transition-colors"
-                >
-                  TROPHY ROAD
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/signup"
-                  className="px-8 py-4 bg-neon-pink text-foreground font-bold text-sm tracking-[0.2em] inline-flex items-center gap-2 hover:scale-105 transition-transform animate-battle-charge"
-                >
-                  <Swords className="w-4 h-4" /> CREATE ACCOUNT{" "}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/login"
-                  className="px-7 py-4 border border-border hover:border-neon-purple text-foreground font-bold text-sm tracking-[0.2em] transition-colors"
-                >
-                  I HAVE ONE
-                </Link>
-              </>
-            )}
-          </div>
+      {/* ── Footer ── */}
+      <footer className="cl-foot">
+        <Link to="/" className="cl-brand">
+          <span className="mark" />
+          <span>Eclipta</span>
+        </Link>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+          <span style={{
+            display: "inline-block", width: 6, height: 6, borderRadius: "50%",
+            background: "var(--cl-accent)", boxShadow: "0 0 8px var(--cl-accent-halo)",
+          }} />
+          <span id="cl-liveCount">1,407</span> in arena
         </div>
-      </div>
-    </section>
-  );
-}
+        <div>© 2026</div>
+      </footer>
 
-/* ════════════════════════════════════════════════════════════════════
-   ROOT EXPORT
-   ════════════════════════════════════════════════════════════════════ */
-
-export function LandingShowcase() {
-  return (
-    <>
-      <Hero />
-      <LiveTicker />
-      <ClassPicker />
-      <BattleAnatomy />
-      <RankLadder />
-      <MasteryEngine />
-      <TrophyTease />
-      <DailyChallenge />
-      <SocialProof />
-      <FinalCta />
-    </>
+    </div>
   );
 }

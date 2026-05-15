@@ -1318,13 +1318,6 @@ function BattleArena() {
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
       } else if (opponentTypeRef.current === "live") {
-        // Round-based PvP: lock our turn and wait for the opponent's
-        // turn_end broadcast before letting us act again.
-        liveAwaitingRef.current = true;
-        setLiveAwaitingOpponent(true);
-        if (pvpChannelRef.current) {
-          pvpChannelRef.current.send({ type: "broadcast", event: "turn_end", payload: {} });
-        }
         setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
@@ -1337,11 +1330,11 @@ function BattleArena() {
   const finishBattle = useCallback((won: boolean) => {
     if (battleFinishedRef.current) return;
     battleFinishedRef.current = true;
-    // Broadcast result to live opponent before tearing down
-    if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
+    const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
+    if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
       pvpChannelRef.current.send({
         type: "broadcast", event: "battle_end",
-        payload: { winner_id: won ? "me" : "them", sender_id: "me" },
+        payload: { winner_id: winnerId },
       });
     }
 
@@ -1410,8 +1403,20 @@ function BattleArena() {
         bestStreak: longestStreak,
       });
 
-      // Update ELO rating for live and ghost matches (never bots)
-      if (opponentTypeRef.current !== "bot") {
+      // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
+      if (opponentTypeRef.current === "live" && pvpBattleId && winnerId) {
+        const { data } = await supabase.rpc("complete_pvp_battle" as any, {
+          p_battle_id: pvpBattleId,
+          p_winner_id: winnerId,
+        });
+        const d = data as any;
+        const nextRating = iAmChallengerRef.current ? d?.challenger_rating_after : d?.opponent_rating_after;
+        if (typeof nextRating === "number") {
+          setRatingChange(nextRating - playerRatingRef.current);
+          setPlayerRating(nextRating);
+          playerRatingRef.current = nextRating;
+        }
+      } else if (opponentTypeRef.current === "ghost") {
         const newRating = await updateRating(opponentRatingRef.current, won);
         setRatingChange(newRating - playerRatingRef.current);
         setPlayerRating(newRating);
@@ -1647,15 +1652,12 @@ function BattleArena() {
         setPvpBattleId(match.pvpBattleId);
       }
 
-      // Round-based PvP: challenger acts first; the opponent waits.
       if (match.type === "live") {
-        const iStart = match.iAmChallenger === true;
-        liveAwaitingRef.current = !iStart;
-        setLiveAwaitingOpponent(!iStart);
-      } else {
-        liveAwaitingRef.current = false;
-        setLiveAwaitingOpponent(false);
+        iAmChallengerRef.current = match.iAmChallenger === true;
+        opponentUserIdRef.current = match.opponentUserId ?? null;
+        liveResolvedTurnsRef.current = new Set();
       }
+      resetLiveTurnLocks(1);
 
       // Sync refs for async-safe use inside callbacks
       setOpponentType(match.type);
@@ -2128,7 +2130,7 @@ function BattleArena() {
               animate={{ opacity: [0.55, 1, 0.55] }}
               transition={{ duration: 1.4, repeat: Infinity }}
             >
-              ⏳ WAITING FOR {opponent.name.toUpperCase()}'S MOVE…
+              {liveResolvingTurn ? "RESOLVING TURN…" : liveOpponentLocked ? "BOTH ACTIONS LOCKED…" : `ACTION LOCKED · WAITING FOR ${opponent.name.toUpperCase()}`}
             </motion.span>
           </motion.div>
         )}

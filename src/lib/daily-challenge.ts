@@ -15,13 +15,8 @@ export type DailyChallenge = {
   modifier?: string;
 };
 
-/**
- * NOTE: Every daily-challenge reward is "+100 XP" so the number we advertise
- * everywhere (landing page, Battles HUD, claim toast) matches the amount the
- * server actually grants via the `daily_challenge` event in `award_xp`.
- */
 const VARIANTS: DailyChallenge[] = [
-  // ── Win-count challenges ───────────────────────────────────────────────
+  // ── Win-count challenges ──────────────────────────────────
   {
     id: "wins-1",
     title: "First Blood",
@@ -35,7 +30,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Warm-Up",
     goal: "Win 2 battles today",
     target: 2,
-    reward: "+100 XP",
+    reward: "+200 XP",
     unit: "wins",
   },
   {
@@ -43,7 +38,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Triple Threat",
     goal: "Win 3 battles today",
     target: 3,
-    reward: "+100 XP",
+    reward: "+350 XP + Combo Token",
     unit: "wins",
   },
   {
@@ -51,7 +46,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Steady Climb",
     goal: "Win 4 battles today",
     target: 4,
-    reward: "+100 XP",
+    reward: "+500 XP + Focus Regen",
     unit: "wins",
   },
   {
@@ -59,7 +54,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Arena Marathon",
     goal: "Win 5 battles today",
     target: 5,
-    reward: "+100 XP",
+    reward: "+700 XP + Combo Token",
     unit: "wins",
   },
   {
@@ -67,16 +62,16 @@ const VARIANTS: DailyChallenge[] = [
     title: "Champion's Gauntlet",
     goal: "Win 6 battles today",
     target: 6,
-    reward: "+100 XP",
+    reward: "+1000 XP + Shield Token",
     unit: "wins",
   },
-  // ── Streak / precision challenges ─────────────────────────────────────
+  // ── Streak / precision challenges ──────────────────────────────
   {
     id: "streak-5",
     title: "On Fire",
     goal: "Hit a 5-answer streak in any battle",
     target: 5,
-    reward: "+100 XP",
+    reward: "+300 XP + Streak Boost",
     unit: "streak",
     modifier: "Land 5 correct answers in a row without breaking.",
   },
@@ -85,7 +80,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Flow State",
     goal: "Win 3 battles today",
     target: 3,
-    reward: "+100 XP",
+    reward: "+250 XP + Streak Boost",
     unit: "wins",
     modifier: "Keep your momentum alive between battles.",
   },
@@ -94,17 +89,17 @@ const VARIANTS: DailyChallenge[] = [
     title: "Charge Master",
     goal: "Win 2 battles using Charge as your primary attack",
     target: 2,
-    reward: "+100 XP",
+    reward: "+300 XP + Focus Regen",
     unit: "wins",
     modifier: "Use Charge (hard question) at least 3× per battle.",
   },
-  // ── PvP-specific challenges ────────────────────────────────────────────
+  // ── PvP-specific challenges ──────────────────────────────────
   {
     id: "pvp-1",
     title: "Real Rivals",
     goal: "Win 1 live or ghost PvP battle",
     target: 1,
-    reward: "+100 XP",
+    reward: "+200 XP + Rating bonus",
     unit: "wins",
     modifier: "Only live and ghost matches count toward this challenge.",
   },
@@ -113,7 +108,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Competitive Spirit",
     goal: "Complete 3 PvP battles (any result)",
     target: 3,
-    reward: "+100 XP",
+    reward: "+400 XP",
     unit: "battles",
     modifier: "Participation counts — face real opponents today.",
   },
@@ -122,17 +117,17 @@ const VARIANTS: DailyChallenge[] = [
     title: "Comeback King",
     goal: "Win a battle after trailing (opponent above 60% HP when you hit 30%)",
     target: 1,
-    reward: "+100 XP",
+    reward: "+500 XP + Wildcard Token",
     unit: "wins",
     modifier: "Don't give up when the odds are against you.",
   },
-  // ── Speed / difficulty challenges ──────────────────────────────────────
+  // ── Speed / difficulty challenges ──────────────────────────────
   {
     id: "speed-win",
     title: "Speed Demon",
     goal: "Win 2 battles with avg answer time under 6s",
     target: 2,
-    reward: "+100 XP",
+    reward: "+350 XP + Time Boost",
     unit: "wins",
     modifier: "Answer fast — every second counts.",
   },
@@ -141,7 +136,7 @@ const VARIANTS: DailyChallenge[] = [
     title: "Hard Mode",
     goal: "Answer 5 hard questions correctly today",
     target: 5,
-    reward: "+100 XP",
+    reward: "+450 XP",
     unit: "correct",
     modifier: "Only Charge and high-difficulty questions qualify.",
   },

@@ -990,6 +990,11 @@ function BattleArena() {
       .on("broadcast", { event: "heal" }, ({ payload }) => {
         setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
       })
+      .on("broadcast", { event: "self_heal" }, ({ payload }) => {
+        // Opponent healed themselves — mirror their HP gain on our screen.
+        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
+        addLog({ actor: "opponent", actionType: "heal", result: `🛡️ Opponent healed +${payload.amount} HP.`, value: payload.amount as number });
+      })
       .on("broadcast", { event: "turn_end" }, () => {
         // Opponent finished their action — unlock our turn.
         liveAwaitingRef.current = false;

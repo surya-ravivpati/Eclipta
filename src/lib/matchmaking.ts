@@ -11,6 +11,7 @@ export type OpponentType = "live" | "ghost" | "bot";
 export interface MatchResult {
   type: OpponentType;
   opponentName: string;
+  opponentUserId?: string;
   /** null only for bot — caller picks archetype via pickOpponent() */
   opponentArchetype: ArchetypeId | null;
   opponentRating: number;
@@ -71,6 +72,7 @@ async function tryLiveMatch(
     return {
       type:              "live",
       opponentName:      d.opponent_username ?? `Player_${(d.opponent_user_id as string).slice(0, 6)}`,
+      opponentUserId:    d.opponent_user_id as string,
       opponentArchetype: d.opponent_archetype as ArchetypeId,
       opponentRating:    d.opponent_rating ?? 1000,
       pvpBattleId:       d.battle_id as string,
@@ -112,6 +114,7 @@ async function tryLiveMatch(
     return {
       type:              "live",
       opponentName:      (oppProfile as any)?.username ?? `Player_${(oppId as string).slice(0, 6)}`,
+      opponentUserId:    oppId as string,
       opponentArchetype: oppArch as ArchetypeId,
       opponentRating:    (oppRating as any)?.rating ?? 1000,
       pvpBattleId:       b.id as string,

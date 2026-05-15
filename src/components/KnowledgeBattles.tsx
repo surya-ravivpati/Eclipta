@@ -104,6 +104,19 @@ interface ChatItem {
 
 type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string };
 
+type LiveTurnActionRow = {
+  actor_id: string;
+  action: Action;
+  correct: boolean;
+  damage: number;
+  self_damage: number;
+  heal: number;
+  focus_delta: number;
+  momentum: number;
+  time_spent: number;
+  question?: unknown;
+};
+
 // Aligned with Trophy Road tier thresholds in src/lib/trophy-road-data.ts
 function xpToTier(xp: number): string {
   if (xp >= 460000) return "God Tier";
@@ -923,6 +936,10 @@ function BattleArena() {
   // calling setState inside another setState's updater function.
   const playerRef   = useRef(player);
   const opponentRef = useRef(opponent);
+  const recordsRef = useRef<QuestionRecord[]>([]);
+  const longestStreakRef = useRef(0);
+  const fastestAnswerRef = useRef(Infinity);
+  const totalScoreRef = useRef(0);
 
   // Issue 2: incoming chat items populated by the PvP channel subscription.
   const [incomingChats, setIncomingChats]   = useState<ChatItem[]>([]);
@@ -938,9 +955,10 @@ function BattleArena() {
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
   const [opponentRating, setOpponentRating] = useState(1000);
   const [ratingChange, setRatingChange]     = useState<number | null>(null);
-  // Live PvP turn-based lock: while true the local player has already played
-  // this round and must wait for the opponent's broadcast before acting again.
-  const [liveAwaitingOpponent, setLiveAwaitingOpponent] = useState(false);
+  const [liveTurnNumber, setLiveTurnNumber] = useState(1);
+  const [liveActionLocked, setLiveActionLocked] = useState(false);
+  const [liveOpponentLocked, setLiveOpponentLocked] = useState(false);
+  const [liveResolvingTurn, setLiveResolvingTurn] = useState(false);
 
   // Refs for async-safe access inside callbacks
   const pvpChannelRef     = useRef<any>(null);
@@ -949,7 +967,17 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
-  const liveAwaitingRef   = useRef(false);
+  const liveTurnNumberRef = useRef(1);
+  const liveActionLockedRef = useRef(false);
+  const liveOpponentLockedRef = useRef(false);
+  const liveResolvingRef = useRef(false);
+  const liveResolvedTurnsRef = useRef<Set<number>>(new Set());
+  const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
+  const liveResolutionRef = useRef<(actions: LiveTurnActionRow[], turnNumber: number) => void>(() => {});
+  const rematchStartedRef = useRef(false);
+  const myUserIdRef = useRef<string | null>(null);
+  const opponentUserIdRef = useRef<string | null>(null);
+  const iAmChallengerRef = useRef(false);
   // Idempotency guard so finishBattle runs exactly once per battle, even if
   // both the local HP-zero check and the opponent's broadcast battle_end
   // arrive. Without this, updateRating() runs twice and W/L double-counts.
@@ -960,6 +988,7 @@ function BattleArena() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      myUserIdRef.current = user.id;
       const [profileRes, ratingData] = await Promise.all([
         supabase.from("user_profiles").select("xp, username").eq("user_id", user.id).maybeSingle(),
         fetchPlayerRating(),
@@ -980,29 +1009,39 @@ function BattleArena() {
     });
 
     channel
-      .on("broadcast", { event: "damage" }, ({ payload }) => {
-        const dmg = payload.damage as number;
-        setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
-        setShowPlayerHit(true);
-        addLog({ actor: "opponent", actionType: "attack", result: `⚔️ Opponent: ${dmg} DMG!`, value: dmg });
-        setTimeout(() => setShowPlayerHit(false), 600);
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "pvp_turn_actions",
+        filter: `battle_id=eq.${pvpBattleId}`,
+      }, async (payload) => {
+        const row = payload.new as { turn_number: number; actor_id: string };
+        if (row.turn_number !== liveTurnNumberRef.current) return;
+        if (row.actor_id !== myUserIdRef.current) {
+          liveOpponentLockedRef.current = true;
+          setLiveOpponentLocked(true);
+        }
+        if (liveActionLockedRef.current) {
+          const { data } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+            p_battle_id: pvpBattleId,
+            p_turn_number: row.turn_number,
+          });
+          if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], row.turn_number);
+        }
       })
-      .on("broadcast", { event: "heal" }, ({ payload }) => {
-        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
-      })
-      .on("broadcast", { event: "self_heal" }, ({ payload }) => {
-        // Opponent healed themselves — mirror their HP gain on our screen.
-        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
-        addLog({ actor: "opponent", actionType: "heal", result: `🛡️ Opponent healed +${payload.amount} HP.`, value: payload.amount as number });
-      })
-      .on("broadcast", { event: "turn_end" }, () => {
-        // Opponent finished their action — unlock our turn.
-        liveAwaitingRef.current = false;
-        setLiveAwaitingOpponent(false);
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "pvp_battles",
+        filter: `id=eq.${pvpBattleId}`,
+      }, async (payload) => {
+        const row = payload.new as any;
+        if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
+          finishBattle(row.winner_id === myUserIdRef.current);
+        }
+        if (row.rematch_battle_id && !rematchStartedRef.current) {
+          rematchStartedRef.current = true;
+          await startLiveBattleFromId(row.rematch_battle_id as string);
+        }
       })
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
-        const weWon = payload.winner_id !== payload.sender_id;
-        finishBattle(weWon);
+        if (payload.winner_id) finishBattle(payload.winner_id === myUserIdRef.current);
       })
       // Issue 2: receive opponent chat / emoji reactions
       .on("broadcast", { event: "chat" }, ({ payload }) => {
@@ -1029,6 +1068,23 @@ function BattleArena() {
   // read the latest HP without nesting setState inside another updater.
   useEffect(() => { playerRef.current   = player;   }, [player]);
   useEffect(() => { opponentRef.current = opponent; }, [opponent]);
+  useEffect(() => { recordsRef.current = records; }, [records]);
+  useEffect(() => { longestStreakRef.current = longestStreak; }, [longestStreak]);
+  useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
+  useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
+
+  const resetLiveTurnLocks = useCallback((nextTurn: number) => {
+    liveTurnNumberRef.current = nextTurn;
+    setLiveTurnNumber(nextTurn);
+    liveActionLockedRef.current = false;
+    liveOpponentLockedRef.current = false;
+    liveResolvingRef.current = false;
+    livePendingActionRef.current = null;
+    setLiveActionLocked(false);
+    setLiveOpponentLocked(false);
+    setLiveResolvingTurn(false);
+  }, []);
+
 
   const getArch = useCallback((id: ArchetypeId): Archetype => {
     const base = ARCHETYPES[id];
@@ -1061,6 +1117,72 @@ function BattleArena() {
       });
     });
   }, []);
+
+  const resolveLiveTurn = useCallback((actions: LiveTurnActionRow[], turnNumber: number) => {
+    if (liveResolvedTurnsRef.current.has(turnNumber) || liveResolvingRef.current) return;
+    const myId = myUserIdRef.current;
+    if (!myId) return;
+    const mine = actions.find(a => a.actor_id === myId);
+    const theirs = actions.find(a => a.actor_id !== myId);
+    if (!mine || !theirs) return;
+
+    liveResolvedTurnsRef.current.add(turnNumber);
+    liveResolvingRef.current = true;
+    setLiveResolvingTurn(true);
+    setPhase("animate");
+
+    const curPlayer = playerRef.current;
+    const curOpp = opponentRef.current;
+    const nextPlayerHp = Math.max(0, Math.min(curPlayer.maxHp, curPlayer.hp - theirs.damage - mine.self_damage + mine.heal));
+    const nextOppHp = Math.max(0, Math.min(curOpp.maxHp, curOpp.hp - mine.damage - theirs.self_damage + theirs.heal));
+
+    if (mine.damage > 0) { setShowOpponentHit(true); addLog({ actor: "player", actionType: mine.action as LogActionType, result: `${ACTIONS[mine.action].label}: ${mine.damage} DMG.`, value: mine.damage }); }
+    if (mine.heal > 0) { setShowPlayerHeal(true); addLog({ actor: "player", actionType: "heal", result: `Heal resolves: +${mine.heal} HP.`, value: mine.heal }); }
+    if (mine.self_damage > 0) { setShowPlayerHit(true); addLog({ actor: "player", actionType: "miss", result: `Your miss resolves: -${mine.self_damage} HP.`, value: mine.self_damage }); }
+    if (theirs.damage > 0) { setShowPlayerHit(true); addLog({ actor: "opponent", actionType: theirs.action as LogActionType, result: `${opponentRef.current.name}: ${theirs.damage} DMG.`, value: theirs.damage }); }
+    if (theirs.heal > 0) addLog({ actor: "opponent", actionType: "heal", result: `${opponentRef.current.name} heals +${theirs.heal} HP.`, value: theirs.heal });
+    if (theirs.self_damage > 0) addLog({ actor: "opponent", actionType: "miss", result: `${opponentRef.current.name} misses: -${theirs.self_damage} HP.`, value: theirs.self_damage });
+
+    setMomentum(mine.momentum);
+    setOpponentMomentum(theirs.momentum);
+    setPlayer(p => ({ ...p, hp: nextPlayerHp, focus: Math.max(0, Math.min(p.maxFocus, p.focus + mine.focus_delta)) }));
+    setOpponent(o => ({ ...o, hp: nextOppHp, focus: Math.max(0, Math.min(o.maxFocus, o.focus + theirs.focus_delta)) }));
+
+    setTimeout(() => {
+      setShowPlayerHit(false); setShowOpponentHit(false); setShowPlayerHeal(false);
+      if (nextOppHp <= 0 || nextPlayerHp <= 0) finishBattle(nextOppHp <= 0 && nextPlayerHp > 0 ? true : nextOppHp <= nextPlayerHp);
+      else { resetLiveTurnLocks(turnNumber + 1); setPhase("select"); }
+    }, 900);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addLog, resetLiveTurnLocks]);
+
+  useEffect(() => { liveResolutionRef.current = resolveLiveTurn; }, [resolveLiveTurn]);
+
+  async function startLiveBattleFromId(battleId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    myUserIdRef.current = user.id;
+    const { data: battle } = await supabase
+      .from("pvp_battles" as any)
+      .select("challenger_id, opponent_id, challenger_archetype, opponent_archetype")
+      .eq("id", battleId)
+      .maybeSingle();
+    const b = battle as any;
+    if (!b) return;
+    const iAmChallenger = b.challenger_id === user.id;
+    const oppId = iAmChallenger ? b.opponent_id : b.challenger_id;
+    const { data: prof } = await supabase.from("user_profiles" as any).select("username").eq("user_id", oppId).maybeSingle();
+    const { data: rating } = await supabase.from("player_ratings" as any).select("rating").eq("user_id", oppId).maybeSingle();
+    startDirectBattle({
+      battleId,
+      myArchetype: (iAmChallenger ? b.challenger_archetype : b.opponent_archetype) as ArchetypeId,
+      opponentArchetype: (iAmChallenger ? b.opponent_archetype : b.challenger_archetype) as ArchetypeId,
+      opponentName: (prof as any)?.username ?? `Player_${String(oppId).slice(0, 6)}`,
+      opponentRating: (rating as any)?.rating ?? 1000,
+      iAmChallenger,
+      opponentUserId: oppId,
+    });
+  }
 
   useEffect(() => {
     if (phase === "question" && timeLeft > 0) {
@@ -1196,13 +1318,6 @@ function BattleArena() {
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
       } else if (opponentTypeRef.current === "live") {
-        // Round-based PvP: lock our turn and wait for the opponent's
-        // turn_end broadcast before letting us act again.
-        liveAwaitingRef.current = true;
-        setLiveAwaitingOpponent(true);
-        if (pvpChannelRef.current) {
-          pvpChannelRef.current.send({ type: "broadcast", event: "turn_end", payload: {} });
-        }
         setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
@@ -1215,11 +1330,11 @@ function BattleArena() {
   const finishBattle = useCallback((won: boolean) => {
     if (battleFinishedRef.current) return;
     battleFinishedRef.current = true;
-    // Broadcast result to live opponent before tearing down
-    if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
+    const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
+    if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
       pvpChannelRef.current.send({
         type: "broadcast", event: "battle_end",
-        payload: { winner_id: won ? "me" : "them", sender_id: "me" },
+        payload: { winner_id: winnerId },
       });
     }
 
@@ -1288,8 +1403,20 @@ function BattleArena() {
         bestStreak: longestStreak,
       });
 
-      // Update ELO rating for live and ghost matches (never bots)
-      if (opponentTypeRef.current !== "bot") {
+      // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
+      if (opponentTypeRef.current === "live" && pvpBattleId && winnerId) {
+        const { data } = await supabase.rpc("complete_pvp_battle" as any, {
+          p_battle_id: pvpBattleId,
+          p_winner_id: winnerId,
+        });
+        const d = data as any;
+        const nextRating = iAmChallengerRef.current ? d?.challenger_rating_after : d?.opponent_rating_after;
+        if (typeof nextRating === "number") {
+          setRatingChange(nextRating - playerRatingRef.current);
+          setPlayerRating(nextRating);
+          playerRatingRef.current = nextRating;
+        }
+      } else if (opponentTypeRef.current === "ghost") {
         const newRating = await updateRating(opponentRatingRef.current, won);
         setRatingChange(newRating - playerRatingRef.current);
         setPlayerRating(newRating);
@@ -1447,9 +1574,8 @@ function BattleArena() {
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
   const selectAction = (action: Action) => {
-    // Hard block in live PvP while it's the opponent's round.
-    if (opponentTypeRef.current === "live" && liveAwaitingRef.current) {
-      addLog({ actor: "system", actionType: "info", result: `⏳ Waiting for opponent's move…` });
+    if (opponentTypeRef.current === "live" && liveActionLockedRef.current) {
+      addLog({ actor: "system", actionType: "info", result: `Action already locked for this turn.` });
       return;
     }
     const cost = ACTIONS[action].focusCost;
@@ -1526,15 +1652,12 @@ function BattleArena() {
         setPvpBattleId(match.pvpBattleId);
       }
 
-      // Round-based PvP: challenger acts first; the opponent waits.
       if (match.type === "live") {
-        const iStart = match.iAmChallenger === true;
-        liveAwaitingRef.current = !iStart;
-        setLiveAwaitingOpponent(!iStart);
-      } else {
-        liveAwaitingRef.current = false;
-        setLiveAwaitingOpponent(false);
+        iAmChallengerRef.current = match.iAmChallenger === true;
+        opponentUserIdRef.current = match.opponentUserId ?? null;
+        liveResolvedTurnsRef.current = new Set();
       }
+      resetLiveTurnLocks(1);
 
       // Sync refs for async-safe use inside callbacks
       setOpponentType(match.type);
@@ -1581,8 +1704,7 @@ function BattleArena() {
     ghostSessionRef.current   = null;
     pvpChannelRef.current     = null;
     battleFinishedRef.current = false;
-    liveAwaitingRef.current   = false;
-    setLiveAwaitingOpponent(false);
+    resetLiveTurnLocks(1);
   };
 
   // Direct PvP challenge: bypass matchmaking and drop straight into a live
@@ -1595,6 +1717,7 @@ function BattleArena() {
     opponentName: string;
     opponentRating?: number;
     iAmChallenger?: boolean;
+    opponentUserId?: string;
   }) => {
     setArchetype(opts.myArchetype);
     setRatingChange(null);
@@ -1611,10 +1734,10 @@ function BattleArena() {
     opponentRatingRef.current = opts.opponentRating ?? 1000;
     setPvpBattleId(opts.battleId);
 
-    // Direct challenges: challenger acts first, defender waits.
-    const iStart = opts.iAmChallenger === true;
-    liveAwaitingRef.current = !iStart;
-    setLiveAwaitingOpponent(!iStart);
+    iAmChallengerRef.current = opts.iAmChallenger === true;
+    opponentUserIdRef.current = opts.opponentUserId ?? null;
+    liveResolvedTurnsRef.current = new Set();
+    resetLiveTurnLocks(1);
 
     const baseArch = ARCHETYPES[opts.myArchetype];
     const oppArch  = ARCHETYPES[opts.opponentArchetype];
@@ -1997,7 +2120,7 @@ function BattleArena() {
           );
         })()}
 
-        {liveAwaitingOpponent && phase === "select" && (
+        {liveActionLocked && phase === "select" && (
           <motion.div
             className="glass-panel p-3 border border-neon-cyan/40 bg-neon-cyan/5 text-center"
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
@@ -2007,7 +2130,7 @@ function BattleArena() {
               animate={{ opacity: [0.55, 1, 0.55] }}
               transition={{ duration: 1.4, repeat: Infinity }}
             >
-              ⏳ WAITING FOR {opponent.name.toUpperCase()}'S MOVE…
+              {liveResolvingTurn ? "RESOLVING TURN…" : liveOpponentLocked ? "BOTH ACTIONS LOCKED…" : `ACTION LOCKED · WAITING FOR ${opponent.name.toUpperCase()}`}
             </motion.span>
           </motion.div>
         )}
@@ -2016,7 +2139,7 @@ function BattleArena() {
             const Icon = act.icon;
             const cost = act.focusCost;
             const cannotHeal = key === "defend" && getArch(archetype).healAmount === null;
-            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveAwaitingOpponent;
+            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveActionLocked;
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
                 className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}

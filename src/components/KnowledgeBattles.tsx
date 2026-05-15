@@ -990,6 +990,11 @@ function BattleArena() {
       .on("broadcast", { event: "heal" }, ({ payload }) => {
         setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
       })
+      .on("broadcast", { event: "self_heal" }, ({ payload }) => {
+        // Opponent healed themselves — mirror their HP gain on our screen.
+        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
+        addLog({ actor: "opponent", actionType: "heal", result: `🛡️ Opponent healed +${payload.amount} HP.`, value: payload.amount as number });
+      })
       .on("broadcast", { event: "turn_end" }, () => {
         // Opponent finished their action — unlock our turn.
         liveAwaitingRef.current = false;
@@ -1113,6 +1118,9 @@ function BattleArena() {
           setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           setShowPlayerHeal(true);
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
+          if (heal > 0 && opponentTypeRef.current === "live" && pvpChannelRef.current) {
+            pvpChannelRef.current.send({ type: "broadcast", event: "self_heal", payload: { amount: heal } });
+          }
         } else {
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (Tank cannot heal).`, value: gain });
@@ -1649,6 +1657,7 @@ function BattleArena() {
         opponentArchetype: ArchetypeId;
         opponentName: string;
         opponentRating?: number;
+        iAmChallenger?: boolean;
       } | undefined;
       if (!detail) return;
       startDirectBattle(detail);

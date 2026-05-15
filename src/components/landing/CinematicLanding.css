@@ -33,7 +33,9 @@
   color:                   var(--v11-ink);
   font-family:             var(--v11-display);
   -webkit-font-smoothing:  antialiased;
-  overflow-x:              hidden;
+  /* clip, NOT hidden — "hidden" turns the element into a scroll container
+     which kills position:sticky on all descendants */
+  overflow-x:              clip;
   letter-spacing:          -0.01em;
   font-weight:             300;
   position:                relative;
@@ -41,7 +43,7 @@
 
 /* ── Background layer ───────────────────────────────────────────── */
 .v11-bg {
-  position: fixed; inset: 0; z-index: 0;
+  position: fixed; inset: 0; z-index: -1;
   overflow: hidden; pointer-events: none;
   background: #05060A;
 }
@@ -230,7 +232,8 @@
   position: absolute;
   left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  max-width: min(700px, 86vw);
+  width: 92vw;
+  max-width: 1400px;
   text-align: center;
   opacity: 0;
   will-change: opacity, transform, filter;
@@ -249,29 +252,30 @@
   box-shadow: 0 0 8px var(--v11-accent-h);
 }
 
-/* The main hero blockquote */
+/* The main hero blockquote — massive, nothing else */
 .v11-hero-quote {
   font-family: var(--v11-shout);
-  font-size: clamp(68px, 10vw, 160px);
-  line-height: 1.0;
-  letter-spacing: 0.03em;
+  font-size: clamp(100px, 17vw, 260px);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   text-align: center;
-  margin: 0 0 20px;
+  margin: 0;
   color: var(--v11-ink);
+  width: 100%;
 }
 .v11-hero-quote em {
   font-family: var(--v11-serif);
   font-style: italic;
-  font-size: 0.62em;
+  font-size: 0.55em;
   text-transform: none;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   background: linear-gradient(180deg, #FFF, #C0C5D0);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   display: block;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 /* Strike-through animation on "Study" */
@@ -653,5 +657,5 @@
   .v11-nav { padding: 16px 22px; }
   .v11-foot { padding: 32px 22px; flex-direction: column; gap: 12px; align-items: flex-start; }
   .v11-hud { display: none; }
-  .v11-hero-quote { font-size: clamp(52px, 14vw, 110px); }
+  .v11-hero-quote { font-size: clamp(72px, 18vw, 140px); }
 }

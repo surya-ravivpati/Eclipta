@@ -305,37 +305,21 @@ export function LandingShowcase() {
             </div>
           ))}
 
-          {/* Chapter 0 — main hero blockquote */}
+          {/* Chapter 0 — massive hero blockquote, no clutter */}
           <div className="v11-chapter" ref={ch0Ref} style={{ opacity: 1 }}>
-            <span className="v11-ch-tag">Chapter 01 · Origin</span>
             <blockquote className="v11-hero-quote">
               <span className="v11-strike" ref={strikeRef}>Study</span> is dead.
               <em>Fight for it.</em>
             </blockquote>
-            <p>
-              The first knowledge arena. Pick a class. Queue a match. Land combos in real time.
-              Climb the ranked ladder with an AI coach in your corner.
-            </p>
-            <div className="v11-ch-cta">
-              <Link to={ctaTo} className="v11-btn">
-                {ctaLabel}
-                <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
-                  <path d="M0 5 H13 M10 1 L14 5 L10 9" stroke="currentColor" strokeWidth="1.4"/>
-                </svg>
-              </Link>
-              <a href="#loop" className="v11-btn-ghost">See the system</a>
-            </div>
           </div>
 
           {/* Chapter 1 */}
           <div className="v11-chapter" ref={ch1Ref}>
-            <span className="v11-ch-tag">Chapter 02 · Reveal</span>
             <h2><em>Eight</em> ways to fight.</h2>
           </div>
 
           {/* Chapter 2 */}
           <div className="v11-chapter" ref={ch2Ref}>
-            <span className="v11-ch-tag">Chapter 03 · Identity</span>
             <h2>Eight archetypes, <em>one arena.</em></h2>
           </div>
 

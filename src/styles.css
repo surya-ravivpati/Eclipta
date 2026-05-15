@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&display=swap');
 
 @font-face {
   font-family: 'RobotHeroes';
@@ -185,7 +185,6 @@
   backdrop-filter: blur(24px);
 }
 
-/* Tone down dramatic neon glows in light mode (less halo, more accent) */
 .light .neon-glow-purple,
 .light .neon-glow-pink {
   box-shadow: 0 4px 20px oklch(0.5 0.22 290 / 18%), 0 1px 3px oklch(0 0 0 / 8%);
@@ -205,7 +204,6 @@
 .light .text-glow-god {
   text-shadow: none;
 }
-/* Soften ambient hero blurs in light mode */
 .light section .bg-neon-purple\/20,
 .light section .bg-neon-pink\/10 {
   opacity: 0.35;
@@ -228,7 +226,6 @@
   }
 }
 
-/* Glass panel utility */
 @layer utilities {
   .glass-panel {
     background: oklch(1 0 0 / 3%);
@@ -240,11 +237,9 @@
   .neon-glow-purple {
     box-shadow: 0 0 30px oklch(0.55 0.25 290 / 40%), 0 0 60px oklch(0.55 0.25 290 / 20%);
   }
-
   .neon-glow-pink {
     box-shadow: 0 0 30px oklch(0.6 0.24 350 / 40%), 0 0 60px oklch(0.6 0.24 350 / 20%);
   }
-
   .neon-glow-bronze {
     box-shadow: 0 0 20px oklch(0.6 0.12 55 / 50%);
   }
@@ -281,9 +276,6 @@
   }
 }
 
-/* ─── Eclipta motion keyframes ──────────────────────────────── */
-
-/* Background orbs drift organically — replaces generic animate-pulse */
 @keyframes arena-drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
   25%       { transform: translate(-1.5%, 2.5%) scale(1.05); }
@@ -291,14 +283,12 @@
   75%       { transform: translate(-0.5%, -2%) scale(1.03); }
 }
 
-/* Neon text flickers like a live arena display */
 @keyframes neon-flicker {
   0%, 88%, 91%, 94%, 100% { opacity: 1; }
   89%, 92%                 { opacity: 0.55; }
   93%                      { opacity: 0.8; }
 }
 
-/* Battle CTA button glow breathes with energy */
 @keyframes battle-charge {
   0%, 100% {
     box-shadow:
@@ -313,34 +303,29 @@
   }
 }
 
-/* Progress / XP bar shimmer sweep */
 @keyframes xp-shimmer {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(350%); }
 }
 
-/* Road connector unlocked fill sweep */
 @keyframes road-fill {
   from { transform: scaleX(0); transform-origin: left; }
   to   { transform: scaleX(1); transform-origin: left; }
 }
 
-/* Rank badge pulse ring */
 @keyframes rank-aura {
   0%, 100% { opacity: 0.35; transform: scale(1); }
   50%       { opacity: 0.75; transform: scale(1.18); }
 }
 
 @layer utilities {
-  .animate-arena-drift  { animation: arena-drift 18s ease-in-out infinite; }
-  .animate-neon-flicker { animation: neon-flicker 10s ease-in-out infinite; }
+  .animate-arena-drift   { animation: arena-drift 18s ease-in-out infinite; }
+  .animate-neon-flicker  { animation: neon-flicker 10s ease-in-out infinite; }
   .animate-battle-charge { animation: battle-charge 2.8s ease-in-out infinite; }
-  .animate-xp-shimmer   { animation: xp-shimmer 2.2s linear infinite; }
-  .animate-rank-aura    { animation: rank-aura 2.2s ease-in-out infinite; }
+  .animate-xp-shimmer    { animation: xp-shimmer 2.2s linear infinite; }
+  .animate-rank-aura     { animation: rank-aura 2.2s ease-in-out infinite; }
 }
 
-/* Luna thinking indicator — CSS-only animations so they run on the compositor
-   thread, independent of the requestAnimationFrame path-mutation loop. */
 @keyframes luna-thinking-glow {
   0%, 100% { filter: drop-shadow(0 0 2px oklch(0.65 0.22 290 / 0.20)); }
   50%       { filter: drop-shadow(0 0 8px oklch(0.65 0.22 290 / 0.58)); }
@@ -359,7 +344,6 @@
   animation: luna-thinking-fade 1.8s ease-in-out infinite;
 }
 
-/* Milestone celebration toast */
 .milestone-toast {
   border: 1px solid oklch(0.55 0.25 290 / 40%) !important;
   background: oklch(0.15 0.03 280 / 95%) !important;

@@ -368,7 +368,7 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-bold font-display">{r.question.q} = ?</p>
+                      <p className="text-sm font-bold font-display">{r.question.q.trimEnd().endsWith("?") ? r.question.q : `${r.question.q} = ?`}</p>
                       <p className="text-xs text-neon-cyan mt-1">Answer: <span className="font-bold">{r.question.answer}</span></p>
                     </div>
                     <div className="text-right shrink-0">

@@ -17,12 +17,16 @@ import { createBattleMemory, updateBattleMemoryPlayerTurn, updateBattleMemoryAiT
 import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
 import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";
+import { UserSearchDialog } from "./battles/UserSearchDialog";
+import { ChallengeInbox } from "./battles/ChallengeInbox";
 import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
 import { fetchPlayerRating, updateRating, ratingToTier, formatRatingDelta } from "@/lib/rating";
+import { awardXp } from "@/lib/xp-service";
+import { toast } from "sonner";
 
 /**
  * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
@@ -99,6 +103,19 @@ interface ChatItem {
 }
 
 type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string };
+
+type LiveTurnActionRow = {
+  actor_id: string;
+  action: Action;
+  correct: boolean;
+  damage: number;
+  self_damage: number;
+  heal: number;
+  focus_delta: number;
+  momentum: number;
+  time_spent: number;
+  question?: unknown;
+};
 
 // Aligned with Trophy Road tier thresholds in src/lib/trophy-road-data.ts
 function xpToTier(xp: number): string {
@@ -182,9 +199,10 @@ function HpBar({ current, max, color, label }: { current: number; max: number; c
   );
 }
 
-function FocusBar({ current, max, canCharge = true }: { current: number; max: number; canCharge?: boolean }) {
-  const isCharged = current >= 25 && canCharge;
-  const isWarm    = current >= 15;
+function FocusBar({ current, max, isPlayer = false, canAct = false }: { current: number; max: number; isPlayer?: boolean; canAct?: boolean }) {
+  const chargeCost = ACTIONS.charge.focusCost;
+  const isCharged = current >= chargeCost;
+  const isWarm    = current >= chargeCost - 10;
   const fillRatio = max > 0 ? current / max : 0;
   const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
@@ -233,13 +251,16 @@ function FocusBar({ current, max, canCharge = true }: { current: number; max: nu
         })}
       </div>
       <AnimatePresence>
-        {isCharged && (
+        {isCharged && isPlayer && canAct && (
           <motion.p
+            key="charge-ready"
             className="text-[8px] font-bold tracking-widest text-neon-pink mt-0.5 text-right"
             initial={{ opacity: 0 }}
             animate={{ opacity: [0.6, 1, 0.6] }}
             exit={{ opacity: 0 }}
-            transition={{ repeat: Infinity, duration: 0.55 }}
+            transition={{
+              opacity: { repeat: Infinity, duration: 0.55, ease: "easeInOut" },
+            }}
           >
             CHARGE READY ⚡
           </motion.p>
@@ -249,8 +270,8 @@ function FocusBar({ current, max, canCharge = true }: { current: number; max: nu
   );
 }
 
-function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, canCharge = true }: {
-  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean; canCharge?: boolean;
+function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, canAct = false }: {
+  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean; canAct?: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
@@ -297,7 +318,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
           </div>
         </div>
         <HpBar current={fighter.hp} max={fighter.maxHp} color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"} label="HP" />
-        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} canCharge={canCharge} /></div>
+        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} canAct={canAct && side === "left"} /></div>
       </div>
       <AnimatePresence>
         {momentum > 0 && momentum % comboThreshold === 0 && (
@@ -356,7 +377,7 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
             <motion.div className={`h-full ${timeLeft <= 3 ? "bg-neon-pink" : "bg-neon-purple"}`} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
           </div>
         </div>
-        <h3 className="text-3xl font-bold font-display text-center mb-8 text-foreground">{question.q.includes("?") ? question.q : `${question.q} = ?`}</h3>
+        <h3 className="text-3xl font-bold font-display text-center mb-8 text-foreground">{question.q.trimEnd().endsWith("?") ? question.q : `${question.q} = ?`}</h3>
         <div className="grid grid-cols-2 gap-3">
           {question.options.map((opt, i) => {
             let style = "border-border hover:border-neon-purple/60 hover:bg-neon-purple/5";
@@ -884,7 +905,7 @@ function BattleArena() {
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
   const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: User });
-  const [opponent, setOpponent] = useState<Fighter>({ name: "AI_Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
+  const [opponent, setOpponent] = useState<Fighter>({ name: "AI Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
   const [momentum, setMomentum] = useState(0);
   const [opponentMomentum, setOpponentMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
@@ -915,6 +936,10 @@ function BattleArena() {
   // calling setState inside another setState's updater function.
   const playerRef   = useRef(player);
   const opponentRef = useRef(opponent);
+  const recordsRef = useRef<QuestionRecord[]>([]);
+  const longestStreakRef = useRef(0);
+  const fastestAnswerRef = useRef(Infinity);
+  const totalScoreRef = useRef(0);
 
   // Issue 2: incoming chat items populated by the PvP channel subscription.
   const [incomingChats, setIncomingChats]   = useState<ChatItem[]>([]);
@@ -930,6 +955,10 @@ function BattleArena() {
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
   const [opponentRating, setOpponentRating] = useState(1000);
   const [ratingChange, setRatingChange]     = useState<number | null>(null);
+  const [liveTurnNumber, setLiveTurnNumber] = useState(1);
+  const [liveActionLocked, setLiveActionLocked] = useState(false);
+  const [liveOpponentLocked, setLiveOpponentLocked] = useState(false);
+  const [liveResolvingTurn, setLiveResolvingTurn] = useState(false);
 
   // Refs for async-safe access inside callbacks
   const pvpChannelRef     = useRef<any>(null);
@@ -938,12 +967,28 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
+  const liveTurnNumberRef = useRef(1);
+  const liveActionLockedRef = useRef(false);
+  const liveOpponentLockedRef = useRef(false);
+  const liveResolvingRef = useRef(false);
+  const liveResolvedTurnsRef = useRef<Set<number>>(new Set());
+  const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
+  const liveResolutionRef = useRef<(actions: LiveTurnActionRow[], turnNumber: number) => void>(() => {});
+  const rematchStartedRef = useRef(false);
+  const myUserIdRef = useRef<string | null>(null);
+  const opponentUserIdRef = useRef<string | null>(null);
+  const iAmChallengerRef = useRef(false);
+  // Idempotency guard so finishBattle runs exactly once per battle, even if
+  // both the local HP-zero check and the opponent's broadcast battle_end
+  // arrive. Without this, updateRating() runs twice and W/L double-counts.
+  const battleFinishedRef = useRef(false);
 
   // Fetch player profile (XP + rating + username)
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      myUserIdRef.current = user.id;
       const [profileRes, ratingData] = await Promise.all([
         supabase.from("user_profiles").select("xp, username").eq("user_id", user.id).maybeSingle(),
         fetchPlayerRating(),
@@ -964,19 +1009,39 @@ function BattleArena() {
     });
 
     channel
-      .on("broadcast", { event: "damage" }, ({ payload }) => {
-        const dmg = payload.damage as number;
-        setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
-        setShowPlayerHit(true);
-        addLog({ actor: "opponent", actionType: "attack", result: `⚔️ Opponent: ${dmg} DMG!`, value: dmg });
-        setTimeout(() => setShowPlayerHit(false), 600);
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "pvp_turn_actions",
+        filter: `battle_id=eq.${pvpBattleId}`,
+      }, async (payload) => {
+        const row = payload.new as { turn_number: number; actor_id: string };
+        if (row.turn_number !== liveTurnNumberRef.current) return;
+        if (row.actor_id !== myUserIdRef.current) {
+          liveOpponentLockedRef.current = true;
+          setLiveOpponentLocked(true);
+        }
+        if (liveActionLockedRef.current) {
+          const { data } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+            p_battle_id: pvpBattleId,
+            p_turn_number: row.turn_number,
+          });
+          if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], row.turn_number);
+        }
       })
-      .on("broadcast", { event: "heal" }, ({ payload }) => {
-        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "pvp_battles",
+        filter: `id=eq.${pvpBattleId}`,
+      }, async (payload) => {
+        const row = payload.new as any;
+        if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
+          finishBattle(row.winner_id === myUserIdRef.current);
+        }
+        if (row.rematch_battle_id && !rematchStartedRef.current) {
+          rematchStartedRef.current = true;
+          await startLiveBattleFromId(row.rematch_battle_id as string);
+        }
       })
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
-        const weWon = payload.winner_id !== payload.sender_id;
-        finishBattle(weWon);
+        if (payload.winner_id) finishBattle(payload.winner_id === myUserIdRef.current);
       })
       // Issue 2: receive opponent chat / emoji reactions
       .on("broadcast", { event: "chat" }, ({ payload }) => {
@@ -1003,6 +1068,23 @@ function BattleArena() {
   // read the latest HP without nesting setState inside another updater.
   useEffect(() => { playerRef.current   = player;   }, [player]);
   useEffect(() => { opponentRef.current = opponent; }, [opponent]);
+  useEffect(() => { recordsRef.current = records; }, [records]);
+  useEffect(() => { longestStreakRef.current = longestStreak; }, [longestStreak]);
+  useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
+  useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
+
+  const resetLiveTurnLocks = useCallback((nextTurn: number) => {
+    liveTurnNumberRef.current = nextTurn;
+    setLiveTurnNumber(nextTurn);
+    liveActionLockedRef.current = false;
+    liveOpponentLockedRef.current = false;
+    liveResolvingRef.current = false;
+    livePendingActionRef.current = null;
+    setLiveActionLocked(false);
+    setLiveOpponentLocked(false);
+    setLiveResolvingTurn(false);
+  }, []);
+
 
   const getArch = useCallback((id: ArchetypeId): Archetype => {
     const base = ARCHETYPES[id];
@@ -1035,6 +1117,72 @@ function BattleArena() {
       });
     });
   }, []);
+
+  const resolveLiveTurn = useCallback((actions: LiveTurnActionRow[], turnNumber: number) => {
+    if (liveResolvedTurnsRef.current.has(turnNumber) || liveResolvingRef.current) return;
+    const myId = myUserIdRef.current;
+    if (!myId) return;
+    const mine = actions.find(a => a.actor_id === myId);
+    const theirs = actions.find(a => a.actor_id !== myId);
+    if (!mine || !theirs) return;
+
+    liveResolvedTurnsRef.current.add(turnNumber);
+    liveResolvingRef.current = true;
+    setLiveResolvingTurn(true);
+    setPhase("animate");
+
+    const curPlayer = playerRef.current;
+    const curOpp = opponentRef.current;
+    const nextPlayerHp = Math.max(0, Math.min(curPlayer.maxHp, curPlayer.hp - theirs.damage - mine.self_damage + mine.heal));
+    const nextOppHp = Math.max(0, Math.min(curOpp.maxHp, curOpp.hp - mine.damage - theirs.self_damage + theirs.heal));
+
+    if (mine.damage > 0) { setShowOpponentHit(true); addLog({ actor: "player", actionType: mine.action as LogActionType, result: `${ACTIONS[mine.action].label}: ${mine.damage} DMG.`, value: mine.damage }); }
+    if (mine.heal > 0) { setShowPlayerHeal(true); addLog({ actor: "player", actionType: "heal", result: `Heal resolves: +${mine.heal} HP.`, value: mine.heal }); }
+    if (mine.self_damage > 0) { setShowPlayerHit(true); addLog({ actor: "player", actionType: "miss", result: `Your miss resolves: -${mine.self_damage} HP.`, value: mine.self_damage }); }
+    if (theirs.damage > 0) { setShowPlayerHit(true); addLog({ actor: "opponent", actionType: theirs.action as LogActionType, result: `${opponentRef.current.name}: ${theirs.damage} DMG.`, value: theirs.damage }); }
+    if (theirs.heal > 0) addLog({ actor: "opponent", actionType: "heal", result: `${opponentRef.current.name} heals +${theirs.heal} HP.`, value: theirs.heal });
+    if (theirs.self_damage > 0) addLog({ actor: "opponent", actionType: "miss", result: `${opponentRef.current.name} misses: -${theirs.self_damage} HP.`, value: theirs.self_damage });
+
+    setMomentum(mine.momentum);
+    setOpponentMomentum(theirs.momentum);
+    setPlayer(p => ({ ...p, hp: nextPlayerHp, focus: Math.max(0, Math.min(p.maxFocus, p.focus + mine.focus_delta)) }));
+    setOpponent(o => ({ ...o, hp: nextOppHp, focus: Math.max(0, Math.min(o.maxFocus, o.focus + theirs.focus_delta)) }));
+
+    setTimeout(() => {
+      setShowPlayerHit(false); setShowOpponentHit(false); setShowPlayerHeal(false);
+      if (nextOppHp <= 0 || nextPlayerHp <= 0) finishBattle(nextOppHp <= 0 && nextPlayerHp > 0 ? true : nextOppHp <= nextPlayerHp);
+      else { resetLiveTurnLocks(turnNumber + 1); setPhase("select"); }
+    }, 900);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addLog, resetLiveTurnLocks]);
+
+  useEffect(() => { liveResolutionRef.current = resolveLiveTurn; }, [resolveLiveTurn]);
+
+  async function startLiveBattleFromId(battleId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    myUserIdRef.current = user.id;
+    const { data: battle } = await supabase
+      .from("pvp_battles" as any)
+      .select("challenger_id, opponent_id, challenger_archetype, opponent_archetype")
+      .eq("id", battleId)
+      .maybeSingle();
+    const b = battle as any;
+    if (!b) return;
+    const iAmChallenger = b.challenger_id === user.id;
+    const oppId = iAmChallenger ? b.opponent_id : b.challenger_id;
+    const { data: prof } = await supabase.from("user_profiles" as any).select("username").eq("user_id", oppId).maybeSingle();
+    const { data: rating } = await supabase.from("player_ratings" as any).select("rating").eq("user_id", oppId).maybeSingle();
+    startDirectBattle({
+      battleId,
+      myArchetype: (iAmChallenger ? b.challenger_archetype : b.opponent_archetype) as ArchetypeId,
+      opponentArchetype: (iAmChallenger ? b.opponent_archetype : b.challenger_archetype) as ArchetypeId,
+      opponentName: (prof as any)?.username ?? `Player_${String(oppId).slice(0, 6)}`,
+      opponentRating: (rating as any)?.rating ?? 1000,
+      iAmChallenger,
+      opponentUserId: oppId,
+    });
+  }
 
   useEffect(() => {
     if (phase === "question" && timeLeft > 0) {
@@ -1092,6 +1240,9 @@ function BattleArena() {
           setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           setShowPlayerHeal(true);
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
+          if (heal > 0 && opponentTypeRef.current === "live" && pvpChannelRef.current) {
+            pvpChannelRef.current.send({ type: "broadcast", event: "self_heal", payload: { amount: heal } });
+          }
         } else {
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (Tank cannot heal).`, value: gain });
@@ -1167,7 +1318,6 @@ function BattleArena() {
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
       } else if (opponentTypeRef.current === "live") {
-        // Opponent plays independently via Realtime — just return to select
         setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
@@ -1178,18 +1328,25 @@ function BattleArena() {
   }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
 
   const finishBattle = useCallback((won: boolean) => {
-    // Broadcast result to live opponent before tearing down
-    if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
+    if (battleFinishedRef.current) return;
+    battleFinishedRef.current = true;
+    const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
+    if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
       pvpChannelRef.current.send({
         type: "broadcast", event: "battle_end",
-        payload: { winner_id: won ? "me" : "them", sender_id: "me" },
+        payload: { winner_id: winnerId },
       });
     }
 
-    const xp = won ? Math.floor(totalScore * 0.8) + 200 : Math.floor(totalScore * 0.2);
+    // Mirror the server-side formula in award_battle_xp so the number we
+    // animate up to in the report matches what actually lands on the profile:
+    //   xp = min(1000, correct*15 + (won ? 50 : 0))
+    const totalQuestions = records.length + 1; // +1 for the final answer
+    const correctAnswers = records.filter(r => r.correct).length + (won ? 1 : 0);
+    const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
     setBattleStats({
-      totalQuestions: records.length + 1, // +1 for the final answer
-      correctAnswers: records.filter(r => r.correct).length + (won ? 1 : 0),
+      totalQuestions,
+      correctAnswers,
       longestStreak,
       fastestAnswer,
       records: [...records],
@@ -1224,14 +1381,14 @@ function BattleArena() {
           const newWins = (existing.wins ?? 0) + 1;
           await supabase
             .from("daily_challenge_progress")
-            .update({ wins: newWins, bonus_claimed: existing.bonus_claimed || newWins >= challenge.target })
+            .update({ wins: newWins })
             .eq("id", existing.id);
         } else {
           await supabase.from("daily_challenge_progress").insert({
             user_id: user.id,
             challenge_date: today,
             wins: 1,
-            bonus_claimed: 1 >= challenge.target,
+            bonus_claimed: false,
           });
         }
         window.dispatchEvent(new Event("daily-challenge-updated"));
@@ -1246,8 +1403,20 @@ function BattleArena() {
         bestStreak: longestStreak,
       });
 
-      // Update ELO rating for live and ghost matches (never bots)
-      if (opponentTypeRef.current !== "bot") {
+      // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
+      if (opponentTypeRef.current === "live" && pvpBattleId && winnerId) {
+        const { data } = await supabase.rpc("complete_pvp_battle" as any, {
+          p_battle_id: pvpBattleId,
+          p_winner_id: winnerId,
+        });
+        const d = data as any;
+        const nextRating = iAmChallengerRef.current ? d?.challenger_rating_after : d?.opponent_rating_after;
+        if (typeof nextRating === "number") {
+          setRatingChange(nextRating - playerRatingRef.current);
+          setPlayerRating(nextRating);
+          playerRatingRef.current = nextRating;
+        }
+      } else if (opponentTypeRef.current === "ghost") {
         const newRating = await updateRating(opponentRatingRef.current, won);
         setRatingChange(newRating - playerRatingRef.current);
         setPlayerRating(newRating);
@@ -1405,6 +1574,10 @@ function BattleArena() {
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
   const selectAction = (action: Action) => {
+    if (opponentTypeRef.current === "live" && liveActionLockedRef.current) {
+      addLog({ actor: "system", actionType: "info", result: `Action already locked for this turn.` });
+      return;
+    }
     const cost = ACTIONS[action].focusCost;
     if (cost > 0 && player.focus < cost) { addLog({ actor: "system", actionType: "info", result: `⚠️ Need ${cost} Focus!` }); return; }
     setCurrentAction(action);
@@ -1440,6 +1613,7 @@ function BattleArena() {
     ghostTurnIndexRef.current = 0;
     pvpChannelRef.current     = null;
     setPvpBattleId(null);
+    battleFinishedRef.current = false;
 
     // Run full Tier 1→2→3 matchmaking asynchronously
     void (async () => {
@@ -1453,18 +1627,19 @@ function BattleArena() {
       // Resolve opponent from match result
       let oppArchetype: ArchetypeId;
       let oppName: string;
-      let oppIcon = Bot;
 
       if (match.opponentArchetype) {
         oppArchetype = match.opponentArchetype;
         oppName = match.opponentName;
       } else {
-        // Bot: pick a random ecliptar opponent
+        // Bot: pick a random ecliptar so the opponent has a real archetype identity
         const oppEclip = pickOpponent(cls);
         oppArchetype = oppEclip.archetype;
         oppName      = oppEclip.name;
-        oppIcon      = oppEclip.icon;
       }
+      // Always use the archetype's icon so ghost / bot / live opponents
+      // visually reflect their build instead of a generic robot.
+      const oppIcon = ARCHETYPES[oppArchetype].icon;
 
       // Ghost: prime the replay buffer
       if (match.type === "ghost" && match.ghostSession) {
@@ -1476,6 +1651,13 @@ function BattleArena() {
       if (match.type === "live" && match.pvpBattleId) {
         setPvpBattleId(match.pvpBattleId);
       }
+
+      if (match.type === "live") {
+        iAmChallengerRef.current = match.iAmChallenger === true;
+        opponentUserIdRef.current = match.opponentUserId ?? null;
+        liveResolvedTurnsRef.current = new Set();
+      }
+      resetLiveTurnLocks(1);
 
       // Sync refs for async-safe use inside callbacks
       setOpponentType(match.type);
@@ -1521,7 +1703,91 @@ function BattleArena() {
     setRatingChange(null);
     ghostSessionRef.current   = null;
     pvpChannelRef.current     = null;
+    battleFinishedRef.current = false;
+    resetLiveTurnLocks(1);
   };
+
+  // Direct PvP challenge: bypass matchmaking and drop straight into a live
+  // battle using a pre-created pvp_battles row. Triggered by ChallengeInbox
+  // and the challenger-side realtime "accepted" listener.
+  const startDirectBattle = useCallback((opts: {
+    battleId: string;
+    myArchetype: ArchetypeId;
+    opponentArchetype: ArchetypeId;
+    opponentName: string;
+    opponentRating?: number;
+    iAmChallenger?: boolean;
+    opponentUserId?: string;
+  }) => {
+    setArchetype(opts.myArchetype);
+    setRatingChange(null);
+    battleFinishedRef.current = false;
+    ghostSessionRef.current   = null;
+    ghostTurnIndexRef.current = 0;
+    pvpChannelRef.current     = null;
+    const rolledGambler = opts.myArchetype === "gambler" ? rollGamblerStats() : null;
+    setGamblerStats(rolledGambler);
+
+    setOpponentType("live");
+    opponentTypeRef.current   = "live";
+    setOpponentRating(opts.opponentRating ?? 1000);
+    opponentRatingRef.current = opts.opponentRating ?? 1000;
+    setPvpBattleId(opts.battleId);
+
+    iAmChallengerRef.current = opts.iAmChallenger === true;
+    opponentUserIdRef.current = opts.opponentUserId ?? null;
+    liveResolvedTurnsRef.current = new Set();
+    resetLiveTurnLocks(1);
+
+    const baseArch = ARCHETYPES[opts.myArchetype];
+    const oppArch  = ARCHETYPES[opts.opponentArchetype];
+    const playerName = ecliptar?.name ?? "You";
+    const playerIcon = ecliptar?.icon ?? User;
+    const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
+
+    setPlayer({
+      name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
+      focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+    });
+    setOpponent({
+      name: opts.opponentName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
+      focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppArch.icon,
+    });
+    setOpponentArchetype(opts.opponentArchetype);
+    battleMemoryRef.current = createBattleMemory();
+    setMomentum(0); setOpponentMomentum(0); setLogs([]);
+    setTotalScore(0); setRecords([]); setLongestStreak(0);
+    setFastestAnswer(Infinity); setBattleStats(null);
+    if (rolledGambler) {
+      setPhase("gamblerReveal");
+    } else {
+      setPhase("select");
+      addLog({
+        actor: "system", actionType: "info",
+        result: `⚔️ Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · ⚡ LIVE`,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecliptar]);
+
+  // Listen for direct-challenge events fired by ChallengeInbox / accepted
+  // notifications elsewhere on the page.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        battleId: string;
+        myArchetype: ArchetypeId;
+        opponentArchetype: ArchetypeId;
+        opponentName: string;
+        opponentRating?: number;
+        iAmChallenger?: boolean;
+      } | undefined;
+      if (!detail) return;
+      startDirectBattle(detail);
+    };
+    window.addEventListener("eclipta:direct-battle", handler);
+    return () => window.removeEventListener("eclipta:direct-battle", handler);
+  }, [startDirectBattle]);
 
   // ── Idle ──
   if (phase === "idle") {
@@ -1649,7 +1915,7 @@ function BattleArena() {
         {wildEvent && <WildEventOverlay event={wildEvent} />}
       </AnimatePresence>
       <div className="flex gap-4 mb-4">
-        <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} canCharge={phase === "select"} />
+        <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} canAct={phase === "select"} />
         <div className="flex flex-col items-center justify-center px-2 gap-1">
           <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
             <Swords className="w-6 h-6 text-neon-pink" />
@@ -1854,12 +2120,26 @@ function BattleArena() {
           );
         })()}
 
+        {liveActionLocked && phase === "select" && (
+          <motion.div
+            className="glass-panel p-3 border border-neon-cyan/40 bg-neon-cyan/5 text-center"
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+          >
+            <motion.span
+              className="text-[11px] font-bold tracking-widest text-neon-cyan"
+              animate={{ opacity: [0.55, 1, 0.55] }}
+              transition={{ duration: 1.4, repeat: Infinity }}
+            >
+              {liveResolvingTurn ? "RESOLVING TURN…" : liveOpponentLocked ? "BOTH ACTIONS LOCKED…" : `ACTION LOCKED · WAITING FOR ${opponent.name.toUpperCase()}`}
+            </motion.span>
+          </motion.div>
+        )}
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {
             const Icon = act.icon;
             const cost = act.focusCost;
-            const tankNoHeal = key === "defend" && archetype === "tank";
-            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || tankNoHeal;
+            const cannotHeal = key === "defend" && getArch(archetype).healAmount === null;
+            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveActionLocked;
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
                 className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}
@@ -1867,7 +2147,9 @@ function BattleArena() {
               >
                 <Icon className={`w-7 h-7 mx-auto mb-1.5 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
                 <div className="text-xs font-bold tracking-widest">{act.label.toUpperCase()}</div>
-                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">{tankNoHeal ? "Tank cannot heal" : getActionDesc(key, getArch(archetype), records.length)}</div>
+                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                  {cannotHeal ? "Tank cannot heal" : getActionDesc(key, getArch(archetype), records.length)}
+                </div>
                 {cost > 0 && (
                   <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1 rounded-sm">−{cost}</div>
                 )}
@@ -1911,7 +2193,7 @@ function LeaderboardCard() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const [xpRes, pvpRes] = await Promise.all([
         supabase.rpc("get_leaderboard" as any, { p_limit: 6 }),
         supabase.rpc("get_pvp_leaderboard" as any, { p_limit: 6 }),
@@ -1935,8 +2217,36 @@ function LeaderboardCard() {
         }))
       );
       setLoading(false);
-    })();
-    return () => { cancelled = true; };
+    };
+    void load();
+
+    // Debounced refresh on any XP / rating change anywhere — keeps the board
+    // close to live without hammering RPCs on every event.
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (pending) return;
+      pending = setTimeout(() => { pending = null; void load(); }, 500);
+    };
+
+    const xpChan = supabase
+      .channel(`leaderboard-xp:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "user_profiles" }, scheduleRefresh)
+      .subscribe();
+    const pvpChan = supabase
+      .channel(`leaderboard-pvp:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "player_ratings" }, scheduleRefresh)
+      .subscribe();
+
+    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      if (pending) clearTimeout(pending);
+      document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(xpChan);
+      supabase.removeChannel(pvpChan);
+    };
   }, []);
 
   return (
@@ -2028,6 +2338,8 @@ function LeaderboardCard() {
 // ─── Daily Challenge (live) ───────────────────────────────────────────
 function DailyChallengeCard() {
   const [wins, setWins] = useState(0);
+  const [claimed, setClaimed] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [countdown, setCountdown] = useState("");
   const challenge = getTodayChallenge();
@@ -2044,6 +2356,7 @@ function DailyChallengeCard() {
       .eq("challenge_date", today)
       .maybeSingle();
     setWins(data?.wins ?? 0);
+    setClaimed(!!data?.bonus_claimed);
   }, []);
 
   useEffect(() => {
@@ -2075,6 +2388,33 @@ function DailyChallengeCard() {
   const display = Math.min(wins, target);
   const complete = wins >= target;
 
+  const handleClaim = useCallback(async () => {
+    if (claiming || claimed || !complete) return;
+    setClaiming(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Sign in to claim your reward"); return; }
+      const today = new Date().toISOString().slice(0, 10);
+      // Mark claimed FIRST (unique per user/day) so concurrent clicks can't double-claim.
+      const { error: updErr } = await supabase
+        .from("daily_challenge_progress")
+        .update({ bonus_claimed: true })
+        .eq("user_id", user.id)
+        .eq("challenge_date", today)
+        .eq("bonus_claimed", false);
+      if (updErr) { toast.error("Couldn't claim — try again"); return; }
+      // Award the XP via the rate-limited server RPC. The amount (100) is
+      // enforced server-side; the client cannot inflate it.
+      await awardXp("daily_challenge", 100);
+      setClaimed(true);
+      toast.success("Daily Challenge complete!", { description: "+100 XP added to your profile." });
+    } catch {
+      toast.error("Couldn't claim — try again");
+    } finally {
+      setClaiming(false);
+    }
+  }, [claiming, claimed, complete]);
+
   return (
     <motion.div className="glass-panel p-5 border border-neon-purple/20" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
       <div className="flex items-center gap-3">
@@ -2086,9 +2426,11 @@ function DailyChallengeCard() {
           <p className="text-[10px] text-muted-foreground">
             {!authed
               ? `Sign in to track today's challenge`
-              : complete
-                ? `Bonus unlocked! 🎉 ${challenge.reward}`
-                : `${challenge.goal} → ${challenge.reward}`}
+              : claimed
+                ? `Reward claimed. Come back tomorrow for a new challenge.`
+                : complete
+                  ? `Reward ready to claim — +100 XP 🎉`
+                  : `${challenge.goal} → +100 XP`}
           </p>
         </div>
         <div className={`text-lg font-bold font-display ${complete ? "text-neon-cyan" : "text-neon-purple"}`}>
@@ -2104,6 +2446,19 @@ function DailyChallengeCard() {
           />
         </div>
       )}
+      {authed && complete && (
+        <button
+          onClick={handleClaim}
+          disabled={claimed || claiming}
+          className={`mt-3 w-full px-3 py-2 text-[11px] font-bold tracking-widest rounded-sm transition-colors ${
+            claimed
+              ? "bg-secondary/40 text-muted-foreground cursor-default"
+              : "bg-neon-cyan text-background hover:bg-neon-cyan/90 disabled:opacity-60"
+          }`}
+        >
+          {claimed ? "✓ CLAIMED" : claiming ? "CLAIMING…" : "CLAIM +100 XP"}
+        </button>
+      )}
       <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-muted-foreground">
         <Timer className="w-3 h-3" />
         RESETS IN <span className="text-foreground tabular-nums">{countdown}</span>
@@ -2115,6 +2470,7 @@ function DailyChallengeCard() {
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   return (
     <section className="min-h-screen pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-6">
@@ -2133,8 +2489,16 @@ export function KnowledgeBattles() {
         </motion.div>
 
         <div className="space-y-6">
+          <ChallengeInbox />
           <div className="relative">
-            <div className="flex items-center justify-end mb-3">
+            <div className="flex items-center justify-end gap-2 mb-3">
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-cyan border border-neon-cyan/40 bg-neon-cyan/5 hover:bg-neon-cyan/10 transition-colors rounded-sm"
+                aria-label="Find player"
+              >
+                <Users className="w-3.5 h-3.5" /> FIND PLAYER
+              </button>
               <button
                 onClick={() => setHowOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-purple border border-neon-purple/40 bg-neon-purple/5 hover:bg-neon-purple/10 transition-colors rounded-sm"
@@ -2151,6 +2515,8 @@ export function KnowledgeBattles() {
           </div>
         </div>
       </div>
+
+      <UserSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Floating "How to Play" button */}
       <motion.button

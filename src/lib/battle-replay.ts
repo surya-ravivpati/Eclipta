@@ -16,6 +16,8 @@ export interface GhostSession {
   totalQuestions: number;
   correctAnswers: number;
   bestStreak: number;
+  /** Original player's username, when available. */
+  username: string | null;
   /** Ordered records — action chosen, outcome, and time taken per turn. */
   questionRecords: Array<{
     action: string;
@@ -67,6 +69,7 @@ export async function fetchGhostSession(playerRating: number): Promise<GhostSess
     totalQuestions:  d.total_questions,
     correctAnswers:  d.correct_answers,
     bestStreak:      d.best_streak,
+    username:        d.username ?? null,
     questionRecords: (d.question_records ?? []) as GhostSession["questionRecords"],
   };
 }

@@ -1003,29 +1003,39 @@ function BattleArena() {
     });
 
     channel
-      .on("broadcast", { event: "damage" }, ({ payload }) => {
-        const dmg = payload.damage as number;
-        setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
-        setShowPlayerHit(true);
-        addLog({ actor: "opponent", actionType: "attack", result: `⚔️ Opponent: ${dmg} DMG!`, value: dmg });
-        setTimeout(() => setShowPlayerHit(false), 600);
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "pvp_turn_actions",
+        filter: `battle_id=eq.${pvpBattleId}`,
+      }, async (payload) => {
+        const row = payload.new as { turn_number: number; actor_id: string };
+        if (row.turn_number !== liveTurnNumberRef.current) return;
+        if (row.actor_id !== myUserIdRef.current) {
+          liveOpponentLockedRef.current = true;
+          setLiveOpponentLocked(true);
+        }
+        if (liveActionLockedRef.current) {
+          const { data } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+            p_battle_id: pvpBattleId,
+            p_turn_number: row.turn_number,
+          });
+          if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], row.turn_number);
+        }
       })
-      .on("broadcast", { event: "heal" }, ({ payload }) => {
-        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
-      })
-      .on("broadcast", { event: "self_heal" }, ({ payload }) => {
-        // Opponent healed themselves — mirror their HP gain on our screen.
-        setOpponent(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (payload.amount as number)) }));
-        addLog({ actor: "opponent", actionType: "heal", result: `🛡️ Opponent healed +${payload.amount} HP.`, value: payload.amount as number });
-      })
-      .on("broadcast", { event: "turn_end" }, () => {
-        // Opponent finished their action — unlock our turn.
-        liveAwaitingRef.current = false;
-        setLiveAwaitingOpponent(false);
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "pvp_battles",
+        filter: `id=eq.${pvpBattleId}`,
+      }, async (payload) => {
+        const row = payload.new as any;
+        if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
+          finishBattle(row.winner_id === myUserIdRef.current, row);
+        }
+        if (row.rematch_battle_id && !rematchStartedRef.current) {
+          rematchStartedRef.current = true;
+          await startLiveBattleFromId(row.rematch_battle_id as string);
+        }
       })
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
-        const weWon = payload.winner_id !== payload.sender_id;
-        finishBattle(weWon);
+        if (payload.winner_id) finishBattle(payload.winner_id === myUserIdRef.current);
       })
       // Issue 2: receive opponent chat / emoji reactions
       .on("broadcast", { event: "chat" }, ({ payload }) => {

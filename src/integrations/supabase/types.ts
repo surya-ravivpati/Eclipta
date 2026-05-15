@@ -595,30 +595,54 @@ export type Database = {
         Row: {
           challenger_archetype: string
           challenger_id: string
+          challenger_rating_after: number | null
+          challenger_rating_before: number | null
+          completed_at: string | null
           created_at: string
           id: string
           opponent_archetype: string
           opponent_id: string
+          opponent_rating_after: number | null
+          opponent_rating_before: number | null
+          ratings_applied: boolean
+          rematch_battle_id: string | null
+          rematch_requested_by: string[]
           status: string
           winner_id: string | null
         }
         Insert: {
           challenger_archetype: string
           challenger_id: string
+          challenger_rating_after?: number | null
+          challenger_rating_before?: number | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           opponent_archetype: string
           opponent_id: string
+          opponent_rating_after?: number | null
+          opponent_rating_before?: number | null
+          ratings_applied?: boolean
+          rematch_battle_id?: string | null
+          rematch_requested_by?: string[]
           status?: string
           winner_id?: string | null
         }
         Update: {
           challenger_archetype?: string
           challenger_id?: string
+          challenger_rating_after?: number | null
+          challenger_rating_before?: number | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           opponent_archetype?: string
           opponent_id?: string
+          opponent_rating_after?: number | null
+          opponent_rating_before?: number | null
+          ratings_applied?: boolean
+          rematch_battle_id?: string | null
+          rematch_requested_by?: string[]
           status?: string
           winner_id?: string | null
         }
@@ -678,6 +702,57 @@ export type Database = {
           rating?: number
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      pvp_turn_actions: {
+        Row: {
+          action: string
+          actor_id: string
+          battle_id: string
+          correct: boolean
+          created_at: string
+          damage: number
+          focus_delta: number
+          heal: number
+          id: string
+          momentum: number
+          question: Json
+          self_damage: number
+          time_spent: number
+          turn_number: number
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          battle_id: string
+          correct: boolean
+          created_at?: string
+          damage?: number
+          focus_delta?: number
+          heal?: number
+          id?: string
+          momentum?: number
+          question?: Json
+          self_damage?: number
+          time_spent?: number
+          turn_number: number
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          battle_id?: string
+          correct?: boolean
+          created_at?: string
+          damage?: number
+          focus_delta?: number
+          heal?: number
+          id?: string
+          momentum?: number
+          question?: Json
+          self_damage?: number
+          time_spent?: number
+          turn_number?: number
         }
         Relationships: []
       }
@@ -984,6 +1059,19 @@ export type Database = {
       }
     }
     Functions: {
+      apply_pvp_rating_pair: {
+        Args: {
+          p_challenger_id: string
+          p_opponent_id: string
+          p_winner_id: string
+        }
+        Returns: {
+          challenger_after: number
+          challenger_before: number
+          opponent_after: number
+          opponent_before: number
+        }[]
+      }
       award_battle_xp: {
         Args: { p_correct: number; p_total: number; p_won: boolean }
         Returns: number
@@ -992,6 +1080,10 @@ export type Database = {
       claim_chest: {
         Args: { p_chest_label: string; p_node_id: number }
         Returns: number
+      }
+      complete_pvp_battle: {
+        Args: { p_battle_id: string; p_winner_id: string }
+        Returns: Json
       }
       contains_profanity: { Args: { t: string }; Returns: boolean }
       create_pvp_challenge: {
@@ -1051,6 +1143,10 @@ export type Database = {
           wins: number
         }[]
       }
+      get_pvp_turn_resolution: {
+        Args: { p_battle_id: string; p_turn_number: number }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1080,6 +1176,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_pvp_rematch: {
+        Args: { p_archetype: string; p_battle_id: string }
+        Returns: Json
+      }
       respond_pvp_challenge: {
         Args: {
           p_accept: boolean
@@ -1097,6 +1197,22 @@ export type Database = {
           username: string
           xp: number
         }[]
+      }
+      submit_pvp_turn_action: {
+        Args: {
+          p_action: string
+          p_battle_id: string
+          p_correct: boolean
+          p_damage?: number
+          p_focus_delta?: number
+          p_heal?: number
+          p_momentum?: number
+          p_question?: Json
+          p_self_damage?: number
+          p_time_spent?: number
+          p_turn_number: number
+        }
+        Returns: Json
       }
       update_pvp_rating: {
         Args: { p_opponent_rating: number; p_won: boolean }

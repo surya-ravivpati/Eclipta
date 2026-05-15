@@ -951,9 +951,10 @@ function BattleArena() {
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
   const [opponentRating, setOpponentRating] = useState(1000);
   const [ratingChange, setRatingChange]     = useState<number | null>(null);
-  // Live PvP turn-based lock: while true the local player has already played
-  // this round and must wait for the opponent's broadcast before acting again.
-  const [liveAwaitingOpponent, setLiveAwaitingOpponent] = useState(false);
+  const [liveTurnNumber, setLiveTurnNumber] = useState(1);
+  const [liveActionLocked, setLiveActionLocked] = useState(false);
+  const [liveOpponentLocked, setLiveOpponentLocked] = useState(false);
+  const [liveResolvingTurn, setLiveResolvingTurn] = useState(false);
 
   // Refs for async-safe access inside callbacks
   const pvpChannelRef     = useRef<any>(null);
@@ -962,7 +963,15 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
-  const liveAwaitingRef   = useRef(false);
+  const liveTurnNumberRef = useRef(1);
+  const liveActionLockedRef = useRef(false);
+  const liveOpponentLockedRef = useRef(false);
+  const liveResolvingRef = useRef(false);
+  const liveResolvedTurnsRef = useRef<Set<number>>(new Set());
+  const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
+  const myUserIdRef = useRef<string | null>(null);
+  const opponentUserIdRef = useRef<string | null>(null);
+  const iAmChallengerRef = useRef(false);
   // Idempotency guard so finishBattle runs exactly once per battle, even if
   // both the local HP-zero check and the opponent's broadcast battle_end
   // arrive. Without this, updateRating() runs twice and W/L double-counts.

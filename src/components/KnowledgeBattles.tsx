@@ -1657,6 +1657,7 @@ function BattleArena() {
         opponentArchetype: ArchetypeId;
         opponentName: string;
         opponentRating?: number;
+        iAmChallenger?: boolean;
       } | undefined;
       if (!detail) return;
       startDirectBattle(detail);

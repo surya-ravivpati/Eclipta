@@ -24,6 +24,7 @@ function dispatchDirectBattle(detail: {
   opponentArchetype: ArchetypeId;
   opponentName: string;
   opponentRating?: number;
+  iAmChallenger?: boolean;
 }) {
   window.dispatchEvent(new CustomEvent("eclipta:direct-battle", { detail }));
 }
@@ -119,6 +120,7 @@ export function ChallengeInbox() {
             myArchetype: row.challenger_archetype,
             opponentArchetype: oppArch,
             opponentName: oppName,
+            iAmChallenger: true,
           });
         } else if (row.status === "rejected") {
           toast.error("Challenge declined.");
@@ -142,6 +144,7 @@ export function ChallengeInbox() {
           myArchetype: defaultArch,
           opponentArchetype: c.challenger_archetype,
           opponentName: c.challenger_username ?? "Challenger",
+          iAmChallenger: false,
         });
       } else {
         toast.success("Challenge declined.");

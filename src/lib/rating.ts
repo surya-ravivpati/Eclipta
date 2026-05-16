@@ -31,13 +31,18 @@ export async function fetchPlayerRating(): Promise<PlayerRating> {
   };
 }
 
-/** Call after every live or ghost match. Returns the new rating. */
-export async function updateRating(opponentRating: number, won: boolean): Promise<number> {
-  const { data } = await supabase.rpc("update_pvp_rating" as any, {
+/** Complete a recorded Ghost PvP battle exactly once and return the authoritative rating result. */
+export async function completeGhostBattle(sessionId: string, opponentRating: number): Promise<{ ratingAfter: number; ratingDelta: number }> {
+  const { data, error } = await supabase.rpc("complete_ghost_battle" as any, {
+    p_session_id: sessionId,
     p_opponent_rating: opponentRating,
-    p_won: won,
   });
-  return (data as number | null) ?? 1000;
+  if (error) throw error;
+  const d = data as { rating_after?: number | null; rating_delta?: number | null } | null;
+  return {
+    ratingAfter: d?.rating_after ?? 1000,
+    ratingDelta: d?.rating_delta ?? 0,
+  };
 }
 
 /** Human-readable tier name for a given ELO rating. */

@@ -33,11 +33,12 @@ export async function recordBattleSession(params: {
   rating: number;
   records: QuestionRecord[];
   bestStreak: number;
-}): Promise<void> {
+  opponentType?: "live" | "ghost" | "bot";
+}): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return null;
 
-  await supabase.from("battle_sessions" as any).insert({
+  const { data } = await supabase.from("battle_sessions" as any).insert({
     user_id:          user.id,
     archetype:        params.archetype,
     won:              params.won,
@@ -50,7 +51,10 @@ export async function recordBattleSession(params: {
       correct:   r.correct,
       timeSpent: r.timeSpent,
     })),
-  });
+    opponent_type:    params.opponentType ?? "unknown",
+  }).select("id").maybeSingle();
+
+  return (data as { id?: string } | null)?.id ?? null;
 }
 
 /** Fetch a real player ghost session within ±150 rating of the player. */

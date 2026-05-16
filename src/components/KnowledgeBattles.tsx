@@ -967,6 +967,7 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
+  const pvpBattleIdRef = useRef<string | null>(null);
   const liveTurnNumberRef = useRef(1);
   const liveActionLockedRef = useRef(false);
   const liveOpponentLockedRef = useRef(false);
@@ -1205,18 +1206,107 @@ function BattleArena() {
     }
 
     const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
-    setRecords(prev => [...prev, record]);
+    const nextRecords = [...recordsRef.current, record];
+    recordsRef.current = nextRecords;
+    setRecords(nextRecords);
     // Feed Luna's adaptive context (timeSpent is in seconds, recordAnswer expects ms).
     void import("@/lib/luna-context").then(({ recordAnswer, updateLunaContext }) => {
       recordAnswer(correct, timeSpent * 1000);
       updateLunaContext({ lessonTitle: question.topic, difficulty: question.difficulty });
     });
 
-    if (correct && timeSpent < fastestAnswer) setFastestAnswer(timeSpent);
+    if (correct && timeSpent < fastestAnswerRef.current) {
+      fastestAnswerRef.current = timeSpent;
+      setFastestAnswer(timeSpent);
+    }
 
     const arch = getArch(archetype);
-    const step = getEffectiveMultiplierStep(arch, records.length);
+    const step = getEffectiveMultiplierStep(arch, nextRecords.length - 1);
     const currentStreakMult = streakToMultiplier(momentum, step);
+
+    if (opponentTypeRef.current === "live") {
+      const nextMom = correct ? momentum + 1 : 0;
+      if (correct && nextMom > longestStreakRef.current) {
+        longestStreakRef.current = nextMom;
+        setLongestStreak(nextMom);
+      }
+
+      let damage = 0;
+      let selfDamage = 0;
+      let heal = 0;
+      let focusDelta = correct ? FOCUS_GAIN[currentAction] : 0;
+
+      if (correct) {
+        sfxStreak(nextMom);
+        if (nextMom > 0 && nextMom % comboThreshold === 0) {
+          const newMult = streakToMultiplier(nextMom, step);
+          addLog({ actor: "system", actionType: "combo", result: `🔥 COMBO x${Math.floor(nextMom / comboThreshold)} — ${newMult.toFixed(2)}× damage locked!` });
+          sfxCombo();
+        }
+
+        if (currentAction === "defend") {
+          heal = arch.healAmount === null ? 0 : Math.min(arch.healAmount, playerRef.current.maxHp - playerRef.current.hp);
+        } else if (currentAction === "wild") {
+          sfxWild();
+          const roll = Math.random();
+          if (roll < 0.333) damage = Math.floor(Math.random() * 30) + 10;
+          else if (roll < 0.667) heal = Math.min(20, playerRef.current.maxHp - playerRef.current.hp);
+          else { damage = 20; focusDelta += 20; }
+        } else {
+          damage = Math.floor(getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: nextRecords.length - 1 }) * currentStreakMult);
+        }
+      } else {
+        sfxBreak();
+        selfDamage = Math.floor((Math.floor(Math.random() * 10) + 8) * hpToSelfDmgMult(arch.maxHp));
+      }
+
+      liveActionLockedRef.current = true;
+      livePendingActionRef.current = {
+        actor_id: myUserIdRef.current ?? "",
+        action: currentAction,
+        correct,
+        damage,
+        self_damage: selfDamage,
+        heal,
+        focus_delta: focusDelta,
+        momentum: nextMom,
+        time_spent: timeSpent,
+        question,
+      };
+      setLiveActionLocked(true);
+      setPhase("select");
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `Action locked for turn ${liveTurnNumberRef.current}. ${liveOpponentLockedRef.current ? "Resolving…" : `Waiting for ${opponentRef.current.name}.`}`,
+      });
+
+      void (async () => {
+        const battleId = pvpBattleIdRef.current;
+        if (!battleId) return;
+        const { data, error } = await supabase.rpc("submit_pvp_turn_action" as any, {
+          p_battle_id: battleId,
+          p_turn_number: liveTurnNumberRef.current,
+          p_action: currentAction,
+          p_correct: correct,
+          p_damage: damage,
+          p_self_damage: selfDamage,
+          p_heal: heal,
+          p_focus_delta: focusDelta,
+          p_momentum: nextMom,
+          p_time_spent: timeSpent,
+          p_question: { q: question.q, difficulty: question.difficulty, topic: question.topic },
+        });
+        if (error) {
+          liveActionLockedRef.current = false;
+          setLiveActionLocked(false);
+          toast.error("Couldn't lock PvP action — try again.");
+          return;
+        }
+        if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], liveTurnNumberRef.current);
+      })();
+      return;
+    }
 
     setPhase("animate");
 

@@ -14,9 +14,5 @@ export const Route = createFileRoute("/_authenticated/battles")({
 });
 
 function BattlesPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
-      <KnowledgeBattles />
-    </div>
-  );
+  return <KnowledgeBattles />;
 }

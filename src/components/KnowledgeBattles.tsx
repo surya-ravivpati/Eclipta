@@ -27,6 +27,7 @@ import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
 import { completeGhostBattle, fetchPlayerRating, ratingToTier } from "@/lib/rating";
 import { awardXp } from "@/lib/xp-service";
 import { toast } from "sonner";
+import "./Battles.css";
 
 /**
  * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
@@ -2564,14 +2565,15 @@ export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   return (
-    <section className="min-h-screen pt-24 pb-16">
+    <section className="btt-shell min-h-screen pt-24 pb-16">
+      <div className="btt-bg" aria-hidden />
       <div className="max-w-7xl mx-auto px-6">
         <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
+          <div className="btt-pill inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
             <Swords className="w-3 h-3" />
             CYBER-MATH ARENA
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold font-display tracking-tight mb-4">
+          <h1 className="btt-title text-5xl md:text-7xl font-bold font-display tracking-tight mb-4">
             Knowledge{" "}
             <span className="text-neon-pink">Battles</span>
           </h1>

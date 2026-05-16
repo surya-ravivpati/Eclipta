@@ -1,0 +1,97 @@
+/* ──────────────────────────────────────────────────────────────
+   Battles — cinematic shell
+   Wraps KnowledgeBattles with atmosphere without touching game logic.
+   ────────────────────────────────────────────────────────────── */
+
+/* ─── Shell ──────────────────────────────────────────────────── */
+.btt-shell {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;          /* clip, not hidden — avoids scroll-container side-effects */
+  background: oklch(0.065 0.02 260);
+}
+
+/* All direct children sit above the bg layer */
+.btt-shell > * { position: relative; z-index: 1; }
+.btt-bg { z-index: 0 !important; }
+
+/* ─── Atmospheric background ─────────────────────────────────── */
+.btt-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Aurora radial orbs */
+.btt-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 65vw 55vh at 16% 24%, oklch(0.52 0.22 350 / 0.10) 0%, transparent 65%),
+    radial-gradient(ellipse 55vw 50vh at 84% 74%, oklch(0.48 0.21 260 / 0.10) 0%, transparent 62%),
+    radial-gradient(ellipse 70vw 55vh at 50% 10%,  oklch(0.46 0.20 290 / 0.07) 0%, transparent 68%);
+  animation: btt-aurora 18s ease-in-out infinite alternate;
+}
+
+/* Subtle perspective grid */
+.btt-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right,  oklch(1 0 0 / 0.020) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 0.015) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, transparent 0%, oklch(0 0 0) 8%, oklch(0 0 0) 85%, transparent 100%);
+}
+
+@keyframes btt-aurora {
+  0%   { transform: none;                          opacity: 0.80; }
+  50%  {                                           opacity: 1.00; }
+  100% { transform: translate(3%, 2%) scale(1.06); opacity: 0.88; }
+}
+
+/* ─── Enhanced glassmorphism within this context ─────────────── */
+.btt-shell .glass-panel {
+  background: oklch(0.11 0.025 260 / 0.68);
+  border: 1px solid oklch(1 0 0 / 0.09);
+  box-shadow:
+    0 8px 40px oklch(0 0 0 / 0.50),
+    inset 0 1px 0 oklch(1 0 0 / 0.06);
+}
+
+/* ─── Header / hero section ──────────────────────────────────── */
+.btt-title {
+  /* Soft pink halo on the main heading */
+  filter: drop-shadow(0 0 28px oklch(0.6 0.24 350 / 0.28));
+}
+
+/* Pill badge */
+.btt-pill {
+  letter-spacing: 0.16em;
+  box-shadow: 0 0 12px oklch(0.6 0.24 350 / 0.20), inset 0 1px 0 oklch(1 0 0 / 0.08);
+}
+
+/* ─── Action buttons (subtle lift in battles context) ────────── */
+.btt-shell button[class*="border-neon-cyan"],
+.btt-shell button[class*="border-neon-purple"],
+.btt-shell button[class*="border-neon-pink"] {
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+.btt-shell button[class*="border-neon-cyan"]:hover   { box-shadow: 0 0 14px oklch(0.65 0.22 200 / 0.25); }
+.btt-shell button[class*="border-neon-purple"]:hover  { box-shadow: 0 0 14px oklch(0.55 0.25 290 / 0.25); }
+.btt-shell button[class*="border-neon-pink"]:hover    { box-shadow: 0 0 14px oklch(0.60 0.24 350 / 0.25); }
+
+/* ─── Leaderboard / card hover rows ─────────────────────────── */
+.btt-shell .glass-panel div[class*="hover:bg-secondary"] {
+  transition: background 0.15s ease;
+}
+
+/* ─── How-to-play floating button — extra glow in context ────── */
+.btt-shell ~ button[aria-label="How to play"],
+button[aria-label="How to play"] {
+  box-shadow:
+    0 4px 20px oklch(0.55 0.25 290 / 0.45),
+    0 0 0 1px oklch(0.55 0.25 290 / 0.20);
+}

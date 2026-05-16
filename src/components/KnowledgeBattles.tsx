@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
-import { fetchPlayerRating, updateRating, ratingToTier, formatRatingDelta } from "@/lib/rating";
+import { completeGhostBattle, fetchPlayerRating, ratingToTier } from "@/lib/rating";
 import { awardXp } from "@/lib/xp-service";
 import { toast } from "sonner";
 
@@ -967,6 +967,7 @@ function BattleArena() {
   const playerRatingRef   = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef   = useRef<OpponentType>("bot");
+  const pvpBattleIdRef = useRef<string | null>(null);
   const liveTurnNumberRef = useRef(1);
   const liveActionLockedRef = useRef(false);
   const liveOpponentLockedRef = useRef(false);
@@ -980,7 +981,7 @@ function BattleArena() {
   const iAmChallengerRef = useRef(false);
   // Idempotency guard so finishBattle runs exactly once per battle, even if
   // both the local HP-zero check and the opponent's broadcast battle_end
-  // arrive. Without this, updateRating() runs twice and W/L double-counts.
+  // arrive. Rating is completed through idempotent backend RPCs.
   const battleFinishedRef = useRef(false);
 
   // Fetch player profile (XP + rating + username)
@@ -1072,6 +1073,7 @@ function BattleArena() {
   useEffect(() => { longestStreakRef.current = longestStreak; }, [longestStreak]);
   useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
   useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
+  useEffect(() => { pvpBattleIdRef.current = pvpBattleId; }, [pvpBattleId]);
 
   const resetLiveTurnLocks = useCallback((nextTurn: number) => {
     liveTurnNumberRef.current = nextTurn;
@@ -1205,18 +1207,107 @@ function BattleArena() {
     }
 
     const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
-    setRecords(prev => [...prev, record]);
+    const nextRecords = [...recordsRef.current, record];
+    recordsRef.current = nextRecords;
+    setRecords(nextRecords);
     // Feed Luna's adaptive context (timeSpent is in seconds, recordAnswer expects ms).
     void import("@/lib/luna-context").then(({ recordAnswer, updateLunaContext }) => {
       recordAnswer(correct, timeSpent * 1000);
       updateLunaContext({ lessonTitle: question.topic, difficulty: question.difficulty });
     });
 
-    if (correct && timeSpent < fastestAnswer) setFastestAnswer(timeSpent);
+    if (correct && timeSpent < fastestAnswerRef.current) {
+      fastestAnswerRef.current = timeSpent;
+      setFastestAnswer(timeSpent);
+    }
 
     const arch = getArch(archetype);
-    const step = getEffectiveMultiplierStep(arch, records.length);
+    const step = getEffectiveMultiplierStep(arch, nextRecords.length - 1);
     const currentStreakMult = streakToMultiplier(momentum, step);
+
+    if (opponentTypeRef.current === "live") {
+      const nextMom = correct ? momentum + 1 : 0;
+      if (correct && nextMom > longestStreakRef.current) {
+        longestStreakRef.current = nextMom;
+        setLongestStreak(nextMom);
+      }
+
+      let damage = 0;
+      let selfDamage = 0;
+      let heal = 0;
+      let focusDelta = correct ? FOCUS_GAIN[currentAction] : 0;
+
+      if (correct) {
+        sfxStreak(nextMom);
+        if (nextMom > 0 && nextMom % comboThreshold === 0) {
+          const newMult = streakToMultiplier(nextMom, step);
+          addLog({ actor: "system", actionType: "combo", result: `🔥 COMBO x${Math.floor(nextMom / comboThreshold)} — ${newMult.toFixed(2)}× damage locked!` });
+          sfxCombo();
+        }
+
+        if (currentAction === "defend") {
+          heal = arch.healAmount === null ? 0 : Math.min(arch.healAmount, playerRef.current.maxHp - playerRef.current.hp);
+        } else if (currentAction === "wild") {
+          sfxWild();
+          const roll = Math.random();
+          if (roll < 0.333) damage = Math.floor(Math.random() * 30) + 10;
+          else if (roll < 0.667) heal = Math.min(20, playerRef.current.maxHp - playerRef.current.hp);
+          else { damage = 20; focusDelta += 20; }
+        } else {
+          damage = Math.floor(getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: nextRecords.length - 1 }) * currentStreakMult);
+        }
+      } else {
+        sfxBreak();
+        selfDamage = Math.floor((Math.floor(Math.random() * 10) + 8) * hpToSelfDmgMult(arch.maxHp));
+      }
+
+      liveActionLockedRef.current = true;
+      livePendingActionRef.current = {
+        actor_id: myUserIdRef.current ?? "",
+        action: currentAction,
+        correct,
+        damage,
+        self_damage: selfDamage,
+        heal,
+        focus_delta: focusDelta,
+        momentum: nextMom,
+        time_spent: timeSpent,
+        question,
+      };
+      setLiveActionLocked(true);
+      setPhase("select");
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `Action locked for turn ${liveTurnNumberRef.current}. ${liveOpponentLockedRef.current ? "Resolving…" : `Waiting for ${opponentRef.current.name}.`}`,
+      });
+
+      void (async () => {
+        const battleId = pvpBattleIdRef.current;
+        if (!battleId) return;
+        const { data, error } = await supabase.rpc("submit_pvp_turn_action" as any, {
+          p_battle_id: battleId,
+          p_turn_number: liveTurnNumberRef.current,
+          p_action: currentAction,
+          p_correct: correct,
+          p_damage: damage,
+          p_self_damage: selfDamage,
+          p_heal: heal,
+          p_focus_delta: focusDelta,
+          p_momentum: nextMom,
+          p_time_spent: timeSpent,
+          p_question: { q: question.q, difficulty: question.difficulty, topic: question.topic },
+        });
+        if (error) {
+          liveActionLockedRef.current = false;
+          setLiveActionLocked(false);
+          toast.error("Couldn't lock PvP action — try again.");
+          return;
+        }
+        if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], liveTurnNumberRef.current);
+      })();
+      return;
+    }
 
     setPhase("animate");
 
@@ -1240,9 +1331,6 @@ function BattleArena() {
           setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           setShowPlayerHeal(true);
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
-          if (heal > 0 && opponentTypeRef.current === "live" && pvpChannelRef.current) {
-            pvpChannelRef.current.send({ type: "broadcast", event: "self_heal", payload: { amount: heal } });
-          }
         } else {
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (Tank cannot heal).`, value: gain });
@@ -1284,10 +1372,6 @@ function BattleArena() {
         setShowOpponentHit(true);
         const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
         addLog({ actor: "player", actionType: currentAction as LogActionType, result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`, value: dmg });
-        // Broadcast damage to live opponent via Realtime
-        if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
-          pvpChannelRef.current.send({ type: "broadcast", event: "damage", payload: { damage: dmg, action: currentAction } });
-        }
       }
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {
@@ -1317,8 +1401,6 @@ function BattleArena() {
         finishBattle(true);
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
-      } else if (opponentTypeRef.current === "live") {
-        setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
       } else {
@@ -1341,19 +1423,24 @@ function BattleArena() {
     // Mirror the server-side formula in award_battle_xp so the number we
     // animate up to in the report matches what actually lands on the profile:
     //   xp = min(1000, correct*15 + (won ? 50 : 0))
-    const totalQuestions = records.length + 1; // +1 for the final answer
-    const correctAnswers = records.filter(r => r.correct).length + (won ? 1 : 0);
+    const finalRecords = recordsRef.current;
+    const finalStreak = longestStreakRef.current;
+    const finalFastest = fastestAnswerRef.current;
+    const finalScore = totalScoreRef.current;
+    const totalQuestions = finalRecords.length;
+    const correctAnswers = finalRecords.filter(r => r.correct).length;
     const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
     setBattleStats({
       totalQuestions,
       correctAnswers,
-      longestStreak,
-      fastestAnswer,
-      records: [...records],
+      longestStreak: finalStreak,
+      fastestAnswer: finalFastest,
+      records: [...finalRecords],
       archetype,
       won,
-      score: Math.floor(totalScore),
+      score: Math.floor(finalScore),
       xp,
+      opponentType: opponentTypeRef.current,
     });
     setPhase("result");
 
@@ -1366,7 +1453,7 @@ function BattleArena() {
         session_type: "battle",
         was_correct: won,
         topic: ARCHETYPES[archetype].name,
-        luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(totalScore)} · streak ${longestStreak}`,
+        luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(finalScore)} · streak ${finalStreak}`,
       });
       if (won) {
         const today = new Date().toISOString().slice(0, 10);
@@ -1395,18 +1482,19 @@ function BattleArena() {
       }
 
       // Record session as ghost replay data for future opponents
-      void recordBattleSession({
+      const sessionId = await recordBattleSession({
         archetype,
         won,
         rating: playerRatingRef.current,
-        records,
-        bestStreak: longestStreak,
+        records: finalRecords,
+        bestStreak: finalStreak,
+        opponentType: opponentTypeRef.current,
       });
 
       // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
-      if (opponentTypeRef.current === "live" && pvpBattleId && winnerId) {
+      if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
         const { data } = await supabase.rpc("complete_pvp_battle" as any, {
-          p_battle_id: pvpBattleId,
+          p_battle_id: pvpBattleIdRef.current,
           p_winner_id: winnerId,
         });
         const d = data as any;
@@ -1415,15 +1503,17 @@ function BattleArena() {
           setRatingChange(nextRating - playerRatingRef.current);
           setPlayerRating(nextRating);
           playerRatingRef.current = nextRating;
+          window.dispatchEvent(new Event("pvp-leaderboard-updated"));
         }
-      } else if (opponentTypeRef.current === "ghost") {
-        const newRating = await updateRating(opponentRatingRef.current, won);
-        setRatingChange(newRating - playerRatingRef.current);
-        setPlayerRating(newRating);
-        playerRatingRef.current = newRating;
+      } else if (opponentTypeRef.current === "ghost" && sessionId) {
+        const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
+        setRatingChange(result.ratingDelta);
+        setPlayerRating(result.ratingAfter);
+        playerRatingRef.current = result.ratingAfter;
+        window.dispatchEvent(new Event("pvp-leaderboard-updated"));
       }
     })();
-  }, [totalScore, records, longestStreak, fastestAnswer, archetype]);
+  }, [archetype]);
 
   const aiTurn = useCallback(() => {
     const oppArch    = getArch(opponentArchetype);
@@ -2239,11 +2329,13 @@ function LeaderboardCard() {
 
     const onVisible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pvp-leaderboard-updated", scheduleRefresh);
 
     return () => {
       cancelled = true;
       if (pending) clearTimeout(pending);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pvp-leaderboard-updated", scheduleRefresh);
       supabase.removeChannel(xpChan);
       supabase.removeChannel(pvpChan);
     };

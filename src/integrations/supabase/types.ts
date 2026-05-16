@@ -60,8 +60,13 @@ export type Database = {
           correct_answers: number
           created_at: string
           id: string
+          opponent_type: string
           question_records: Json
           rating: number
+          rating_after: number | null
+          rating_applied: boolean
+          rating_before: number | null
+          rating_delta: number | null
           total_questions: number
           user_id: string
           won: boolean
@@ -72,8 +77,13 @@ export type Database = {
           correct_answers?: number
           created_at?: string
           id?: string
+          opponent_type?: string
           question_records?: Json
           rating?: number
+          rating_after?: number | null
+          rating_applied?: boolean
+          rating_before?: number | null
+          rating_delta?: number | null
           total_questions?: number
           user_id: string
           won: boolean
@@ -84,8 +94,13 @@ export type Database = {
           correct_answers?: number
           created_at?: string
           id?: string
+          opponent_type?: string
           question_records?: Json
           rating?: number
+          rating_after?: number | null
+          rating_applied?: boolean
+          rating_before?: number | null
+          rating_delta?: number | null
           total_questions?: number
           user_id?: string
           won?: boolean
@@ -1080,6 +1095,10 @@ export type Database = {
       claim_chest: {
         Args: { p_chest_label: string; p_node_id: number }
         Returns: number
+      }
+      complete_ghost_battle: {
+        Args: { p_opponent_rating: number; p_session_id: string }
+        Returns: Json
       }
       complete_pvp_battle: {
         Args: { p_battle_id: string; p_winner_id: string }

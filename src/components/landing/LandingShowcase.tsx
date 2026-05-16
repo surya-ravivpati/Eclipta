@@ -559,17 +559,17 @@ export function LandingShowcase() {
 
             <div className="v11-climb" ref={climbElRef}>
               <span className="v11-climb-pin" ref={climbPinRef} />
-              {TIERS.map(({ id, name, desc, c, god }) => (
+              {TIERS.map((tier) => (
                 <div
-                  key={id}
-                  className={`v11-tier${god ? " v11-god" : ""}`}
-                  style={{ "--tier-c": c } as React.CSSProperties}
+                  key={tier.id}
+                  className={`v11-tier${"god" in tier && tier.god ? " v11-god" : ""}`}
+                  style={{ "--tier-c": tier.c } as React.CSSProperties}
                 >
                   <div className="v11-tnm">
-                    <span className="v11-tnum">{id.toUpperCase()}</span>
-                    {name}
+                    <span className="v11-tnum">{tier.id.toUpperCase()}</span>
+                    {tier.name}
                   </div>
-                  <div className="v11-tdx">{desc}</div>
+                  <div className="v11-tdx">{tier.desc}</div>
                 </div>
               ))}
             </div>

@@ -1073,6 +1073,7 @@ function BattleArena() {
   useEffect(() => { longestStreakRef.current = longestStreak; }, [longestStreak]);
   useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
   useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
+  useEffect(() => { pvpBattleIdRef.current = pvpBattleId; }, [pvpBattleId]);
 
   const resetLiveTurnLocks = useCallback((nextTurn: number) => {
     liveTurnNumberRef.current = nextTurn;
@@ -1330,9 +1331,6 @@ function BattleArena() {
           setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           setShowPlayerHeal(true);
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
-          if (heal > 0 && opponentTypeRef.current === "live" && pvpChannelRef.current) {
-            pvpChannelRef.current.send({ type: "broadcast", event: "self_heal", payload: { amount: heal } });
-          }
         } else {
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (Tank cannot heal).`, value: gain });
@@ -1374,10 +1372,6 @@ function BattleArena() {
         setShowOpponentHit(true);
         const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
         addLog({ actor: "player", actionType: currentAction as LogActionType, result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`, value: dmg });
-        // Broadcast damage to live opponent via Realtime
-        if (opponentTypeRef.current === "live" && pvpChannelRef.current) {
-          pvpChannelRef.current.send({ type: "broadcast", event: "damage", payload: { damage: dmg, action: currentAction } });
-        }
       }
       setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
     } else {
@@ -1407,8 +1401,6 @@ function BattleArena() {
         finishBattle(true);
       } else if (curPlayer.hp <= 0) {
         finishBattle(false);
-      } else if (opponentTypeRef.current === "live") {
-        setPhase("select");
       } else if (opponentTypeRef.current === "ghost") {
         ghostTurn();
       } else {

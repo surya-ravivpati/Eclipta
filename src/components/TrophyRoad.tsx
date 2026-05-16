@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Lock, CheckCircle, Crown, Zap, Shield, Skull,
@@ -257,56 +257,270 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
   );
 }
 
-/* ── Tier Chapter ──────────────────────────────────────────── */
+/* ── Cinema Road (unified single scroll) ──────────────────── */
 
-function TierChapter({ tier, index, total, nodes, ownedSlugs, claimedChestIds, onClaimed, onChestClaimed }: {
-  tier: TierMeta;
-  index: number;
-  total: number;
-  nodes: RoadNode[];
+function CinemaRoad({ allNodes, ownedSlugs, claimedChestIds, onClaimed, onChestClaimed }: {
+  allNodes: RoadNode[];
   ownedSlugs: Set<string>;
   claimedChestIds: Set<number>;
   onClaimed: () => void;
   onChestClaimed: () => void;
 }) {
-  const cleared = nodes.filter(n => n.unlocked).length;
-  return (
-    <motion.section
-      className={`tr-tier tr-tier--${tier.id}`}
-      initial={{ opacity: 0, y: 26 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <header className="tr-tier-head">
-        <div>
-          <div className="tr-tier-num">Chapter {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}</div>
-          <h3 className="tr-tier-name">
-            {tier.name}<em>{tier.label}</em>
-          </h3>
-          <p className="tr-tier-desc">{tier.description}</p>
-        </div>
-        <div className="tr-tier-meta">
-          <div>Unlocks at <strong>{tier.xpRequired.toLocaleString()} XP</strong></div>
-          <div>{cleared} / {nodes.length} stops cleared</div>
-        </div>
-      </header>
+  const cinemaRef   = useRef<HTMLDivElement>(null);
+  const stageRef    = useRef<HTMLDivElement>(null);
+  const roadRef     = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const bigNameRef  = useRef<HTMLDivElement>(null);
+  const bigSubRef   = useRef<HTMLDivElement>(null);
+  const infoTitleRef = useRef<HTMLDivElement>(null);
+  const infoDescRef  = useRef<HTMLDivElement>(null);
+  const barTierRef   = useRef<HTMLSpanElement>(null);
 
-      <div className="tr-track-wrap">
-        <div className="tr-track">
-          {nodes.map((n) => (
-            <TrophyNode
-              key={n.id}
-              node={n}
-              ownedSlugs={ownedSlugs}
-              claimedChestIds={claimedChestIds}
-              onClaimed={onClaimed}
-              onChestClaimed={onChestClaimed}
-            />
-          ))}
+  const targetXRef   = useRef(0);
+  const smoothXRef   = useRef(0);
+  const maxXRef      = useRef(0);
+  const lastTierRef  = useRef<TierId | null>(null);
+  const tierOffsetsRef = useRef<Array<{ tier: TierId; left: number }>>([]);
+
+  const totalCleared = allNodes.filter(n => n.unlocked).length;
+
+  // Flat road: [divider(bronze), ...bronze nodes, divider(silver), ...]
+  const roadItems = useMemo(() => {
+    type Item = { type: "divider"; tier: TierId } | { type: "node"; node: RoadNode };
+    const items: Item[] = [];
+    TIER_ORDER.forEach(tierId => {
+      items.push({ type: "divider", tier: tierId });
+      allNodes.filter(n => n.tier === tierId).forEach(n => items.push({ type: "node", node: n }));
+    });
+    return items;
+  }, [allNodes]);
+
+  // Update overlay text and aurora color — called from RAF, no setState
+  const updateTierUI = useCallback((tierId: TierId) => {
+    if (tierId === lastTierRef.current) return;
+    lastTierRef.current = tierId;
+    const tier = TIERS[tierId];
+    cinemaRef.current?.style.setProperty("--cinema-tc", `var(--tr-${tierId})`);
+    if (bigNameRef.current)   bigNameRef.current.textContent  = tier.name;
+    if (bigSubRef.current)    bigSubRef.current.textContent   = tier.label;
+    if (infoTitleRef.current) infoTitleRef.current.textContent = tier.label;
+    if (infoDescRef.current)  infoDescRef.current.textContent  = tier.description;
+    if (barTierRef.current)   barTierRef.current.textContent   = tier.name;
+  }, []);
+
+  // Capture tier divider offsets after first paint
+  useEffect(() => {
+    const road = roadRef.current;
+    const stage = stageRef.current;
+    if (!road || !stage) return;
+
+    const dividers = road.querySelectorAll<HTMLElement>("[data-tier-start]");
+    tierOffsetsRef.current = Array.from(dividers).map(d => ({
+      tier: d.dataset.tierStart as TierId,
+      left: d.offsetLeft,
+    }));
+    maxXRef.current = Math.max(0, road.scrollWidth - stage.clientWidth);
+
+    // Jump to current node on mount
+    const currentEl = road.querySelector<HTMLElement>("[data-current='true']");
+    if (currentEl) {
+      const x = Math.max(0, currentEl.offsetLeft - stage.clientWidth / 2 + currentEl.offsetWidth / 2);
+      targetXRef.current = x;
+      smoothXRef.current = x;
+    }
+  }, [allNodes]);
+
+  // RAF: lerp + UI update
+  useEffect(() => {
+    const road  = roadRef.current;
+    const stage = stageRef.current;
+    if (!road || !stage) return;
+    let rafId: number;
+
+    const tick = () => {
+      maxXRef.current = Math.max(0, road.scrollWidth - stage.clientWidth);
+      targetXRef.current = Math.max(0, Math.min(maxXRef.current, targetXRef.current));
+
+      const diff = targetXRef.current - smoothXRef.current;
+      smoothXRef.current += diff * 0.10;
+      if (Math.abs(diff) < 0.3) smoothXRef.current = targetXRef.current;
+
+      road.style.transform = `translate3d(${-(smoothXRef.current).toFixed(2)}px, 0, 0)`;
+
+      // Progress bar
+      const pct = maxXRef.current > 0 ? (smoothXRef.current / maxXRef.current) * 100 : 0;
+      if (progressRef.current) progressRef.current.style.width = `${pct.toFixed(1)}%`;
+
+      // Current tier
+      const center = smoothXRef.current + stage.clientWidth / 2;
+      const offsets = tierOffsetsRef.current;
+      if (offsets.length > 0) {
+        let cur: TierId = offsets[0].tier;
+        for (const o of offsets) { if (o.left <= center) cur = o.tier; }
+        updateTierUI(cur);
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [updateTierUI]);
+
+  // Wheel: vertical delta → horizontal targetX
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const onWheel = (e: WheelEvent) => {
+      const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      const at  = targetXRef.current;
+      const max = maxXRef.current;
+      if ((delta > 0 && at < max) || (delta < 0 && at > 0)) {
+        e.preventDefault();
+        targetXRef.current = Math.max(0, Math.min(max, at + delta * 1.4));
+      }
+    };
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // Pointer drag
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    let active = false, hasMoved = false, startX = 0, startTarget = 0;
+
+    const down = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest("button")) return;
+      active = true; hasMoved = false;
+      startX = e.clientX; startTarget = targetXRef.current;
+      stage.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    };
+    const move = (e: PointerEvent) => {
+      if (!active) return;
+      const delta = startX - e.clientX;
+      if (!hasMoved && Math.abs(delta) > 4) {
+        hasMoved = true;
+        stage.classList.add("is-dragging");
+      }
+      if (hasMoved) targetXRef.current = Math.max(0, Math.min(maxXRef.current, startTarget + delta));
+    };
+    const up = (e: PointerEvent) => {
+      if (!active) return;
+      active = false; hasMoved = false;
+      stage.classList.remove("is-dragging");
+      stage.releasePointerCapture(e.pointerId);
+    };
+
+    stage.addEventListener("pointerdown", down);
+    stage.addEventListener("pointermove", move);
+    stage.addEventListener("pointerup", up);
+    stage.addEventListener("pointercancel", up);
+    return () => {
+      stage.removeEventListener("pointerdown", down);
+      stage.removeEventListener("pointermove", move);
+      stage.removeEventListener("pointerup", up);
+      stage.removeEventListener("pointercancel", up);
+    };
+  }, []);
+
+  return (
+    <div className="tr-cinema" ref={cinemaRef}>
+      <div className="tr-cinema-bg" />
+
+      {/* Top bar */}
+      <div className="tr-cinema-bar">
+        <div className="tr-cinema-bar-left">
+          <span className="tr-cinema-bar-eyebrow">The Ascent</span>
+          <span className="tr-cinema-bar-stops">
+            <strong ref={barTierRef}>Bronze</strong>
+            &nbsp;·&nbsp;{totalCleared} of {allNodes.length} cleared
+          </span>
+        </div>
+
+        <div className="tr-cinema-progress-wrap">
+          <div className="tr-cinema-progress" ref={progressRef} />
+          {TIER_ORDER.slice(1).map(id => {
+            const xpMax = TIERS.god.xpRequired + 50000; // include final bosses
+            const pct   = (TIERS[id].xpRequired / xpMax) * 100;
+            return (
+              <div
+                key={id}
+                className="tr-cinema-progress-tick"
+                style={{ left: `${pct.toFixed(1)}%`, "--tt-c": `var(--tr-${id})` } as React.CSSProperties}
+                title={TIERS[id].name}
+              />
+            );
+          })}
+        </div>
+
+        <span className="tr-cinema-hint">← drag · scroll →</span>
+      </div>
+
+      {/* Scrollable stage */}
+      <div className="tr-cinema-stage" ref={stageRef}>
+        {/* Pinned overlay — updated via refs, no re-render */}
+        <div className="tr-cinema-overlay" aria-hidden>
+          <div className="tr-cinema-bigname" ref={bigNameRef}>Bronze</div>
+          <div className="tr-cinema-bigname-sub" ref={bigSubRef}>Origin</div>
+          <div className="tr-cinema-info">
+            <div className="tr-cinema-info-eyebrow">now entering</div>
+            <div className="tr-cinema-info-title" ref={infoTitleRef}>Origin</div>
+            <div className="tr-cinema-info-desc" ref={infoDescRef}>
+              Where every ascent begins. Foundations of form, focus, and pace.
+            </div>
+          </div>
+        </div>
+
+        {/* The road */}
+        <div className="tr-cinema-road" ref={roadRef}>
+          {roadItems.map((item, idx) => {
+            if (item.type === "divider") {
+              const t = TIERS[item.tier];
+              return (
+                <div
+                  key={`div-${item.tier}`}
+                  className={`tr-cinema-divider tr-tier--${item.tier}`}
+                  data-tier-start={item.tier}
+                >
+                  <div className="tr-cinema-divider-num">
+                    {String(TIER_ORDER.indexOf(item.tier) + 1).padStart(2, "0")}
+                  </div>
+                  <div className="tr-cinema-divider-name">{t.name}</div>
+                  <div className="tr-cinema-divider-sub">{t.label}</div>
+                  {t.xpRequired > 0 && (
+                    <div className="tr-cinema-divider-xp">{t.xpRequired.toLocaleString()} XP</div>
+                  )}
+                </div>
+              );
+            }
+
+            const { node } = item;
+            return (
+              <div
+                key={node.id}
+                className={`tr-cinema-node tr-tier--${node.tier}`}
+                data-current={node.current ? "true" : undefined}
+              >
+                <TrophyNode
+                  node={node}
+                  ownedSlugs={ownedSlugs}
+                  claimedChestIds={claimedChestIds}
+                  onClaimed={onClaimed}
+                  onChestClaimed={onChestClaimed}
+                />
+              </div>
+            );
+          })}
+
+          <div className="tr-cinema-endcap">
+            <div className="tr-cinema-endcap-dot" />
+            <span>Apotheosis</span>
+          </div>
         </div>
       </div>
-    </motion.section>
+    </div>
   );
 }
 
@@ -493,13 +707,6 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   useEffect(() => { void refreshChests(); }, []);
 
   const allNodes = useMemo(() => deriveNodes(playerXp), [playerXp]);
-  const nodesByTier = useMemo(() => {
-    const map: Record<TierId, RoadNode[]> = {
-      bronze: [], silver: [], gold: [], diamond: [], platinum: [], champion: [], unreal: [], god: [],
-    };
-    allNodes.forEach(n => { map[n.tier].push(n); });
-    return map;
-  }, [allNodes]);
 
   if (compact) {
     const previewNodes = allNodes.slice(0, 14);
@@ -598,26 +805,13 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
     <div className="tr-shell">
       <Overview playerXp={playerXp} />
 
-      <div className="tr-section-head">
-        <div className="tr-section-eyebrow">The Ascent</div>
-        <div className="tr-section-title">Eight chapters to <em>apotheosis</em></div>
-      </div>
-
-      <div className="tr-roadmap">
-        {TIER_ORDER.map((tierId, i) => (
-          <TierChapter
-            key={tierId}
-            tier={TIERS[tierId]}
-            index={i}
-            total={TIER_ORDER.length}
-            nodes={nodesByTier[tierId]}
-            ownedSlugs={ownedSlugs}
-            claimedChestIds={claimedChestIds}
-            onClaimed={refreshOwned}
-            onChestClaimed={() => { void refreshChests(); }}
-          />
-        ))}
-      </div>
+      <CinemaRoad
+        allNodes={allNodes}
+        ownedSlugs={ownedSlugs}
+        claimedChestIds={claimedChestIds}
+        onClaimed={refreshOwned}
+        onChestClaimed={() => { void refreshChests(); }}
+      />
 
       <FinalMonsters />
       <ArchetypeLegend />

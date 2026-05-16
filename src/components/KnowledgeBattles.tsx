@@ -1503,12 +1503,14 @@ function BattleArena() {
           setRatingChange(nextRating - playerRatingRef.current);
           setPlayerRating(nextRating);
           playerRatingRef.current = nextRating;
+          window.dispatchEvent(new Event("pvp-leaderboard-updated"));
         }
       } else if (opponentTypeRef.current === "ghost" && sessionId) {
         const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
         setRatingChange(result.ratingDelta);
         setPlayerRating(result.ratingAfter);
         playerRatingRef.current = result.ratingAfter;
+        window.dispatchEvent(new Event("pvp-leaderboard-updated"));
       }
     })();
   }, [archetype]);
@@ -2327,11 +2329,13 @@ function LeaderboardCard() {
 
     const onVisible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pvp-leaderboard-updated", scheduleRefresh);
 
     return () => {
       cancelled = true;
       if (pending) clearTimeout(pending);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pvp-leaderboard-updated", scheduleRefresh);
       supabase.removeChannel(xpChan);
       supabase.removeChannel(pvpChan);
     };

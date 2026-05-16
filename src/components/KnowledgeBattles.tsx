@@ -607,7 +607,7 @@ function BattleChat({
       </div>
 
       {/* Toolbar */}
-      <div className="glass-panel p-2 flex items-center gap-2 flex-wrap">
+      <div className="btt-card p-2 flex items-center gap-2 flex-wrap">
         {/* Toggle + mute controls */}
         <div className="flex items-center gap-1 shrink-0">
           <button
@@ -790,7 +790,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
 
   return (
     <motion.div
-      className="glass-panel p-6 text-center"
+      className="btt-card p-8 text-center"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
     >
@@ -806,7 +806,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
         >
           <Dices className="w-7 h-7 text-tier-gold" />
         </motion.div>
-        <h3 className="font-display text-xl font-bold tracking-tight mb-0.5">
+        <h3 className="btt-shout text-3xl mb-0.5">
           {allDone ? "FATE HAS SPOKEN" : "ROLLING FATE…"}
         </h3>
         <p className="text-[10px] text-muted-foreground tracking-widest">
@@ -815,7 +815,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
       </div>
 
       {/* 2-column stat grid — each cell cycles then locks with a quality pop */}
-      <div className="grid grid-cols-2 gap-2 mb-4 text-left">
+      <div className="grid grid-cols-2 gap-2 mb-5 text-left">
         {REVEAL_DEFS.map((def, i) => {
           const isLocked = i < lockedCount;
           const justLocked = i === lockedCount - 1;
@@ -827,7 +827,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
           return (
             <motion.div
               key={def.key}
-              className={`border p-3 transition-colors duration-300 ${
+              className={`border p-4 transition-colors duration-300 ${
                 isLocked ? `${qs.border} ${qs.bg}` : "border-border/30 bg-secondary/10"
               }`}
               animate={justLocked ? { scale: [1, 1.07, 1] } : {}}
@@ -846,7 +846,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
                 )}
               </div>
               {/* Value: cycling integers when unlocked, formatted text when locked */}
-              <div className={`text-2xl font-bold font-display tabular-nums ${
+              <div className={`btt-shout text-3xl tabular-nums ${
                 isLocked ? qs.value : "text-foreground/50"
               }`}>
                 {isLocked ? def.lockText(stats) : cycleNums[i]}
@@ -1949,20 +1949,24 @@ function BattleArena() {
   // ── Idle ──
   if (phase === "idle") {
     return (
-      <motion.div className="glass-panel p-10 text-center" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-        <div className="w-20 h-20 mx-auto mb-6 bg-neon-pink/10 border border-neon-pink/30 flex items-center justify-center">
-          <Swords className="w-10 h-10 text-neon-pink" />
-        </div>
-        <h3 className="text-2xl font-bold font-display mb-2">Cyber-Math Duel</h3>
-        <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-          Choose your archetype. Solve equations. Destroy your opponent.
+      <motion.div className="btt-card text-center py-16 px-10" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+        <motion.div
+          className="w-24 h-24 mx-auto mb-8 border border-neon-pink/30 flex items-center justify-center"
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Swords className="w-12 h-12 text-neon-pink" />
+        </motion.div>
+        <h3 className="btt-shout text-5xl mb-3">Enter the Arena</h3>
+        <p className="btt-mono-text text-[12px] text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
+          Choose your archetype. Solve equations under pressure.<br />Build combos. Destroy your opponent.
         </p>
         <motion.button
           onClick={() => setPhase("classSelect")}
-          className="px-8 py-3 bg-neon-pink text-primary-foreground font-bold text-sm tracking-widest hover:opacity-90 transition-opacity"
-          whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+          className="btt-mono-text inline-flex items-center gap-3 px-10 py-4 bg-neon-pink text-black font-bold text-[12px] tracking-widest hover:opacity-90 transition-opacity"
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
         >
-          <Zap className="w-4 h-4 inline mr-2" />
+          <Zap className="w-4 h-4" />
           CHOOSE CLASS
         </motion.button>
       </motion.div>
@@ -1983,9 +1987,9 @@ function BattleArena() {
       bot:   { label: "AI BOT",      icon: Bot,    color: "text-muted-foreground", glow: "border-border"      },
     } as const;
     return (
-      <motion.div className="glass-panel p-10 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div className="btt-card text-center py-16 px-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <motion.div
-          className="w-20 h-20 mx-auto mb-6 border-2 flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-8 border flex items-center justify-center"
           animate={{
             borderColor: ["oklch(0.6 0.24 350)", "oklch(0.55 0.25 290)", "oklch(0.75 0.15 180)", "oklch(0.6 0.24 350)"],
             rotate: 360,
@@ -1995,7 +1999,7 @@ function BattleArena() {
           <Target className="w-8 h-8 text-neon-pink" />
         </motion.div>
 
-        <h3 className="text-xl font-bold font-display mb-1">Finding an opponent…</h3>
+        <h3 className="btt-shout text-4xl mb-2">Finding an opponent…</h3>
         <p className={`inline-flex items-center gap-1 text-xs font-bold ${arch.color} mb-6`}>
           <arch.icon className="w-3.5 h-3.5" /> {arch.name}
         </p>
@@ -2073,7 +2077,7 @@ function BattleArena() {
       <AnimatePresence>
         {wildEvent && <WildEventOverlay event={wildEvent} />}
       </AnimatePresence>
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-3 mb-4">
         <FighterCard
           fighter={player} side="left" momentum={momentum} archetype={archetype}
           showHit={showPlayerHit} showHeal={showPlayerHeal}
@@ -2130,7 +2134,7 @@ function BattleArena() {
           const activeMult = streakToMultiplier(momentum, step);
 
           return (
-            <div className="glass-panel p-3">
+            <div className="btt-card p-3">
               {/* Top row: label + live multiplier + COMBO badge */}
               <div className="flex items-center gap-2 mb-2">
                 <motion.div
@@ -2176,7 +2180,7 @@ function BattleArena() {
                   return (
                     <motion.div
                       key={i}
-                      className={`h-2.5 flex-1 rounded-sm ${isFilled ? "bg-neon-pink" : "bg-secondary/40"}`}
+                      className={`h-2 flex-1 ${isFilled ? "bg-neon-pink" : "bg-secondary/40"}`}
                       animate={isPulse ? {
                         backgroundColor: [
                           "oklch(0.6 0.24 350 / 0.15)",
@@ -2231,7 +2235,7 @@ function BattleArena() {
             :                   { label: "DORMANT",       color: "text-muted-foreground", bar: "bg-neon-cyan" };
 
           return (
-            <div className="glass-panel p-3 border border-tier-platinum/30">
+            <div className="btt-card p-3 border-l-2 border-tier-platinum/50">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <FastForward className="w-3.5 h-3.5 text-tier-platinum" />
@@ -2308,19 +2312,19 @@ function BattleArena() {
             const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveActionLocked;
             return (
               <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
-                className={`glass-panel p-5 text-center transition-colors relative ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-neon-purple/5 hover:border-neon-purple/30"}`}
-                whileHover={!disabled ? { scale: 1.03, y: -2 } : {}} whileTap={!disabled ? { scale: 0.97 } : {}}
+                className={`btt-action btt-action--${key}`}
+                whileHover={!disabled ? { scale: 1.02, y: -2 } : {}} whileTap={!disabled ? { scale: 0.97 } : {}}
               >
-                <Icon className={`w-7 h-7 mx-auto mb-1.5 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground"}`} />
-                <div className="text-xs font-bold tracking-widest">{act.label.toUpperCase()}</div>
-                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                  {cannotHeal ? "Tank cannot heal" : getActionDesc(key, getArch(archetype), records.length)}
+                <Icon className={`w-8 h-8 mx-auto mb-2 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground/80"}`} />
+                <div className="btt-shout text-lg tracking-wider">{act.label.toUpperCase()}</div>
+                <div className="btt-mono-text text-[9px] text-muted-foreground mt-1 leading-tight">
+                  {cannotHeal ? "Tank · no heal" : getActionDesc(key, getArch(archetype), records.length)}
                 </div>
                 {cost > 0 && (
-                  <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1 rounded-sm">−{cost}</div>
+                  <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-purple border border-neon-purple/30 px-1">−{cost}</div>
                 )}
                 {FOCUS_GAIN[key] > 0 && (
-                  <div className="absolute top-1.5 right-1.5 text-[9px] font-bold text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/30 px-1 rounded-sm">+{FOCUS_GAIN[key]}</div>
+                  <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-cyan border border-neon-cyan/30 px-1">+{FOCUS_GAIN[key]}</div>
                 )}
               </motion.button>
             );
@@ -2418,9 +2422,9 @@ function LeaderboardCard() {
   }, []);
 
   return (
-    <motion.div className="glass-panel p-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+    <motion.div className="btt-card p-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold font-display tracking-widest text-neon-cyan">LEADERBOARD</h3>
+        <h3 className="btt-shout text-2xl text-neon-cyan">LEADERBOARD</h3>
         <div className="flex gap-1">
           {(["rating", "xp"] as const).map(t => (
             <button
@@ -2584,13 +2588,13 @@ function DailyChallengeCard() {
   }, [claiming, claimed, complete]);
 
   return (
-    <motion.div className="glass-panel p-5 border border-neon-purple/20" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+    <motion.div className="btt-card btt-card--purple p-5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-neon-purple/10 border border-neon-purple/30 flex items-center justify-center">
           <Sparkles className="w-5 h-5 text-neon-purple" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-xs font-bold tracking-widest">DAILY · {challenge.title.toUpperCase()}</h4>
+          <h4 className="btt-shout text-xl">DAILY · {challenge.title.toUpperCase()}</h4>
           <p className="text-[10px] text-muted-foreground">
             {!authed
               ? `Sign in to track today's challenge`
@@ -2648,17 +2652,18 @@ export function KnowledgeBattles() {
         <div className="btt-noise" />
       </div>
       <div className="max-w-7xl mx-auto px-6">
-        <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="btt-pill inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
+        <motion.div className="mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="btt-arena-label btt-pill mb-6">
             <Swords className="w-3 h-3" />
             CYBER-MATH ARENA
           </div>
-          <h1 className="btt-title text-5xl md:text-7xl font-bold font-display tracking-tight mb-4">
+          <h1 className="btt-title btt-shout text-7xl md:text-9xl mb-4">
             Knowledge{" "}
             <span className="text-neon-pink">Battles</span>
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Choose your archetype. Solve equations under pressure. Build devastating combos. Review and learn from every fight.
+          <p className="btt-mono-text text-[13px] text-muted-foreground max-w-xl leading-relaxed">
+            Choose your archetype. Solve equations under pressure.<br className="hidden md:block" />
+            Build devastating combos. Review and learn from every fight.
           </p>
         </motion.div>
 

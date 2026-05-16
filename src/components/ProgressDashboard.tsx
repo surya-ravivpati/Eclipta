@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
+import type { Variants } from "framer-motion";
 import {
   BookOpen, Target, Flame, Award, Clock, ChevronRight,
   Lock, Users, Brain, GitBranch, Layers
@@ -295,7 +296,7 @@ export function ProgressDashboard() {
     { label: "Trophies",    value: trophiesEarned,            suffix: ` / ${totalTrophies}`,                     color: "oklch(0.92 0.06 90)",   Icon: Award   },
   ];
 
-  const tabVariants = {
+  const tabVariants: Variants = {
     initial: { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
     exit:    { opacity: 0, y: -12, transition: { duration: 0.25, ease: "easeIn" } },

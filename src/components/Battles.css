@@ -71,13 +71,20 @@
   position: relative;
   z-index: 1;
 
+  /* Base typography — matches .v11 */
+  color: #F5F6F8;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+
   /* ── Design tokens ── */
   --btt-pink:    oklch(0.60 0.24 350);
   --btt-cyan:    oklch(0.75 0.15 180);
   --btt-purple:  oklch(0.55 0.25 290);
   --btt-gold:    oklch(0.80 0.14 85);
+  --btt-fog:     #7A7D85;
   --btt-line:    rgba(255, 255, 255, 0.07);
-  --btt-line-s:  rgba(255, 255, 255, 0.13);
+  --btt-line-s:  rgba(255, 255, 255, 0.14);
   --btt-display: 'Bebas Neue', 'RobotHeroes', sans-serif;
   --btt-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
@@ -178,6 +185,11 @@
   box-shadow: 0 0 8px var(--btt-pink);
 }
 
+.btt-hp-fill--purple {
+  background: var(--btt-purple);
+  box-shadow: 0 0 8px var(--btt-purple);
+}
+
 .btt-hp-fill--critical {
   background: var(--btt-pink);
   box-shadow: 0 0 16px var(--btt-pink);
@@ -263,6 +275,53 @@
   max-width: 520px;
   margin: 0 16px;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7);
+}
+
+/* ─── Utility ghost button (FIND PLAYER, INFO, etc.) ─────────── */
+.btt-ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: var(--btt-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  border: 1px solid var(--btt-line-s);
+  color: var(--btt-fog);
+  background: transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+.btt-ghost-btn:hover {
+  color: #F5F6F8;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.btt-ghost-btn--cyan  { color: var(--btt-cyan);   border-color: oklch(0.75 0.15 180 / 0.28); }
+.btt-ghost-btn--cyan:hover  { border-color: oklch(0.75 0.15 180 / 0.55); color: var(--btt-cyan); }
+.btt-ghost-btn--purple { color: var(--btt-purple); border-color: oklch(0.55 0.25 290 / 0.28); }
+.btt-ghost-btn--purple:hover { border-color: oklch(0.55 0.25 290 / 0.55); color: var(--btt-purple); }
+
+/* ─── Floating help button ────────────────────────────────────── */
+.btt-help-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  border: 1px solid oklch(0.55 0.25 290 / 0.35);
+  background: rgba(5, 6, 10, 0.80);
+  color: var(--btt-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(14px);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.btt-help-btn:hover {
+  border-color: oklch(0.55 0.25 290 / 0.60);
+  background: rgba(55, 20, 90, 0.35);
 }
 
 /* ─── Battle log ─────────────────────────────────────────────── */

@@ -264,7 +264,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
   return (
     <motion.div
-      className={`btt-card ${side === "left" ? "btt-card--cyan" : "btt-card--pink"} flex-1 relative overflow-hidden`}
+      className={`btt-card ${side === "left" ? "btt-card--cyan" : "btt-card--pink"} p-5 flex-1 relative overflow-hidden`}
       animate={showHit ? { x: side === "left" ? [-8, 8, -4, 0] : [8, -8, 4, 0] } : {}}
       transition={{ duration: 0.4 }}
     >
@@ -360,22 +360,22 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
               <span className={`text-sm font-bold font-display ${timeLeft <= 3 ? "text-neon-pink" : "text-foreground"}`}>{timeLeft}s</span>
             </div>
           </div>
-          <div className="h-1.5 bg-secondary/60 overflow-hidden">
-            <motion.div className={`h-full ${timeLeft <= 3 ? "bg-neon-pink" : "bg-neon-purple"}`} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
+          <div className="btt-hp-track">
+            <motion.div className={`btt-hp-fill ${timeLeft <= 3 ? "btt-hp-fill--critical" : "btt-hp-fill--purple"}`} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
           </div>
         </div>
         <h3 className="btt-shout text-5xl text-center mb-8 text-foreground">{question.q.trimEnd().endsWith("?") ? question.q : `${question.q} = ?`}</h3>
         <div className="grid grid-cols-2 gap-3">
           {question.options.map((opt, i) => {
-            let style = "border-border hover:border-neon-purple/60 hover:bg-neon-purple/5";
+            let style = "border-white/[0.08] hover:border-white/[0.18] hover:bg-white/[0.03]";
             if (selected !== null) {
-              if (opt === question.answer) style = "border-neon-cyan bg-neon-cyan/10 text-neon-cyan";
-              else if (opt === selected) style = "border-neon-pink bg-neon-pink/10 text-neon-pink";
-              else style = "border-border opacity-40";
+              if (opt === question.answer) style = "border-neon-cyan/60 bg-neon-cyan/8 text-neon-cyan";
+              else if (opt === selected) style = "border-neon-pink/60 bg-neon-pink/8 text-neon-pink";
+              else style = "border-white/[0.05] opacity-30";
             }
             return (
               <motion.button key={i} onClick={() => handleSelect(opt)} disabled={selected !== null}
-                className={`p-4 border text-xl font-bold font-display transition-colors ${style}`}
+                className={`p-5 border btt-shout text-2xl transition-colors ${style}`}
                 whileHover={selected === null ? { scale: 1.03 } : {}} whileTap={selected === null ? { scale: 0.97 } : {}}
               >{opt}</motion.button>
             );
@@ -386,7 +386,7 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
         <AnimatePresence>
           {showReveal && (
             <motion.div
-              className="mt-5 flex items-center justify-center gap-2 px-4 py-2.5 border border-neon-cyan/40 bg-neon-cyan/8"
+              className="mt-5 flex items-center justify-center gap-2 px-4 py-2.5 border border-neon-cyan/30 bg-neon-cyan/5"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -2653,8 +2653,8 @@ export function KnowledgeBattles() {
       </div>
       <div className="max-w-7xl mx-auto px-6">
         <motion.div className="mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="btt-arena-label btt-pill mb-6">
-            <Swords className="w-3 h-3" />
+          <div className="btt-arena-label mb-6">
+            <Swords className="w-3 h-3 text-neon-pink" />
             CYBER-MATH ARENA
           </div>
           <h1 className="btt-title btt-shout text-7xl md:text-9xl mb-4">
@@ -2673,17 +2673,17 @@ export function KnowledgeBattles() {
             <div className="flex items-center justify-end gap-2 mb-3">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-cyan border border-neon-cyan/40 bg-neon-cyan/5 hover:bg-neon-cyan/10 transition-colors rounded-sm"
+                className="btt-ghost-btn btt-ghost-btn--cyan"
                 aria-label="Find player"
               >
-                <Users className="w-3.5 h-3.5" /> FIND PLAYER
+                <Users className="w-3 h-3" /> FIND PLAYER
               </button>
               <button
                 onClick={() => setHowOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold tracking-widest text-neon-purple border border-neon-purple/40 bg-neon-purple/5 hover:bg-neon-purple/10 transition-colors rounded-sm"
+                className="btt-ghost-btn btt-ghost-btn--purple"
                 aria-label="Battle info"
               >
-                <Info className="w-3.5 h-3.5" /> INFO
+                <Info className="w-3 h-3" /> INFO
               </button>
             </div>
             <BattleArena />
@@ -2700,15 +2700,15 @@ export function KnowledgeBattles() {
       {/* Floating "How to Play" button */}
       <motion.button
         onClick={() => setHowOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-neon-purple text-primary-foreground shadow-lg shadow-neon-purple/30 flex items-center justify-center hover:opacity-90 transition-opacity"
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.95 }}
+        className="btt-help-btn"
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.96 }}
         aria-label="How to play"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <HelpCircle className="w-6 h-6" />
+        <HelpCircle className="w-5 h-5" />
       </motion.button>
 
       <Dialog open={howOpen} onOpenChange={setHowOpen}>

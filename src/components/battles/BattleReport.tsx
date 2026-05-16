@@ -8,13 +8,17 @@ import { awardBattleXp } from "@/lib/xp-service";
 import { recordBattleMastery, fetchMastery, getMasteryRank, getMasteryStats, emptyMastery, type ArchetypeMastery } from "@/lib/archetype-mastery";
 import { supabase } from "@/integrations/supabase/client";
 
-export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack, ratingChange, opponentType }: {
+export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack, ratingChange, opponentType, onLiveRematch, liveRematchState }: {
   stats: BattleStats;
   onRematch: () => void;
   onContinueWithEcliptar?: () => void;
   onBack: () => void;
   ratingChange?: number | null;
   opponentType?: string;
+  /** Click handler for the "Quick Rematch" button on live PvP only. */
+  onLiveRematch?: () => void;
+  /** Drives the rematch button label: idle → "QUICK REMATCH", waiting → "WAITING FOR OPPONENT…", starting → "STARTING…". */
+  liveRematchState?: "idle" | "waiting" | "starting";
 }) {
   const xpSavedRef = useRef(false);
   const [xpCount, setXpCount] = useState(0);
@@ -442,6 +446,23 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
 
       {/* Action buttons */}
       <div className="flex flex-wrap justify-center gap-3 mt-6">
+        {onLiveRematch && opponentType === "live" && (
+          <motion.button
+            onClick={liveRematchState === "idle" ? onLiveRematch : undefined}
+            disabled={liveRematchState !== "idle"}
+            className={`px-6 py-2.5 font-bold text-xs tracking-widest transition-colors ${
+              liveRematchState === "idle"
+                ? "bg-neon-cyan text-primary-foreground"
+                : "border border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan cursor-default"
+            }`}
+            whileHover={liveRematchState === "idle" ? { scale: 1.03 } : {}}
+            whileTap={liveRematchState === "idle" ? { scale: 0.97 } : {}}
+          >
+            {liveRematchState === "waiting"  ? "WAITING FOR OPPONENT…"
+             : liveRematchState === "starting" ? "STARTING REMATCH…"
+             : "QUICK REMATCH"}
+          </motion.button>
+        )}
         <motion.button
           onClick={onRematch}
           className="px-6 py-2.5 bg-neon-pink text-primary-foreground font-bold text-xs tracking-widest"

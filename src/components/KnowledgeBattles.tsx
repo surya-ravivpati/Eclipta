@@ -199,10 +199,15 @@ function HpBar({ current, max, color, label }: { current: number; max: number; c
   );
 }
 
-function FocusBar({ current, max, isPlayer = false, canAct = false }: { current: number; max: number; isPlayer?: boolean; canAct?: boolean }) {
+function FocusBar({ current, max, isPlayer = false, canCharge = false }: { current: number; max: number; isPlayer?: boolean; canCharge?: boolean }) {
   const chargeCost = ACTIONS.charge.focusCost;
-  const isCharged = current >= chargeCost;
-  const isWarm    = current >= chargeCost - 10;
+  // Charged means: enough focus, AND if we're showing this on the local player
+  // side, the player can actually use Charge right now (phase allows it, no
+  // action already locked for this turn, etc.). Without the second gate the
+  // pink "CHARGE READY ⚡" ticker would stay on screen forever after the first
+  // time focus crossed 25, regardless of whether spending it was possible.
+  const isCharged = current >= chargeCost && (!isPlayer || canCharge);
+  const isWarm    = current >= chargeCost - 10 && !isCharged;
   const fillRatio = max > 0 ? current / max : 0;
   const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
@@ -251,7 +256,7 @@ function FocusBar({ current, max, isPlayer = false, canAct = false }: { current:
         })}
       </div>
       <AnimatePresence>
-        {isCharged && isPlayer && canAct && (
+        {isCharged && isPlayer && (
           <motion.p
             key="charge-ready"
             className="text-[8px] font-bold tracking-widest text-neon-pink mt-0.5 text-right"
@@ -270,8 +275,8 @@ function FocusBar({ current, max, isPlayer = false, canAct = false }: { current:
   );
 }
 
-function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, canAct = false }: {
-  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean; canAct?: boolean;
+function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, canCharge = false }: {
+  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean; canCharge?: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
@@ -318,7 +323,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
           </div>
         </div>
         <HpBar current={fighter.hp} max={fighter.maxHp} color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"} label="HP" />
-        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} canAct={canAct && side === "left"} /></div>
+        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} canCharge={canCharge && side === "left"} /></div>
       </div>
       <AnimatePresence>
         {momentum > 0 && momentum % comboThreshold === 0 && (
@@ -959,6 +964,7 @@ function BattleArena() {
   const [liveActionLocked, setLiveActionLocked] = useState(false);
   const [liveOpponentLocked, setLiveOpponentLocked] = useState(false);
   const [liveResolvingTurn, setLiveResolvingTurn] = useState(false);
+  const [liveRematchState, setLiveRematchState] = useState<"idle" | "waiting" | "starting">("idle");
 
   // Refs for async-safe access inside callbacks
   const pvpChannelRef     = useRef<any>(null);
@@ -976,6 +982,7 @@ function BattleArena() {
   const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
   const liveResolutionRef = useRef<(actions: LiveTurnActionRow[], turnNumber: number) => void>(() => {});
   const rematchStartedRef = useRef(false);
+  const liveRematchStateRef = useRef<"idle" | "waiting" | "starting">("idle");
   const myUserIdRef = useRef<string | null>(null);
   const opponentUserIdRef = useRef<string | null>(null);
   const iAmChallengerRef = useRef(false);
@@ -1038,7 +1045,19 @@ function BattleArena() {
         }
         if (row.rematch_battle_id && !rematchStartedRef.current) {
           rematchStartedRef.current = true;
+          setLiveRematchState("starting");
           await startLiveBattleFromId(row.rematch_battle_id as string);
+        } else if (
+          Array.isArray(row.rematch_requested_by)
+          && row.rematch_requested_by.length === 1
+          && row.rematch_requested_by[0] !== myUserIdRef.current
+          && liveRematchStateRef.current === "idle"
+        ) {
+          // Opponent asked for a rematch first — surface it so the player
+          // knows clicking QUICK REMATCH will jump straight into another match.
+          toast(`${opponentRef.current.name} wants a rematch.`, {
+            description: "Click QUICK REMATCH on the result screen to accept.",
+          });
         }
       })
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
@@ -1074,6 +1093,7 @@ function BattleArena() {
   useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
   useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
   useEffect(() => { pvpBattleIdRef.current = pvpBattleId; }, [pvpBattleId]);
+  useEffect(() => { liveRematchStateRef.current = liveRematchState; }, [liveRematchState]);
 
   const resetLiveTurnLocks = useCallback((nextTurn: number) => {
     liveTurnNumberRef.current = nextTurn;
@@ -1304,7 +1324,38 @@ function BattleArena() {
           toast.error("Couldn't lock PvP action — try again.");
           return;
         }
-        if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], liveTurnNumberRef.current);
+        if ((data as any)?.ready) {
+          liveResolutionRef.current((data as any).actions ?? [], liveTurnNumberRef.current);
+        } else {
+          // Polling fallback: realtime INSERT events on pvp_turn_actions are
+          // the primary path that wakes the resolver, but if the websocket
+          // hiccups (mobile background tab, transient disconnect, replication
+          // lag) the turn would stall forever with both clients showing
+          // "Waiting for opponent". Poll get_pvp_turn_resolution every 1.5s
+          // until both actions are recorded or the turn moves on.
+          const turnAtSubmit = liveTurnNumberRef.current;
+          const battleIdAtSubmit = pvpBattleIdRef.current;
+          const poll = setInterval(async () => {
+            if (
+              !battleIdAtSubmit
+              || liveTurnNumberRef.current !== turnAtSubmit
+              || liveResolvedTurnsRef.current.has(turnAtSubmit)
+              || liveResolvingRef.current
+              || battleFinishedRef.current
+            ) {
+              clearInterval(poll);
+              return;
+            }
+            const { data: res } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+              p_battle_id: battleIdAtSubmit,
+              p_turn_number: turnAtSubmit,
+            });
+            if ((res as any)?.ready) {
+              clearInterval(poll);
+              liveResolutionRef.current((res as any).actions ?? [], turnAtSubmit);
+            }
+          }, 1500);
+        }
       })();
       return;
     }
@@ -1515,6 +1566,34 @@ function BattleArena() {
     })();
   }, [archetype]);
 
+  const handleLiveRematch = useCallback(async () => {
+    const battleId = pvpBattleIdRef.current;
+    if (!battleId) return;
+    if (liveRematchStateRef.current !== "idle") return;
+    setLiveRematchState("waiting");
+    try {
+      const { data, error } = await supabase.rpc("request_pvp_rematch" as any, {
+        p_battle_id: battleId,
+        p_archetype: archetype,
+      });
+      if (error) throw error;
+      const d = data as { ready?: boolean; battle_id?: string | null } | null;
+      // Both players already requested → the realtime UPDATE will arrive and
+      // trigger startLiveBattleFromId, but kick it off directly too in case
+      // the broadcast was dropped between RPC return and channel delivery.
+      if (d?.ready && d.battle_id && !rematchStartedRef.current) {
+        rematchStartedRef.current = true;
+        setLiveRematchState("starting");
+        await startLiveBattleFromId(d.battle_id);
+      }
+    } catch (err) {
+      console.error("rematch failed", err);
+      toast.error("Couldn't queue rematch — try again.");
+      setLiveRematchState("idle");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [archetype]);
+
   const aiTurn = useCallback(() => {
     const oppArch    = getArch(opponentArchetype);
     const personality = AI_PERSONALITIES[opponentArchetype];
@@ -1704,6 +1783,8 @@ function BattleArena() {
     pvpChannelRef.current     = null;
     setPvpBattleId(null);
     battleFinishedRef.current = false;
+    rematchStartedRef.current = false;
+    setLiveRematchState("idle");
 
     // Run full Tier 1→2→3 matchmaking asynchronously
     void (async () => {
@@ -1794,6 +1875,8 @@ function BattleArena() {
     ghostSessionRef.current   = null;
     pvpChannelRef.current     = null;
     battleFinishedRef.current = false;
+    rematchStartedRef.current = false;
+    setLiveRematchState("idle");
     resetLiveTurnLocks(1);
   };
 
@@ -1812,6 +1895,8 @@ function BattleArena() {
     setArchetype(opts.myArchetype);
     setRatingChange(null);
     battleFinishedRef.current = false;
+    rematchStartedRef.current = false;
+    setLiveRematchState("idle");
     ghostSessionRef.current   = null;
     ghostTurnIndexRef.current = 0;
     pvpChannelRef.current     = null;
@@ -1993,6 +2078,8 @@ function BattleArena() {
         onBack={reset}
         ratingChange={ratingChange}
         opponentType={opponentType}
+        onLiveRematch={opponentType === "live" ? handleLiveRematch : undefined}
+        liveRematchState={liveRematchState}
       />
     );
   }
@@ -2005,7 +2092,14 @@ function BattleArena() {
         {wildEvent && <WildEventOverlay event={wildEvent} />}
       </AnimatePresence>
       <div className="flex gap-4 mb-4">
-        <FighterCard fighter={player} side="left" momentum={momentum} archetype={archetype} showHit={showPlayerHit} showHeal={showPlayerHeal} canAct={phase === "select"} />
+        <FighterCard
+          fighter={player} side="left" momentum={momentum} archetype={archetype}
+          showHit={showPlayerHit} showHeal={showPlayerHeal}
+          // Charge is only genuinely "ready" when the player can actually click
+          // it this very moment: in select phase, no action locked, and enough
+          // focus. Mirrors the disabled logic on the Charge action button.
+          canCharge={phase === "select" && !liveActionLocked && player.focus >= ACTIONS.charge.focusCost}
+        />
         <div className="flex flex-col items-center justify-center px-2 gap-1">
           <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
             <Swords className="w-6 h-6 text-neon-pink" />

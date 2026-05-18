@@ -24,7 +24,7 @@
  */
 import { useRef, useMemo } from "react";
 import {
-  motion, useScroll, useTransform, useReducedMotion, type MotionValue,
+  motion, useScroll, useTransform, useSpring, useReducedMotion, type MotionValue,
 } from "framer-motion";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import type { ArchetypeId } from "@/components/battles/types";
@@ -105,15 +105,23 @@ export function ArchetypesCompass() {
   });
   const auraColour = useTransform(activeIndex, (i) => AURA[ORDER[i]]);
 
-  // Wheel rotates continuously across the active band so each archetype's
-  // wedge lands at the top during its own dwell window.
-  const wheelRotate = useTransform(
-    scrollYProgress,
-    [1 / (N + 2), (N + 1) / (N + 2)],
-    [0, -360],
-  );
+  // Wheel rotation is driven by the discrete active index, then smoothed
+  // through a spring. Previously the wheel rotated continuously off
+  // scrollYProgress — so during each archetype's full-visibility window
+  // the user saw the wheel sweep through 1+ wedges while the words stayed
+  // put, reading as "the words only change every 3 sections of the
+  // compass." With this version the wheel literally only moves when the
+  // active archetype changes, so wheel-position and text-content are
+  // always in lockstep.
+  const wheelTarget = useTransform(activeIndex, (i) => -(i + 0.5) * (360 / N));
+  const wheelRotate = useSpring(wheelTarget, {
+    stiffness: 60,
+    damping: 18,
+    mass: 0.9,
+  });
 
-  // Floating 0..N progression aligned to the active band for glyph scale.
+  // segIndex stays continuous for the glyph scale-up effect — we want the
+  // glyphs to ease in as their wedge approaches the needle, not snap.
   const segIndex = useTransform(
     scrollYProgress,
     [1 / (N + 2), (N + 1) / (N + 2)],

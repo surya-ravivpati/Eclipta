@@ -33,6 +33,32 @@ const ORDER: ArchetypeId[] = [
   "speedster", "tank", "chud", "gambler", "healer", "fulcrum", "accelerator", "god",
 ];
 
+// Section layout in viewport heights. The total section becomes
+//   (N + 2) * SLOT_VH
+// where one extra SLOT_VH sits at the top as an intro buffer and one at
+// the bottom as an outro buffer. Everything maps cleanly inside [0, 1]
+// of scrollYProgress, so no out-of-range stop ever needs to be clamped
+// (which was breaking pacing for the first/last archetypes).
+const SLOT_VH = 70;
+
+// Window for archetype i, expressed in scroll progress (0..1).
+// Each archetype's slot is 1/(N+2) wide and is centred at
+//   center = (i + 1.5) / (N + 2)
+// The fade-in / fade-out half-width is tuned so neighbouring archetypes
+// crossfade through each other instead of momentarily showing nothing.
+function archetypeRanges(i: number): [number, number, number, number] {
+  const total = ORDER.length + 2;
+  const center = (i + 1.5) / total;
+  const half   = 1   / total;        // 0.10 when N=8
+  const fade   = half * 0.7;         // 0.07 — wide enough for crossfade
+  return [
+    center - fade,
+    center - half * 0.3,
+    center + half * 0.3,
+    center + fade,
+  ];
+}
+
 // Per-archetype aura colour. Kept as rgba hex so framer-motion can use
 // them safely in style props (no oklch interpolation gotchas) and the
 // shadow / glow math works in older browsers.
@@ -58,8 +84,6 @@ const SIGIL_GLYPH: Record<ArchetypeId, string> = {
   god:         "✺",
 };
 
-const ARCHETYPE_HEIGHT_VH = 110; // each archetype gets this much vertical scroll
-
 export function ArchetypesCompass() {
   const containerRef = useRef<HTMLElement | null>(null);
   const reduce = useReducedMotion();
@@ -71,25 +95,36 @@ export function ArchetypesCompass() {
 
   const N = ORDER.length;
 
-  // Step-selected aura colour for the active archetype. Updates as you
-  // cross each window boundary; never interpolates between hex strings
-  // (the earlier oklch interpolation attempt was what crashed mount).
-  const activeIndex = useTransform(scrollYProgress, (p) =>
-    Math.max(0, Math.min(N - 1, Math.floor(p * N + 1e-6))),
-  );
+  // Active archetype = the one whose centre we're closest to. We map
+  // scrollYProgress through the "active band" (0.1..0.9 — the part of the
+  // section that holds archetypes, sandwiched between the intro and outro
+  // buffers) so the user dwells on each archetype evenly.
+  const activeIndex = useTransform(scrollYProgress, (p) => {
+    const t = Math.max(0, Math.min(1, (p - 1 / (N + 2)) / (N / (N + 2))));
+    return Math.max(0, Math.min(N - 1, Math.floor(t * N)));
+  });
   const auraColour = useTransform(activeIndex, (i) => AURA[ORDER[i]]);
 
-  // Continuous wheel rotation across the section.
-  const wheelRotate = useTransform(scrollYProgress, [0, 1], [0, -360]);
+  // Wheel rotates continuously across the active band so each archetype's
+  // wedge lands at the top during its own dwell window.
+  const wheelRotate = useTransform(
+    scrollYProgress,
+    [1 / (N + 2), (N + 1) / (N + 2)],
+    [0, -360],
+  );
 
-  // Floating 0..N progression so glyph scaling on the wheel reads smoothly.
-  const segIndex = useTransform(scrollYProgress, [0, 1], [0, N]);
+  // Floating 0..N progression aligned to the active band for glyph scale.
+  const segIndex = useTransform(
+    scrollYProgress,
+    [1 / (N + 2), (N + 1) / (N + 2)],
+    [0, N],
+  );
 
   return (
     <section
       ref={containerRef}
       className="relative bg-background text-foreground"
-      style={{ height: `${N * ARCHETYPE_HEIGHT_VH + 100}vh` }}
+      style={{ height: `${(N + 2) * SLOT_VH}vh` }}
     >
       <div className="sticky top-0 h-screen overflow-hidden">
         <BackgroundLayer auraColour={auraColour} reduce={!!reduce} />
@@ -341,30 +376,13 @@ function ArchetypePanel({
   scrollYProgress: MotionValue<number>;
   reduce: boolean;
 }) {
-  const N = ORDER.length;
-  // Strictly clamp ranges to [0, 1] and sort. WAAPI rejects offsets outside
-  // that interval, and framer-motion forwards useTransform input arrays as
-  // keyframe offsets when it composes the underlying animation — so the
-  // first archetype (center − span × 1.2 = −0.0125) and the last archetype
-  // (center + span × 1.2 = 1.0125) used to crash the page on mount.
-  const ranges = useMemo(() => {
-    const center = (i + 0.5) / N;
-    const span   = 0.5 / N;
-    const raw = [
-      center - span * 1.2,
-      center - span * 0.4,
-      center + span * 0.4,
-      center + span * 1.2,
-    ];
-    const clamped = raw.map((v) => Math.min(1, Math.max(0, v)));
-    // Keep strict monotonic ordering even after clamp collisions (e.g. the
-    // first two stops both clamp to 0 for i=0). A tiny epsilon between
-    // duplicate adjacent stops keeps useTransform happy.
-    for (let k = 1; k < clamped.length; k++) {
-      if (clamped[k] <= clamped[k - 1]) clamped[k] = clamped[k - 1] + 1e-6;
-    }
-    return clamped;
-  }, [i, N]);
+  // Per-archetype windows live entirely inside the [0.1, 0.9] active band
+  // by construction (see archetypeRanges), so we never need to clamp here.
+  // That fixes the original first/last archetype pacing bug where the
+  // clamped windows for i=0 and i=N-1 collapsed their fade-in / fade-out
+  // intervals, making speedster invisible at the top of the section and
+  // god never reaching full opacity.
+  const ranges = useMemo(() => archetypeRanges(i), [i]);
 
   const opacity = useTransform(scrollYProgress, ranges, [0, 1, 1, 0]);
   const y       = useTransform(scrollYProgress, ranges, [40, 0, 0, -40]);

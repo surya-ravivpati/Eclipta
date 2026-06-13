@@ -4,6 +4,7 @@ import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
   Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info, FastForward,
   Users, Ghost, Radio, TrendingUp, TrendingDown, MessageSquare, VolumeX, Volume2,
+  Crown, Medal,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -102,8 +103,6 @@ interface ChatItem {
   senderName: string;
   ts: number;           // Date.now() at creation for TTL removal
 }
-
-type LeaderboardEntry = { rank: number; name: string; xp: number; tier: string };
 
 type LiveTurnActionRow = {
   actor_id: string;
@@ -2538,36 +2537,77 @@ function BattleArena() {
   );
 }
 
-type RatingEntry = { rank: number; name: string; rating: number; wins: number; losses: number };
+// ─── Leaderboard ─────────────────────────────────────────────────────
+// A cinematic, game-style ranking board: a top-3 medal podium over a clean
+// ranked list. Both tabs (PvP Rating / XP) share one normalised row shape so
+// the podium + list render identically. The signed-in player is detected by
+// user_id and highlighted — and pinned to the foot of the board if they rank
+// outside the visible top 10, so "where do I stand" is always answerable.
+type LbRow = {
+  rank: number;
+  userId: string;
+  name: string;
+  isUser: boolean;
+  tier: string;
+  score: number;
+  wins?: number;
+  losses?: number;
+};
 
-// ─── Leaderboard (XP + PvP Rating tabs) ──────────────────────────────
+const MEDAL: Record<1 | 2 | 3, { color: string; label: string; Icon: typeof Crown }> = {
+  1: { color: "#e9c558", label: "Champion", Icon: Crown },
+  2: { color: "#c4c9d4", label: "Runner-up", Icon: Medal },
+  3: { color: "#cc8a4e", label: "Third",     Icon: Medal },
+};
+
+const winRate = (w?: number, l?: number) => {
+  const total = (w ?? 0) + (l ?? 0);
+  return total > 0 ? Math.round(((w ?? 0) / total) * 100) : null;
+};
+const initialOf = (name: string) => (name.trim()[0] ?? "?").toUpperCase();
+const isUsername = (name: string) => /^[a-zA-Z0-9_]{3,20}$/.test(name);
+
+function LbName({ row, className }: { row: LbRow; className?: string }) {
+  if (isUsername(row.name)) {
+    return <a href={`/u/${row.name}`} className={className}>{row.name}</a>;
+  }
+  return <span className={className}>{row.name}</span>;
+}
+
 function LeaderboardCard() {
-  const [tab, setTab]             = useState<"xp" | "rating">("rating");
-  const [xpEntries, setXpEntries] = useState<LeaderboardEntry[]>([]);
-  const [pvpEntries, setPvpEntries] = useState<RatingEntry[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [tab, setTab]               = useState<"rating" | "xp">("rating");
+  const [xpEntries, setXpEntries]   = useState<LbRow[]>([]);
+  const [pvpEntries, setPvpEntries] = useState<LbRow[]>([]);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const myId = user?.id ?? null;
       const [xpRes, pvpRes] = await Promise.all([
-        supabase.rpc("get_leaderboard" as any, { p_limit: 6 }),
-        supabase.rpc("get_pvp_leaderboard" as any, { p_limit: 6 }),
+        supabase.rpc("get_leaderboard" as any, { p_limit: 10 }),
+        supabase.rpc("get_pvp_leaderboard" as any, { p_limit: 10 }),
       ]);
       if (cancelled) return;
       setXpEntries(
         ((xpRes.data ?? []) as { user_id: string; username?: string | null; xp: number | null }[]).map((r, i) => ({
           rank: i + 1,
+          userId: r.user_id,
           name: r.username || `learner_${r.user_id.slice(0, 6)}`,
-          xp:   r.xp ?? 0,
+          isUser: r.user_id === myId,
           tier: xpToTier(r.xp ?? 0),
+          score: r.xp ?? 0,
         }))
       );
       setPvpEntries(
         ((pvpRes.data ?? []) as { user_id: string; username?: string | null; rating: number; wins: number; losses: number }[]).map((r, i) => ({
           rank:   i + 1,
+          userId: r.user_id,
           name:   r.username || `player_${r.user_id.slice(0, 6)}`,
-          rating: r.rating,
+          isUser: r.user_id === myId,
+          tier:   ratingToTier(r.rating),
+          score:  r.rating,
           wins:   r.wins,
           losses: r.losses,
         }))
@@ -2607,88 +2647,130 @@ function LeaderboardCard() {
     };
   }, []);
 
+  const entries  = tab === "rating" ? pvpEntries : xpEntries;
+  const unit     = tab === "rating" ? "RATING" : "XP";
+  const podium   = entries.slice(0, 3);
+  const rest     = entries.slice(3);
+  // The signed-in player, if they fall outside the visible top 10.
+  const meInList = entries.some(e => e.isUser);
+
+  const fmtScore = (n: number) => (tab === "xp" ? n.toLocaleString() : String(n));
+
   return (
-    <motion.div className="btt-card p-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="btt-shout text-2xl text-neon-cyan">LEADERBOARD</h3>
-        <div className="flex gap-1">
+    <motion.div
+      className="btt-card btt-lb p-6 md:p-8"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Trophy className="w-5 h-5 text-tier-gold" />
+          <div>
+            <h3 className="btt-shout text-3xl leading-none">LEADERBOARD</h3>
+            <p className="btt-mono-text text-[10px] text-muted-foreground tracking-[0.24em] mt-1">
+              {tab === "rating" ? "TOP RANKED · GLOBAL" : "MOST XP · GLOBAL"}
+            </p>
+          </div>
+        </div>
+        <div className="btt-lb-tabs">
           {(["rating", "xp"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-2 py-0.5 text-[9px] font-bold tracking-widest border transition-colors ${
-                tab === t
-                  ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan"
-                  : "border-border/40 text-muted-foreground hover:border-border"
-              }`}
+              className={`btt-lb-tab ${tab === t ? "is-on" : ""}`}
             >
-              {t === "rating" ? "PvP RATING" : "XP"}
+              {t === "rating" ? "PvP Rating" : "XP"}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="space-y-2">
-        {loading && <p className="text-[10px] text-muted-foreground italic px-3">Loading rankings…</p>}
-
-        {/* PvP Rating tab */}
-        {!loading && tab === "rating" && (
-          pvpEntries.length < 1 ? (
-            <div className="px-3 py-4 border border-dashed border-neon-cyan/40 bg-neon-cyan/5 text-center">
-              <p className="text-xs font-bold text-neon-cyan mb-1">NO RANKED MATCHES YET</p>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Complete a live or ghost battle to appear on the rating ladder.
-              </p>
+      {loading ? (
+        <div className="btt-lb-skeleton">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="btt-lb-skel-row" />)}
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="btt-lb-empty">
+          <Crown className="w-7 h-7 mx-auto mb-3 text-tier-gold opacity-70" />
+          <p className="btt-shout text-2xl mb-1">The throne is empty</p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed max-w-xs mx-auto">
+            {tab === "rating"
+              ? "Finish a live or ghost battle to claim the first spot on the rating ladder."
+              : "Win battles and earn XP to etch your name into the board first."}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* ── Podium (top 3) ── visual order 2 · 1 · 3 ── */}
+          {podium.length >= 1 && (
+            <div className="btt-lb-podium">
+              {[podium[1], podium[0], podium[2]].map((row) => {
+                if (!row) return <div key={Math.random()} className="btt-lb-pod-empty" aria-hidden />;
+                const m = MEDAL[row.rank as 1 | 2 | 3];
+                const wr = winRate(row.wins, row.losses);
+                return (
+                  <div
+                    key={row.userId}
+                    className={`btt-lb-pod btt-lb-pod--${row.rank}${row.isUser ? " btt-lb-pod--me" : ""}`}
+                    style={{ "--m": m.color } as React.CSSProperties}
+                  >
+                    <div className="btt-lb-pod-medal">
+                      <m.Icon className="w-4 h-4" />
+                      <span>{row.rank === 1 ? "1ST" : row.rank === 2 ? "2ND" : "3RD"}</span>
+                    </div>
+                    <div className="btt-lb-ava">{initialOf(row.name)}</div>
+                    <LbName row={row} className="btt-lb-pod-name" />
+                    <div className={`btt-lb-pod-tier ${tierColors[row.tier] ?? ""}`}>{row.tier}</div>
+                    <div className="btt-lb-pod-score">{fmtScore(row.score)}</div>
+                    <div className="btt-lb-pod-sub">
+                      {tab === "rating"
+                        ? (wr !== null ? `${row.wins}W ${row.losses}L · ${wr}%` : `${row.wins ?? 0}W ${row.losses ?? 0}L`)
+                        : unit}
+                    </div>
+                    {row.isUser && <div className="btt-lb-you">YOU</div>}
+                  </div>
+                );
+              })}
             </div>
-          ) : pvpEntries.map(p => {
-            const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(p.name);
-            const tier = ratingToTier(p.rating);
-            return (
-              <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
-                <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
-                <div className="flex-1 min-w-0">
-                  {isUsername
-                    ? <a href={`/u/${p.name}`} className="text-xs font-bold text-foreground truncate hover:text-neon-purple transition-colors">{p.name}</a>
-                    : <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
-                  }
-                  <span className={`text-[10px] ml-2 font-bold ${tierColors[tier] ?? "text-muted-foreground"}`}>{tier}</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold font-display text-foreground">{p.rating}</div>
-                  <div className="text-[9px] text-muted-foreground tabular-nums">{p.wins}W {p.losses}L</div>
-                </div>
-              </div>
-            );
-          })
-        )}
+          )}
 
-        {/* XP tab */}
-        {!loading && tab === "xp" && (
-          xpEntries.length < 3 ? (
-            <div className="px-3 py-4 border border-dashed border-neon-pink/40 bg-neon-pink/5 text-center">
-              <p className="text-xs font-bold text-neon-pink mb-1">CLAIM THE THRONE</p>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Win battles to be among the first names etched into the leaderboard.
-              </p>
+          {/* ── Ranked list (4+) ── */}
+          {rest.length > 0 && (
+            <div className="btt-lb-rows">
+              {rest.map(row => {
+                const wr = winRate(row.wins, row.losses);
+                return (
+                  <div key={row.userId} className={`btt-lb-row${row.isUser ? " btt-lb-row--me" : ""}`}>
+                    <span className="btt-lb-rank">{row.rank}</span>
+                    <span className="btt-lb-row-ava">{initialOf(row.name)}</span>
+                    <div className="min-w-0">
+                      <LbName row={row} className="btt-lb-row-name" />
+                      <span className={`btt-lb-row-tier ${tierColors[row.tier] ?? "text-muted-foreground"}`}>{row.tier}</span>
+                    </div>
+                    <div className="btt-lb-row-score">
+                      <div className="btt-lb-row-num">{fmtScore(row.score)}</div>
+                      <div className="btt-lb-row-sub">
+                        {tab === "rating"
+                          ? (wr !== null ? `${row.wins}W ${row.losses}L · ${wr}%` : `${row.wins ?? 0}W ${row.losses ?? 0}L`)
+                          : unit}
+                      </div>
+                    </div>
+                    {row.isUser && <span className="btt-lb-you-pill">YOU</span>}
+                  </div>
+                );
+              })}
             </div>
-          ) : xpEntries.map(p => {
-            const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(p.name);
-            return (
-              <div key={p.rank} className="flex items-center gap-3 px-3 py-2 border border-transparent hover:bg-secondary/30 transition-colors">
-                <span className={`text-xs font-bold w-5 text-center ${p.rank <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}>{p.rank}</span>
-                <div className="flex-1 min-w-0">
-                  {isUsername
-                    ? <a href={`/u/${p.name}`} className="text-xs font-bold text-foreground truncate hover:text-neon-purple transition-colors">{p.name}</a>
-                    : <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
-                  }
-                  <span className={`text-[10px] ml-2 font-bold ${tierColors[p.tier]}`}>{p.tier}</span>
-                </div>
-                <div className="text-xs font-bold text-foreground">{p.xp.toLocaleString()} XP</div>
-              </div>
-            );
-          })
-        )}
-      </div>
+          )}
+
+          {!meInList && (
+            <p className="btt-lb-foot">
+              Not on the board yet — win ranked battles to climb in.
+            </p>
+          )}
+        </>
+      )}
     </motion.div>
   );
 }
@@ -2874,10 +2956,8 @@ export function KnowledgeBattles() {
             </div>
             <BattleArena />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DailyChallengeCard />
-            <LeaderboardCard />
-          </div>
+          <DailyChallengeCard />
+          <LeaderboardCard />
         </div>
       </div>
 

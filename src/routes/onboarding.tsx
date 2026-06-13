@@ -282,10 +282,10 @@ function OnboardingPage() {
                       style={
                         active
                           ? {
-                              background: "oklch(0.55 0.25 290 / 18%)",
-                              borderColor: "oklch(0.55 0.25 290)",
+                              background: "oklch(0.58 0.17 252 / 18%)",
+                              borderColor: "oklch(0.58 0.17 252)",
                               boxShadow:
-                                "0 0 0 2px oklch(0.55 0.25 290), 0 0 24px oklch(0.55 0.25 290 / 45%)",
+                                "0 0 0 2px oklch(0.58 0.17 252), 0 0 24px oklch(0.58 0.17 252 / 45%)",
                             }
                           : undefined
                       }
@@ -311,10 +311,10 @@ function OnboardingPage() {
                       style={
                         active
                           ? {
-                              background: "oklch(0.55 0.25 290 / 18%)",
-                              borderColor: "oklch(0.55 0.25 290)",
+                              background: "oklch(0.58 0.17 252 / 18%)",
+                              borderColor: "oklch(0.58 0.17 252)",
                               boxShadow:
-                                "0 0 0 2px oklch(0.55 0.25 290), 0 0 24px oklch(0.55 0.25 290 / 45%)",
+                                "0 0 0 2px oklch(0.58 0.17 252), 0 0 24px oklch(0.58 0.17 252 / 45%)",
                             }
                           : undefined
                       }
@@ -344,10 +344,10 @@ function OnboardingPage() {
                       style={
                         active
                           ? {
-                              background: "oklch(0.55 0.25 290 / 18%)",
-                              borderColor: "oklch(0.55 0.25 290)",
+                              background: "oklch(0.58 0.17 252 / 18%)",
+                              borderColor: "oklch(0.58 0.17 252)",
                               boxShadow:
-                                "0 0 0 2px oklch(0.55 0.25 290), 0 0 24px oklch(0.55 0.25 290 / 45%)",
+                                "0 0 0 2px oklch(0.58 0.17 252), 0 0 24px oklch(0.58 0.17 252 / 45%)",
                             }
                           : undefined
                       }

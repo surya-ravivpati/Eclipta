@@ -82,37 +82,41 @@
 
   --font-display: 'RobotHeroes', 'Space Grotesk', sans-serif;
   --font-body: 'Inter', Calibri, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.07 0.02 280);
-  --foreground: oklch(0.96 0.005 280);
-  --card: oklch(0.12 0.025 280);
-  --card-foreground: oklch(0.96 0.005 280);
-  --popover: oklch(0.12 0.025 280);
-  --popover-foreground: oklch(0.96 0.005 280);
-  --primary: oklch(0.55 0.25 290);
-  --primary-foreground: oklch(0.98 0.005 280);
-  --secondary: oklch(0.15 0.03 280);
-  --secondary-foreground: oklch(0.96 0.005 280);
-  --muted: oklch(0.15 0.02 280);
-  --muted-foreground: oklch(0.6 0.03 280);
-  --accent: oklch(0.55 0.25 290);
-  --accent-foreground: oklch(0.98 0.005 280);
+  /* Base surfaces — the cinematic landing's deep blue-black, not purple */
+  --background: oklch(0.08 0.012 258);
+  --foreground: oklch(0.96 0.005 250);
+  --card: oklch(0.115 0.016 258);
+  --card-foreground: oklch(0.96 0.005 250);
+  --popover: oklch(0.115 0.016 258);
+  --popover-foreground: oklch(0.96 0.005 250);
+  --primary: oklch(0.58 0.17 252);
+  --primary-foreground: oklch(0.98 0.004 250);
+  --secondary: oklch(0.15 0.018 256);
+  --secondary-foreground: oklch(0.96 0.005 250);
+  --muted: oklch(0.145 0.014 256);
+  --muted-foreground: oklch(0.6 0.02 254);
+  --accent: oklch(0.58 0.17 252);
+  --accent-foreground: oklch(0.98 0.004 250);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0.005 280);
+  --destructive-foreground: oklch(0.98 0.004 250);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.55 0.25 290);
+  --ring: oklch(0.58 0.17 252);
 
-  /* Eclipta custom colors */
-  --neon-purple: oklch(0.55 0.25 290);
+  /* Eclipta custom colors.
+     --neon-purple is the site's interactive accent token; it now carries
+     the landing film's azure family (cool blue) rather than violet. */
+  --neon-purple: oklch(0.58 0.17 252);
   --neon-pink: oklch(0.6 0.24 350);
   --neon-cyan: oklch(0.75 0.15 180);
-  --arena: oklch(0.07 0.02 280);
-  --arena-light: oklch(0.12 0.025 280);
-  --marble: oklch(0.96 0.005 280);
+  --arena: oklch(0.08 0.012 258);
+  --arena-light: oklch(0.115 0.016 258);
+  --marble: oklch(0.96 0.005 250);
   --acrylic: oklch(1 0 0 / 3%);
   --acrylic-border: oklch(1 0 0 / 10%);
 
@@ -126,54 +130,54 @@
   --tier-unreal: oklch(0.6 0.28 310);
   --tier-god: oklch(0.85 0.12 90);
 
-  --chart-1: oklch(0.55 0.25 290);
+  --chart-1: oklch(0.58 0.17 252);
   --chart-2: oklch(0.6 0.24 350);
   --chart-3: oklch(0.75 0.15 180);
   --chart-4: oklch(0.7 0.2 60);
   --chart-5: oklch(0.65 0.2 130);
-  --sidebar: oklch(0.1 0.025 280);
-  --sidebar-foreground: oklch(0.96 0.005 280);
-  --sidebar-primary: oklch(0.55 0.25 290);
-  --sidebar-primary-foreground: oklch(0.98 0.005 280);
-  --sidebar-accent: oklch(0.15 0.03 280);
-  --sidebar-accent-foreground: oklch(0.96 0.005 280);
+  --sidebar: oklch(0.1 0.014 258);
+  --sidebar-foreground: oklch(0.96 0.005 250);
+  --sidebar-primary: oklch(0.58 0.17 252);
+  --sidebar-primary-foreground: oklch(0.98 0.004 250);
+  --sidebar-accent: oklch(0.15 0.018 256);
+  --sidebar-accent-foreground: oklch(0.96 0.005 250);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.55 0.25 290);
+  --sidebar-ring: oklch(0.58 0.17 252);
 }
 
 /* Light theme — toggled via .light on <html> */
 .light {
-  --background: oklch(0.985 0.005 280);
-  --foreground: oklch(0.18 0.03 280);
+  --background: oklch(0.985 0.004 250);
+  --foreground: oklch(0.18 0.025 256);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 280);
+  --card-foreground: oklch(0.18 0.025 256);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.03 280);
-  --primary: oklch(0.5 0.22 290);
-  --primary-foreground: oklch(0.98 0.005 280);
-  --secondary: oklch(0.94 0.015 280);
-  --secondary-foreground: oklch(0.2 0.03 280);
-  --muted: oklch(0.94 0.015 280);
-  --muted-foreground: oklch(0.45 0.03 280);
-  --accent: oklch(0.5 0.22 290);
-  --accent-foreground: oklch(0.98 0.005 280);
+  --popover-foreground: oklch(0.18 0.025 256);
+  --primary: oklch(0.45 0.15 252);
+  --primary-foreground: oklch(0.98 0.004 250);
+  --secondary: oklch(0.94 0.012 252);
+  --secondary-foreground: oklch(0.2 0.025 256);
+  --muted: oklch(0.94 0.012 252);
+  --muted-foreground: oklch(0.45 0.02 254);
+  --accent: oklch(0.45 0.15 252);
+  --accent-foreground: oklch(0.98 0.004 250);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0.005 280);
+  --destructive-foreground: oklch(0.98 0.004 250);
   --border: oklch(0 0 0 / 10%);
   --input: oklch(0 0 0 / 14%);
-  --ring: oklch(0.5 0.22 290);
+  --ring: oklch(0.45 0.15 252);
 
-  --neon-purple: oklch(0.5 0.22 290);
+  --neon-purple: oklch(0.45 0.15 252);
   --neon-pink: oklch(0.55 0.22 350);
   --neon-cyan: oklch(0.55 0.13 195);
-  --arena: oklch(0.985 0.005 280);
-  --arena-light: oklch(0.96 0.01 280);
-  --marble: oklch(0.18 0.03 280);
+  --arena: oklch(0.985 0.004 250);
+  --arena-light: oklch(0.96 0.008 252);
+  --marble: oklch(0.18 0.025 256);
   --acrylic: oklch(0 0 0 / 3%);
   --acrylic-border: oklch(0 0 0 / 10%);
 
-  --sidebar: oklch(0.96 0.01 280);
-  --sidebar-foreground: oklch(0.18 0.03 280);
+  --sidebar: oklch(0.96 0.008 252);
+  --sidebar-foreground: oklch(0.18 0.025 256);
   --sidebar-border: oklch(0 0 0 / 8%);
 }
 
@@ -187,7 +191,7 @@
 /* Tone down dramatic neon glows in light mode (less halo, more accent) */
 .light .neon-glow-purple,
 .light .neon-glow-pink {
-  box-shadow: 0 4px 20px oklch(0.5 0.22 290 / 18%), 0 1px 3px oklch(0 0 0 / 8%);
+  box-shadow: 0 4px 20px oklch(0.45 0.15 252 / 18%), 0 1px 3px oklch(0 0 0 / 8%);
 }
 .light .neon-glow-gold,
 .light .neon-glow-diamond,
@@ -216,7 +220,7 @@
   }
 
   ::selection {
-    background: oklch(0.55 0.25 290 / 45%);
+    background: oklch(0.58 0.17 252 / 45%);
     color: var(--foreground);
   }
 
@@ -242,7 +246,7 @@
   }
 
   .neon-glow-purple {
-    box-shadow: 0 0 30px oklch(0.55 0.25 290 / 40%), 0 0 60px oklch(0.55 0.25 290 / 20%);
+    box-shadow: 0 0 30px oklch(0.58 0.17 252 / 40%), 0 0 60px oklch(0.58 0.17 252 / 20%);
   }
 
   .neon-glow-pink {
@@ -275,7 +279,7 @@
   }
 
   .text-glow-purple {
-    text-shadow: 0 0 20px oklch(0.55 0.25 290 / 50%);
+    text-shadow: 0 0 20px oklch(0.58 0.17 252 / 50%);
   }
   .text-glow-gold {
     text-shadow: 0 0 20px oklch(0.75 0.16 85 / 60%);
@@ -365,7 +369,7 @@
 
 /* Milestone celebration toast */
 .milestone-toast {
-  border: 1px solid oklch(0.55 0.25 290 / 40%) !important;
-  background: oklch(0.15 0.03 280 / 95%) !important;
-  box-shadow: 0 0 30px oklch(0.55 0.25 290 / 20%), 0 4px 20px oklch(0 0 0 / 40%) !important;
+  border: 1px solid oklch(0.58 0.17 252 / 40%) !important;
+  background: oklch(0.15 0.018 256 / 95%) !important;
+  box-shadow: 0 0 30px oklch(0.58 0.17 252 / 20%), 0 4px 20px oklch(0 0 0 / 40%) !important;
 }

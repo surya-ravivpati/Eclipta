@@ -33,16 +33,20 @@ export function SiteFooter() {
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="text-2xl font-bold tracking-tighter text-neon-purple font-display">
-              ECLIPTA
+            <Link to="/" className="inline-flex items-center gap-3 text-foreground" aria-label="Eclipta home">
+              <span className="relative w-[11px] h-[11px]" aria-hidden>
+                <span className="absolute inset-0 rounded-full border border-neon-purple" />
+                <span className="absolute inset-[3.5px] rounded-full bg-neon-purple" />
+              </span>
+              <span className="font-mono text-xs tracking-[0.3em] uppercase">Eclipta</span>
             </Link>
-            <p className="text-xs text-muted-foreground mt-3 leading-relaxed max-w-xs">
+            <p className="text-xs text-muted-foreground mt-4 leading-relaxed max-w-xs">
               An adaptive learning arena. Battles, trophies, and AI guidance for serious learners.
             </p>
           </div>
           {FOOTER_GROUPS.map((group) => (
             <div key={group.label}>
-              <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">
+              <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase mb-3">
                 {group.label}
               </p>
               <ul className="space-y-2">
@@ -50,7 +54,7 @@ export function SiteFooter() {
                   <li key={l.to}>
                     <Link
                       to={l.to}
-                      className="text-xs text-foreground/80 hover:text-neon-purple transition-colors"
+                      className="text-xs text-foreground/75 hover:text-foreground transition-colors"
                     >
                       {l.label}
                     </Link>
@@ -61,13 +65,13 @@ export function SiteFooter() {
           ))}
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border">
-          <p className="text-[11px] text-muted-foreground tracking-wide">
-            © {new Date().getFullYear()} Eclipta. Built for learners who want more.
+          <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted-foreground">
+            © {new Date().getFullYear()} Eclipta
           </p>
           <div className="flex items-center gap-3">
             <a
               href="mailto:hello@eclipta.app"
-              className="text-muted-foreground hover:text-neon-purple transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Contact"
             >
               <Mail className="w-4 h-4" />
@@ -76,7 +80,7 @@ export function SiteFooter() {
               href="https://github.com"
               target="_blank"
               rel="noreferrer"
-              className="text-muted-foreground hover:text-neon-purple transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="GitHub"
             >
               <Github className="w-4 h-4" />

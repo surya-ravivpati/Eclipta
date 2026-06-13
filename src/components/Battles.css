@@ -12,18 +12,19 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: #05060A;
+  background: #04050a;
 }
 
-/* Aurora — large blurred radial gradients, same technique as .v11-aurora */
+/* Aurora — same environment hues as the landing film (blue / violet),
+   so moving from the homepage into the arena feels like one world. */
 .btt-aurora {
   position: absolute;
   inset: -20%;
   background:
     radial-gradient(900px 700px at 22% 28%,
-      oklch(0.55 0.22 350 / 0.28), transparent 60%),
+      oklch(0.50 0.17 248 / 0.30), transparent 60%),
     radial-gradient(800px 650px at 80% 72%,
-      oklch(0.52 0.20 260 / 0.22), transparent 60%);
+      oklch(0.45 0.16 305 / 0.24), transparent 60%);
   filter: blur(80px);
   will-change: transform;
   animation: btt-drift 22s ease-in-out infinite alternate;
@@ -78,7 +79,7 @@
   /* ── Design tokens ── */
   --btt-pink:    oklch(0.60 0.24 350);
   --btt-cyan:    oklch(0.75 0.15 180);
-  --btt-purple:  oklch(0.55 0.25 290);
+  --btt-purple:  oklch(0.58 0.17 252);
   --btt-gold:    oklch(0.80 0.14 85);
   --btt-fog:     #7A7D85;
   --btt-line:    rgba(255, 255, 255, 0.07);
@@ -158,7 +159,7 @@
 }
 
 .btt-card--purple {
-  border: 1px solid oklch(0.55 0.25 290 / 0.25);
+  border: 1px solid oklch(0.58 0.17 252 / 0.25);
 }
 
 /* ─── HP bar ─────────────────────────────────────────────────── */
@@ -250,7 +251,7 @@
 
 .btt-action--wild:hover:not(:disabled) {
   border-color: var(--btt-purple);
-  box-shadow: 0 0 18px oklch(0.55 0.25 290 / 0.14);
+  box-shadow: 0 0 18px oklch(0.58 0.17 252 / 0.14);
 }
 
 /* ─── Question overlay ──────────────────────────────────────── */
@@ -297,8 +298,8 @@
 }
 .btt-ghost-btn--cyan  { color: var(--btt-cyan);   border-color: oklch(0.75 0.15 180 / 0.28); }
 .btt-ghost-btn--cyan:hover  { border-color: oklch(0.75 0.15 180 / 0.55); color: var(--btt-cyan); }
-.btt-ghost-btn--purple { color: var(--btt-purple); border-color: oklch(0.55 0.25 290 / 0.28); }
-.btt-ghost-btn--purple:hover { border-color: oklch(0.55 0.25 290 / 0.55); color: var(--btt-purple); }
+.btt-ghost-btn--purple { color: var(--btt-purple); border-color: oklch(0.58 0.17 252 / 0.28); }
+.btt-ghost-btn--purple:hover { border-color: oklch(0.58 0.17 252 / 0.55); color: var(--btt-purple); }
 
 /* ─── Floating help button ────────────────────────────────────── */
 .btt-help-btn {
@@ -308,7 +309,7 @@
   z-index: 40;
   width: 44px;
   height: 44px;
-  border: 1px solid oklch(0.55 0.25 290 / 0.35);
+  border: 1px solid oklch(0.58 0.17 252 / 0.35);
   background: rgba(5, 6, 10, 0.80);
   color: var(--btt-purple);
   display: flex;
@@ -318,8 +319,8 @@
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 .btt-help-btn:hover {
-  border-color: oklch(0.55 0.25 290 / 0.60);
-  background: rgba(55, 20, 90, 0.35);
+  border-color: oklch(0.58 0.17 252 / 0.60);
+  background: rgba(18, 36, 84, 0.35);
 }
 
 /* ─── Impact & event layer ───────────────────────────────────── */

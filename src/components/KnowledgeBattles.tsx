@@ -2067,7 +2067,7 @@ function BattleArena() {
         <motion.div
           className="w-20 h-20 mx-auto mb-8 border flex items-center justify-center"
           animate={{
-            borderColor: ["oklch(0.6 0.24 350)", "oklch(0.55 0.25 290)", "oklch(0.75 0.15 180)", "oklch(0.6 0.24 350)"],
+            borderColor: ["oklch(0.6 0.24 350)", "oklch(0.58 0.17 252)", "oklch(0.75 0.15 180)", "oklch(0.6 0.24 350)"],
             rotate: 360,
           }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -2183,7 +2183,7 @@ function BattleArena() {
           >
             <motion.p
               className="btt-stinger-word text-8xl md:text-9xl text-foreground"
-              style={{ textShadow: "0 0 70px oklch(0.6 0.24 350 / 0.55), 0 0 160px oklch(0.55 0.25 290 / 0.35)" }}
+              style={{ textShadow: "0 0 70px oklch(0.6 0.24 350 / 0.55), 0 0 160px oklch(0.58 0.17 252 / 0.35)" }}
               initial={{ scale: 2.3, opacity: 0, letterSpacing: "0.45em" }}
               animate={{ scale: 1, opacity: 1, letterSpacing: "0.06em" }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}

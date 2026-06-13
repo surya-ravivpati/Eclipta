@@ -63,24 +63,28 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+    <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/70 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8 min-w-0">
-          <Link to="/" className="text-2xl font-bold tracking-tighter text-neon-purple font-display shrink-0">
-            ECLIPTA
+        <div className="flex items-center gap-9 min-w-0">
+          <Link to="/" className="flex items-center gap-3 shrink-0 text-foreground" aria-label="Eclipta home">
+            <span className="relative w-[11px] h-[11px]" aria-hidden>
+              <span className="absolute inset-0 rounded-full border border-neon-purple" />
+              <span className="absolute inset-[3.5px] rounded-full bg-neon-purple" />
+            </span>
+            <span className="font-mono text-xs tracking-[0.3em] uppercase">Eclipta</span>
           </Link>
-          <div className="hidden lg:flex gap-1 text-sm font-medium tracking-wide">
+          <div className="hidden lg:flex gap-1">
             {NAV_GROUPS.map((group) => {
               const active = isGroupActive(group);
               return (
                 <DropdownMenu key={group.label}>
                   <DropdownMenuTrigger
-                    className={`px-3 py-1.5 transition-colors inline-flex items-center gap-1 outline-none ${
-                      active ? "text-neon-purple" : "text-muted-foreground hover:text-neon-purple"
+                    className={`px-3 py-1.5 font-mono text-[11px] tracking-[0.22em] uppercase transition-colors inline-flex items-center gap-1.5 outline-none ${
+                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {group.label}
-                    <ChevronDown className="w-3 h-3 opacity-60" />
+                    <ChevronDown className="w-3 h-3 opacity-50" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="start"
@@ -90,7 +94,7 @@ export function Navbar() {
                       <DropdownMenuItem key={it.to} asChild>
                         <Link
                           to={it.to}
-                          className="flex flex-col items-start gap-0.5 cursor-pointer focus:bg-neon-purple/10 focus:text-neon-purple"
+                          className="flex flex-col items-start gap-0.5 cursor-pointer focus:bg-secondary/80 focus:text-foreground"
                         >
                           <span className="text-sm font-medium">{it.label}</span>
                           <span className="text-[11px] text-muted-foreground">{it.desc}</span>
@@ -106,7 +110,7 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <button
             onClick={cycleTheme}
-            className="p-2 text-muted-foreground hover:text-neon-purple transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
             title={`Theme: ${theme} — click to switch to ${themeNext}`}
             aria-label={`Theme: ${theme}. Click to switch to ${themeNext}.`}
           >
@@ -116,7 +120,7 @@ export function Navbar() {
             <>
               <Link
                 to="/notifications"
-                className="relative p-2 text-muted-foreground hover:text-neon-purple transition-colors"
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
                 title="Notifications"
               >
@@ -129,7 +133,7 @@ export function Navbar() {
               </Link>
               <Link
                 to="/profile"
-                className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border hover:border-neon-purple/40 transition-colors"
+                className="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-secondary/30 border border-border hover:border-foreground/25 transition-colors"
                 title="View profile"
               >
                 <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-neon-purple">
@@ -138,7 +142,7 @@ export function Navbar() {
                 </span>
                 <span className="w-px h-3 bg-border" />
                 <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-neon-purple" />
+                  <User className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium text-foreground truncate max-w-[100px]">
                     {user?.email?.split("@")[0]}
                   </span>
@@ -155,17 +159,17 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="hidden sm:inline-block px-4 py-1.5 text-xs font-bold tracking-widest border border-border hover:border-neon-pink text-foreground transition-colors">
-                LOGIN
+              <Link to="/login" className="hidden sm:inline-block px-5 py-1.5 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase border border-border hover:border-foreground/40 text-muted-foreground hover:text-foreground transition-colors">
+                Login
               </Link>
-              <Link to="/signup" className="hidden sm:inline-block px-4 py-1.5 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity">
-                SIGN UP
+              <Link to="/signup" className="hidden sm:inline-block px-5 py-1.5 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase bg-foreground text-background hover:opacity-90 transition-opacity">
+                Sign up
               </Link>
             </>
           )}
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="lg:hidden p-2 text-foreground hover:text-neon-purple transition-colors"
+            className="lg:hidden p-2 text-foreground hover:text-muted-foreground transition-colors"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
@@ -193,10 +197,10 @@ export function Navbar() {
                 <Link
                   to="/notifications"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-between px-3 py-3 border border-border rounded-md hover:border-neon-purple/40 transition-colors"
+                  className="flex items-center justify-between px-3 py-3 border border-border rounded-md hover:border-foreground/25 transition-colors"
                 >
                   <span className="inline-flex items-center gap-2 text-sm font-medium">
-                    <Bell className="w-4 h-4 text-neon-purple" />Notifications
+                    <Bell className="w-4 h-4 text-muted-foreground" />Notifications
                   </span>
                   {unread > 0 && (
                     <span className="min-w-[20px] h-[20px] px-1.5 rounded-full bg-neon-pink text-[10px] font-bold text-foreground flex items-center justify-center tabular-nums">
@@ -209,19 +213,19 @@ export function Navbar() {
             <Link
               to="/"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 text-sm font-bold tracking-widest text-foreground hover:text-neon-purple"
+              className="px-3 py-2 font-mono text-[11px] tracking-[0.22em] uppercase text-foreground hover:text-muted-foreground"
             >
-              HOME
+              Home
             </Link>
             {NAV_GROUPS.map((group) => (
               <div key={group.label}>
-                <p className="px-3 text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-1">{group.label}</p>
+                <p className="px-3 font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase mb-1">{group.label}</p>
                 {group.items.map((it) => (
                   <Link
                     key={it.to}
                     to={it.to}
                     onClick={() => setMobileOpen(false)}
-                    className="block px-3 py-2 text-sm text-muted-foreground hover:text-neon-purple hover:bg-secondary/30 transition-colors"
+                    className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
                   >
                     {it.label}
                   </Link>
@@ -233,16 +237,16 @@ export function Navbar() {
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center px-4 py-2 text-xs font-bold tracking-widest border border-border hover:border-neon-pink text-foreground transition-colors"
+                  className="flex-1 text-center px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
                 >
-                  LOGIN
+                  Login
                 </Link>
                 <Link
                   to="/signup"
                   onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity"
+                  className="flex-1 text-center px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase bg-foreground text-background hover:opacity-90 transition-opacity"
                 >
-                  SIGN UP
+                  Sign up
                 </Link>
               </div>
             )}

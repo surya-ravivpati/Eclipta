@@ -462,6 +462,16 @@
   color: oklch(0.78 0.16 155);
 }
 
+/* Chest reward preview — visible payout under the chest label */
+.tr-node-reward {
+  margin-top: 6px;
+  font-family: var(--tr-mono); font-size: 8.5px;
+  letter-spacing: 0.16em;
+  color: color-mix(in oklch, var(--tc, var(--tr-gold)) 78%, white);
+  white-space: nowrap;
+}
+.tr-node--locked .tr-node-reward { color: var(--tr-fog); }
+
 /* Tooltip (archetype stats) */
 .tr-tooltip {
   position: absolute; bottom: calc(100% + 16px); left: 50%;
@@ -787,6 +797,9 @@
   font-weight: 500;
   transition: color 0.6s ease;
   margin-right: 4px;
+}
+.tr-cinema-bar-seals {
+  color: color-mix(in oklch, var(--tr-gold) 80%, white);
 }
 
 .tr-cinema-progress-wrap {

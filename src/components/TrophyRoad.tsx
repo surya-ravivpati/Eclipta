@@ -206,6 +206,15 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
 
       <span className="tr-node-label">{node.label}</span>
 
+      {/* Reward preview — anticipation before the chest is even reachable.
+          The payout was previously buried in a hover title; surfacing it turns
+          every chest on the road into a visible, named goal. */}
+      {isChest && (CHEST_BONUS_XP[node.label] ?? 0) > 0 && (
+        <span className="tr-node-reward">
+          +{(CHEST_BONUS_XP[node.label] ?? 0).toLocaleString()} XP
+        </span>
+      )}
+
       {showClaim && (
         <button className="tr-node-act" onClick={handleClaim} disabled={busy}>
           {busy ? "···" : "Claim"}
@@ -286,6 +295,13 @@ function CinemaRoad({ allNodes, ownedSlugs, claimedChestIds, onClaimed, onChestC
   const nodeElsRef   = useRef<Array<{ el: HTMLElement; center: number }>>([]);
 
   const totalCleared = allNodes.filter(n => n.unlocked).length;
+
+  // Vault Seals — a collection meta over the chests already on the road.
+  // Every opened chest is a permanent claim (user_chest_claims); framing the
+  // 16 of them as a set to complete adds collection-completion pull on top of
+  // the linear XP climb, at zero new economy.
+  const sealsTotal = allNodes.filter(n => n.type === "chest").length;
+  const sealsSecured = allNodes.filter(n => n.type === "chest" && claimedChestIds.has(n.id)).length;
 
   // Flat road: [divider(bronze), ...bronze nodes, divider(silver), ...]
   const roadItems = useMemo(() => {
@@ -470,6 +486,7 @@ function CinemaRoad({ allNodes, ownedSlugs, claimedChestIds, onClaimed, onChestC
           <span className="tr-cinema-bar-stops">
             <strong ref={barTierRef}>Bronze</strong>
             &nbsp;·&nbsp;{totalCleared} of {allNodes.length} cleared
+            &nbsp;·&nbsp;<span className="tr-cinema-bar-seals">{sealsSecured}/{sealsTotal} seals</span>
           </span>
         </div>
 

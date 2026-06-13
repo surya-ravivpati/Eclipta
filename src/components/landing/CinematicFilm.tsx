@@ -182,16 +182,20 @@ export function CinematicFilm() {
         coreRef.current.style.transform =
           `translate3d(${(mx * 6).toFixed(1)}px, ${(my * 4).toFixed(1)}px, 0) scale(${(0.16 + grow * 26).toFixed(3)})`;
       }
-      /* Portal flash peaks as Act I releases, then dissolves over Act II's entry */
+      /* Portal flash — whites out the screen well BEFORE the text beats so
+         every line lands on a fully bright field, holds, then dissolves
+         over Act II's entry. */
       const flash =
-        smooth(clamp01((p1 - 0.55) / 0.28)) * (1 - smooth(clamp01(p2 / 0.10)));
+        smooth(clamp01((p1 - 0.40) / 0.16)) * (1 - smooth(clamp01(p2 / 0.10)));
       if (flashRef.current) flashRef.current.style.opacity = flash.toFixed(3);
-      /* Inside the light — a sequence of dark-ink beats, one per stretch
-         of scroll, each dissolving before the next arrives */
-      const STEP_WINDOWS: [number, number][] = [[0.54, 0.71], [0.73, 0.87], [0.89, 1.04]];
+      /* Inside the light — three dark-ink beats. Each window is comfortably
+         wider than its fade, so the line rises, HOLDS at full for a real
+         stretch of scroll, then dissolves before the next arrives. */
+      const STEP_FADE = 0.045;
+      const STEP_WINDOWS: [number, number][] = [[0.58, 0.74], [0.76, 0.91], [0.93, 1.08]];
       stepRefs.current.forEach((el, i) => {
         if (!el) return;
-        const v = win(p1, STEP_WINDOWS[i][0], STEP_WINDOWS[i][1], 0.07);
+        const v = win(p1, STEP_WINDOWS[i][0], STEP_WINDOWS[i][1], STEP_FADE);
         el.style.opacity = v.toFixed(3);
         el.style.transform = `translateY(${((1 - v) * 14).toFixed(1)}px) scale(${(0.97 + v * 0.03).toFixed(3)})`;
         el.style.filter = v < 0.99 ? `blur(${((1 - v) * 6).toFixed(1)}px)` : "";

@@ -30,21 +30,14 @@ const POLL_INTERVAL_MS  = 800;
 
 export async function joinQueue(
   archetype: ArchetypeId,
-  rating: number,
-  username: string | null,
+  _rating: number,
+  _username: string | null,
 ): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from("pvp_queue" as any).upsert(
-    {
-      user_id:   user.id,
-      username:  username ?? `player_${user.id.slice(0, 6)}`,
-      archetype,
-      rating,
-      queued_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  // Server-side enqueue: rating and username are read from authoritative
+  // tables inside the SECURITY DEFINER RPC so clients can't spoof them.
+  await supabase.rpc("enqueue_pvp" as any, { p_archetype: archetype });
 }
 
 export async function leaveQueue(): Promise<void> {

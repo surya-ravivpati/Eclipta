@@ -62,12 +62,11 @@ export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise
   if (!ec) return null;
   const owned = await fetchOwnedEcliptarSlugs();
   if (owned.has(slug)) return null;
-  const { error } = await supabase.from("user_ecliptars" as any).insert({
-    user_id: user.id,
-    archetype: ec.archetype,
-    ecliptar_slug: ec.slug,
-    ecliptar_name: ec.name,
-    node_id: nodeId,
+  const { error } = await supabase.rpc("claim_ecliptar" as any, {
+    p_slug: ec.slug,
+    p_archetype: ec.archetype,
+    p_name: ec.name,
+    p_node_id: nodeId,
   });
   if (error) {
     console.error("Failed to claim ecliptar:", error);
@@ -102,20 +101,21 @@ export async function claimArchetypeReward(
   const toGrant = getEcliptarsByArchetype(archetype).filter((e) => !owned.has(e.slug));
   if (toGrant.length === 0) return [];
 
-  const rows = toGrant.map((e) => ({
-    user_id: user.id,
-    archetype: e.archetype,
-    ecliptar_slug: e.slug,
-    ecliptar_name: e.name,
-    node_id: nodeId,
-  }));
-
-  const { error } = await supabase.from("user_ecliptars" as any).insert(rows);
-  if (error) {
-    console.error("Failed to claim ecliptars:", error);
-    return [];
+  const granted: Ecliptar[] = [];
+  for (const e of toGrant) {
+    const { error } = await supabase.rpc("claim_ecliptar" as any, {
+      p_slug: e.slug,
+      p_archetype: e.archetype,
+      p_name: e.name,
+      p_node_id: nodeId,
+    });
+    if (error) {
+      console.error("Failed to claim ecliptar:", error);
+      continue;
+    }
+    granted.push(e);
   }
-  return toGrant;
+  return granted;
 }
 
 /** Returns the trophy road node id for a given archetype's monster node, if any. */

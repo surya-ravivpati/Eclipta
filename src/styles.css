@@ -216,6 +216,11 @@
     border-color: var(--color-border);
   }
 
+  ::selection {
+    background: oklch(0.55 0.25 290 / 45%);
+    color: var(--foreground);
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);

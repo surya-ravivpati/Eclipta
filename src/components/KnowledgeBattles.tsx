@@ -165,6 +165,9 @@ function sfxStreak(streak: number) { playTone(Math.min(220 + streak * 22, 880), 
 function sfxBreak()   { playTone(160, 0.22, "triangle", 0.11); setTimeout(() => playTone(110, 0.28, "triangle", 0.07), 90); }
 function sfxCombo()   { playTone(660, 0.08, "sine", 0.13); setTimeout(() => playTone(880, 0.14, "sine", 0.10), 80); }
 function sfxWild()    { [0, 55, 110].forEach((ms, i) => setTimeout(() => playTone(300 + i * 130, 0.18, "sawtooth", 0.07), ms)); }
+// Rising major arpeggio for the win, falling minor slide for the loss
+function sfxVictory() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.22, "sine", 0.10), i * 110)); }
+function sfxDefeat()  { [330, 262, 196].forEach((f, i) => setTimeout(() => playTone(f, 0.30, "triangle", 0.10), i * 170)); }
 
 // ─── Sub-components ──────────────────────────────────────────────────
 function HpBar({ current, max, color, label }: { current: number; max: number; color: string; label: string }) {
@@ -262,6 +265,23 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
+
+  // Floating combat numbers — derived from HP deltas so every damage source
+  // (bot, ghost, live PvP, wild events, heals) produces one automatically.
+  const prevHpRef = useRef(fighter.hp);
+  const floatIdRef = useRef(0);
+  const [floats, setFloats] = useState<{ id: number; delta: number }[]>([]);
+  useEffect(() => {
+    const delta = fighter.hp - prevHpRef.current;
+    prevHpRef.current = fighter.hp;
+    if (delta === 0) return;
+    const id = ++floatIdRef.current;
+    setFloats(f => [...f, { id, delta }]);
+    // No cleanup: each float owns its timer, so rapid back-to-back hits
+    // don't cancel the previous number's removal.
+    setTimeout(() => setFloats(f => f.filter(x => x.id !== id)), 1200);
+  }, [fighter.hp]);
+
   return (
     <motion.div
       className={`btt-card ${side === "left" ? "btt-card--cyan" : "btt-card--pink"} p-5 flex-1 relative overflow-hidden`}
@@ -272,6 +292,22 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
         {showHit && <motion.div className="absolute inset-0 bg-neon-pink/10 z-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}
         {showHeal && <motion.div className="absolute inset-0 bg-neon-cyan/10 z-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}
       </AnimatePresence>
+      <div className="btt-float-layer" aria-hidden>
+        <AnimatePresence>
+          {floats.map(f => (
+            <motion.span
+              key={f.id}
+              className={`btt-float absolute ${f.delta < 0 ? "btt-float--dmg" : "btt-float--heal"} ${Math.abs(f.delta) >= 25 ? "btt-float--big" : ""}`}
+              initial={{ opacity: 0, y: 14, scale: 0.7 }}
+              animate={{ opacity: [0, 1, 1, 0], y: -42, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.15, times: [0, 0.12, 0.72, 1], ease: "easeOut" }}
+            >
+              {f.delta > 0 ? `+${f.delta}` : f.delta}
+            </motion.span>
+          ))}
+        </AnimatePresence>
+      </div>
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
           <div className={`w-11 h-11 border flex items-center justify-center ${side === "left" ? "border-neon-cyan/40 text-neon-cyan" : "border-neon-pink/40 text-neon-pink"}`}>
@@ -349,7 +385,7 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
 
   return (
     <motion.div className="btt-q-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <motion.div className="btt-q-card" initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}>
+      <motion.div className={`btt-q-card ${timeLeft <= 3 ? "btt-q-card--danger" : ""}`} initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}>
         <div className="mb-5">
           <div className="flex items-center justify-between mb-1.5">
             <span className={`text-[10px] font-bold tracking-widest ${question.difficulty === "hard" ? "text-neon-pink" : question.difficulty === "medium" ? "text-neon-purple" : "text-neon-cyan"}`}>
@@ -910,6 +946,12 @@ function BattleArena() {
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const [gamblerStats, setGamblerStats] = useState<GamblerRoll | null>(null);
   const [wildEvent, setWildEvent] = useState<{ type: WildEventType; sub: string } | null>(null);
+  // Impact/event layer: combo bursts, battle-start stinger, KO banner
+  const [comboBurst, setComboBurst] = useState<{ id: number; combo: number; mult: number } | null>(null);
+  const comboBurstIdRef = useRef(0);
+  const [koBanner, setKoBanner] = useState<"victory" | "defeat" | null>(null);
+  const [showFight, setShowFight] = useState(false);
+  const fightShownRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const battleMemoryRef = useRef<BattleMemory | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
@@ -1122,6 +1164,27 @@ function BattleArena() {
     });
   }, []);
 
+  const fireComboBurst = useCallback((combo: number, mult: number) => {
+    const id = ++comboBurstIdRef.current;
+    setComboBurst({ id, combo, mult });
+    setTimeout(() => setComboBurst(prev => (prev?.id === id ? null : prev)), 1200);
+  }, []);
+
+  // "FIGHT" stinger — fires once per battle, the first time we hit select.
+  // The flag re-arms on any pre-battle phase (and on result, so a direct
+  // result → select rematch transition still gets its stinger).
+  useEffect(() => {
+    if (phase === "select" && !fightShownRef.current) {
+      fightShownRef.current = true;
+      setShowFight(true);
+      const t = setTimeout(() => setShowFight(false), 1200);
+      return () => clearTimeout(t);
+    }
+    if (phase === "idle" || phase === "classSelect" || phase === "searching" || phase === "result") {
+      fightShownRef.current = false;
+    }
+  }, [phase]);
+
   const resolveLiveTurn = useCallback((actions: LiveTurnActionRow[], turnNumber: number) => {
     if (liveResolvedTurnsRef.current.has(turnNumber) || liveResolvingRef.current) return;
     const myId = myUserIdRef.current;
@@ -1244,6 +1307,7 @@ function BattleArena() {
         if (nextMom > 0 && nextMom % comboThreshold === 0) {
           const newMult = streakToMultiplier(nextMom, step);
           addLog({ actor: "system", actionType: "combo", result: `🔥 COMBO x${Math.floor(nextMom / comboThreshold)} — ${newMult.toFixed(2)}× damage locked!` });
+          fireComboBurst(Math.floor(nextMom / comboThreshold), newMult);
           sfxCombo();
         }
 
@@ -1354,6 +1418,7 @@ function BattleArena() {
       if (newMom > 0 && newMom % comboThreshold === 0) {
         const newMult = streakToMultiplier(newMom, step);
         addLog({ actor: "system", actionType: "combo", result: `🔥 COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!` });
+        fireComboBurst(Math.floor(newMom / comboThreshold), newMult);
         sfxCombo();
       }
 
@@ -1475,7 +1540,15 @@ function BattleArena() {
       xp,
       opponentType: opponentTypeRef.current,
     });
-    setPhase("result");
+    // Cinematic KO beat: hold on a VICTORY / DEFEAT banner before the report.
+    // Guard the delayed phase change so a battle that restarts in the gap
+    // (live rematch auto-start) can't get yanked back to the result screen.
+    setKoBanner(won ? "victory" : "defeat");
+    if (won) sfxVictory(); else sfxDefeat();
+    setTimeout(() => {
+      setKoBanner(null);
+      if (battleFinishedRef.current) setPhase("result");
+    }, 1700);
 
     // Persist battle to learning_history + increment daily challenge on win
     (async () => {
@@ -1757,6 +1830,7 @@ function BattleArena() {
     const rolledGambler = cls === "gambler" ? rollGamblerStats() : null;
     setGamblerStats(rolledGambler);
     setRatingChange(null);
+    setKoBanner(null);
     setPhase("searching");
 
     // Reset ghost state
@@ -1851,6 +1925,7 @@ function BattleArena() {
   const reset = () => {
     setPhase("idle");
     setBattleStats(null);
+    setKoBanner(null);
     setPvpBattleId(null);
     setOpponentType("bot");
     setRatingChange(null);
@@ -1876,6 +1951,7 @@ function BattleArena() {
   }) => {
     setArchetype(opts.myArchetype);
     setRatingChange(null);
+    setKoBanner(null);
     battleFinishedRef.current = false;
     rematchStartedRef.current = false;
     setLiveRematchState("idle");
@@ -2071,8 +2147,118 @@ function BattleArena() {
   }
 
   // ── Battle ──
+  const playerCritical = player.hp > 0 && player.hp <= player.maxHp * 0.25;
   return (
-    <div className="relative">
+    <div className={`relative ${showPlayerHit ? "btt-shake" : ""}`}>
+      {/* Directional impact flashes — pink when you're hit, cyan when your hit lands */}
+      <AnimatePresence>
+        {showPlayerHit && (
+          <motion.div
+            key="impact-left" aria-hidden
+            className="btt-impact-flash btt-impact-flash--left"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          />
+        )}
+        {showOpponentHit && (
+          <motion.div
+            key="impact-right" aria-hidden
+            className="btt-impact-flash btt-impact-flash--right"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Critical-HP danger framing */}
+      {playerCritical && !koBanner && <div className="btt-danger-vignette" aria-hidden />}
+
+      {/* Battle-start stinger */}
+      <AnimatePresence>
+        {showFight && (
+          <motion.div
+            key="fight" className="btt-stinger" aria-hidden
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.p
+              className="btt-stinger-word text-8xl md:text-9xl text-foreground"
+              style={{ textShadow: "0 0 70px oklch(0.6 0.24 350 / 0.55), 0 0 160px oklch(0.55 0.25 290 / 0.35)" }}
+              initial={{ scale: 2.3, opacity: 0, letterSpacing: "0.45em" }}
+              animate={{ scale: 1, opacity: 1, letterSpacing: "0.06em" }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            >
+              FIGHT
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* KO banner — holds the moment before the battle report */}
+      <AnimatePresence>
+        {koBanner && (
+          <motion.div
+            key="ko" className="btt-stinger btt-stinger--ko"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="text-center px-6">
+              <motion.p
+                className={`btt-stinger-word text-8xl md:text-9xl ${koBanner === "victory" ? "text-neon-cyan" : "text-neon-pink"}`}
+                style={{
+                  textShadow: koBanner === "victory"
+                    ? "0 0 80px oklch(0.75 0.15 180 / 0.6), 0 0 200px oklch(0.75 0.15 180 / 0.3)"
+                    : "0 0 80px oklch(0.6 0.24 350 / 0.6), 0 0 200px oklch(0.6 0.24 350 / 0.3)",
+                }}
+                initial={{ scale: 0.55, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {koBanner === "victory" ? "VICTORY" : "DEFEAT"}
+              </motion.p>
+              <motion.p
+                className="btt-mono-text text-[11px] tracking-[0.4em] text-muted-foreground mt-5"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
+                {koBanner === "victory" ? "OPPONENT ELIMINATED" : `${opponent.name.toUpperCase()} TAKES THE ROUND`}
+              </motion.p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Combo burst — the payoff moment, front and center */}
+      <AnimatePresence>
+        {comboBurst && (
+          <motion.div
+            key={comboBurst.id} aria-hidden
+            className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 1, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.1, times: [0, 0.1, 0.7, 1] }}
+          >
+            <motion.div
+              className="text-center"
+              initial={{ scale: 0.4, rotate: -5 }}
+              animate={{ scale: [0.4, 1.16, 1], rotate: [-5, 2, 0] }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <p
+                className="btt-shout text-7xl md:text-8xl text-neon-pink"
+                style={{ textShadow: "0 0 44px oklch(0.6 0.24 350 / 0.8), 0 0 120px oklch(0.6 0.24 350 / 0.4)" }}
+              >
+                COMBO ×{comboBurst.combo}
+              </p>
+              <p className="btt-mono-text text-[12px] tracking-[0.34em] text-neon-pink/80 mt-2">
+                {comboBurst.mult.toFixed(2)}× DAMAGE
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Wild event overlay — appears on the battle field, not inside the question panel */}
       <AnimatePresence>
         {wildEvent && <WildEventOverlay event={wildEvent} />}

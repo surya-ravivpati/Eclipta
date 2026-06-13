@@ -683,6 +683,16 @@
   font-family: var(--v11-mono); font-size: 11px;
   letter-spacing: .22em; text-transform: uppercase; color: var(--v11-fog-soft);
 }
+.v11-foot-links { display: flex; gap: 4px; }
+.v11-foot-links a {
+  color: var(--v11-fog); text-decoration: none;
+  padding: 6px 12px; border-radius: 4px;
+  transition: color .25s ease;
+}
+.v11-foot-links a:hover { color: var(--v11-ink); }
+
+/* Smooth in-page anchor scrolling (#training, #enter) on the landing page */
+html:has(.v11) { scroll-behavior: smooth; }
 
 /* ─── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 880px) {

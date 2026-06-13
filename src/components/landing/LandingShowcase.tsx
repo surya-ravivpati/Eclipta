@@ -676,6 +676,12 @@ export function LandingShowcase() {
           <span className="v11-brand-mark" />
           <span>Eclipta</span>
         </Link>
+        <nav className="v11-foot-links" aria-label="Footer">
+          <Link to="/about">About</Link>
+          <Link to="/certified">Courses</Link>
+          <Link to="/forum">Forum</Link>
+          <Link to="/battles">Battles</Link>
+        </nav>
         <div>© 2026</div>
       </footer>
 

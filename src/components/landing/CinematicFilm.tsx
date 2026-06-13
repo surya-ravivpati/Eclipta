@@ -185,17 +185,21 @@ export function CinematicFilm() {
       /* Portal flash — whites out the screen well BEFORE the text beats so
          every line lands on a fully bright field, holds, then dissolves
          over Act II's entry. */
-      const flash =
-        smooth(clamp01((p1 - 0.40) / 0.16)) * (1 - smooth(clamp01(p2 / 0.10)));
+      const whiteUp   = smooth(clamp01((p1 - 0.40) / 0.16));
+      const bridgeOut = 1 - smooth(clamp01(p2 / 0.10));
+      const flash     = whiteUp * bridgeOut;
       if (flashRef.current) flashRef.current.style.opacity = flash.toFixed(3);
       /* Inside the light — three dark-ink beats. Each window is comfortably
          wider than its fade, so the line rises, HOLDS at full for a real
-         stretch of scroll, then dissolves before the next arrives. */
+         stretch of scroll, then dissolves before the next arrives. Multiplied
+         by bridgeOut so the last beat dissolves WITH the flash into Act II
+         (it lives outside the pinned section, so it can't scroll away on its
+         own). */
       const STEP_FADE = 0.045;
-      const STEP_WINDOWS: [number, number][] = [[0.58, 0.74], [0.76, 0.91], [0.93, 1.08]];
+      const STEP_WINDOWS: [number, number][] = [[0.58, 0.74], [0.76, 0.91], [0.93, 1.10]];
       stepRefs.current.forEach((el, i) => {
         if (!el) return;
-        const v = win(p1, STEP_WINDOWS[i][0], STEP_WINDOWS[i][1], STEP_FADE);
+        const v = win(p1, STEP_WINDOWS[i][0], STEP_WINDOWS[i][1], STEP_FADE) * bridgeOut;
         el.style.opacity = v.toFixed(3);
         el.style.transform = `translateY(${((1 - v) * 14).toFixed(1)}px) scale(${(0.97 + v * 0.03).toFixed(3)})`;
         el.style.filter = v < 0.99 ? `blur(${((1 - v) * 6).toFixed(1)}px)` : "";
@@ -302,6 +306,15 @@ export function CinematicFilm() {
       </div>
       <div className="cf-flash" ref={flashRef} aria-hidden="true" />
 
+      {/* Beats inside the light — a SIBLING of the flash (same stacking
+          layer) so its z-index actually sits above the white, and gated by
+          the flash's dissolve so it never lingers into Act II. */}
+      <div className="cf-step" aria-hidden="true">
+        <p ref={el => { stepRefs.current[0] = el; }}>Step <em>inside.</em></p>
+        <p ref={el => { stepRefs.current[1] = el; }}>The arena is <em>listening.</em></p>
+        <p ref={el => { stepRefs.current[2] = el; }}>Show it what you <em>know.</em></p>
+      </div>
+
       {/* ── ACT I — Title ───────────────────────────────────────── */}
       <section className="cf-act1" ref={s1Ref}>
         <div className="cf-pin">
@@ -334,12 +347,6 @@ export function CinematicFilm() {
             <p className="cf-tag">
               The study session is over. <em>The arena is open.</em>
             </p>
-          </div>
-
-          <div className="cf-step" aria-hidden="true">
-            <p ref={el => { stepRefs.current[0] = el; }}>Step <em>inside.</em></p>
-            <p ref={el => { stepRefs.current[1] = el; }}>The arena is <em>listening.</em></p>
-            <p ref={el => { stepRefs.current[2] = el; }}>Show it what you <em>know.</em></p>
           </div>
 
           <div className="cf-hint" ref={hintRef} aria-hidden="true">

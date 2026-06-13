@@ -175,9 +175,11 @@
 }
 
 /* Freeze-frames inside the light — a sequence of dark-ink beats on the
-   portal. Lines stack in one grid cell; the camera fades each in turn. */
+   portal. Fixed (viewport-centred) and z-index 31 so it sits in the SAME
+   stacking layer as the flash (z 30) and reliably paints above it; the JS
+   gates opacity to 0 outside Act I so it never covers later sections. */
 .cf-step {
-  position: absolute; inset: 0; z-index: 31;
+  position: fixed; inset: 0; z-index: 31;
   display: grid; place-items: center;
   pointer-events: none;
 }

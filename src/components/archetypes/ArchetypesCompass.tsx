@@ -53,16 +53,17 @@ const AURA: Record<ArchetypeId, string> = {
   god:         "#ffd86b",
 };
 
-// One-word serif label per archetype — the "role" beneath the name.
-const ROLE: Record<ArchetypeId, string> = {
-  speedster:   "Tempo",
-  tank:        "Bulwark",
-  chud:        "Glass cannon",
-  gambler:     "Chaos",
-  healer:      "Sustain",
-  fulcrum:     "Balance",
-  accelerator: "Momentum",
-  god:         "Apex",
+// Short, punchy one-liner per archetype — keeps the panel uncluttered
+// (the full ARCHETYPES descriptions are longer and used elsewhere).
+const BLURB: Record<ArchetypeId, string> = {
+  speedster:   "Less time per question — but faster answers hit harder.",
+  tank:        "A wall of HP. Low damage, and it can't heal.",
+  chud:        "Glass cannon. Massive damage, almost no HP.",
+  gambler:     "Every stat rolled fresh each battle. Pure chaos.",
+  healer:      "Sustain and regen. Built to outlast.",
+  fulcrum:     "Balanced, with the highest multiplier. Rewards consistency.",
+  accelerator: "Damage that scales with every question answered.",
+  god:         "Max stats across the board. The hardest questions.",
 };
 
 /* Wheel geometry — viewBox is 400×400 centred on origin.
@@ -71,7 +72,7 @@ const ROLE: Record<ArchetypeId, string> = {
 const VIEW = 400;
 const R_OUTER  = 190;
 const R_TICK_IN = 178;
-const R_NODE   = 162; // icon-node ring — pushed out so icons never sit on the text
+const R_NODE   = 150; // icon-node ring — clear of the central text, clear of the top navbar
 
 export function ArchetypesCompass() {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -219,8 +220,8 @@ function CompassLayer({
       <motion.div
         className="relative"
         style={{
-          width: "min(112vh, 112vw)",
-          height: "min(112vh, 112vw)",
+          width: "min(92vh, 92vw)",
+          height: "min(92vh, 92vw)",
           rotate: reduce ? 0 : wheelRotate,
         }}
         aria-hidden
@@ -256,7 +257,7 @@ function CompassLayer({
               xPct={x} yPct={y}
               i={i}
               segIndex={segIndex}
-              wheelAngle={-90 + i * wedge + wedge / 2 + 90}
+              wheelRotate={wheelRotate}
               reduce={reduce}
             />
           );
@@ -265,7 +266,7 @@ function CompassLayer({
 
       {/* Fixed lock-on overlay (does NOT rotate) — frames whichever node is
           currently at the top, recolouring smoothly via CSS transition. */}
-      <div className="absolute" style={{ width: "min(112vh, 112vw)", height: "min(112vh, 112vw)" }} aria-hidden>
+      <div className="absolute" style={{ width: "min(92vh, 92vw)", height: "min(92vh, 92vw)" }} aria-hidden>
         <svg viewBox={`${-VIEW / 2} ${-VIEW / 2} ${VIEW} ${VIEW}`} className="w-full h-full">
           {/* Glowing arc on the active wedge */}
           <motion.path
@@ -288,18 +289,22 @@ function CompassLayer({
 }
 
 function CompassNode({
-  id, xPct, yPct, i, segIndex, wheelAngle, reduce,
+  id, xPct, yPct, i, segIndex, wheelRotate, reduce,
 }: {
   id: ArchetypeId;
   xPct: number; yPct: number;
   i: number;
   segIndex: MotionValue<number>;
-  wheelAngle: number;
+  wheelRotate: MotionValue<number>;
   reduce: boolean;
 }) {
   const N = ORDER.length;
   const Icon = ARCHETYPES[id].icon;
   const aura = AURA[id];
+
+  // Counter-rotate by the LIVE wheel rotation so every icon stays perfectly
+  // upright as the wheel turns — including the active one at the top.
+  const counter = useTransform(wheelRotate, (v) => -v);
 
   // Shortest-path distance from this node to the live focus. Distant nodes
   // fade almost entirely, so the ring reads as ~3 icons near the needle
@@ -316,22 +321,21 @@ function CompassNode({
     g > 0.05 ? `0 0 ${(8 + g * 26).toFixed(0)}px ${withAlpha(aura, 0.18 + g * 0.5)}` : "none");
   const bg      = useTransform(glow, (g) => withAlpha(aura, 0.04 + g * 0.18));
 
+  // Wrapper handles centring (static translate); inner motion.div handles
+  // the live counter-rotation + scale, so the two transforms never fight.
   return (
-    <motion.div
+    <div
       className="absolute pointer-events-none select-none"
-      style={{
-        left: `${xPct}%`,
-        top: `${yPct}%`,
-        transform: `translate(-50%, -50%) rotate(${-wheelAngle}deg)`,
-        scale: reduce ? 1 : scale,
-        opacity: reduce ? 0.85 : opacity,
-      }}
+      style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%, -50%)" }}
     >
       <motion.div
         className="flex items-center justify-center rounded-full border"
         style={{
-          width: "clamp(34px, 4vw, 50px)",
-          height: "clamp(34px, 4vw, 50px)",
+          width: "clamp(32px, 3.6vw, 46px)",
+          height: "clamp(32px, 3.6vw, 46px)",
+          rotate: reduce ? 0 : counter,
+          scale: reduce ? 1 : scale,
+          opacity: reduce ? 0.85 : opacity,
           borderColor: reduce ? withAlpha(aura, 0.5) : ring,
           background: reduce ? withAlpha(aura, 0.1) : bg,
           boxShadow: reduce ? "none" : shadow,
@@ -341,7 +345,7 @@ function CompassNode({
       >
         <Icon style={{ width: "42%", height: "42%" }} />
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -358,7 +362,7 @@ function ForegroundLayer({
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div className="relative w-full max-w-3xl mx-auto px-6 h-[62vh]">
         <AnimatePresence mode="wait" initial={false}>
-          <ArchetypePanel key={ORDER[active]} id={ORDER[active]} i={active} reduce={reduce} />
+          <ArchetypePanel key={ORDER[active]} id={ORDER[active]} reduce={reduce} />
         </AnimatePresence>
       </div>
     </div>
@@ -366,8 +370,8 @@ function ForegroundLayer({
 }
 
 function ArchetypePanel({
-  id, i, reduce,
-}: { id: ArchetypeId; i: number; reduce: boolean }) {
+  id, reduce,
+}: { id: ArchetypeId; reduce: boolean }) {
   const arch = ARCHETYPES[id];
   const aura = AURA[id];
   // Names read "The Speedster" — render the article as a quiet serif kicker
@@ -385,15 +389,6 @@ function ArchetypePanel({
       transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
       style={{ pointerEvents: "none" }}
     >
-      {/* Eyebrow */}
-      <p
-        className="mb-5 inline-flex items-center gap-3"
-        style={{ fontFamily: F_MONO, fontSize: 11, letterSpacing: "0.34em", textTransform: "uppercase", color: aura }}
-      >
-        <span style={{ width: 22, height: 1, background: "currentColor", opacity: 0.7 }} />
-        {String(i + 1).padStart(2, "0")} / 08 · {ROLE[id]}
-      </p>
-
       {/* Name */}
       <h2 className="mb-5 leading-[0.9]">
         {lead && (
@@ -416,12 +411,12 @@ function ArchetypePanel({
         </span>
       </h2>
 
-      {/* Blurb — narrow so it never reaches the node ring */}
+      {/* Short blurb — narrow so it never reaches the node ring */}
       <p
-        className="max-w-md mb-8"
+        className="max-w-sm mb-8"
         style={{ fontSize: "clamp(14px, 1.4vw, 16.5px)", lineHeight: 1.6, color: "#c8cdd8", fontWeight: 300 }}
       >
-        {arch.description}
+        {BLURB[id]}
       </p>
 
       {/* Stats */}

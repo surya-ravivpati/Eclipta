@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
 import { useTheme } from "@/hooks/use-theme";
+import { EcliptaLogo } from "@/components/EcliptaLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, User, Menu, X, Zap, ChevronDown, Sun, Moon, Monitor, Bell } from "lucide-react";
 import { toast } from "sonner";
@@ -66,11 +67,8 @@ export function Navbar() {
     <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/70 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-9 min-w-0">
-          <Link to="/" className="flex items-center gap-3 shrink-0 text-foreground" aria-label="Eclipta home">
-            <span className="relative w-[11px] h-[11px]" aria-hidden>
-              <span className="absolute inset-0 rounded-full border border-neon-purple" />
-              <span className="absolute inset-[3.5px] rounded-full bg-neon-purple" />
-            </span>
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 text-foreground" aria-label="Eclipta home">
+            <EcliptaLogo size={24} className="text-neon-purple shrink-0" />
             <span className="font-mono text-xs tracking-[0.3em] uppercase">Eclipta</span>
           </Link>
           <div className="hidden lg:flex gap-1">

@@ -124,6 +124,19 @@
   text-align: center; padding: 0 24px;
   will-change: transform, opacity, filter;
 }
+.cf-title-logo {
+  display: block;
+  width: clamp(88px, 11vw, 152px);
+  height: auto;
+  margin: 0 auto 28px;
+  filter: drop-shadow(0 0 36px oklch(0.72 0.14 235 / 0.6));
+  animation: cf-soft-in 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.05s both,
+             cf-logo-float 7s ease-in-out 1.6s infinite;
+}
+@keyframes cf-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
 .cf-kicker {
   font-family: var(--cf-mono); font-size: 11px;
   letter-spacing: 0.44em; text-transform: uppercase;
@@ -415,17 +428,9 @@
   color: var(--cf-ink); text-decoration: none;
   font-size: 12px; letter-spacing: 0.3em;
 }
-.cf-brand-mark {
-  width: 11px; height: 11px; flex-shrink: 0; position: relative;
-}
-.cf-brand-mark::before {
-  content: ""; position: absolute; inset: 0;
-  border: 1px solid var(--cf-accent); border-radius: 50%;
-  box-shadow: 0 0 12px oklch(0.82 0.12 235 / 0.5);
-}
-.cf-brand-mark::after {
-  content: ""; position: absolute; inset: 3.5px;
-  background: var(--cf-accent); border-radius: 50%;
+.cf-brand-logo {
+  width: 22px; height: 22px; flex-shrink: 0;
+  filter: drop-shadow(0 0 10px oklch(0.82 0.12 235 / 0.5));
 }
 .cf-foot-links { display: flex; gap: 6px; }
 .cf-foot-links a {
@@ -453,9 +458,10 @@ html:has(.cf) { scroll-behavior: smooth; }
 
 /* ─── Reduced motion — the film becomes a still gallery ────────── */
 @media (prefers-reduced-motion: reduce) {
-  .cf-char, .cf-kicker, .cf-tag, .cf-hint, .cf-sweep {
+  .cf-char, .cf-kicker, .cf-tag, .cf-hint, .cf-sweep, .cf-title-logo {
     animation: none;
   }
+  .cf-title-logo { transform: none; }
   .cf-char { opacity: 1; filter: none; transform: none; }
   .cf-kicker, .cf-tag { opacity: 1; }
   .cf-sweep { display: none; }

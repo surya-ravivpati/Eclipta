@@ -335,6 +335,14 @@ export function CinematicFilm() {
           <div className="cf-core" ref={coreRef} aria-hidden="true" />
 
           <div className="cf-title-stack" ref={titleRef}>
+            <img
+              src="/eclipta-logo.png"
+              alt="Eclipta"
+              className="cf-title-logo"
+              width={150}
+              height={150}
+              draggable={false}
+            />
             <p className="cf-kicker">Eclipta · Season 01</p>
             <h1 className="cf-title" aria-label="Eclipta">
               {"ECLIPTA".split("").map((c, i) => (
@@ -528,7 +536,7 @@ export function CinematicFilm() {
       {/* ── Credits ─────────────────────────────────────────────── */}
       <footer className="cf-foot">
         <Link to="/" className="cf-brand">
-          <span className="cf-brand-mark" />
+          <img src="/eclipta-logo.png" alt="" className="cf-brand-logo" width={22} height={22} draggable={false} />
           <span>Eclipta</span>
         </Link>
         <nav className="cf-foot-links" aria-label="Footer">

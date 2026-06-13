@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import { Github, Mail } from "lucide-react";
-import { EcliptaLogo } from "@/components/EcliptaLogo";
 
 const FOOTER_GROUPS = [
   {
@@ -35,7 +34,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="inline-flex items-center gap-2.5 text-foreground" aria-label="Eclipta home">
-              <EcliptaLogo size={24} className="text-neon-purple shrink-0" />
+              <img src="/eclipta-logo.png" alt="" width={24} height={24} className="shrink-0 select-none" draggable={false} />
               <span className="font-mono text-xs tracking-[0.3em] uppercase">Eclipta</span>
             </Link>
             <p className="text-xs text-muted-foreground mt-4 leading-relaxed max-w-xs">

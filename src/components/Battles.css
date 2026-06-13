@@ -4,8 +4,6 @@
    technique: fixed layered bg, blurred aurora, grid, vignette, noise.
    ────────────────────────────────────────────────────────────── */
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500&display=swap');
-
 /* ─── Fixed atmospheric background ─────────────────────────── */
 /* z-index: 0 sits above the body paint but below z-index: 1 content */
 .btt-bg {

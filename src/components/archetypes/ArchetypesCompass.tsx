@@ -65,12 +65,13 @@ const ROLE: Record<ArchetypeId, string> = {
   god:         "Apex",
 };
 
-/* Wheel geometry — viewBox is 400×400 centred on origin. */
+/* Wheel geometry — viewBox is 400×400 centred on origin.
+   Nodes orbit near the outer ring (R_NODE high) so they hug the edge of
+   the wheel and leave a clear "stage" in the middle for the panel text. */
 const VIEW = 400;
-const R_OUTER  = 188;
-const R_TICK_IN = 176;
-const R_NODE   = 128; // icon-node ring
-const R_HUB    = 54;
+const R_OUTER  = 190;
+const R_TICK_IN = 178;
+const R_NODE   = 162; // icon-node ring — pushed out so icons never sit on the text
 
 export function ArchetypesCompass() {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -146,15 +147,16 @@ function BackgroundLayer({
         style={{ background: wash }}
         aria-hidden
       />
-      {/* Fine dot field, masked toward the centre */}
+      {/* Fine dot field — faint, masked to the outer ring so the centre
+          stage stays clean behind the panel text */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-25"
+        className="absolute inset-0 pointer-events-none opacity-[0.12]"
         style={{
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(180,205,255,0.16) 1px, transparent 1.5px)",
-          backgroundSize: "44px 44px",
-          maskImage: "radial-gradient(circle at 50% 46%, black 0%, transparent 78%)",
-          WebkitMaskImage: "radial-gradient(circle at 50% 46%, black 0%, transparent 78%)",
+          backgroundSize: "52px 52px",
+          maskImage: "radial-gradient(circle at 50% 46%, transparent 24%, black 60%, transparent 82%)",
+          WebkitMaskImage: "radial-gradient(circle at 50% 46%, transparent 24%, black 60%, transparent 82%)",
         }}
         aria-hidden
       />
@@ -217,18 +219,17 @@ function CompassLayer({
       <motion.div
         className="relative"
         style={{
-          width: "min(108vh, 108vw)",
-          height: "min(108vh, 108vw)",
+          width: "min(112vh, 112vw)",
+          height: "min(112vh, 112vw)",
           rotate: reduce ? 0 : wheelRotate,
         }}
         aria-hidden
       >
         <svg viewBox={`${-VIEW / 2} ${-VIEW / 2} ${VIEW} ${VIEW}`} className="w-full h-full absolute inset-0">
-          {/* Two clean rings */}
-          <circle cx="0" cy="0" r={R_OUTER} fill="none" stroke="rgba(210,225,255,0.14)" strokeWidth="0.6" />
-          <circle cx="0" cy="0" r={R_HUB}  fill="none" stroke="rgba(210,225,255,0.12)" strokeWidth="0.6" />
+          {/* One clean outer ring */}
+          <circle cx="0" cy="0" r={R_OUTER} fill="none" stroke="rgba(210,225,255,0.12)" strokeWidth="0.6" />
 
-          {/* Boundary ticks (between wedges) */}
+          {/* Boundary ticks (between wedges) — the only marks on the ring */}
           {ORDER.map((_, i) => {
             const ang = (-90 + i * wedge - wedge / 2) * Math.PI / 180;
             return (
@@ -236,13 +237,10 @@ function CompassLayer({
                 key={`tick-${i}`}
                 x1={(Math.cos(ang) * R_TICK_IN).toFixed(2)} y1={(Math.sin(ang) * R_TICK_IN).toFixed(2)}
                 x2={(Math.cos(ang) * R_OUTER).toFixed(2)}   y2={(Math.sin(ang) * R_OUTER).toFixed(2)}
-                stroke="rgba(210,225,255,0.16)" strokeWidth="0.6"
+                stroke="rgba(210,225,255,0.14)" strokeWidth="0.6"
               />
             );
           })}
-
-          {/* Hub core */}
-          <circle cx="0" cy="0" r="2.6" fill="rgba(220,235,255,0.7)" />
         </svg>
 
         {/* Icon nodes — HTML overlay, counter-rotated to stay upright */}
@@ -267,7 +265,7 @@ function CompassLayer({
 
       {/* Fixed lock-on overlay (does NOT rotate) — frames whichever node is
           currently at the top, recolouring smoothly via CSS transition. */}
-      <div className="absolute" style={{ width: "min(108vh, 108vw)", height: "min(108vh, 108vw)" }} aria-hidden>
+      <div className="absolute" style={{ width: "min(112vh, 112vw)", height: "min(112vh, 112vw)" }} aria-hidden>
         <svg viewBox={`${-VIEW / 2} ${-VIEW / 2} ${VIEW} ${VIEW}`} className="w-full h-full">
           {/* Glowing arc on the active wedge */}
           <motion.path
@@ -276,12 +274,6 @@ function CompassLayer({
             strokeWidth="2.4"
             strokeLinecap="round"
             style={{ stroke: auraColour, transition: "stroke 0.6s ease", filter: "drop-shadow(0 0 6px currentColor)" }}
-          />
-          {/* Spoke from hub to the active node */}
-          <motion.line
-            x1="0" y1={-R_HUB - 4} x2="0" y2={-R_NODE + 22}
-            strokeWidth="1"
-            style={{ stroke: auraColour, transition: "stroke 0.6s ease", opacity: 0.5 }}
           />
           {/* Needle marker just inside the outer ring */}
           <motion.path
@@ -309,19 +301,20 @@ function CompassNode({
   const Icon = ARCHETYPES[id].icon;
   const aura = AURA[id];
 
-  // Shortest-path distance from this node to the live focus.
+  // Shortest-path distance from this node to the live focus. Distant nodes
+  // fade almost entirely, so the ring reads as ~3 icons near the needle
+  // (active + neighbours) rather than eight competing glyphs.
   const distance = useTransform(segIndex, (s) => {
     const raw = Math.abs(s - (i + 0.5));
     return Math.min(raw, N - raw);
   });
-  const scale   = useTransform(distance, [0, 0.5, 2], [1.35, 1.1, 0.78]);
-  const opacity = useTransform(distance, [0, 0.5, 2.5], [1, 0.8, 0.28]);
+  const scale   = useTransform(distance, [0, 0.5, 1.6], [1.3, 0.95, 0.62]);
+  const opacity = useTransform(distance, [0, 0.6, 1.5, 3], [1, 0.55, 0.1, 0]);
   const glow    = useTransform(distance, [0, 0.5], [1, 0]);
-  const ring    = useTransform(glow, (g) =>
-    `${withAlpha(aura, 0.25 + g * 0.6)}`);
+  const ring    = useTransform(glow, (g) => withAlpha(aura, 0.2 + g * 0.65));
   const shadow  = useTransform(glow, (g) =>
-    g > 0.05 ? `0 0 ${(10 + g * 26).toFixed(0)}px ${withAlpha(aura, 0.2 + g * 0.5)}` : "none");
-  const bg      = useTransform(glow, (g) => withAlpha(aura, 0.06 + g * 0.16));
+    g > 0.05 ? `0 0 ${(8 + g * 26).toFixed(0)}px ${withAlpha(aura, 0.18 + g * 0.5)}` : "none");
+  const bg      = useTransform(glow, (g) => withAlpha(aura, 0.04 + g * 0.18));
 
   return (
     <motion.div
@@ -337,8 +330,8 @@ function CompassNode({
       <motion.div
         className="flex items-center justify-center rounded-full border"
         style={{
-          width: "clamp(40px, 5.2vw, 60px)",
-          height: "clamp(40px, 5.2vw, 60px)",
+          width: "clamp(34px, 4vw, 50px)",
+          height: "clamp(34px, 4vw, 50px)",
           borderColor: reduce ? withAlpha(aura, 0.5) : ring,
           background: reduce ? withAlpha(aura, 0.1) : bg,
           boxShadow: reduce ? "none" : shadow,
@@ -346,7 +339,7 @@ function CompassNode({
           backdropFilter: "blur(2px)",
         }}
       >
-        <Icon style={{ width: "44%", height: "44%" }} />
+        <Icon style={{ width: "42%", height: "42%" }} />
       </motion.div>
     </motion.div>
   );
@@ -402,11 +395,11 @@ function ArchetypePanel({
       </p>
 
       {/* Name */}
-      <h2 className="mb-4 leading-[0.92]">
+      <h2 className="mb-5 leading-[0.9]">
         {lead && (
           <span
-            className="block"
-            style={{ fontFamily: F_SERIF, fontStyle: "italic", fontSize: "clamp(20px, 2.4vw, 30px)", color: "var(--cf-dim, #b9bfcc)", opacity: 0.85 }}
+            className="block mb-1"
+            style={{ fontFamily: F_SERIF, fontStyle: "italic", fontSize: "clamp(19px, 2.2vw, 28px)", color: "#b9bfcc", opacity: 0.85 }}
           >
             {lead}
           </span>
@@ -415,18 +408,18 @@ function ArchetypePanel({
           className="block"
           style={{
             fontFamily: F_DISPLAY, fontWeight: 200,
-            fontSize: "clamp(48px, 7vw, 100px)", letterSpacing: "-0.03em",
-            textShadow: `0 0 44px ${withAlpha(aura, 0.45)}`,
+            fontSize: "clamp(44px, 6vw, 88px)", letterSpacing: "-0.03em",
+            textShadow: `0 0 48px ${withAlpha(aura, 0.4)}`,
           }}
         >
           {noun}
         </span>
       </h2>
 
-      {/* Blurb */}
+      {/* Blurb — narrow so it never reaches the node ring */}
       <p
-        className="max-w-xl mb-8"
-        style={{ fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.62, color: "#c8cdd8", fontWeight: 300 }}
+        className="max-w-md mb-8"
+        style={{ fontSize: "clamp(14px, 1.4vw, 16.5px)", lineHeight: 1.6, color: "#c8cdd8", fontWeight: 300 }}
       >
         {arch.description}
       </p>
@@ -445,14 +438,6 @@ function ArchetypePanel({
           aura={aura}
         />
       </div>
-
-      {/* Passive tagline */}
-      <p
-        className="mt-6"
-        style={{ fontFamily: F_MONO, fontSize: 10.5, letterSpacing: "0.22em", textTransform: "uppercase", color: withAlpha(aura, 0.85) }}
-      >
-        {arch.passive}
-      </p>
     </motion.div>
   );
 }

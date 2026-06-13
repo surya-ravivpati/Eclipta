@@ -1,0 +1,474 @@
+/* ───────────────────────────────────────────────────────────────
+   CinematicFilm — the Eclipta homepage as a directed film.
+
+   Four acts, one continuous environment. A single rAF camera
+   (CinematicFilm.tsx) drives every scene through transform /
+   opacity / filter only, so the whole experience composites on
+   the GPU. No grids, no scanlines, no chrome — light, type and
+   depth carry the entire design.
+   Fonts (Instrument Serif, JetBrains Mono) load from the HTML head
+   in __root.tsx — no CSS @import here.
+   ─────────────────────────────────────────────────────────────── */
+
+.cf {
+  --cf-bg:      #04050a;
+  --cf-ink:     #f4f6fa;
+  --cf-dim:     #b9bfcc;
+  --cf-fog:     #767b87;
+  --cf-line:    rgba(255, 255, 255, 0.08);
+  --cf-accent:  oklch(0.82 0.12 235);
+  --cf-flash:   #dbe7ff;
+
+  --cf-display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --cf-serif:   "Instrument Serif", "Times New Roman", serif;
+  --cf-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  background: var(--cf-bg);
+  color: var(--cf-ink);
+  font-family: var(--cf-display);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip; /* not hidden — hidden would kill position:sticky */
+  position: relative;
+}
+
+/* ─── The environment — one fixed, evolving atmosphere ─────────── */
+.cf-bg {
+  position: fixed; inset: 0; z-index: -1;
+  overflow: hidden; pointer-events: none;
+  background: var(--cf-bg);
+}
+.cf-aurora {
+  position: absolute; inset: -22%;
+  /* hue + intensity vars are driven per-frame by the camera */
+  background:
+    radial-gradient(58% 52% at 50% 116%,
+      oklch(0.50 0.17 var(--h1, 248) / calc(var(--i, 0.45) * 0.9)), transparent 64%),
+    radial-gradient(40% 44% at 18% -6%,
+      oklch(0.45 0.16 var(--h2, 305) / calc(var(--i, 0.45) * 0.55)), transparent 62%),
+    radial-gradient(36% 40% at 86% 16%,
+      oklch(0.46 0.14 var(--h1, 248) / calc(var(--i, 0.45) * 0.4)), transparent 60%);
+  filter: blur(70px);
+  will-change: transform;
+  animation: cf-aurora-drift 36s ease-in-out infinite alternate;
+}
+@keyframes cf-aurora-drift {
+  0%   { transform: none; }
+  100% { transform: translate(3%, 2%) scale(1.06); }
+}
+.cf-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.04 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+.cf-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(88% 78% at 50% 44%, transparent 42%, rgba(4, 5, 10, 0.88) 100%);
+}
+
+/* Portal flash — bridges Act I into Act II. Driven per-frame. */
+.cf-flash {
+  position: fixed; inset: 0; z-index: 30;
+  background: radial-gradient(120% 120% at 50% 50%, #ffffff 0%, var(--cf-flash) 38%, oklch(0.72 0.13 240) 100%);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+/* ─── Shared scene plumbing ────────────────────────────────────── */
+.cf-pin {
+  position: sticky; top: 0;
+  height: 100vh; height: 100svh;
+  min-height: 600px;
+  overflow: hidden;
+  display: grid; place-items: center;
+}
+.cf-actlabel {
+  font-family: var(--cf-mono); font-size: 10.5px;
+  letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--cf-fog);
+  display: inline-flex; align-items: center; gap: 14px;
+}
+.cf-actlabel::before { content: ""; width: 24px; height: 1px; background: currentColor; opacity: 0.7; }
+
+/* ─── ACT I — Title ────────────────────────────────────────────── */
+.cf-act1 { position: relative; height: 300vh; }
+
+/* Star field — sparse, slow, three depths */
+.cf-stars { position: absolute; inset: -6%; will-change: transform; }
+.cf-star {
+  position: absolute; border-radius: 50%;
+  background: #cfd9ee;
+  animation: cf-star-breathe var(--d, 7s) ease-in-out infinite alternate;
+}
+@keyframes cf-star-breathe {
+  from { opacity: calc(var(--o, 0.3) * 0.5); }
+  to   { opacity: var(--o, 0.3); }
+}
+
+/* The core — a distant light that becomes the portal */
+.cf-core {
+  position: absolute; left: 50%; top: 50%;
+  width: 140px; height: 140px; margin: -70px 0 0 -70px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #ffffff 0%, var(--cf-flash) 28%, oklch(0.70 0.14 240 / 0.65) 58%, transparent 74%);
+  transform: scale(0.16);
+  will-change: transform, opacity;
+}
+
+/* Title stack — film-title reveal */
+.cf-title-stack {
+  position: relative; z-index: 2;
+  text-align: center; padding: 0 24px;
+  will-change: transform, opacity, filter;
+}
+.cf-kicker {
+  font-family: var(--cf-mono); font-size: 11px;
+  letter-spacing: 0.44em; text-transform: uppercase;
+  color: var(--cf-fog); margin: 0 0 30px;
+  animation: cf-soft-in 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both;
+}
+.cf-title {
+  font-family: var(--cf-display);
+  font-weight: 200;
+  font-size: clamp(64px, 12.5vw, 190px);
+  line-height: 0.96;
+  letter-spacing: 0.08em;
+  margin: 0 0 0 0.08em; /* optically recenter the tracked word */
+  text-indent: 0;
+  position: relative;
+}
+.cf-char {
+  display: inline-block;
+  animation: cf-char-in 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) calc(0.35s + var(--ci) * 75ms) both;
+}
+@keyframes cf-char-in {
+  from { opacity: 0; transform: translateY(18px) scale(1.04); filter: blur(18px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+/* One pass of light across the title after it settles */
+.cf-sweep {
+  position: absolute; inset: -8% -20%;
+  background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, 0.5) 50%, transparent 58%);
+  mix-blend-mode: overlay;
+  transform: translateX(-110%);
+  animation: cf-sweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.5s 1 forwards;
+  pointer-events: none;
+}
+@keyframes cf-sweep { to { transform: translateX(110%); } }
+.cf-tag {
+  font-size: clamp(16px, 1.7vw, 21px);
+  color: var(--cf-dim);
+  margin: 34px auto 0; max-width: 36ch;
+  line-height: 1.5;
+  animation: cf-soft-in 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) 1.25s both;
+}
+.cf-tag em {
+  font-family: var(--cf-serif); font-style: italic;
+  color: var(--cf-ink); letter-spacing: 0;
+}
+@keyframes cf-soft-in {
+  from { opacity: 0; transform: translateY(14px); filter: blur(8px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* Freeze-frame inside the light — dark ink on the portal */
+.cf-step {
+  position: absolute; inset: 0; z-index: 31;
+  display: grid; place-items: center;
+  opacity: 0; pointer-events: none;
+  will-change: opacity, transform, filter;
+}
+.cf-step p {
+  font-family: var(--cf-display); font-weight: 200;
+  font-size: clamp(34px, 4.6vw, 64px);
+  letter-spacing: -0.02em;
+  color: #0a1224;
+  margin: 0;
+}
+.cf-step p em { font-family: var(--cf-serif); font-style: italic; }
+
+/* Scroll hint */
+.cf-hint {
+  position: absolute; bottom: 38px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  font-family: var(--cf-mono); font-size: 10px;
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--cf-fog);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  animation: cf-soft-in 1.4s ease 2.4s both;
+}
+.cf-hint.cf-hidden { opacity: 0 !important; transition: opacity 0.5s ease; }
+.cf-hint-line {
+  width: 1px; height: 30px;
+  background: linear-gradient(to bottom, transparent, var(--cf-accent));
+  animation: cf-hint-slide 2.6s ease-in-out infinite;
+}
+@keyframes cf-hint-slide {
+  0%   { transform: scaleY(0.15); transform-origin: top; }
+  55%  { transform: scaleY(1); }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+/* ─── ACT II — The Loop (morphing ring) ────────────────────────── */
+.cf-act2 { position: relative; height: 440vh; }
+.cf-act2-grid {
+  width: 100%; max-width: 1200px;
+  padding: 0 40px;
+  display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 1.1fr);
+  align-items: center; gap: 56px;
+}
+.cf-act2-copy { position: relative; min-height: 320px; }
+.cf-act2-copy .cf-actlabel { position: absolute; top: -86px; left: 0; }
+
+.cf-ch {
+  position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  will-change: opacity, transform, filter;
+}
+.cf-ch h2 {
+  font-family: var(--cf-display); font-weight: 200;
+  font-size: clamp(38px, 4.6vw, 72px);
+  line-height: 1.05; letter-spacing: -0.028em;
+  margin: 0 0 26px; text-wrap: balance;
+}
+.cf-ch h2 em { font-family: var(--cf-serif); font-style: italic; font-weight: 400; }
+.cf-ch p {
+  font-size: 16.5px; line-height: 1.65;
+  color: var(--cf-dim); max-width: 44ch; margin: 0;
+  font-weight: 300; text-wrap: pretty;
+}
+
+.cf-ringwrap {
+  position: relative;
+  width: min(480px, 78vw); aspect-ratio: 1;
+  justify-self: center;
+  will-change: transform;
+}
+.cf-ring-svg { width: 100%; height: 100%; display: block; }
+.cf-ring-center {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  pointer-events: none;
+}
+.cf-num {
+  grid-area: 1 / 1;
+  font-family: var(--cf-display); font-weight: 200;
+  font-size: clamp(40px, 5vw, 62px);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cf-ink);
+  opacity: 0;
+  will-change: opacity, filter;
+}
+
+/* ─── ACT III — The Climb ──────────────────────────────────────── */
+.cf-act4 { position: relative; height: 400vh; }
+.cf-climb-stage {
+  position: relative; width: 100%; height: 100%;
+  display: grid; place-items: center;
+}
+.cf-climb-stage .cf-actlabel {
+  position: absolute; top: clamp(76px, 12vh, 130px); left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.cf-climb-meta {
+  position: absolute; bottom: clamp(48px, 9vh, 90px); left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--cf-mono); font-size: 11px;
+  letter-spacing: 0.3em; color: var(--cf-fog);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cf-beam {
+  position: absolute; left: 50%; top: 18%; bottom: 18%;
+  width: 1px; margin-left: -0.5px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.cf-beam-fill {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, currentColor, transparent);
+  color: var(--cf-accent);
+  transform-origin: bottom;
+  transform: scaleY(0);
+  will-change: transform;
+}
+.cf-tierstack {
+  position: relative; z-index: 2;
+  display: grid; place-items: center;
+  will-change: opacity, filter;
+}
+.cf-tier {
+  grid-area: 1 / 1;
+  font-family: var(--cf-display); font-weight: 200;
+  font-size: clamp(58px, 11vw, 168px);
+  letter-spacing: -0.01em; line-height: 1;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+  filter: blur(14px);
+  transition:
+    opacity 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+  text-shadow: 0 0 70px color-mix(in oklch, var(--tc) 45%, transparent);
+  color: var(--tc);
+}
+.cf-tier--on { opacity: 1; transform: none; filter: blur(0); }
+.cf-tier--past { opacity: 0; transform: translateY(-26px) scale(0.985); }
+
+/* Freeze frame — the 284 statement */
+.cf-freeze {
+  position: absolute; inset: 0; z-index: 3;
+  display: grid; place-items: center;
+  text-align: center; padding: 0 28px;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.cf-freeze-num {
+  font-family: var(--cf-display); font-weight: 200;
+  font-size: clamp(96px, 15vw, 230px);
+  line-height: 0.95; letter-spacing: -0.03em;
+  color: #ffe9a8;
+  text-shadow: 0 0 90px oklch(0.85 0.12 90 / 0.45);
+  margin: 0;
+}
+.cf-freeze-line {
+  font-size: clamp(18px, 2vw, 26px);
+  color: var(--cf-dim); margin: 22px 0 0;
+}
+.cf-freeze-line em { font-family: var(--cf-serif); font-style: italic; color: var(--cf-ink); }
+.cf-freeze-note {
+  font-family: var(--cf-mono); font-size: 11px;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--cf-fog); margin-top: 30px;
+}
+
+/* ─── ACT IV — Resolution ──────────────────────────────────────── */
+.cf-act5 {
+  position: relative;
+  min-height: 120vh; min-height: 120svh;
+  display: grid; place-items: center;
+  text-align: center; padding: 18vh 28px 14vh;
+}
+.cf-act5 h2 {
+  font-family: var(--cf-display); font-weight: 200;
+  font-size: clamp(52px, 8vw, 130px);
+  line-height: 1; letter-spacing: -0.032em;
+  margin: 26px 0 0;
+}
+.cf-act5 h2 em { font-family: var(--cf-serif); font-style: italic; font-weight: 400; }
+.cf-act5-sub {
+  font-size: 17px; line-height: 1.6; color: var(--cf-dim);
+  max-width: 44ch; margin: 28px auto 48px;
+}
+.cf-cta-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 26px; flex-wrap: wrap;
+}
+.cf-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--cf-display); font-weight: 400;
+  font-size: 15px; letter-spacing: 0;
+  padding: 16px 34px; border-radius: 999px;
+  background: var(--cf-ink); color: #0a0c12;
+  text-decoration: none;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.45s ease;
+}
+.cf-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 60px -22px oklch(0.82 0.12 235 / 0.55);
+}
+.cf-link {
+  font-family: var(--cf-display); font-size: 15px;
+  color: var(--cf-dim); text-decoration: none;
+  border-bottom: 1px solid var(--cf-line);
+  padding-bottom: 3px;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+.cf-link:hover { color: var(--cf-ink); border-color: var(--cf-dim); }
+
+/* ─── Footer ───────────────────────────────────────────────────── */
+.cf-foot {
+  position: relative;
+  padding: 34px 40px;
+  border-top: 1px solid var(--cf-line);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap;
+  font-family: var(--cf-mono); font-size: 11px;
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--cf-fog);
+}
+.cf-brand {
+  display: flex; align-items: center; gap: 13px;
+  color: var(--cf-ink); text-decoration: none;
+  font-size: 12px; letter-spacing: 0.3em;
+}
+.cf-brand-mark {
+  width: 11px; height: 11px; flex-shrink: 0; position: relative;
+}
+.cf-brand-mark::before {
+  content: ""; position: absolute; inset: 0;
+  border: 1px solid var(--cf-accent); border-radius: 50%;
+  box-shadow: 0 0 12px oklch(0.82 0.12 235 / 0.5);
+}
+.cf-brand-mark::after {
+  content: ""; position: absolute; inset: 3.5px;
+  background: var(--cf-accent); border-radius: 50%;
+}
+.cf-foot-links { display: flex; gap: 6px; }
+.cf-foot-links a {
+  color: var(--cf-fog); text-decoration: none;
+  padding: 6px 11px; transition: color 0.25s ease;
+}
+.cf-foot-links a:hover { color: var(--cf-ink); }
+
+/* Smooth in-page anchor scrolling on the landing page */
+html:has(.cf) { scroll-behavior: smooth; }
+
+/* ─── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .cf-act2-grid {
+    grid-template-columns: 1fr;
+    gap: 0; padding: 0 26px;
+    align-content: center;
+  }
+  .cf-ringwrap { width: min(58vw, 360px); order: -1; margin-bottom: 26px; }
+  .cf-act2-copy { min-height: 250px; text-align: center; }
+  .cf-act2-copy .cf-actlabel { position: static; margin-bottom: 18px; }
+  .cf-ch p { margin: 0 auto; }
+  .cf-beam { display: none; }
+}
+
+/* ─── Reduced motion — the film becomes a still gallery ────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cf-char, .cf-kicker, .cf-tag, .cf-hint, .cf-sweep {
+    animation: none;
+  }
+  .cf-char { opacity: 1; filter: none; transform: none; }
+  .cf-kicker, .cf-tag { opacity: 1; }
+  .cf-sweep { display: none; }
+  .cf-aurora { animation: none; }
+  .cf-star { animation: none; opacity: var(--o, 0.3); }
+  .cf-hint, .cf-hint-line { display: none; }
+}
+.cf-static .cf-act1, .cf-static .cf-act2, .cf-static .cf-act4 { height: auto; }
+.cf-static .cf-pin { position: relative; height: auto; min-height: 100svh; padding: 14vh 0; }
+.cf-static .cf-core, .cf-static .cf-flash, .cf-static .cf-step { display: none; }
+.cf-static .cf-ch {
+  position: relative; top: auto; transform: none;
+  opacity: 1 !important; filter: none !important;
+  margin-bottom: 56px;
+}
+.cf-static .cf-act2-copy { min-height: 0; }
+.cf-static .cf-num { opacity: 0 !important; }
+.cf-static .cf-tier { display: none; }
+.cf-static .cf-tier--on { display: block; opacity: 1; transform: none; filter: none; }
+.cf-static .cf-freeze {
+  position: relative; opacity: 1 !important; margin-top: 60px;
+}
+.cf-static .cf-beam { display: none; }

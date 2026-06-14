@@ -28,6 +28,7 @@ import { Route as AuthenticatedLunaRouteImport } from './routes/_authenticated.l
 import { Route as AuthenticatedForumRouteImport } from './routes/_authenticated.forum'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated.collection'
 import { Route as AuthenticatedCertifiedRouteImport } from './routes/_authenticated.certified'
+import { Route as AuthenticatedCalibrationRouteImport } from './routes/_authenticated.calibration'
 import { Route as AuthenticatedBuildCourseRouteImport } from './routes/_authenticated.build-course'
 import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticated.battles'
 import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
@@ -133,6 +134,12 @@ const AuthenticatedCertifiedRoute = AuthenticatedCertifiedRouteImport.update({
   path: '/certified',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCalibrationRoute =
+  AuthenticatedCalibrationRouteImport.update({
+    id: '/calibration',
+    path: '/calibration',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedBuildCourseRoute =
   AuthenticatedBuildCourseRouteImport.update({
     id: '/build-course',
@@ -198,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/battles': typeof AuthenticatedBattlesRoute
   '/build-course': typeof AuthenticatedBuildCourseRoute
+  '/calibration': typeof AuthenticatedCalibrationRoute
   '/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/collection': typeof AuthenticatedCollectionRoute
   '/forum': typeof AuthenticatedForumRoute
@@ -227,6 +235,7 @@ export interface FileRoutesByTo {
   '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/battles': typeof AuthenticatedBattlesRoute
   '/build-course': typeof AuthenticatedBuildCourseRoute
+  '/calibration': typeof AuthenticatedCalibrationRoute
   '/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/collection': typeof AuthenticatedCollectionRoute
   '/forum': typeof AuthenticatedForumRoute
@@ -258,6 +267,7 @@ export interface FileRoutesById {
   '/_authenticated/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/_authenticated/battles': typeof AuthenticatedBattlesRoute
   '/_authenticated/build-course': typeof AuthenticatedBuildCourseRoute
+  '/_authenticated/calibration': typeof AuthenticatedCalibrationRoute
   '/_authenticated/certified': typeof AuthenticatedCertifiedRouteWithChildren
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/forum': typeof AuthenticatedForumRoute
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
     | '/adaptive-tests'
     | '/battles'
     | '/build-course'
+    | '/calibration'
     | '/certified'
     | '/collection'
     | '/forum'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/adaptive-tests'
     | '/battles'
     | '/build-course'
+    | '/calibration'
     | '/certified'
     | '/collection'
     | '/forum'
@@ -348,6 +360,7 @@ export interface FileRouteTypes {
     | '/_authenticated/adaptive-tests'
     | '/_authenticated/battles'
     | '/_authenticated/build-course'
+    | '/_authenticated/calibration'
     | '/_authenticated/certified'
     | '/_authenticated/collection'
     | '/_authenticated/forum'
@@ -515,6 +528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCertifiedRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/calibration': {
+      id: '/_authenticated/calibration'
+      path: '/calibration'
+      fullPath: '/calibration'
+      preLoaderRoute: typeof AuthenticatedCalibrationRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/build-course': {
       id: '/_authenticated/build-course'
       path: '/build-course'
@@ -616,6 +636,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdaptiveTestsRoute: typeof AuthenticatedAdaptiveTestsRoute
   AuthenticatedBattlesRoute: typeof AuthenticatedBattlesRoute
   AuthenticatedBuildCourseRoute: typeof AuthenticatedBuildCourseRoute
+  AuthenticatedCalibrationRoute: typeof AuthenticatedCalibrationRoute
   AuthenticatedCertifiedRoute: typeof AuthenticatedCertifiedRouteWithChildren
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedForumRoute: typeof AuthenticatedForumRoute
@@ -632,6 +653,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdaptiveTestsRoute: AuthenticatedAdaptiveTestsRoute,
   AuthenticatedBattlesRoute: AuthenticatedBattlesRoute,
   AuthenticatedBuildCourseRoute: AuthenticatedBuildCourseRoute,
+  AuthenticatedCalibrationRoute: AuthenticatedCalibrationRoute,
   AuthenticatedCertifiedRoute: AuthenticatedCertifiedRouteWithChildren,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedForumRoute: AuthenticatedForumRoute,
@@ -675,12 +697,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

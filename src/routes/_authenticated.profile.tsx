@@ -216,7 +216,7 @@ function ProfilePage() {
 
                 <Card title="Ecliptars Claimed" icon={<Sparkles className="w-4 h-4 text-neon-purple" />} count={ecliptars.length}>
                   {ecliptars.length === 0 ? (
-                    <EmptyState text="No Ecliptars yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Walk the trophy road →</Link>} />
+                    <EmptyState text="No Ecliptars yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Begin your expedition →</Link>} />
                   ) : (
                     <p className="text-xs text-muted-foreground">Open the Ecliptars tab to equip one ↑</p>
                   )}
@@ -729,7 +729,7 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                         type="button"
                         onClick={() => equip(e.slug)}
                         disabled={!isOwned}
-                        title={!isOwned ? "Locked — claim on the Trophy Road" : isEquipped ? "Click to unequip" : "Click to equip as avatar"}
+                        title={!isOwned ? "Locked — claim on the Expedition" : isEquipped ? "Click to unequip" : "Click to equip as avatar"}
                         className={cn(
                           "glass-panel p-4 border text-center relative overflow-hidden transition-all",
                           isOwned ? `${arch.borderColor} hover:scale-[1.03] cursor-pointer` : "border-border/30 opacity-60 cursor-not-allowed",

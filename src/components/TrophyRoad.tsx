@@ -47,14 +47,14 @@ interface TierMeta {
 }
 
 const TIERS: Record<TierId, TierMeta> = {
-  bronze:   { id: "bronze",   name: "Bronze",   label: "Origin",          description: "Where every ascent begins. Foundations of form, focus, and pace.",        xpRequired:      0 },
-  silver:   { id: "silver",   name: "Silver",   label: "Apprentice",      description: "Steady iteration sharpens the edge. The first taste of real discipline.", xpRequired:   7500 },
-  gold:     { id: "gold",     name: "Gold",     label: "Crucible",        description: "Pressure shapes precision. Reward follows resolve.",                       xpRequired:  20000 },
-  diamond:  { id: "diamond",  name: "Diamond",  label: "Resonance",       description: "Mastery solidifies. Patterns crystallize into instinct.",                  xpRequired:  43000 },
-  platinum: { id: "platinum", name: "Platinum", label: "Architect",       description: "Output becomes signature. The craft starts to look like art.",            xpRequired:  78000 },
-  champion: { id: "champion", name: "Champion", label: "Vanguard",        description: "Carry the standard. Set the curve everyone else chases.",                 xpRequired: 145000 },
-  unreal:   { id: "unreal",   name: "Unreal",   label: "Transcendence",   description: "Beyond competition. Solo on an axis few will ever touch.",                xpRequired: 265000 },
-  god:      { id: "god",      name: "God",      label: "Apotheosis",      description: "The final form. Where Newton and Ecliptadon wait at the threshold.",      xpRequired: 460000 },
+  bronze:   { id: "bronze",   name: "Observatory",     label: "Genesis",         description: "Where the journey begins, under the first eclipse. Learn to read the stars.",     xpRequired:      0 },
+  silver:   { id: "silver",   name: "Tidelock Belt",   label: "First Drift",     description: "Ocean-moons and slow asteroids. Find your rhythm and build momentum.",            xpRequired:   7500 },
+  gold:     { id: "gold",     name: "Ember Wastes",    label: "Trial by Fire",   description: "A scorched world where pressure forges precision.",                               xpRequired:  20000 },
+  diamond:  { id: "diamond",  name: "Resonance",       label: "Harmonic Depths", description: "Crystalline caverns that hum. Patterns crystallize into instinct.",                xpRequired:  43000 },
+  platinum: { id: "platinum", name: "Aurora Span",     label: "The Bridge",      description: "A bridge of light between worlds. Your craft becomes a signature.",               xpRequired:  78000 },
+  champion: { id: "champion", name: "Long Drift",      label: "Deep Space",      description: "Open void, far from home. The solitude of real mastery.",                         xpRequired: 145000 },
+  unreal:   { id: "unreal",   name: "Celestial Nexus", label: "Convergence",     description: "Where every path in the cosmos meets. Beyond competition.",                       xpRequired: 265000 },
+  god:      { id: "god",      name: "Eclipse",         label: "The Threshold",   description: "The final dark. Where Newton and Ecliptadon wait at the edge of knowing.",         xpRequired: 460000 },
 };
 
 /* ── Archetypes ────────────────────────────────────────────── */
@@ -115,6 +115,8 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
   const isChest = node.type === "chest";
   const chestClaimed = isChest && claimedChestIds.has(node.id);
   const showChestOpen = isChest && node.unlocked && !chestClaimed;
+  // Chests display a themed Realm name but claim against a stable server key.
+  const chestKey = node.rewardKey ?? node.label;
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -152,7 +154,7 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
     e.stopPropagation();
     if (!isChest || busy) return;
     setBusy(true);
-    const bonus = await claimChest(node.id, node.label);
+    const bonus = await claimChest(node.id, chestKey);
     setBusy(false);
     if (bonus > 0) {
       toast(`${node.label} opened`, { description: `+${bonus} bonus XP added to your total.`, duration: 6000 });
@@ -209,9 +211,9 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
       {/* Reward preview — anticipation before the chest is even reachable.
           The payout was previously buried in a hover title; surfacing it turns
           every chest on the road into a visible, named goal. */}
-      {isChest && (CHEST_BONUS_XP[node.label] ?? 0) > 0 && (
+      {isChest && (CHEST_BONUS_XP[chestKey] ?? 0) > 0 && (
         <span className="tr-node-reward">
-          +{(CHEST_BONUS_XP[node.label] ?? 0).toLocaleString()} XP
+          +{(CHEST_BONUS_XP[chestKey] ?? 0).toLocaleString()} XP
         </span>
       )}
 
@@ -231,7 +233,7 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
 
       {showChestOpen && (
         <button className="tr-node-act" onClick={handleOpenChest} disabled={busy}
-          title={`+${CHEST_BONUS_XP[node.label] ?? 0} bonus XP`}>
+          title={`+${CHEST_BONUS_XP[chestKey] ?? 0} bonus XP`}>
           {busy ? "···" : "Open"}
         </button>
       )}
@@ -482,7 +484,7 @@ function CinemaRoad({ allNodes, ownedSlugs, claimedChestIds, onClaimed, onChestC
       {/* Top bar */}
       <div className="tr-cinema-bar">
         <div className="tr-cinema-bar-left">
-          <span className="tr-cinema-bar-eyebrow">The Ascent</span>
+          <span className="tr-cinema-bar-eyebrow">The Expedition</span>
           <span className="tr-cinema-bar-stops">
             <strong ref={barTierRef}>Bronze</strong>
             &nbsp;·&nbsp;{totalCleared} of {allNodes.length} cleared
@@ -572,7 +574,7 @@ function CinemaRoad({ allNodes, ownedSlugs, claimedChestIds, onClaimed, onChestC
 
           <div className="tr-cinema-endcap">
             <div className="tr-cinema-endcap-dot" />
-            <span>Apotheosis</span>
+            <span>The Eclipse</span>
           </div>
         </div>
       </div>
@@ -612,7 +614,7 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="tr-ov-left">
-        <div className="tr-ov-eyebrow">The Ascent · Mastery</div>
+        <div className="tr-ov-eyebrow">The Expedition · Journey</div>
         <div className="tr-ov-tier-name">{currentTier.name}</div>
         <div className="tr-ov-tier-label">{currentTier.label}</div>
 
@@ -653,7 +655,7 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
             <span className="tr-ov-xp-lbl">XP TOTAL</span>
           </div>
           <div className="tr-ov-next">
-            {nextTier ? <>Next — <strong>{nextTier.name}</strong> · {(nextTier.xpRequired - playerXp).toLocaleString()} XP to go</> : <strong>Apotheosis reached</strong>}
+            {nextTier ? <>Next — <strong>{nextTier.name}</strong> · {(nextTier.xpRequired - playerXp).toLocaleString()} XP to go</> : <strong>The Eclipse reached</strong>}
           </div>
         </div>
 
@@ -820,10 +822,10 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <h2 className="tr-compact-title">Your trophy <em>road</em></h2>
+            <h2 className="tr-compact-title">Your <em>expedition</em></h2>
             <p className="tr-compact-desc">
-              Rise from Bronze to God Tier through eight chapters. Each tier hides rank promotions,
-              archetype unlocks, reward chests, and boss encounters.
+              Chart a path from the Observatory to the Eclipse across eight realms. Each realm hides
+              new archetypes, reward caches, and guardian encounters.
             </p>
             <div className="tr-compact-tiers">
               {TIER_ORDER.slice(0, 4).map(id => {
@@ -841,7 +843,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                 );
               })}
               <p className="tr-compact-tier-row" style={{ color: "var(--tr-fog)", marginLeft: 20 }}>
-                <em>· and four more legendary tiers</em>
+                <em>· and four more uncharted realms</em>
               </p>
             </div>
           </motion.div>

@@ -232,7 +232,7 @@ const FOUNDERS = [
 const PILLARS = [
   { icon: Brain,     title: "Adaptive AI",             desc: "Luna learns your pace, your weak spots, and the way you think — then meets you there." },
   { icon: Swords,    title: "Battles, not worksheets", desc: "Knowledge battles turn rote practice into competitive duels with real stakes." },
-  { icon: Trophy,    title: "Trophy Road progression", desc: "Every XP point unlocks new ranks, Ecliptars, and rewards worth claiming." },
+  { icon: Trophy,    title: "An expedition, not a ladder", desc: "Chart realms from the Observatory to the Eclipse — each unlocks new Ecliptars, caches, and story." },
   { icon: Target,    title: "Personalized mastery",    desc: "Adaptive tests and personalized courses target the exact skills you need next." },
   { icon: Users,     title: "Built for learners",      desc: "Forums, leaderboards, and community challenges keep momentum alive." },
   { icon: Sparkles,  title: "Designed to delight",     desc: "A cinematic arena aesthetic that makes you actually want to come back tomorrow." },
@@ -413,7 +413,7 @@ function AboutPage() {
             <p className="ab-actlabel" style={{ justifyContent: "center" }}>Your move</p>
             <h2>Enter the <em>arena.</em></h2>
             <p className="ab-finale-sub">
-              Pick an archetype, claim your first Ecliptar, and start climbing the Trophy Road.
+              Pick an archetype, claim your first Ecliptar, and begin your expedition across the realms.
               Free to play — find out what you actually know.
             </p>
             <div className="ab-cta-row">

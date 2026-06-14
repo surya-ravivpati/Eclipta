@@ -1622,6 +1622,17 @@ function BattleArena() {
         setPlayerRating(result.ratingAfter);
         playerRatingRef.current = result.ratingAfter;
         window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+      } else if (opponentTypeRef.current === "bot" && sessionId) {
+        // Bot battles count too, at a reduced rating change (server-enforced),
+        // and update the W/L record via the same applied-session truth model.
+        const { data } = await supabase.rpc("complete_bot_battle" as any, { p_session_id: sessionId });
+        const d = data as { rating_after?: number | null; rating_delta?: number | null } | null;
+        if (typeof d?.rating_after === "number") {
+          setRatingChange(d.rating_delta ?? 0);
+          setPlayerRating(d.rating_after);
+          playerRatingRef.current = d.rating_after;
+          window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+        }
       }
     })();
   }, [archetype]);
@@ -3004,7 +3015,7 @@ export function KnowledgeBattles() {
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
                 <li><span className="text-neon-cyan font-bold">LIVE PvP</span> — the system first scans for a real player currently in queue. If one is found, you battle head-to-head in real time via a live channel. Rating is at stake.</li>
                 <li><span className="text-neon-purple font-bold">GHOST PvP</span> — if no live opponent is found in 8 seconds, you face a replay of a real player's past session. Their actions, timing, and accuracy are replayed authentically. Rating still applies.</li>
-                <li><span className="text-muted-foreground font-bold">AI Bot</span> — last resort only, when no real player data exists at your rating range. Bots never affect your rating.</li>
+                <li><span className="text-muted-foreground font-bold">AI Bot</span> — last resort only, when no real player data exists at your rating range. Bot battles still count: full XP, your W/L record, and a smaller rating change than ranked play.</li>
                 <li>Priority is always <span className="text-foreground font-bold">Live → Ghost → Bot</span>. You will never be matched with a bot when real player data is available.</li>
               </ul>
             </section>

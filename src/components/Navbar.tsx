@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
+import { useDailyStreak } from "@/hooks/use-daily-streak";
 import { useTheme } from "@/hooks/use-theme";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Menu, X, Zap, ChevronDown, Sun, Moon, Monitor, Bell } from "lucide-react";
+import { LogOut, User, Menu, X, Zap, ChevronDown, Sun, Moon, Monitor, Bell, Flame } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -41,6 +42,7 @@ const NAV_GROUPS = [
 export function Navbar() {
   const { user, isAuthenticated } = useAuth();
   const { xp } = usePlayerXp();
+  const { dailyStreak } = useDailyStreak();
   const { theme, setTheme } = useTheme();
   const { unread } = useNotifications();
   const cycleTheme = () => {
@@ -128,6 +130,17 @@ export function Navbar() {
                   </span>
                 )}
               </Link>
+              {dailyStreak > 0 && (
+                <Link
+                  to="/battles"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-secondary/30 border border-border hover:border-neon-pink/40 transition-colors"
+                  title={`${dailyStreak}-day practice streak — keep it alive`}
+                  aria-label={`${dailyStreak} day practice streak`}
+                >
+                  <Flame className="w-3.5 h-3.5 text-neon-pink" />
+                  <span className="text-xs font-bold tabular-nums text-foreground">{dailyStreak}</span>
+                </Link>
+              )}
               <Link
                 to="/profile"
                 className="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-secondary/30 border border-border hover:border-foreground/25 transition-colors"

@@ -2024,97 +2024,27 @@ function BattleArena() {
   // ── Idle ──
   if (phase === "idle") {
     return (
-      <motion.div
-        className="btt-hero"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="btt-hero-glow" aria-hidden />
-        <div className="btt-hero-smoke" aria-hidden />
-
+      <motion.div className="btt-card text-center py-16 px-10 relative overflow-hidden" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+        <div className="btt-idle-glow" aria-hidden />
         <motion.div
-          className="btt-hero-eyebrow"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+          className="btt-idle-emblem w-24 h-24 mx-auto mb-8 flex items-center justify-center"
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Radio className="w-3 h-3" /> Arena online · Ranked duel
+          <Swords className="w-12 h-12 text-neon-pink" />
         </motion.div>
-
-        {/* Versus stage */}
-        <div className="btt-vs-stage">
-          <motion.div
-            className="btt-fighter btt-fighter--you"
-            initial={{ opacity: 0, x: -56 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="btt-fighter-silhouette"><Swords /></div>
-            <div className="btt-fighter-tag">Challenger</div>
-            <div className="btt-fighter-name btt-shout">YOU</div>
-            <div className="btt-fighter-sub">Pick your archetype</div>
-          </motion.div>
-
-          <motion.div
-            className="btt-vs"
-            initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.28, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="btt-vs-line" aria-hidden />
-            <span className="btt-vs-mark btt-shout">VS</span>
-            <span className="btt-vs-line" aria-hidden />
-          </motion.div>
-
-          <motion.div
-            className="btt-fighter btt-fighter--foe"
-            initial={{ opacity: 0, x: 56 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="btt-fighter-silhouette btt-fighter-silhouette--foe">
-              <span className="btt-fighter-q btt-shout">?</span>
-            </div>
-            <div className="btt-fighter-tag">Opponent</div>
-            <div className="btt-fighter-name btt-shout">UNKNOWN</div>
-            <div className="btt-fighter-sub">Matched on entry</div>
-          </motion.div>
-        </div>
-
-        <motion.h3
-          className="btt-hero-title btt-shout"
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.36 }}
-        >
-          Enter the Arena
-        </motion.h3>
-
-        {/* HUD meta strip */}
-        <motion.div
-          className="btt-meta-row"
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.46 }}
-        >
-          <span className="btt-meta"><Users className="w-3.5 h-3.5" /> Live → Ghost → Bot</span>
-          <span className="btt-meta"><Trophy className="w-3.5 h-3.5" /> Ranked</span>
-          <span className="btt-meta"><Sparkles className="w-3.5 h-3.5" /> +XP · Ecliptar</span>
-          <span className="btt-meta"><Timer className="w-3.5 h-3.5" /> ~3 min duel</span>
-        </motion.div>
-
+        <h3 className="btt-shout text-5xl mb-3">Enter the Arena</h3>
+        <p className="btt-mono-text text-[12px] text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
+          Choose your archetype. Solve equations under pressure.<br />Build combos. Destroy your opponent.
+        </p>
         <motion.button
           onClick={() => setPhase("classSelect")}
-          className="btt-cta"
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.56 }}
+          className="btt-idle-cta btt-mono-text inline-flex items-center gap-3 px-10 py-4 font-bold text-[12px] tracking-widest"
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
         >
-          <span className="btt-cta-shine" aria-hidden />
-          <Zap className="w-4 h-4" /> Enter the Arena
+          <Zap className="w-4 h-4" />
+          CHOOSE CLASS
         </motion.button>
-        <motion.p
-          className="btt-cta-hint"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.72 }}
-        >
-          Choose your archetype, then we find your opponent
-        </motion.p>
       </motion.div>
     );
   }

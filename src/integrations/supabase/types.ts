@@ -919,6 +919,7 @@ export type Database = {
           current_streak: number
           equipped_ecliptar: string | null
           id: string
+          learner_profile: Json | null
           learning_goal: string | null
           luna_notes: string | null
           onboarded_at: string | null
@@ -945,6 +946,7 @@ export type Database = {
           current_streak?: number
           equipped_ecliptar?: string | null
           id?: string
+          learner_profile?: Json | null
           learning_goal?: string | null
           luna_notes?: string | null
           onboarded_at?: string | null
@@ -971,6 +973,7 @@ export type Database = {
           current_streak?: number
           equipped_ecliptar?: string | null
           id?: string
+          learner_profile?: Json | null
           learning_goal?: string | null
           luna_notes?: string | null
           onboarded_at?: string | null

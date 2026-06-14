@@ -26,7 +26,7 @@ import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
 import { completeGhostBattle, fetchPlayerRating, ratingToTier } from "@/lib/rating";
-import { awardXp } from "@/lib/xp-service";
+import { awardXp, awardBattleXp } from "@/lib/xp-service";
 import { toast } from "sonner";
 import "./Battles.css";
 
@@ -1553,6 +1553,12 @@ function BattleArena() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Award XP here — at the guaranteed battle-end hook — rather than relying
+      // on the result screen mounting (which a live rematch or an early exit can
+      // skip). Server computes the amount from correct/total/won.
+      await awardBattleXp(correctAnswers, totalQuestions, won);
+
       await supabase.from("learning_history").insert({
         user_id: user.id,
         session_type: "battle",

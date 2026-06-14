@@ -4,7 +4,6 @@ import { Crown, Skull, Target, Zap, Flame, AlertTriangle, BookOpen, RotateCcw, S
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ARCHETYPES } from "./archetypes";
 import type { BattleStats, Difficulty } from "./types";
-import { awardBattleXp } from "@/lib/xp-service";
 import { recordBattleMastery, fetchMastery, getMasteryRank, getMasteryStats, emptyMastery, type ArchetypeMastery } from "@/lib/archetype-mastery";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,9 +51,9 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Award XP — server computes the amount from correct/total/won;
-        // client cannot inflate XP by tampering with stats.xp.
-        await awardBattleXp(stats.correctAnswers, stats.totalQuestions, stats.won);
+        // XP is awarded once at battle end (see finishBattle in
+        // KnowledgeBattles) — not here — so it lands even if this screen is
+        // skipped by a live rematch or an early exit.
 
         // Update battle stats on profile
         const { data: profile } = await supabase

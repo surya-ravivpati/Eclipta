@@ -95,6 +95,35 @@ export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise
   return ec;
 }
 
+/**
+ * Claim a specific set of Ecliptars by slug from a given node (the archetype's
+ * monster node grants a/b; that tier's boss node grants c/d). Returns the newly
+ * granted Ecliptars (skips ones already owned).
+ */
+export async function claimEcliptarsBySlugs(slugs: string[], nodeId: number): Promise<Ecliptar[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const owned = await fetchOwnedEcliptarSlugs();
+  const toGrant = slugs
+    .map((s) => getEcliptarBySlug(s))
+    .filter((e): e is Ecliptar => !!e && !owned.has(e.slug));
+  const granted: Ecliptar[] = [];
+  for (const e of toGrant) {
+    const { error } = await supabase.rpc("claim_ecliptar" as any, {
+      p_slug: e.slug,
+      p_archetype: e.archetype,
+      p_name: e.name,
+      p_node_id: nodeId,
+    });
+    if (error) {
+      console.error("Failed to claim ecliptar:", error);
+      continue;
+    }
+    granted.push(e);
+  }
+  return granted;
+}
+
 /** Fetch the slugs of Ecliptars owned by the current user. */
 export async function fetchOwnedEcliptarSlugs(): Promise<Set<string>> {
   const { data: { user } } = await supabase.auth.getUser();

@@ -18,7 +18,7 @@ import {
 import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { usePlayerRating } from "@/hooks/use-player-rating";
 import { ratingLeague, leagueProgress } from "@/lib/rating";
-import { claimArchetypeReward, claimEcliptarBySlug, getEcliptarsByArchetype } from "@/lib/ecliptars";
+import { claimEcliptarsBySlugs, claimEcliptarBySlug, getEcliptarsByArchetype } from "@/lib/ecliptars";
 import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
 import "./TrophyRoad.css";
 
@@ -104,9 +104,14 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
   const archetype = node.archetype ? ARCHETYPES[node.archetype] : null;
 
   const isMonster = node.type === "monster" && !!node.archetype;
-  const requiredSlugs = node.archetype ? getEcliptarsByArchetype(node.archetype).map(e => e.slug) : [];
-  const allOwned = requiredSlugs.length > 0 && requiredSlugs.every(s => ownedSlugs.has(s));
-  const showClaim = isMonster && node.unlocked && !allOwned;
+  // Ecliptar-granting nodes: a monster node hands out its archetype's first two
+  // (a/b); that tier's boss node hands out the other two (c/d). The specific
+  // slugs live on the node so the roster unlocks across the road, not all at once.
+  const grantSlugs = node.ecliptarSlugs
+    ?? (isMonster ? getEcliptarsByArchetype(node.archetype!).map(e => e.slug) : []);
+  const isEcliptarNode = grantSlugs.length > 0;
+  const allOwned = isEcliptarNode && grantSlugs.every(s => ownedSlugs.has(s));
+  const showClaim = isEcliptarNode && node.unlocked && !allOwned;
 
   const finalSlug = node.type === "final" ? node.finalMonster ?? null : null;
   const finalOwned = finalSlug ? ownedSlugs.has(finalSlug) : false;
@@ -120,12 +125,12 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!node.archetype || busy) return;
+    if (!isEcliptarNode || busy) return;
     setBusy(true);
-    const granted = await claimArchetypeReward(node.archetype, node.id);
+    const granted = await claimEcliptarsBySlugs(grantSlugs, node.id);
     setBusy(false);
     if (granted.length > 0) {
-      toast(`${ARCHETYPES[node.archetype].name} Ecliptars unlocked`, {
+      toast(`${granted.length > 1 ? "Ecliptars" : granted[0].name} unlocked`, {
         description: `You now own ${granted.map(g => g.name).join(" & ")} for battle.`,
         duration: 6000,
         action: { label: "View in Profile", onClick: () => { window.location.href = "/profile"; } },
@@ -222,7 +227,7 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
           {busy ? "···" : "Claim"}
         </button>
       )}
-      {isMonster && allOwned && <span className="tr-node-status">Claimed</span>}
+      {isEcliptarNode && allOwned && <span className="tr-node-status">Claimed</span>}
 
       {showFinalClaim && (
         <button className="tr-node-act" onClick={handleClaimFinal} disabled={busy}>
@@ -240,7 +245,7 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
       {isChest && chestClaimed && <span className="tr-node-status">Opened</span>}
 
       <AnimatePresence>
-        {hovered && archetype && (
+        {hovered && isMonster && archetype && (
           <motion.div
             className="tr-tooltip"
             initial={{ opacity: 0, y: 6 }}

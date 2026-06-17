@@ -100,14 +100,18 @@ export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise
  * monster node grants a/b; that tier's boss node grants c/d). Returns the newly
  * granted Ecliptars (skips ones already owned).
  */
-export async function claimEcliptarsBySlugs(slugs: string[], nodeId: number): Promise<Ecliptar[]> {
+export async function claimEcliptarsBySlugs(
+  slugs: string[],
+  nodeId: number,
+): Promise<{ granted: Ecliptar[]; error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) return { granted: [], error: "You need to be signed in." };
   const owned = await fetchOwnedEcliptarSlugs();
   const toGrant = slugs
     .map((s) => getEcliptarBySlug(s))
     .filter((e): e is Ecliptar => !!e && !owned.has(e.slug));
   const granted: Ecliptar[] = [];
+  let firstError: string | null = null;
   for (const e of toGrant) {
     const { error } = await supabase.rpc("claim_ecliptar" as any, {
       p_slug: e.slug,
@@ -117,11 +121,13 @@ export async function claimEcliptarsBySlugs(slugs: string[], nodeId: number): Pr
     });
     if (error) {
       console.error("Failed to claim ecliptar:", error);
+      if (!firstError) firstError = error.message ?? "Claim failed.";
       continue;
     }
     granted.push(e);
   }
-  return granted;
+  // Only report an error when nothing landed — a partial success still counts.
+  return { granted, error: granted.length === 0 ? firstError : null };
 }
 
 /** Fetch the slugs of Ecliptars owned by the current user. */

@@ -127,7 +127,7 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
     e.stopPropagation();
     if (!isEcliptarNode || busy) return;
     setBusy(true);
-    const granted = await claimEcliptarsBySlugs(grantSlugs, node.id);
+    const { granted, error } = await claimEcliptarsBySlugs(grantSlugs, node.id);
     setBusy(false);
     if (granted.length > 0) {
       toast(`${granted.length > 1 ? "Ecliptars" : granted[0].name} unlocked`, {
@@ -136,6 +136,10 @@ function TrophyNode({ node, ownedSlugs, claimedChestIds, onClaimed, onChestClaim
         action: { label: "View in Profile", onClick: () => { window.location.href = "/profile"; } },
       });
       onClaimed();
+    } else if (error) {
+      // Surface the reason instead of failing silently (e.g. the server's
+      // ecliptar allowlist migration hasn't been applied yet).
+      toast.error("Couldn't unlock this Ecliptar", { description: error, duration: 7000 });
     }
   };
 

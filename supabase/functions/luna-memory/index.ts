@@ -94,14 +94,34 @@ serve(async (req) => {
     };
 
     if (parsed.note && parsed.note.trim()) {
-      const { data: prof } = await sb.from("user_profiles").select("luna_notes").eq("user_id", user.id).maybeSingle();
-      const existing = (prof?.luna_notes as string | null) || "";
-      const lines = existing.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      // Auto-detected notes go to luna_auto_notes — luna_notes is the
+      // user-editable channel surfaced in /profile. Same category-aware
+      // conflict cleanup as the client-side detector (mergePreference).
+      const categoryOf = (line: string): string | null => {
+        const tt = line.toLowerCase().trim();
+        if (/respond in\s+\w+/.test(tt)) return "language";
+        if (/\b(short|long|brief|concise|detailed|thorough)\b.*responses?/.test(tt)) return "length";
+        if (/\b(fewer|less|more)\s+(words|sentences|paragraphs|details|steps)\b/.test(tt)) return "length";
+        if (/analog/.test(tt)) return "analogies";
+        if (/example/.test(tt)) return "examples";
+        if (/\b(hint|hints)\b/.test(tt)) return "hints";
+        if (/\btone\b/.test(tt)) return "tone";
+        if (/^explain like i'?m/.test(tt)) return "level";
+        if (/emoji/.test(tt)) return "emoji";
+        return null;
+      };
+      const { data: prof } = await sb.from("user_profiles").select("luna_auto_notes").eq("user_id", user.id).maybeSingle();
+      const existing = ((prof as any)?.luna_auto_notes as string | null) || "";
+      const lines = existing.split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean);
       const note = parsed.note.trim();
-      if (!lines.some(l => norm(l) === norm(note))) {
-        lines.unshift(note);
-        updates.luna_notes = lines.slice(0, 12).join("\n");
-      }
+      const freshCat = categoryOf(note);
+      const filtered = lines.filter((l: string) => {
+        if (norm(l) === norm(note)) return false;
+        if (freshCat && categoryOf(l) === freshCat) return false;
+        return true;
+      });
+      filtered.unshift(note);
+      updates.luna_auto_notes = filtered.slice(0, 12).join("\n");
     }
 
     const { error } = await sb.from("user_profiles").update(updates).eq("user_id", user.id);

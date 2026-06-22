@@ -74,6 +74,45 @@ export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
   return ECLIPTARS.find((e) => e.slug === slug);
 }
 
+/**
+ * Grant one Ecliptar to a user. Tries the SECURITY DEFINER RPC first (works on
+ * DBs whose claim_ecliptar is current), then falls back to a direct insert
+ * (works wherever the shape-checked client INSERT policy is in place). A unique
+ * violation (23505) means it's already owned — treated as success. Returns an
+ * error string only when BOTH paths fail, so claiming survives a DB that is
+ * missing one mechanism or the other.
+ */
+async function grantEcliptar(
+  ec: Ecliptar,
+  nodeId: number,
+  userId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const rpc = await supabase.rpc("claim_ecliptar" as any, {
+    p_slug: ec.slug,
+    p_archetype: ec.archetype,
+    p_name: ec.name,
+    p_node_id: nodeId,
+  });
+  if (!rpc.error) return { ok: true, error: null };
+
+  // RPC missing/stale (e.g. an un-applied allowlist migration rejecting c/d
+  // slugs) — try a direct insert. RLS still enforces ownership + slug shape.
+  const ins = await supabase
+    .from("user_ecliptars" as any)
+    .insert({
+      user_id: userId,
+      archetype: ec.archetype,
+      ecliptar_slug: ec.slug,
+      ecliptar_name: ec.name,
+      node_id: nodeId,
+    });
+  if (!ins.error) return { ok: true, error: null };
+  if ((ins.error as { code?: string }).code === "23505") return { ok: true, error: null };
+
+  console.error("Failed to claim ecliptar (rpc + insert):", rpc.error, ins.error);
+  return { ok: false, error: ins.error.message || rpc.error.message || "Claim failed." };
+}
+
 /** Claim a single specific Ecliptar by slug (used by trophy-road final nodes). */
 export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise<Ecliptar | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -82,17 +121,8 @@ export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise
   if (!ec) return null;
   const owned = await fetchOwnedEcliptarSlugs();
   if (owned.has(slug)) return null;
-  const { error } = await supabase.rpc("claim_ecliptar" as any, {
-    p_slug: ec.slug,
-    p_archetype: ec.archetype,
-    p_name: ec.name,
-    p_node_id: nodeId,
-  });
-  if (error) {
-    console.error("Failed to claim ecliptar:", error);
-    return null;
-  }
-  return ec;
+  const { ok } = await grantEcliptar(ec, nodeId, user.id);
+  return ok ? ec : null;
 }
 
 /**
@@ -107,27 +137,24 @@ export async function claimEcliptarsBySlugs(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { granted: [], error: "You need to be signed in." };
   const owned = await fetchOwnedEcliptarSlugs();
-  const toGrant = slugs
-    .map((s) => getEcliptarBySlug(s))
-    .filter((e): e is Ecliptar => !!e && !owned.has(e.slug));
+  const known = slugs.map((s) => getEcliptarBySlug(s)).filter((e): e is Ecliptar => !!e);
+  const toGrant = known.filter((e) => !owned.has(e.slug));
+  // Nothing to grant: tell the user why instead of a silent no-op.
+  if (toGrant.length === 0) {
+    return {
+      granted: [],
+      error: known.length === 0 ? "This reward isn't available." : "You already own this Ecliptar.",
+    };
+  }
   const granted: Ecliptar[] = [];
   let firstError: string | null = null;
   for (const e of toGrant) {
-    const { error } = await supabase.rpc("claim_ecliptar" as any, {
-      p_slug: e.slug,
-      p_archetype: e.archetype,
-      p_name: e.name,
-      p_node_id: nodeId,
-    });
-    if (error) {
-      console.error("Failed to claim ecliptar:", error);
-      if (!firstError) firstError = error.message ?? "Claim failed.";
-      continue;
-    }
-    granted.push(e);
+    const { ok, error } = await grantEcliptar(e, nodeId, user.id);
+    if (ok) granted.push(e);
+    else if (!firstError) firstError = error;
   }
   // Only report an error when nothing landed — a partial success still counts.
-  return { granted, error: granted.length === 0 ? firstError : null };
+  return { granted, error: granted.length === 0 ? (firstError ?? "Claim failed.") : null };
 }
 
 /** Fetch the slugs of Ecliptars owned by the current user. */
@@ -158,17 +185,8 @@ export async function claimArchetypeReward(
 
   const granted: Ecliptar[] = [];
   for (const e of toGrant) {
-    const { error } = await supabase.rpc("claim_ecliptar" as any, {
-      p_slug: e.slug,
-      p_archetype: e.archetype,
-      p_name: e.name,
-      p_node_id: nodeId,
-    });
-    if (error) {
-      console.error("Failed to claim ecliptar:", error);
-      continue;
-    }
-    granted.push(e);
+    const { ok } = await grantEcliptar(e, nodeId, user.id);
+    if (ok) granted.push(e);
   }
   return granted;
 }

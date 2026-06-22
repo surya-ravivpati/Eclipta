@@ -68,7 +68,8 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const ok = !!(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
+    const hasGUM = typeof navigator !== "undefined" && !!navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function";
+    const ok = hasGUM && typeof MediaRecorder !== "undefined";
     setSupported(ok);
   }, []);
 

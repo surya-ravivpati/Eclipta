@@ -119,7 +119,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
 
   const startListening = useCallback(async () => {
     if (listening) return;
-    if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    if (typeof window === "undefined" || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function" || typeof MediaRecorder === "undefined") {
       setVoiceError("Voice input isn't supported in this browser.");
       return;
     }

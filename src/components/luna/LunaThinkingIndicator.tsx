@@ -59,11 +59,11 @@ export function LunaThinkingIndicator({ compact = false }: { compact?: boolean }
       <div className="luna-thinking-moon shrink-0">
         <svg width={sz} height={sz} viewBox="0 0 24 24" aria-hidden>
           <defs>
-            {/* Lit-face gradient: bright highlight top-right, deep purple at edge */}
+            {/* Lit-face gradient: bright highlight top-right, deep gold at edge */}
             <radialGradient id="luna-lit" cx="68%" cy="28%" r="68%">
-              <stop offset="0%"   stopColor="oklch(0.92 0.10 285)" />
-              <stop offset="50%"  stopColor="oklch(0.72 0.22 290)" />
-              <stop offset="100%" stopColor="oklch(0.48 0.30 296)" />
+              <stop offset="0%"   stopColor="oklch(0.95 0.06 92)" />
+              <stop offset="50%"  stopColor="oklch(0.80 0.14 88)" />
+              <stop offset="100%" stopColor="oklch(0.52 0.16 75)" />
             </radialGradient>
 
             {/* Static blur for the ambient halo ring — GPU caches this once */}
@@ -76,7 +76,7 @@ export function LunaThinkingIndicator({ compact = false }: { compact?: boolean }
           <circle
             cx={CX} cy={CY} r={R + 0.8}
             fill="none"
-            stroke="oklch(0.65 0.22 290 / 0.22)"
+            stroke="oklch(0.80 0.14 88 / 0.22)"
             strokeWidth="2.8"
             filter="url(#luna-halo)"
           />
@@ -97,7 +97,7 @@ export function LunaThinkingIndicator({ compact = false }: { compact?: boolean }
           <circle
             cx={CX} cy={CY} r={R}
             fill="none"
-            stroke="oklch(0.70 0.18 290 / 0.20)"
+            stroke="oklch(0.82 0.13 88 / 0.20)"
             strokeWidth="0.55"
           />
         </svg>

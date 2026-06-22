@@ -195,13 +195,14 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
               .replace(/\\[a-zA-Z]+\{[^}]*\}/g, " ")
               .replace(/\s+/g, " ")
               .trim();
-            await supabase.from("learning_history").insert({
-              user_id: user.id,
-              session_type: sessionType,
-              topic: ctx.lessonTitle || ctx.courseId || null,
-              question_text: text.slice(0, 500),
-              hint_level_used: ctx.hintLevel,
-              luna_summary: tag ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}` : cleanedSummary.slice(0, 200),
+            await supabase.rpc("log_learning_history" as any, {
+              p_session_type:     sessionType,
+              p_topic:            ctx.lessonTitle || ctx.courseId || null,
+              p_question_text:    text.slice(0, 500),
+              p_was_correct:      null,
+              p_response_time_ms: null,
+              p_hint_level_used:  ctx.hintLevel,
+              p_luna_summary:     tag ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}` : cleanedSummary.slice(0, 200),
             });
             // Background memory extraction — best effort, never blocks UI.
             try {

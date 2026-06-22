@@ -38,23 +38,27 @@ export async function recordBattleSession(params: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase.from("battle_sessions" as any).insert({
-    user_id:          user.id,
-    archetype:        params.archetype,
-    won:              params.won,
-    rating:           params.rating,
-    total_questions:  params.records.length,
-    correct_answers:  params.records.filter(r => r.correct).length,
-    best_streak:      params.bestStreak,
-    question_records: params.records.map(r => ({
+  // Server-side RPC validates and clamps fields; clients can't fabricate
+  // rating/correct values that bypass the matchmaking pipeline.
+  const { data, error } = await supabase.rpc("record_battle_session" as any, {
+    p_archetype:        params.archetype,
+    p_won:              params.won,
+    p_rating:           params.rating,
+    p_total_questions:  params.records.length,
+    p_correct_answers:  params.records.filter(r => r.correct).length,
+    p_best_streak:      params.bestStreak,
+    p_question_records: params.records.map(r => ({
       action:    r.action,
       correct:   r.correct,
       timeSpent: r.timeSpent,
     })),
-    opponent_type:    params.opponentType ?? "unknown",
-  }).select("id").maybeSingle();
-
-  return (data as { id?: string } | null)?.id ?? null;
+    p_opponent_type:    params.opponentType ?? "unknown",
+  });
+  if (error) {
+    console.warn("recordBattleSession failed", error);
+    return null;
+  }
+  return (data as string | null) ?? null;
 }
 
 /**

@@ -75,42 +75,25 @@ export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
 }
 
 /**
- * Grant one Ecliptar to a user. Tries the SECURITY DEFINER RPC first (works on
- * DBs whose claim_ecliptar is current), then falls back to a direct insert
- * (works wherever the shape-checked client INSERT policy is in place). A unique
- * violation (23505) means it's already owned — treated as success. Returns an
- * error string only when BOTH paths fail, so claiming survives a DB that is
- * missing one mechanism or the other.
+ * Grant one Ecliptar to a user via the SECURITY DEFINER RPC, which is the
+ * only valid server path (direct INSERTs are no longer allowed by RLS).
+ * A unique violation (23505) means it's already owned — treated as success.
  */
 async function grantEcliptar(
   ec: Ecliptar,
   nodeId: number,
-  userId: string,
+  _userId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
-  const rpc = await supabase.rpc("claim_ecliptar" as any, {
+  const { error } = await supabase.rpc("claim_ecliptar" as any, {
     p_slug: ec.slug,
     p_archetype: ec.archetype,
     p_name: ec.name,
     p_node_id: nodeId,
   });
-  if (!rpc.error) return { ok: true, error: null };
-
-  // RPC missing/stale (e.g. an un-applied allowlist migration rejecting c/d
-  // slugs) — try a direct insert. RLS still enforces ownership + slug shape.
-  const ins = await supabase
-    .from("user_ecliptars" as any)
-    .insert({
-      user_id: userId,
-      archetype: ec.archetype,
-      ecliptar_slug: ec.slug,
-      ecliptar_name: ec.name,
-      node_id: nodeId,
-    });
-  if (!ins.error) return { ok: true, error: null };
-  if ((ins.error as { code?: string }).code === "23505") return { ok: true, error: null };
-
-  console.error("Failed to claim ecliptar (rpc + insert):", rpc.error, ins.error);
-  return { ok: false, error: ins.error.message || rpc.error.message || "Claim failed." };
+  if (!error) return { ok: true, error: null };
+  if ((error as { code?: string }).code === "23505") return { ok: true, error: null };
+  console.error("Failed to claim ecliptar:", error);
+  return { ok: false, error: error.message || "Claim failed." };
 }
 
 /** Claim a single specific Ecliptar by slug (used by trophy-road final nodes). */

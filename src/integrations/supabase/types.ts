@@ -1099,6 +1099,10 @@ export type Database = {
         Args: { p_chest_label: string; p_node_id: number }
         Returns: number
       }
+      claim_daily_challenge_bonus: {
+        Args: { p_required_wins: number }
+        Returns: boolean
+      }
       claim_ecliptar: {
         Args: {
           p_archetype: string
@@ -1186,6 +1190,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_daily_challenge_win: { Args: never; Returns: number }
+      log_learning_history: {
+        Args: {
+          p_hint_level_used: number
+          p_luna_summary: string
+          p_question_text: string
+          p_response_time_ms: number
+          p_session_type: string
+          p_topic: string
+          p_was_correct: boolean
+        }
+        Returns: undefined
+      }
       normalize_text: { Args: { t: string }; Returns: string }
       notify_mentions: {
         Args: {
@@ -1207,6 +1224,19 @@ export type Database = {
           p_won: boolean
         }
         Returns: undefined
+      }
+      record_battle_session: {
+        Args: {
+          p_archetype: string
+          p_best_streak: number
+          p_correct_answers: number
+          p_opponent_type: string
+          p_question_records: Json
+          p_rating: number
+          p_total_questions: number
+          p_won: boolean
+        }
+        Returns: string
       }
       request_pvp_rematch: {
         Args: { p_archetype: string; p_battle_id: string }

@@ -86,14 +86,15 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
             })
             .eq("user_id", user.id);
 
-          // Log battle to learning_history
-          await supabase.from("learning_history").insert({
-            user_id: user.id,
-            session_type: "battle",
-            topic: `Battle as ${ARCHETYPES[stats.archetype].name}`,
-            was_correct: stats.won,
-            response_time_ms: stats.fastestAnswer < Infinity ? Math.round(stats.fastestAnswer * 1000) : null,
-            luna_summary: `${stats.won ? "Won" : "Lost"} battle. ${stats.correctAnswers}/${stats.totalQuestions} correct. +${stats.xp} XP.`,
+          // Log battle to learning_history via server RPC (validated + rate-limited)
+          await supabase.rpc("log_learning_history" as any, {
+            p_session_type:     "battle",
+            p_topic:            `Battle as ${ARCHETYPES[stats.archetype].name}`,
+            p_question_text:    null,
+            p_was_correct:      stats.won,
+            p_response_time_ms: stats.fastestAnswer < Infinity ? Math.round(stats.fastestAnswer * 1000) : null,
+            p_hint_level_used:  0,
+            p_luna_summary:     `${stats.won ? "Won" : "Lost"} battle. ${stats.correctAnswers}/${stats.totalQuestions} correct. +${stats.xp} XP.`,
           });
         }
 

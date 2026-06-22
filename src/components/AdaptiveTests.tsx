@@ -184,16 +184,17 @@ function LiveDemo() {
     }
     setHistory(h => [...h, { correct, topic: currentQ.topic, difficulty: currentQ.difficulty }]);
 
-    // Persist to learning_history if logged in (best-effort, non-blocking)
+    // Persist to learning_history if logged in (best-effort, non-blocking).
+    // Server RPC validates and rate-limits writes.
     if (user) {
-      void supabase.from("learning_history").insert({
-        user_id: user.id,
-        session_type: "adaptive_test",
-        topic: currentQ.topic,
-        question_text: currentQ.question,
-        was_correct: correct,
-        response_time_ms: responseMs,
-        hint_level_used: 0,
+      void supabase.rpc("log_learning_history" as any, {
+        p_session_type:     "adaptive_test",
+        p_topic:            currentQ.topic,
+        p_question_text:    currentQ.question,
+        p_was_correct:      correct,
+        p_response_time_ms: responseMs,
+        p_hint_level_used:  0,
+        p_luna_summary:     null,
       });
     }
   };

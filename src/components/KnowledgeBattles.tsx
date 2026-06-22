@@ -2854,15 +2854,11 @@ function DailyChallengeCard() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("Sign in to claim your reward"); return; }
-      const today = new Date().toISOString().slice(0, 10);
-      // Mark claimed FIRST (unique per user/day) so concurrent clicks can't double-claim.
-      const { error: updErr } = await supabase
-        .from("daily_challenge_progress")
-        .update({ bonus_claimed: true })
-        .eq("user_id", user.id)
-        .eq("challenge_date", today)
-        .eq("bonus_claimed", false);
-      if (updErr) { toast.error("Couldn't claim — try again"); return; }
+      // Server-side atomic claim: validates wins>=target and bonus_claimed=false
+      // in a single UPDATE so concurrent clicks can't double-claim.
+      const { data: claimedOk, error: claimErr } = await supabase
+        .rpc("claim_daily_challenge_bonus" as any, { p_required_wins: target });
+      if (claimErr || !claimedOk) { toast.error("Couldn't claim — try again"); return; }
       // Award the XP via the rate-limited server RPC. The amount (100) is
       // enforced server-side; the client cannot inflate it.
       await awardXp("daily_challenge", 100);
@@ -2873,7 +2869,7 @@ function DailyChallengeCard() {
     } finally {
       setClaiming(false);
     }
-  }, [claiming, claimed, complete]);
+  }, [claiming, claimed, complete, target]);
 
   return (
     <motion.div className="btt-card btt-card--purple p-5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>

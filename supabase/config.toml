@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.luna-quiz]
 verify_jwt = false
+
+[functions.luna-stt]
+verify_jwt = false
+
+[functions.luna-tts]
+verify_jwt = false

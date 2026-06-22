@@ -101,9 +101,11 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
     setAwaitingFirstToken(true);
 
     // Detect preference statements ("write shorter", "use more analogies", ...)
-    // and merge them into user_profiles.luna_notes so future Luna replies
-    // honour them. Uses the latest profile from useLunaProfile to avoid
-    // clobbering anything saved manually on /profile.
+    // and merge them into user_profiles.luna_auto_notes (NOT luna_notes — that
+    // column is reserved for what the user types themselves on /profile, so
+    // the notes box they see stays clean and editable). mergePreference also
+    // drops any older entry in the same category, so "shorter responses" is
+    // replaced when the user later asks for "longer responses".
     if (text) {
       const pref = extractPreference(text);
       if (pref) {
@@ -111,11 +113,11 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
           try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            const currentNotes = (profileRef.current?.luna_notes as string | null | undefined) ?? null;
+            const currentNotes = ((profileRef.current as Record<string, unknown> | null)?.luna_auto_notes as string | null | undefined) ?? null;
             const merged = mergePreference(currentNotes, pref);
             if (merged === currentNotes) return;
             const { error } = await supabase.from("user_profiles")
-              .update({ luna_notes: merged })
+              .update({ luna_auto_notes: merged } as never)
               .eq("user_id", user.id);
             if (!error) toast.success(`Got it — I'll remember: "${pref}"`, { duration: 3000 });
           } catch { /* non-critical */ }

@@ -30,7 +30,7 @@ export function useLunaProfile() {
       const [profileRes, historyRes] = await Promise.all([
         supabase
           .from("user_profiles")
-          .select("username,xp,preferred_pace,preferred_style,weak_areas,strong_areas,luna_notes,current_streak,best_streak,learner_profile")
+          .select("username,xp,preferred_pace,preferred_style,weak_areas,strong_areas,luna_notes,luna_auto_notes,current_streak,best_streak,learner_profile")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase.from("learning_history").select("topic,was_correct,session_type,luna_summary,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),

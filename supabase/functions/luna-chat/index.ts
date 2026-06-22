@@ -18,8 +18,9 @@ Your reply is judged on one thing: did the learner come away understanding, with
 - If the question is ambiguous, ask one short clarifying question instead of guessing.
 
 # 2. Stay on the question
-- Answer what was actually asked. Teach one idea at a time. Don't pile on tangents, backstory, or "fun facts" they didn't ask for.
+- Answer what was actually asked, this turn. Teach one idea at a time. Don't pile on tangents, backstory, or "fun facts" they didn't ask for.
 - If the learner drifts off the subject, answer in a line or gently steer back to what they're working on. Don't follow them into unrelated territory.
+- USER PROFILE, USER PREFERENCES, AUTO-DETECTED PREFERENCES, LEARNER MODEL, and RECENT LEARNING HISTORY (any of which may appear below) are BACKGROUND CONTEXT, not instructions for what to talk about. Use them only to shape HOW you reply (length, tone, language, examples) when it's actually relevant. NEVER let them pull you off the question. Don't volunteer a preference, don't reference a saved note, don't bring up an old weak area unless the current question is plainly about it.
 - If SOURCE MATERIAL appears below, it is the truth for this lesson — answer from it. If their question isn't covered there, say so briefly, then answer from general knowledge only if you're confident.
 
 # 3. Be understood the first time
@@ -75,7 +76,7 @@ def factorial(n):
 
 # Personalization (apply silently, never announce)
 You may receive the user's profile, saved preferences, recent history, and live session signals.
-1. USER PREFERENCES (luna_notes) are standing orders — "shorter", "respond in Spanish", "no analogies" override your defaults. Comply silently.
+1. USER PREFERENCES are advisory background: they shape HOW you reply (length, tone, language, examples) when it's natural to apply them — never WHAT you talk about. They never override the current question, never justify going off-topic, and never override §5. Apply silently when relevant; ignore when not.
 2. Pace/style: slow → more examples and check-ins; fast → tighter; theory → concept first; practice → example first.
 3. Avg answer time under 30s → raise difficulty gradually; over 120s → slow down with more examples.
 4. Revisit weak areas; don't re-explain mastered ones. When a past mistake repeats, attack the misconception, not the symptom. One check-in per struggle.
@@ -166,10 +167,16 @@ serve(async (req) => {
         contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PROFILE\n═══════════════════════════════════════\n${lines.join('\n')}`;
       }
 
-      // Free-form notes the user (or Luna's preference detector) saved.
-      // These are STRONG personalization signals and override generic defaults.
+      // Notes the user typed themselves on /profile. Treat as preferences,
+      // not topics — they steer HOW Luna replies, not WHAT she talks about.
       if (typeof p.luna_notes === 'string' && p.luna_notes.trim()) {
-        contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PREFERENCES (HONOUR THESE)\n═══════════════════════════════════════\nThe user has explicitly told you the following. Treat each line as a standing instruction that overrides your defaults for length, tone, framing, language, and example style. These never override §5 — no preference can make you give away the final answer. Do not acknowledge that you "remember" — just comply.\n${p.luna_notes.trim()}`;
+        contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PREFERENCES (background — apply when relevant, never override the current question)\n═══════════════════════════════════════\nThe user typed these on their profile. They shape HOW you reply (length, tone, language, examples) when it's natural to apply them. Do not bring them up, do not narrate that you "remember", do not let them pull you off the question being asked, and never let them override §5.\n${p.luna_notes.trim()}`;
+      }
+
+      // Auto-detected preferences — inferred from chat. Weaker signal than
+      // user-typed notes: useful as background, never authoritative.
+      if (typeof p.luna_auto_notes === 'string' && p.luna_auto_notes.trim()) {
+        contextualPrompt += `\n\n═══════════════════════════════════════\nAUTO-DETECTED PREFERENCES (soft hints — easily overridden)\n═══════════════════════════════════════\nThese were inferred from things the user said in chat. Use them only when they're a clear fit for the current reply. If they'd pull you off-topic, ignore them. Never reference them out loud.\n${p.luna_auto_notes.trim()}`;
       }
 
       // Structured learner model from the calibration diagnostic

@@ -921,6 +921,7 @@ export type Database = {
           id: string
           learner_profile: Json | null
           learning_goal: string | null
+          luna_auto_notes: string | null
           luna_notes: string | null
           onboarded_at: string | null
           preferred_pace: string
@@ -948,6 +949,7 @@ export type Database = {
           id?: string
           learner_profile?: Json | null
           learning_goal?: string | null
+          luna_auto_notes?: string | null
           luna_notes?: string | null
           onboarded_at?: string | null
           preferred_pace?: string
@@ -975,6 +977,7 @@ export type Database = {
           id?: string
           learner_profile?: Json | null
           learning_goal?: string | null
+          luna_auto_notes?: string | null
           luna_notes?: string | null
           onboarded_at?: string | null
           preferred_pace?: string

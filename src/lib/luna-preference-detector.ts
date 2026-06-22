@@ -59,8 +59,36 @@ export function extractPreference(text: string): string | null {
 }
 
 /**
- * Merge a freshly-detected preference into the existing notes blob without
- * duplicating, while preserving order (newest pinned to top, max 12 items).
+ * Coarse category for a preference line. Used by mergePreference to drop
+ * stale entries that the user has just contradicted ("shorter responses"
+ * gets replaced when they later say "longer responses"). Returns null when
+ * the line doesn't map to a recognisable category — in which case we leave
+ * older lines alone and only dedupe by text.
+ */
+export function preferenceCategory(line: string): string | null {
+  const t = line.toLowerCase().trim();
+  if (/respond in\s+\w+/.test(t)) return "language";
+  if (/\b(short|long|brief|concise|detailed|thorough)\b.*responses?/.test(t)) return "length";
+  if (/\b(short|brief|concise|detailed|thorough) responses?/.test(t)) return "length";
+  if (/\b(fewer|less|more)\s+(words|sentences|paragraphs|details|steps)\b/.test(t)) return "length";
+  if (/analog/.test(t)) return "analogies";
+  if (/example/.test(t)) return "examples";
+  if (/\b(hint|hints)\b/.test(t) || /get to concrete/.test(t)) return "hints";
+  if (/\btone\b/.test(t)) return "tone";
+  if (/^explain like i'?m/.test(t)) return "level";
+  if (/emoji/.test(t)) return "emoji";
+  if (/\b(code|equations?)\b/.test(t)) return "format";
+  if (/diagram|story|real[- ]world/.test(t)) return "examples";
+  return null;
+}
+
+/**
+ * Merge a freshly-detected preference into the existing notes blob:
+ *  - dedupe by normalised text (case + punctuation insensitive)
+ *  - if the fresh line has a known category, drop any older line in the same
+ *    category so the newest instruction wins (no stale "shorter responses"
+ *    sitting next to "longer responses")
+ *  - cap at 12 lines, newest pinned to top
  */
 export function mergePreference(existing: string | null, fresh: string): string {
   const lines = (existing || "")
@@ -68,9 +96,12 @@ export function mergePreference(existing: string | null, fresh: string): string 
     .map(l => l.trim())
     .filter(Boolean);
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
-  const dup = lines.findIndex(l => norm(l) === norm(fresh));
-  if (dup === 0) return lines.join("\n");
-  if (dup > 0) lines.splice(dup, 1);
-  lines.unshift(fresh);
-  return lines.slice(0, 12).join("\n");
+  const freshCat = preferenceCategory(fresh);
+  const filtered = lines.filter(l => {
+    if (norm(l) === norm(fresh)) return false;
+    if (freshCat && preferenceCategory(l) === freshCat) return false;
+    return true;
+  });
+  filtered.unshift(fresh);
+  return filtered.slice(0, 12).join("\n");
 }

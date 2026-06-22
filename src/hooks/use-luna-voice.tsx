@@ -1,143 +1,208 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-/** Pick the most natural-sounding voice available in the browser. */
-function pickBestVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices.length) return null;
-  const lang = (navigator.language || "en-US").toLowerCase();
-  const langMatches = voices.filter(v => v.lang?.toLowerCase().startsWith(lang.slice(0, 2)));
-  const pool = langMatches.length ? langMatches : voices;
-  // Prefer high-quality / neural / natural voices when available.
-  const preferredNames = [
-    "Google UK English Female", "Google US English",
-    "Microsoft Aria", "Microsoft Jenny", "Microsoft Guy",
-    "Samantha", "Karen", "Daniel", "Serena",
+/**
+ * Voice I/O for Luna.
+ *
+ * Dictation: MediaRecorder captures a short audio clip on a user gesture,
+ * then we POST it to the luna-stt edge function which proxies to Lovable AI
+ * (openai/gpt-4o-mini-transcribe). Works across every modern browser, unlike
+ * the legacy webkitSpeechRecognition path that was Chrome-only and silently
+ * failed in many environments.
+ *
+ * Read-aloud: text is sent to luna-tts → Lovable AI (openai/gpt-4o-mini-tts)
+ * which returns natural, conversational audio. Beats the browser
+ * SpeechSynthesis voices (which sound robotic) by a wide margin.
+ */
+
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-tts`;
+const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-stt`;
+
+function pickRecorderMime(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/mpeg",
   ];
-  for (const name of preferredNames) {
-    const v = pool.find(x => x.name.includes(name));
-    if (v) return v;
+  for (const t of candidates) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
   }
-  // Heuristic: prefer voices with "Natural", "Neural", "Online", "Premium" hints.
-  const enhanced = pool.find(v => /natural|neural|online|premium|enhanced/i.test(v.name));
-  if (enhanced) return enhanced;
-  // Fall back to the default-flagged voice, then first match.
-  return pool.find(v => v.default) ?? pool[0];
+  return undefined;
 }
 
-/** Web Speech API wrapper: push-to-talk dictation + optional spoken replies. */
+function cleanForSpeech(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/\$\$[\s\S]*?\$\$/g, "")
+    .replace(/\$[^$\n]+\$/g, "")
+    .replace(/\\\(([\s\S]*?)\\\)/g, "")
+    .replace(/\\\[([\s\S]*?)\\\]/g, "")
+    .replace(/\\[a-zA-Z]+\{[^}]*\}/g, "")
+    .replace(/\[\[ACTION:[^\]]*\]\]/g, "")
+    .replace(/\[(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\]\s*/gi, "")
+    .replace(/[#*_>~`]/g, "")
+    .replace(/🌙/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [speakEnabled, setSpeakEnabled] = useState<boolean>(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
-  // Stable ref so recognition callbacks always call the latest onTranscript
-  // without needing to be recreated when the prop changes.
+  // Stable ref so async callbacks always call the latest onTranscript.
   const onTranscriptRef = useRef(opts.onTranscript);
   useEffect(() => { onTranscriptRef.current = opts.onTranscript; }, [opts.onTranscript]);
 
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setSupported(!!SR);
+    const hasGUM = typeof navigator !== "undefined" && !!navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function";
+    const ok = hasGUM && typeof MediaRecorder !== "undefined";
+    setSupported(ok);
   }, []);
 
-  // Voices load asynchronously in some browsers — listen for the change event.
-  useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const refresh = () => { voiceRef.current = pickBestVoice(); };
-    refresh();
-    window.speechSynthesis.onvoiceschanged = refresh;
-    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  const releaseRecorder = useCallback(() => {
+    try { streamRef.current?.getTracks().forEach(t => t.stop()); } catch { /* ignore */ }
+    streamRef.current = null;
+    recorderRef.current = null;
+    chunksRef.current = [];
   }, []);
 
   const stopSpeaking = useCallback(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    if (audioRef.current) {
+      try { audioRef.current.pause(); audioRef.current.src = ""; } catch { /* ignore */ }
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
     }
   }, []);
 
-  const startListening = useCallback(() => {
-    if (listening) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-
-    // Always create a fresh instance — browsers often reject re-starting the
-    // same recognition object, silently failing after the first use.
+  const transcribe = useCallback(async (blob: Blob, ext: string) => {
     try {
-      const r = new SR();
-      r.continuous = false;
-      r.interimResults = false;
-      r.lang = navigator.language || "en-US";
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      r.onresult = (e: any) => {
-        const t = Array.from(e.results)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((res: any) => res[0].transcript)
-          .join(" ")
-          .trim();
-        if (t) onTranscriptRef.current(t);
-      };
-
-      r.onend = () => setListening(false);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      r.onerror = (e: any) => {
-        setListening(false);
-        // "no-speech" is a normal timeout — not worth surfacing as an error.
-        if (e.error && e.error !== "no-speech") {
-          const messages: Record<string, string> = {
-            "not-allowed": "Microphone access denied. Allow mic permission in your browser and try again.",
-            "network":     "Network error during voice recognition. Check your connection.",
-            "aborted":     "",   // user-triggered, silent
-            "audio-capture": "No microphone found. Plug one in and try again.",
-          };
-          const msg = messages[e.error as string] ?? `Voice error: ${e.error}`;
-          if (msg) setVoiceError(msg);
-        }
-      };
-
-      r.start();
-      setListening(true);
-      setVoiceError(null);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const fd = new FormData();
+      fd.append("file", blob, `recording.${ext}`);
+      const r = await fetch(STT_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: fd,
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        setVoiceError(typeof data?.error === "string" ? data.error : `Transcription failed (${r.status}).`);
+        return;
+      }
+      const data = await r.json();
+      const text = typeof data?.text === "string" ? data.text.trim() : "";
+      if (text) onTranscriptRef.current(text);
     } catch {
-      setListening(false);
+      setVoiceError("Transcription request failed. Check your connection.");
     }
-  }, [listening]);
+  }, []);
+
+  const startListening = useCallback(async () => {
+    if (listening) return;
+    if (typeof window === "undefined" || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function" || typeof MediaRecorder === "undefined") {
+      setVoiceError("Voice input isn't supported in this browser.");
+      return;
+    }
+    setVoiceError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mimeType = pickRecorderMime();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const type = recorder.mimeType || mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type });
+        releaseRecorder();
+        setListening(false);
+        if (blob.size < 1024) {
+          setVoiceError("That recording was too short — try again.");
+          return;
+        }
+        const ext = type.includes("mp4") ? "mp4" : type.includes("mpeg") ? "mp3" : "webm";
+        void transcribe(blob, ext);
+      };
+      recorder.start();
+      setListening(true);
+    } catch (err) {
+      releaseRecorder();
+      setListening(false);
+      const name = (err as { name?: string })?.name || "";
+      if (name === "NotAllowedError" || name === "SecurityError") setVoiceError("Microphone access denied. Allow mic permission in your browser settings and try again.");
+      else if (name === "NotFoundError") setVoiceError("No microphone found. Plug one in and try again.");
+      else if (name === "NotReadableError") setVoiceError("Microphone is in use by another app.");
+      else setVoiceError("Couldn't start recording. Try again.");
+    }
+  }, [listening, releaseRecorder, transcribe]);
 
   const stopListening = useCallback(() => {
-    // The recognition auto-stops via onend; we just update state immediately
-    // so the UI reflects the intent without waiting for the onend callback.
-    setListening(false);
-  }, []);
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      try { rec.stop(); } catch { releaseRecorder(); setListening(false); }
+    } else {
+      releaseRecorder();
+      setListening(false);
+    }
+  }, [releaseRecorder]);
 
-  const speak = useCallback((text: string) => {
-    if (!speakEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const clean = text
-      .replace(/```[\s\S]*?```/g, "")   // strip code blocks
-      .replace(/`[^`]*`/g, "")          // strip inline code
-      .replace(/\$\$[\s\S]*?\$\$/g, "") // strip block math
-      .replace(/\$[^$\n]+\$/g, "")      // strip inline math
-      .replace(/[#*_>~`]/g, "")
-      .replace(/🌙/g, "")
-      .trim();
+  const speak = useCallback(async (text: string) => {
+    if (!speakEnabled) return;
+    const clean = cleanForSpeech(text);
     if (!clean) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(clean.slice(0, 800));
-    const v = voiceRef.current ?? pickBestVoice();
-    if (v) { u.voice = v; u.lang = v.lang; }
-    u.rate = 1.0;
-    u.pitch = 1.05;
-    u.volume = 1.0;
-    window.speechSynthesis.speak(u);
-  }, [speakEnabled]);
+    stopSpeaking();
+    const ctrl = new AbortController();
+    ttsAbortRef.current = ctrl;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const r = await fetch(TTS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ text: clean.slice(0, 1800) }),
+        signal: ctrl.signal,
+      });
+      if (!r.ok || ctrl.signal.aborted) return;
+      const blob = await r.blob();
+      if (ctrl.signal.aborted) return;
+      const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (audioUrlRef.current === url) audioUrlRef.current = null;
+        if (audioRef.current === audio) audioRef.current = null;
+      };
+      await audio.play().catch(() => { /* autoplay blocked / interrupted */ });
+    } catch { /* aborted or network */ }
+  }, [speakEnabled, stopSpeaking]);
 
-  // Wrap setSpeakEnabled to immediately silence ongoing speech when muting.
   const setSpeakEnabledSafe: typeof setSpeakEnabled = useCallback((v) => {
     setSpeakEnabled(prev => {
       const next = typeof v === "function" ? (v as (p: boolean) => boolean)(prev) : v;
@@ -146,8 +211,19 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     });
   }, [stopSpeaking]);
 
-  // Always stop any in-flight TTS when the consumer unmounts (panel closed, page left).
-  useEffect(() => () => stopSpeaking(), [stopSpeaking]);
+  // Cleanup on unmount: stop mic and any in-flight TTS audio.
+  useEffect(() => () => { stopSpeaking(); releaseRecorder(); }, [stopSpeaking, releaseRecorder]);
 
-  return { supported, listening, startListening, stopListening, speakEnabled, setSpeakEnabled: setSpeakEnabledSafe, speak, stopSpeaking, voiceError, clearVoiceError: () => setVoiceError(null) };
+  return {
+    supported,
+    listening,
+    startListening,
+    stopListening,
+    speakEnabled,
+    setSpeakEnabled: setSpeakEnabledSafe,
+    speak,
+    stopSpeaking,
+    voiceError,
+    clearVoiceError: () => setVoiceError(null),
+  };
 }

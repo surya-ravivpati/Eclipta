@@ -1,5 +1,6 @@
 // Luna AI streaming client
 import { Lightbulb, Eye, Sparkles, Coffee, BookOpen, type LucideIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string; imageDataUrl?: string };
 
@@ -28,12 +29,19 @@ const STREAM_RETRY_DELAYS_MS = [600, 1400];
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Response> {
+  // luna-chat authenticates the caller (getUser on the bearer token), so we
+  // must send the user's session JWT — NOT the publishable key, which carries
+  // no user and gets rejected as "Unauthorized".
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
   for (let attempt = 0; attempt <= STREAM_RETRY_DELAYS_MS.length; attempt++) {
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
       body,
       signal,

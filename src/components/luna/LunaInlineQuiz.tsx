@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { recordAnswer } from "@/lib/luna-context";
+import { supabase } from "@/integrations/supabase/client";
 
 type Q = { question: string; choices: string[]; answer_index: number; explanation: string };
 
@@ -24,11 +25,16 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
     let cancelled = false;
     (async () => {
       try {
+        // luna-quiz authenticates the caller, so send the user's session JWT,
+        // not the publishable key (which has no user → "Unauthorized").
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-quiz`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ topic, count }),
         });

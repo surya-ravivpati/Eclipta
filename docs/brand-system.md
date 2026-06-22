@@ -31,12 +31,21 @@ change the brand once, it propagates everywhere.
   rank/XP shine; keep ordinary chrome calm (ivory/slate on navy).
 - `--tier-diamond` sits at hue ~215 (icy), distinct from the gold accent.
 
-### Phase-2 backlog (not yet converted)
-- Battle `--neon-pink` / `--neon-cyan` team cues still read as the old neon
-  duel; reskin to navy/gold/ivory + a single restrained team hue.
-- Per-scope aurora/gradient **literals** in `CinematicFilm.css` (hues 248/305)
-  are still blue/violet — repaint toward gold/ivory on navy.
-- Glow audit: demote ambient page glows so only earned states glow.
+### Battle team cues
+1v1 uses a gold-vs-silver (1st-vs-2nd) contrast, not a neon duel:
+- `--btt-you` `#D4AF37` (brand gold) · `--btt-foe` `oklch(0.74 0.03 250)`
+  (cool steel-silver). `--btt-cyan`/`--btt-pink` are legacy aliases of these.
+- Damage = restrained crimson (hue ~22), heal = gold; the critical-HP
+  vignette stays red (functional danger).
+
+### Aurora / glow
+- Every scope's atmospheric aurora is a low-chroma navy wash + a restrained
+  gold highlight (landing, About, Battles, Progress, Luna). The landing film
+  resolves cool→gold as the eclipse turns; base intensity was lowered.
+- Glow restraint (partial): the loudest *ambient* glows (hero title, idle
+  lobby, card pulses) were demoted/recolored to subtle gold. A full
+  per-component pass — making only *earned* states (rank, XP, victory) glow
+  while ordinary chrome stays matte — is still worthwhile as components evolve.
 
 ## Type roles
 

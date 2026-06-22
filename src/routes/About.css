@@ -18,7 +18,7 @@
   --ab-line:    var(--brand-line);
   --ab-line-2:  var(--brand-line-2);
   --ab-accent:  var(--brand-accent);
-  --ab-pink:    oklch(0.72 0.19 350);
+  --ab-pink:    oklch(0.62 0.19 22);   /* error/required — restrained crimson */
   --ab-panel:   rgba(255, 255, 255, 0.022);
 
   --ab-display: var(--font-cinematic);
@@ -45,9 +45,9 @@
 .ab-aurora {
   position: absolute; inset: -24%;
   background:
-    radial-gradient(56% 50% at 50% 112%, oklch(0.50 0.17 248 / 0.55), transparent 64%),
-    radial-gradient(42% 46% at 14% -4%, oklch(0.45 0.16 305 / 0.34), transparent 62%),
-    radial-gradient(38% 42% at 88% 12%, oklch(0.50 0.14 235 / 0.30), transparent 60%);
+    radial-gradient(56% 50% at 50% 112%, oklch(0.50 0.10 250 / 0.45), transparent 64%),
+    radial-gradient(42% 46% at 14% -4%, oklch(0.48 0.10 285 / 0.26), transparent 62%),
+    radial-gradient(38% 42% at 88% 12%, oklch(0.62 0.10 88 / 0.22), transparent 60%);
   filter: blur(80px);
   will-change: transform;
   animation: ab-drift 40s ease-in-out infinite alternate;
@@ -95,7 +95,7 @@
 .ab-hero-logo {
   display: block; margin: 0 auto 30px;
   width: clamp(78px, 9vw, 124px); height: auto;
-  filter: drop-shadow(0 0 34px oklch(0.72 0.14 235 / 0.55));
+  filter: drop-shadow(0 0 34px oklch(0.80 0.13 88 / 0.50));
   animation: ab-soft-in 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) both,
              ab-float 7s ease-in-out 1.4s infinite;
 }
@@ -209,13 +209,13 @@
   padding: 30px 26px 32px;
   transition: background 0.4s ease;
 }
-.ab-pillar:hover { background: oklch(0.50 0.14 235 / 0.05); }
+.ab-pillar:hover { background: oklch(0.62 0.10 88 / 0.05); }
 .ab-pillar-icon {
   width: 38px; height: 38px; margin-bottom: 20px;
   display: grid; place-items: center;
   border: 1px solid var(--ab-line-2); border-radius: 8px;
   color: var(--ab-accent);
-  background: oklch(0.50 0.14 235 / 0.06);
+  background: oklch(0.62 0.10 88 / 0.06);
 }
 .ab-pillar h3 {
   font-family: var(--ab-display); font-weight: 400;
@@ -321,7 +321,7 @@
   border: none; cursor: pointer; text-decoration: none;
   transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.45s ease, opacity 0.25s ease;
 }
-.ab-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px oklch(0.82 0.12 235 / 0.25); }
+.ab-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px oklch(0.80 0.13 88 / 0.25); }
 .ab-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .ab-btn--accent { background: var(--ab-accent); color: #04060a; }
 .ab-link {

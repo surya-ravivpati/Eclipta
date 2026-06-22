@@ -526,7 +526,7 @@
   content: ""; position: absolute; inset: 0;
   background:
     radial-gradient(700px 400px at 25% 30%, oklch(0.88 0.12 90 / 0.10), transparent 60%),
-    radial-gradient(700px 400px at 75% 70%, oklch(0.62 0.28 310 / 0.10), transparent 60%);
+    radial-gradient(700px 400px at 75% 70%, oklch(0.45 0.10 250 / 0.10), transparent 60%);
   pointer-events: none;
 }
 

@@ -22,8 +22,8 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(900px 700px at 15% 20%, oklch(0.55 0.18 280 / 0.13), transparent 60%),
-    radial-gradient(800px 600px at 85% 85%, oklch(0.55 0.16 240 / 0.09), transparent 60%);
+    radial-gradient(900px 700px at 15% 20%, oklch(0.50 0.10 270 / 0.12), transparent 60%),
+    radial-gradient(800px 600px at 85% 85%, oklch(0.58 0.10 88 / 0.09), transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -84,7 +84,7 @@
 .luna-moon-glyph {
   font-size: 18px;
   line-height: 1;
-  filter: drop-shadow(0 0 8px oklch(0.65 0.22 290 / 0.5));
+  filter: drop-shadow(0 0 8px oklch(0.78 0.13 88 / 0.5));
 }
 
 .luna-name {
@@ -126,7 +126,7 @@
   letter-spacing: 0.16em;
   color: rgba(192,196,205,0.45);
 }
-.luna-stat svg { flex-shrink: 0; color: oklch(0.78 0.14 240); }
+.luna-stat svg { flex-shrink: 0; color: oklch(0.80 0.13 88); }
 .luna-stat--warn svg { color: oklch(0.72 0.22 0); }
 
 .luna-reset-btn {
@@ -179,8 +179,8 @@
 }
 
 .luna-bubble--user {
-  background: oklch(0.62 0.18 248 / 0.11);
-  border: 1px solid oklch(0.62 0.18 248 / 0.20);
+  background: oklch(0.78 0.13 88 / 0.11);
+  border: 1px solid oklch(0.78 0.13 88 / 0.20);
   color: #F5F6F8;
 }
 
@@ -256,7 +256,7 @@
   font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: oklch(0.78 0.14 240);
+  color: oklch(0.80 0.13 88);
   background: none;
   border: none;
   cursor: pointer;
@@ -280,8 +280,8 @@
   animation: luna-moon-glow 3s ease-in-out infinite;
 }
 @keyframes luna-moon-glow {
-  0%,100% { filter: drop-shadow(0 0 3px oklch(0.65 0.22 290 / 0.25)); }
-  50%      { filter: drop-shadow(0 0 9px oklch(0.65 0.22 290 / 0.65)); }
+  0%,100% { filter: drop-shadow(0 0 3px oklch(0.78 0.13 88 / 0.25)); }
+  50%      { filter: drop-shadow(0 0 9px oklch(0.78 0.13 88 / 0.65)); }
 }
 
 .luna-thinking-label {
@@ -303,20 +303,20 @@
   gap: 8px;
   padding: 8px 14px;
   border-radius: 6px;
-  border: 1px solid oklch(0.62 0.18 248 / 0.35);
-  background: oklch(0.62 0.18 248 / 0.08);
+  border: 1px solid oklch(0.78 0.13 88 / 0.35);
+  background: oklch(0.78 0.13 88 / 0.08);
   font-family: "JetBrains Mono", monospace;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: oklch(0.80 0.16 240);
+  color: oklch(0.82 0.14 88);
   text-decoration: none;
   transition: border-color .2s, background .2s;
 }
 .luna-shell .luna-action-open:hover {
-  border-color: oklch(0.80 0.16 240 / 0.55);
-  background: oklch(0.62 0.18 248 / 0.14);
+  border-color: oklch(0.82 0.14 88 / 0.55);
+  background: oklch(0.78 0.13 88 / 0.14);
 }
 
 /* ─── Input bar ──────────────────────────────────────────────────── */
@@ -365,8 +365,8 @@
   align-items: center;
   gap: 9px;
   padding: 6px 10px;
-  border: 1px solid oklch(0.78 0.14 240 / 0.22);
-  background: oklch(0.78 0.14 240 / 0.05);
+  border: 1px solid oklch(0.80 0.13 88 / 0.22);
+  background: oklch(0.80 0.13 88 / 0.05);
   border-radius: 6px;
 }
 .luna-screen-thumb {
@@ -382,7 +382,7 @@
   font-weight: 700;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: oklch(0.80 0.16 240);
+  color: oklch(0.82 0.14 88);
 }
 .luna-screen-remove {
   background: none; border: none; cursor: pointer;
@@ -413,8 +413,8 @@
   flex-shrink: 0;
 }
 .luna-act-btn:hover {
-  border-color: oklch(0.78 0.14 240 / 0.40);
-  color: oklch(0.80 0.16 240);
+  border-color: oklch(0.80 0.13 88 / 0.40);
+  color: oklch(0.82 0.14 88);
 }
 .luna-act-btn:disabled { opacity: 0.28; cursor: not-allowed; }
 
@@ -431,13 +431,13 @@
 
 /* Speak enabled — blue/accent state */
 .luna-act-btn--speaking {
-  background: oklch(0.62 0.18 248 / 0.10);
-  border-color: oklch(0.62 0.18 248 / 0.40);
-  color: oklch(0.80 0.16 240);
+  background: oklch(0.78 0.13 88 / 0.10);
+  border-color: oklch(0.78 0.13 88 / 0.40);
+  color: oklch(0.82 0.14 88);
 }
 .luna-act-btn--speaking:hover {
-  border-color: oklch(0.80 0.16 240 / 0.65);
-  color: oklch(0.80 0.16 240);
+  border-color: oklch(0.82 0.14 88 / 0.65);
+  color: oklch(0.82 0.14 88);
 }
 
 /* Text input */
@@ -456,14 +456,14 @@
 }
 .luna-input::placeholder { color: rgba(122,125,133,0.40); }
 .luna-input:focus {
-  border-color: oklch(0.62 0.18 248 / 0.42);
-  box-shadow: 0 0 0 1px oklch(0.62 0.18 248 / 0.10);
+  border-color: oklch(0.78 0.13 88 / 0.42);
+  box-shadow: 0 0 0 1px oklch(0.78 0.13 88 / 0.10);
 }
 
 /* Send button */
 .luna-send-btn {
   padding: 11px;
-  background: oklch(0.62 0.18 248);
+  background: oklch(0.78 0.13 88);
   color: #05060A;
   border: none;
   border-radius: 8px;
@@ -475,7 +475,7 @@
 }
 .luna-send-btn:hover {
   opacity: 0.88;
-  box-shadow: 0 6px 22px -8px oklch(0.62 0.18 248 / 0.55);
+  box-shadow: 0 6px 22px -8px oklch(0.78 0.13 88 / 0.55);
 }
 .luna-send-btn:disabled { opacity: 0.22; cursor: not-allowed; }
 

@@ -279,9 +279,11 @@ export function CinematicFilm() {
         if (r5.top < vh) gold *= 1 - smooth(clamp01((vh - r5.top) / (vh * 0.9)));
       }
       if (auroraRef.current) {
-        auroraRef.current.style.setProperty("--h1", lerp(248, 88, gold).toFixed(1));
-        auroraRef.current.style.setProperty("--h2", lerp(305, 70, gold).toFixed(1));
-        auroraRef.current.style.setProperty("--i", (0.45 + gold * 0.30).toFixed(3));
+        // Cool deep-navy wash that resolves to brand gold as the eclipse
+        // turns — restrained chroma, no neon/magenta start.
+        auroraRef.current.style.setProperty("--h1", lerp(250, 88, gold).toFixed(1));
+        auroraRef.current.style.setProperty("--h2", lerp(285, 78, gold).toFixed(1));
+        auroraRef.current.style.setProperty("--i", (0.32 + gold * 0.26).toFixed(3));
       }
 
       raf = requestAnimationFrame(tick);

@@ -12,19 +12,20 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: #04050a;
+  background: var(--brand-bg);
 }
 
-/* Aurora — same environment hues as the landing film (blue / violet),
-   so moving from the homepage into the arena feels like one world. */
+/* Aurora — deep navy wash + a restrained gold highlight (matches the
+   Competitive Intelligence ground), so moving from the homepage into the
+   arena feels like one world. Low chroma keeps it atmospheric, not neon. */
 .btt-aurora {
   position: absolute;
   inset: -20%;
   background:
     radial-gradient(900px 700px at 22% 28%,
-      oklch(0.50 0.17 248 / 0.30), transparent 60%),
+      oklch(0.45 0.08 255 / 0.30), transparent 60%),
     radial-gradient(800px 650px at 80% 72%,
-      oklch(0.45 0.16 305 / 0.24), transparent 60%);
+      oklch(0.62 0.10 88 / 0.16), transparent 60%);
   filter: blur(80px);
   will-change: transform;
   animation: btt-drift 22s ease-in-out infinite alternate;
@@ -77,11 +78,14 @@
   -webkit-font-smoothing: antialiased;
 
   /* ── Design tokens ── */
-  /* pink/cyan/gold are battle-functional team cues (you vs foe), kept
-     local. --btt-purple is the shared brand blue; --btt-mono the shared
-     mono — both alias the brand spine in styles.css :root. */
-  --btt-pink:    oklch(0.60 0.24 350);
-  --btt-cyan:    oklch(0.75 0.15 180);
+  /* Competitive Intelligence team cues: YOU = brand gold, FOE = cool
+     steel-silver (gold-vs-silver, 1st-vs-2nd — prestige, not a neon duel).
+     --btt-cyan / --btt-pink are kept as legacy aliases so existing refs
+     resolve to the new colors. --btt-purple aliases the brand gold accent. */
+  --btt-you:     #D4AF37;
+  --btt-foe:     oklch(0.74 0.03 250);
+  --btt-cyan:    var(--btt-you);
+  --btt-pink:    var(--btt-foe);
   --btt-purple:  var(--brand-accent-base);
   --btt-gold:    oklch(0.80 0.14 85);
   --btt-fog:     #7A7D85;
@@ -105,13 +109,13 @@
 
 /* ─── Hero heading glow ──────────────────────────────────────── */
 .btt-title {
-  filter: drop-shadow(0 0 32px oklch(0.60 0.24 350 / 0.30));
+  filter: drop-shadow(0 0 18px oklch(0.78 0.13 88 / 0.20));
 }
 
 /* ─── Badge pill ─────────────────────────────────────────────── */
 .btt-pill {
   letter-spacing: 0.16em;
-  box-shadow: 0 0 14px oklch(0.60 0.24 350 / 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 14px oklch(0.78 0.13 88 / 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* ─── Typography ─────────────────────────────────────────────── */
@@ -167,7 +171,7 @@
 }
 
 .btt-card--purple {
-  border: 1px solid oklch(0.58 0.17 252 / 0.25);
+  border: 1px solid oklch(0.78 0.13 88 / 0.25);
 }
 
 /* ─── HP bar ─────────────────────────────────────────────────── */
@@ -260,17 +264,17 @@
 
 .btt-action--defend:hover:not(:disabled) {
   border-color: var(--btt-cyan);
-  box-shadow: 0 0 18px oklch(0.75 0.15 180 / 0.12);
+  box-shadow: 0 0 18px oklch(0.78 0.13 88 / 0.14);
 }
 
 .btt-action--charge:hover:not(:disabled) {
   border-color: var(--btt-pink);
-  box-shadow: 0 0 18px oklch(0.60 0.24 350 / 0.14);
+  box-shadow: 0 0 18px oklch(0.74 0.03 250 / 0.16);
 }
 
 .btt-action--wild:hover:not(:disabled) {
   border-color: var(--btt-purple);
-  box-shadow: 0 0 18px oklch(0.58 0.17 252 / 0.14);
+  box-shadow: 0 0 18px oklch(0.78 0.13 88 / 0.14);
 }
 
 /* ─── Question overlay ──────────────────────────────────────── */
@@ -295,7 +299,7 @@
   margin: 0 16px;
   box-shadow:
     0 40px 90px rgba(0, 0, 0, 0.7),
-    0 0 60px oklch(0.58 0.17 252 / 0.12),
+    0 0 60px oklch(0.78 0.13 88 / 0.10),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -319,10 +323,10 @@
   color: #F5F6F8;
   border-color: rgba(255, 255, 255, 0.28);
 }
-.btt-ghost-btn--cyan  { color: var(--btt-cyan);   border-color: oklch(0.75 0.15 180 / 0.28); }
-.btt-ghost-btn--cyan:hover  { border-color: oklch(0.75 0.15 180 / 0.55); color: var(--btt-cyan); }
-.btt-ghost-btn--purple { color: var(--btt-purple); border-color: oklch(0.58 0.17 252 / 0.28); }
-.btt-ghost-btn--purple:hover { border-color: oklch(0.58 0.17 252 / 0.55); color: var(--btt-purple); }
+.btt-ghost-btn--cyan  { color: var(--btt-cyan);   border-color: oklch(0.78 0.13 88 / 0.28); }
+.btt-ghost-btn--cyan:hover  { border-color: oklch(0.78 0.13 88 / 0.55); color: var(--btt-cyan); }
+.btt-ghost-btn--purple { color: var(--btt-foe); border-color: oklch(0.74 0.03 250 / 0.32); }
+.btt-ghost-btn--purple:hover { border-color: oklch(0.74 0.03 250 / 0.60); color: var(--btt-foe); }
 
 /* ─── Floating help button ────────────────────────────────────── */
 .btt-help-btn {
@@ -332,7 +336,7 @@
   z-index: 40;
   width: 44px;
   height: 44px;
-  border: 1px solid oklch(0.58 0.17 252 / 0.35);
+  border: 1px solid oklch(0.78 0.13 88 / 0.35);
   background: rgba(5, 6, 10, 0.80);
   color: var(--btt-purple);
   display: flex;
@@ -342,7 +346,7 @@
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 .btt-help-btn:hover {
-  border-color: oklch(0.58 0.17 252 / 0.60);
+  border-color: oklch(0.78 0.13 88 / 0.60);
   background: rgba(18, 36, 84, 0.35);
 }
 
@@ -367,10 +371,10 @@
   z-index: 25;
 }
 .btt-impact-flash--left {
-  background: radial-gradient(55% 85% at 10% 30%, oklch(0.60 0.24 350 / 0.32), transparent 70%);
+  background: radial-gradient(55% 85% at 10% 30%, oklch(0.78 0.13 88 / 0.24), transparent 70%);
 }
 .btt-impact-flash--right {
-  background: radial-gradient(55% 85% at 90% 30%, oklch(0.75 0.15 180 / 0.24), transparent 70%);
+  background: radial-gradient(55% 85% at 90% 30%, oklch(0.74 0.03 250 / 0.22), transparent 70%);
 }
 
 /* Floating combat numbers over fighter cards */
@@ -391,12 +395,12 @@
 }
 .btt-float--big { font-size: 56px; }
 .btt-float--dmg {
-  color: oklch(0.72 0.23 350);
-  text-shadow: 0 0 22px oklch(0.60 0.24 350 / 0.85), 0 2px 18px rgba(0, 0, 0, 0.6);
+  color: oklch(0.64 0.20 22);
+  text-shadow: 0 0 22px oklch(0.62 0.20 22 / 0.80), 0 2px 18px rgba(0, 0, 0, 0.6);
 }
 .btt-float--heal {
-  color: oklch(0.80 0.15 180);
-  text-shadow: 0 0 22px oklch(0.75 0.15 180 / 0.75), 0 2px 18px rgba(0, 0, 0, 0.6);
+  color: oklch(0.82 0.13 88);
+  text-shadow: 0 0 22px oklch(0.78 0.13 88 / 0.70), 0 2px 18px rgba(0, 0, 0, 0.6);
 }
 
 /* Critical-HP danger vignette — frames the whole viewport in pulsing red */
@@ -441,8 +445,8 @@
     box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7);
   }
   50% {
-    border-color: oklch(0.60 0.24 350 / 0.65);
-    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), 0 0 36px oklch(0.60 0.24 350 / 0.25);
+    border-color: oklch(0.78 0.13 88 / 0.60);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), 0 0 36px oklch(0.78 0.13 88 / 0.22);
   }
 }
 
@@ -637,19 +641,19 @@ a.btt-lb-row-name:hover { color: var(--btt-cyan); }
 /* ─── Idle lobby — original look with a light cinematic glow ──────── */
 .btt-idle-glow {
   position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(48% 42% at 50% 30%, oklch(0.60 0.24 350 / 0.14), transparent 70%);
+  background: radial-gradient(48% 42% at 50% 30%, oklch(0.78 0.13 88 / 0.12), transparent 70%);
 }
 .btt-idle-emblem {
   position: relative;
-  border: 1px solid color-mix(in oklch, var(--btt-pink) 35%, transparent);
+  border: 1px solid color-mix(in oklch, var(--btt-you) 35%, transparent);
   border-radius: 16px;
-  background: radial-gradient(circle at 50% 40%, oklch(0.60 0.24 350 / 0.12), transparent 70%);
-  box-shadow: 0 0 34px oklch(0.60 0.24 350 / 0.22), inset 0 0 18px rgba(0,0,0,0.4);
+  background: radial-gradient(circle at 50% 40%, oklch(0.78 0.13 88 / 0.10), transparent 70%);
+  box-shadow: 0 0 34px oklch(0.78 0.13 88 / 0.18), inset 0 0 18px rgba(0,0,0,0.4);
 }
 .btt-idle-cta {
-  color: #04060a; border-radius: 999px;
-  background: linear-gradient(110deg, var(--btt-pink), oklch(0.72 0.18 20));
-  box-shadow: 0 10px 34px oklch(0.60 0.24 350 / 0.32);
+  color: #0B1020; border-radius: 999px;
+  background: linear-gradient(110deg, var(--btt-you), oklch(0.68 0.12 70));
+  box-shadow: 0 10px 34px oklch(0.78 0.13 88 / 0.30);
   transition: box-shadow 0.35s ease, transform 0.35s ease;
 }
-.btt-idle-cta:hover { box-shadow: 0 14px 46px oklch(0.60 0.24 350 / 0.48); }
+.btt-idle-cta:hover { box-shadow: 0 14px 46px oklch(0.78 0.13 88 / 0.44); }

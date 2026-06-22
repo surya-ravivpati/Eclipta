@@ -46,11 +46,11 @@
   /* hue + intensity vars are driven per-frame by the camera */
   background:
     radial-gradient(58% 52% at 50% 116%,
-      oklch(0.50 0.17 var(--h1, 248) / calc(var(--i, 0.45) * 0.9)), transparent 64%),
+      oklch(0.50 0.10 var(--h1, 250) / calc(var(--i, 0.32) * 0.9)), transparent 64%),
     radial-gradient(40% 44% at 18% -6%,
-      oklch(0.45 0.16 var(--h2, 305) / calc(var(--i, 0.45) * 0.55)), transparent 62%),
+      oklch(0.48 0.10 var(--h2, 285) / calc(var(--i, 0.32) * 0.55)), transparent 62%),
     radial-gradient(36% 40% at 86% 16%,
-      oklch(0.46 0.14 var(--h1, 248) / calc(var(--i, 0.45) * 0.4)), transparent 60%);
+      oklch(0.48 0.09 var(--h1, 250) / calc(var(--i, 0.32) * 0.4)), transparent 60%);
   filter: blur(70px);
   will-change: transform;
   animation: cf-aurora-drift 36s ease-in-out infinite alternate;
@@ -73,7 +73,7 @@
 /* Portal flash — bridges Act I into Act II. Driven per-frame. */
 .cf-flash {
   position: fixed; inset: 0; z-index: 30;
-  background: radial-gradient(120% 120% at 50% 50%, #ffffff 0%, var(--cf-flash) 38%, oklch(0.72 0.13 240) 100%);
+  background: radial-gradient(120% 120% at 50% 50%, #ffffff 0%, var(--cf-flash) 38%, oklch(0.78 0.12 88) 100%);
   opacity: 0;
   pointer-events: none;
   will-change: opacity;
@@ -102,7 +102,7 @@
 .cf-stars { position: absolute; inset: -6%; will-change: transform; }
 .cf-star {
   position: absolute; border-radius: 50%;
-  background: #cfd9ee;
+  background: #ECE6D6;
   animation: cf-star-breathe var(--d, 7s) ease-in-out infinite alternate;
 }
 @keyframes cf-star-breathe {
@@ -115,7 +115,7 @@
   position: absolute; left: 50%; top: 50%;
   width: 140px; height: 140px; margin: -70px 0 0 -70px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, #ffffff 0%, var(--cf-flash) 28%, oklch(0.70 0.14 240 / 0.65) 58%, transparent 74%);
+  background: radial-gradient(closest-side, #ffffff 0%, var(--cf-flash) 28%, oklch(0.78 0.12 88 / 0.60) 58%, transparent 74%);
   transform: scale(0.16);
   will-change: transform, opacity;
 }
@@ -131,7 +131,7 @@
   width: clamp(88px, 11vw, 152px);
   height: auto;
   margin: 0 auto 28px;
-  filter: drop-shadow(0 0 36px oklch(0.72 0.14 235 / 0.6));
+  filter: drop-shadow(0 0 36px oklch(0.80 0.13 88 / 0.55));
   animation: cf-soft-in 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.05s both,
              cf-logo-float 7s ease-in-out 1.6s infinite;
 }
@@ -404,7 +404,7 @@
 }
 .cf-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 60px -22px oklch(0.82 0.12 235 / 0.55);
+  box-shadow: 0 20px 60px -22px oklch(0.80 0.13 88 / 0.50);
 }
 .cf-link {
   font-family: var(--cf-display); font-size: 15px;
@@ -432,7 +432,7 @@
 }
 .cf-brand-logo {
   width: 22px; height: 22px; flex-shrink: 0;
-  filter: drop-shadow(0 0 10px oklch(0.82 0.12 235 / 0.5));
+  filter: drop-shadow(0 0 10px oklch(0.80 0.13 88 / 0.5));
 }
 .cf-foot-links { display: flex; gap: 6px; }
 .cf-foot-links a {

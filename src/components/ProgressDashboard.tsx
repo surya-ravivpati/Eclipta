@@ -5,9 +5,11 @@ import {
   BookOpen, Target, Flame, Award, Clock, ChevronRight,
   Lock, Users, Brain, GitBranch, Layers
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { TrophyRoad } from "@/components/TrophyRoad";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { listStudyRooms, type StudyRoom } from "@/lib/study-rooms";
 import "./Progress.css";
 
 /* ── Mock Data ─────────────────────────────────────────────── */
@@ -62,12 +64,6 @@ const recommendations = [
   { title: "System Design",           reason: "Next step after FAANG Interview Prep",      match: 89 },
   { title: "Probability & Statistics", reason: "Prerequisite for Machine Learning path",  match: 85 },
   { title: "Graph Theory",            reason: "You excelled at tree-based problems",       match: 78 },
-];
-
-const collaborationGroups = [
-  { name: "FAANG Study Group",          members: 12, active: true,  topic: "Interview Prep" },
-  { name: "Linear Algebra Gang",        members: 5,  active: true,  topic: "Mathematics"    },
-  { name: "Organic Chem Lab Partners",  members: 3,  active: false, topic: "Science"        },
 ];
 
 const TABS = [
@@ -235,24 +231,26 @@ function RecCard({ rec, delay = 0 }: { rec: typeof recommendations[0]; delay?: n
   );
 }
 
-function GroupCard({ group, delay = 0 }: { group: typeof collaborationGroups[0]; delay?: number }) {
+function GroupCard({ room, delay = 0 }: { room: StudyRoom; delay?: number }) {
   const ref = useReveal();
   return (
-    <div
-      ref={ref}
+    <Link
+      to="/groups/$roomId"
+      params={{ roomId: room.id }}
+      ref={ref as React.Ref<HTMLAnchorElement>}
       className="pg-reveal pg-group-card"
-      style={{ "--rd": `${delay}ms` } as React.CSSProperties}
+      style={{ "--rd": `${delay}ms`, display: "block", textDecoration: "none", color: "inherit" } as React.CSSProperties}
     >
       <div className="pg-group-header">
-        <div className="pg-group-name">{group.name}</div>
-        <div className={`pg-group-dot ${group.active ? "pg-group-dot--on" : "pg-group-dot--off"}`} />
+        <div className="pg-group-name">{room.name}</div>
+        <div className={`pg-group-dot ${room.is_public ? "pg-group-dot--on" : "pg-group-dot--off"}`} />
       </div>
-      <div className="pg-group-topic">{group.topic}</div>
+      <div className="pg-group-topic">{room.topic || (room.is_public ? "Public room" : "Private room")}</div>
       <div className="pg-group-footer">
-        <span><Users size={11} />{group.members} members</span>
-        <button className="pg-group-open">Open <ChevronRight size={11} /></button>
+        <span><Users size={11} />{room.member_count} members</span>
+        <span className="pg-group-open">{room.am_member ? "Open" : "Join"} <ChevronRight size={11} /></span>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -266,6 +264,9 @@ export function ProgressDashboard() {
   } | null>(null);
   const [enrollCount, setEnrollCount] = useState(0);
   const [trophiesEarned, setTrophiesEarned] = useState(0);
+  const [studyRooms, setStudyRooms] = useState<StudyRoom[]>([]);
+
+  useEffect(() => { void listStudyRooms().then(setStudyRooms); }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -435,17 +436,17 @@ export function ProgressDashboard() {
                 </div>
 
                 <div className="pg-sec-head" style={{ marginTop: 52 }}>
-                  <div className="pg-sec-title">Study <em>groups</em></div>
-                  <div className="pg-sec-desc">Learn together — join a group or start your own.</div>
+                  <div className="pg-sec-title">Study <em>rooms</em></div>
+                  <div className="pg-sec-desc">Learn together — join a public room or start your own.</div>
                 </div>
                 <div className="pg-groups-grid">
-                  {collaborationGroups.map((g, i) => (
-                    <GroupCard key={g.name} group={g} delay={i * 60} />
+                  {studyRooms.slice(0, 5).map((r, i) => (
+                    <GroupCard key={r.id} room={r} delay={i * 60} />
                   ))}
-                  <div className="pg-add-card" style={{ minHeight: "160px" }}>
+                  <Link to="/groups" className="pg-add-card" style={{ minHeight: "160px", textDecoration: "none" }}>
                     <span className="pg-add-card-icon"><Users size={24} /></span>
-                    <span className="pg-add-card-lbl">Create Study Group</span>
-                  </div>
+                    <span className="pg-add-card-lbl">{studyRooms.length ? "Browse all rooms" : "Create Study Room"}</span>
+                  </Link>
                 </div>
               </div>
             )}

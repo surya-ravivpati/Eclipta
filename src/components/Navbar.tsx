@@ -35,6 +35,7 @@ const NAV_GROUPS = [
     label: "COMMUNITY",
     items: [
       { to: "/forum", label: "Forum", desc: "Ask & share" },
+      { to: "/groups", label: "Study Rooms", desc: "Learn together, live" },
       { to: "/about", label: "About", desc: "Mission & team" },
     ],
   },

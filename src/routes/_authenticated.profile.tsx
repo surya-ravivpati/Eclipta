@@ -557,8 +557,8 @@ function SettingsPanel({ profile, userId, onSaved }: {
               <PrefInfo
                 title="Notes for Luna"
                 options={[
-                  { name: "What this is", desc: "Free-form notes Luna reads on every reply. Use it for things the dropdowns don't cover, like 'answer in Spanish', 'avoid sports analogies', or 'I'm prepping for the SAT'." },
-                  { name: "Auto-learning", desc: "When you tell Luna things in chat (e.g. 'write shorter', 'use more analogies'), she'll add them here automatically. Edit or clear at any time." },
+                  { name: "What this is", desc: "Your own free-form notes that Luna reads on every reply. Use it for things the dropdowns don't cover — 'answer in Spanish', 'avoid sports analogies', 'I'm prepping for the SAT'." },
+                  { name: "Auto-learning is separate", desc: "Preferences Luna picks up from chat ('write shorter', 'use more analogies') are stored separately and never clutter this box. When you contradict an old one, Luna replaces it automatically." },
                 ]}
               />
             </p>

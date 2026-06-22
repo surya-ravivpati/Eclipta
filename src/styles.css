@@ -85,7 +85,7 @@
      the same role never drifts between faces across surfaces. These
      also generate Tailwind utilities: font-display, font-body,
      font-serif, font-shout, font-cinematic, font-mono. */
-  --font-display:   'RobotHeroes', 'Space Grotesk', sans-serif;            /* signature: brand + headings */
+  --font-display:   'Fraunces', 'Playfair Display', Georgia, 'Times New Roman', serif; /* signature: scholarly serif headings */
   --font-body:      'Inter', Calibri, sans-serif;                          /* body copy */
   --font-mono:      'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; /* labels / numerics / wordmark */
   --font-serif:     'Instrument Serif', 'Times New Roman', serif;          /* emotional accent (italic) */
@@ -95,57 +95,60 @@
 
 :root {
   --radius: 0.625rem;
-  /* Base surfaces — the cinematic landing's deep blue-black, not purple */
-  --background: oklch(0.08 0.012 258);
-  --foreground: oklch(0.96 0.005 250);
-  --card: oklch(0.115 0.016 258);
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.115 0.016 258);
-  --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.58 0.17 252);
-  --primary-foreground: oklch(0.98 0.004 250);
-  --secondary: oklch(0.15 0.018 256);
-  --secondary-foreground: oklch(0.96 0.005 250);
-  --muted: oklch(0.145 0.014 256);
-  --muted-foreground: oklch(0.6 0.02 254);
-  --accent: oklch(0.58 0.17 252);
-  --accent-foreground: oklch(0.98 0.004 250);
+  /* Base surfaces — "Competitive Intelligence": deep midnight navy, warm
+     ivory ink, gold accent. Reads as elite academy / prestige, not neon
+     gamer. (Previous cinematic-blue look: branch backup/brand-v1-cinematic-blue.) */
+  --background: #0B1020;
+  --foreground: #F4F1EA;
+  --card: #121831;
+  --card-foreground: #F4F1EA;
+  --popover: #121831;
+  --popover-foreground: #F4F1EA;
+  --primary: #D4AF37;
+  --primary-foreground: #0B1020;
+  --secondary: #232B3D;
+  --secondary-foreground: #F4F1EA;
+  --muted: #1A2034;
+  --muted-foreground: #9AA1B5;
+  --accent: #D4AF37;
+  --accent-foreground: #0B1020;
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0.004 250);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.58 0.17 252);
+  --destructive-foreground: #F4F1EA;
+  --border: rgba(244, 241, 234, 0.10);
+  --input: rgba(244, 241, 234, 0.14);
+  --ring: #D4AF37;
 
   /* Eclipta custom colors.
      --neon-purple is a DEPRECATED alias kept so the existing
      bg-neon-purple / text-neon-purple utilities keep working — it now
-     simply tracks --accent (the cool azure brand blue, not violet).
-     New code should use the `accent`/`primary` Tailwind colors instead.
-     --neon-pink / --neon-cyan remain decorative-functional (glows,
-     team/opponent cues), not brand chrome. */
+     simply tracks --accent (the gold brand accent). New code should use
+     the `accent`/`primary` Tailwind colors instead.
+     --neon-pink / --neon-cyan remain decorative-functional (battle
+     team/opponent cues) — slated to be muted/retired in the glow pass. */
   --neon-purple: var(--accent);
   --neon-pink: oklch(0.6 0.24 350);
   --neon-cyan: oklch(0.75 0.15 180);
-  --arena: oklch(0.08 0.012 258);
-  --arena-light: oklch(0.115 0.016 258);
-  --marble: oklch(0.96 0.005 250);
-  --acrylic: oklch(1 0 0 / 3%);
-  --acrylic-border: oklch(1 0 0 / 10%);
+  --arena: #0B1020;
+  --arena-light: #121831;
+  --marble: #F4F1EA;
+  --acrylic: rgba(244, 241, 234, 0.03);
+  --acrylic-border: rgba(244, 241, 234, 0.10);
 
   /* ── Brand spine ──────────────────────────────────────────────
      Canonical brand primitives shared by every cinematic surface
      (.cf landing, .ab about, .btt battles). Those scopes alias their
      local tokens to these, so a brand change happens in ONE place
      instead of drifting across four files. */
-  --brand-bg:      #04050a;                /* the one Eclipta black   */
-  --brand-ink:     #f4f6fa;                /* primary text on brand-bg */
-  --brand-dim:     #b9bfcc;                /* secondary text           */
-  --brand-fog:     #767b87;                /* tertiary / labels        */
-  --brand-line:    rgba(255, 255, 255, 0.08);
-  --brand-line-2:  rgba(255, 255, 255, 0.14);
-  --brand-flash:   #dbe7ff;                /* light-burst highlight    */
-  --brand-accent:       oklch(0.82 0.12 235); /* cinematic azure       */
-  --brand-accent-base:  oklch(0.58 0.17 252); /* app interactive accent */
+  --brand-bg:      #0B1020;                /* deep midnight navy        */
+  --brand-ink:     #F4F1EA;                /* warm ivory text           */
+  --brand-dim:     #BCBAB0;                /* secondary ivory           */
+  --brand-fog:     #7C8093;                /* tertiary / slate labels   */
+  --brand-line:    rgba(244, 241, 234, 0.10);
+  --brand-line-2:  rgba(244, 241, 234, 0.16);
+  --brand-flash:   #F6EFD9;                /* warm gold-ivory burst     */
+  --brand-accent:       #D4AF37;           /* gold — large display accent */
+  --brand-accent-base:  #D4AF37;           /* gold — app interactive accent */
+  --brand-slate:        #3A4458;           /* slate support             */
   /* Brand TYPE roles live in @theme above (--font-display / -cinematic /
      -serif / -shout / -body / -mono). Every cinematic scope references
      those by role rather than re-declaring font stacks. */
@@ -162,55 +165,56 @@
   --tier-unreal: oklch(0.6 0.28 310);
   --tier-god: oklch(0.85 0.12 90);
 
-  --chart-1: oklch(0.58 0.17 252);
-  --chart-2: oklch(0.6 0.24 350);
-  --chart-3: oklch(0.75 0.15 180);
+  --chart-1: #D4AF37;
+  --chart-2: #3A4458;
+  --chart-3: #C3C0B6;
   --chart-4: oklch(0.7 0.2 60);
-  --chart-5: oklch(0.65 0.2 130);
-  --sidebar: oklch(0.1 0.014 258);
-  --sidebar-foreground: oklch(0.96 0.005 250);
-  --sidebar-primary: oklch(0.58 0.17 252);
-  --sidebar-primary-foreground: oklch(0.98 0.004 250);
-  --sidebar-accent: oklch(0.15 0.018 256);
-  --sidebar-accent-foreground: oklch(0.96 0.005 250);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.58 0.17 252);
+  --chart-5: #8A6FB0;
+  --sidebar: #0E1426;
+  --sidebar-foreground: #F4F1EA;
+  --sidebar-primary: #D4AF37;
+  --sidebar-primary-foreground: #0B1020;
+  --sidebar-accent: #232B3D;
+  --sidebar-accent-foreground: #F4F1EA;
+  --sidebar-border: rgba(244, 241, 234, 0.08);
+  --sidebar-ring: #D4AF37;
 }
 
 /* Light theme — toggled via .light on <html> */
 .light {
-  --background: oklch(0.985 0.004 250);
-  --foreground: oklch(0.18 0.025 256);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.025 256);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.025 256);
-  --primary: oklch(0.45 0.15 252);
-  --primary-foreground: oklch(0.98 0.004 250);
-  --secondary: oklch(0.94 0.012 252);
-  --secondary-foreground: oklch(0.2 0.025 256);
-  --muted: oklch(0.94 0.012 252);
-  --muted-foreground: oklch(0.45 0.02 254);
-  --accent: oklch(0.45 0.15 252);
-  --accent-foreground: oklch(0.98 0.004 250);
+  /* Warm ivory paper + deep navy ink + deep-gold accent. */
+  --background: #F4F1EA;
+  --foreground: #15192A;
+  --card: #FBF9F4;
+  --card-foreground: #15192A;
+  --popover: #FBF9F4;
+  --popover-foreground: #15192A;
+  --primary: #9A7B1E;
+  --primary-foreground: #F4F1EA;
+  --secondary: #E7E2D5;
+  --secondary-foreground: #20263A;
+  --muted: #E7E2D5;
+  --muted-foreground: #5B6173;
+  --accent: #9A7B1E;
+  --accent-foreground: #F4F1EA;
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0.004 250);
-  --border: oklch(0 0 0 / 10%);
-  --input: oklch(0 0 0 / 14%);
-  --ring: oklch(0.45 0.15 252);
+  --destructive-foreground: #F4F1EA;
+  --border: rgba(21, 25, 42, 0.12);
+  --input: rgba(21, 25, 42, 0.16);
+  --ring: #9A7B1E;
 
   --neon-purple: var(--accent);
   --neon-pink: oklch(0.55 0.22 350);
   --neon-cyan: oklch(0.55 0.13 195);
-  --arena: oklch(0.985 0.004 250);
-  --arena-light: oklch(0.96 0.008 252);
-  --marble: oklch(0.18 0.025 256);
-  --acrylic: oklch(0 0 0 / 3%);
-  --acrylic-border: oklch(0 0 0 / 10%);
+  --arena: #F4F1EA;
+  --arena-light: #FBF9F4;
+  --marble: #15192A;
+  --acrylic: rgba(21, 25, 42, 0.03);
+  --acrylic-border: rgba(21, 25, 42, 0.10);
 
-  --sidebar: oklch(0.96 0.008 252);
-  --sidebar-foreground: oklch(0.18 0.025 256);
-  --sidebar-border: oklch(0 0 0 / 8%);
+  --sidebar: #EDE8DC;
+  --sidebar-foreground: #15192A;
+  --sidebar-border: rgba(21, 25, 42, 0.08);
 }
 
 .light .glass-panel {
@@ -223,7 +227,7 @@
 /* Tone down dramatic neon glows in light mode (less halo, more accent) */
 .light .neon-glow-purple,
 .light .neon-glow-pink {
-  box-shadow: 0 4px 20px oklch(0.45 0.15 252 / 18%), 0 1px 3px oklch(0 0 0 / 8%);
+  box-shadow: 0 4px 20px oklch(0.62 0.11 88 / 22%), 0 1px 3px oklch(0 0 0 / 8%);
 }
 .light .neon-glow-gold,
 .light .neon-glow-diamond,
@@ -252,7 +256,7 @@
   }
 
   ::selection {
-    background: oklch(0.58 0.17 252 / 45%);
+    background: rgba(212, 175, 55, 0.32);
     color: var(--foreground);
   }
 
@@ -262,9 +266,11 @@
     font-family: var(--font-body);
   }
 
+  /* Serif display headings read best with tight, near-neutral tracking
+     (the old 0.08em was tuned for the uppercase gamer sans). */
   .font-display,
   h1, h2, h3, h4, h5, h6 {
-    letter-spacing: 0.08em;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -278,7 +284,7 @@
   }
 
   .neon-glow-purple {
-    box-shadow: 0 0 30px oklch(0.58 0.17 252 / 40%), 0 0 60px oklch(0.58 0.17 252 / 20%);
+    box-shadow: 0 0 30px oklch(0.78 0.13 88 / 38%), 0 0 60px oklch(0.78 0.13 88 / 18%);
   }
 
   .neon-glow-pink {
@@ -311,7 +317,7 @@
   }
 
   .text-glow-purple {
-    text-shadow: 0 0 20px oklch(0.58 0.17 252 / 50%);
+    text-shadow: 0 0 20px oklch(0.78 0.13 88 / 48%);
   }
   .text-glow-gold {
     text-shadow: 0 0 20px oklch(0.75 0.16 85 / 60%);
@@ -401,7 +407,7 @@
 
 /* Milestone celebration toast */
 .milestone-toast {
-  border: 1px solid oklch(0.58 0.17 252 / 40%) !important;
-  background: oklch(0.15 0.018 256 / 95%) !important;
-  box-shadow: 0 0 30px oklch(0.58 0.17 252 / 20%), 0 4px 20px oklch(0 0 0 / 40%) !important;
+  border: 1px solid oklch(0.78 0.13 88 / 42%) !important;
+  background: oklch(0.20 0.02 258 / 95%) !important;
+  box-shadow: 0 0 30px oklch(0.78 0.13 88 / 20%), 0 4px 20px oklch(0 0 0 / 40%) !important;
 }

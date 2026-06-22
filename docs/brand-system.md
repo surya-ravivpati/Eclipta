@@ -1,25 +1,42 @@
 # Eclipta brand system
 
-Single source of truth for type and the logo lockup. If you're adding a
-surface, reference these roles — never re-declare a font stack or
-reassemble the logo by hand.
+**Direction: Competitive Intelligence** — elite academy crossed with a
+competitive arena. Midnight navy, warm ivory, gold accents; scholarly serif
+headings; glow reserved for what's *earned* (rank, XP), not everything.
+The feeling to chase is *aspirational* ("I want to become elite"), not
+"cool sci-fi effects."
+
+Single source of truth for color, type, and the logo lockup. If you're
+adding a surface, reference these roles — never re-declare a font stack,
+hardcode a brand color, or reassemble the logo by hand.
+
+> The previous neon/cinematic-blue look is preserved on the
+> `backup/brand-v1-cinematic-blue` branch (and local tag
+> `brand-v1-cinematic-blue`) for easy reversal.
 
 ## Color spine
 
 Canonical primitives live in `src/styles.css` `:root` as `--brand-*`
-(bg, ink, dim, fog, line, line-2, flash, accent, accent-base). Cinematic
-scopes (`.cf`, `.ab`, `.btt`, Progress, Trophy Road) alias these — change
-the brand once, it propagates everywhere.
+(bg, ink, dim, fog, line, line-2, flash, accent, accent-base, slate).
+Cinematic scopes (`.cf`, `.ab`, `.btt`, Progress, Trophy Road) alias these —
+change the brand once, it propagates everywhere.
 
-- `--brand-bg` `#04050a` — the one Eclipta black.
-- `--brand-accent` `oklch(0.82 0.12 235)` — cinematic azure (large display).
-- `--brand-accent-base` `oklch(0.58 0.17 252)` — app interactive accent
-  (also `--primary`/`--accent`/`--ring`). `--neon-purple` is a deprecated
-  alias of `--accent`; prefer the `accent`/`primary` Tailwind colors.
-- Pink / cyan / gold are **functional** cues (you-vs-foe, glows), not brand
-  chrome — keep them scoped to battles/effects.
-- `--tier-diamond` sits at hue ~215 (icy), deliberately off the 235–252
-  brand-blue band so "Diamond" rank ≠ brand accent.
+- `--brand-bg` `#0B1020` — deep midnight navy (the one Eclipta ground).
+- `--brand-ink` `#F4F1EA` — warm ivory text.
+- `--brand-accent` / `--brand-accent-base` `#D4AF37` — **gold**, the single
+  brand accent (also `--primary`/`--accent`/`--ring`). `--neon-purple` is a
+  deprecated alias of `--accent`; prefer the `accent`/`primary` colors.
+- `--brand-slate` `#3A4458` — quiet structural support.
+- Restraint: gold is for *achievement and emphasis*, not every button. Let
+  rank/XP shine; keep ordinary chrome calm (ivory/slate on navy).
+- `--tier-diamond` sits at hue ~215 (icy), distinct from the gold accent.
+
+### Phase-2 backlog (not yet converted)
+- Battle `--neon-pink` / `--neon-cyan` team cues still read as the old neon
+  duel; reskin to navy/gold/ivory + a single restrained team hue.
+- Per-scope aurora/gradient **literals** in `CinematicFilm.css` (hues 248/305)
+  are still blue/violet — repaint toward gold/ivory on navy.
+- Glow audit: demote ambient page glows so only earned states glow.
 
 ## Type roles
 
@@ -29,17 +46,18 @@ referenced by every scope.
 
 | Token | Utility | Face | Role |
 |-------|---------|------|------|
-| `--font-display` | `font-display` | **RobotHeroes** → Space Grotesk | Signature: brand & app headings |
+| `--font-display` | `font-display` | **Fraunces** (serif) → Playfair → Georgia | Signature: scholarly headings — prestige, not gaming |
 | `--font-cinematic` | `font-cinematic` | **Archivo** (webfont) | Editorial hero / long-form display (landing, About, Compass, Luna session, Progress/Trophy body) |
 | `--font-serif` | `font-serif` | **Instrument Serif** *italic* | Emotional accent / emphasis |
 | `--font-shout` | `font-shout` | **Bebas Neue** | Condensed stat / big-number shout (battle HUD, Progress, Trophy Road, Luna name) |
 | `--font-body` | `font-body` | **Inter** | Body copy |
 | `--font-mono` | `font-mono` | **JetBrains Mono** | Labels, numerics, the wordmark |
 
-Why two display faces: RobotHeroes is a small, decorative, limited-glyph
-`.ttf` — perfect as a punchy signature, wrong for long cinematic copy.
-Archivo is webfont-loaded so the heroes render the same off-Mac (the old
-`Helvetica Neue` literal was a system-only font that fell back to Arial).
+Why serif + grotesque: Fraunces (display serif) carries the "elite academy"
+prestige on headings; Archivo (clean grotesque, webfont-loaded) handles
+editorial hero/long-form display where a serif would tire. Both render the
+same off-Mac. The old gamer sans (RobotHeroes) is retired from the signature
+role but its `@font-face` remains for the Bebas `--font-shout` fallback.
 
 **Rule:** the same *role* must never drift between faces across surfaces.
 If a new scope needs a heading, it uses `--font-display`/`font-display` —

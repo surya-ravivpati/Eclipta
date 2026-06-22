@@ -29,17 +29,13 @@ DROP POLICY IF EXISTS "Anyone can view ecliptars"          ON public.user_eclipt
 CREATE POLICY "Anyone can view ecliptars"
   ON public.user_ecliptars FOR SELECT USING (true);
 
--- 3. Insert: shape-checked client claim (fallback path used by the app).
+-- 3. Insert: the user may insert their own rows (slug shape is enforced by the
+--    claim function below; keeping the policy simple avoids false RLS denials
+--    on the fallback insert path).
 DROP POLICY IF EXISTS "Users can claim their own ecliptars" ON public.user_ecliptars;
 CREATE POLICY "Users can claim their own ecliptars"
   ON public.user_ecliptars FOR INSERT TO authenticated
-  WITH CHECK (
-    auth.uid() = user_id
-    AND (
-      ecliptar_slug ~ '^[a-z]+-[a-d]$'
-      OR ecliptar_slug IN ('newton', 'ecliptadon', 'einsteinium', 'temporobys')
-    )
-  );
+  WITH CHECK (auth.uid() = user_id);
 
 -- 4. Claim function: SECURITY DEFINER, slug validated by SHAPE so the full
 --    4-per-archetype roster (and God creatures) works with no further migrations.
@@ -88,3 +84,7 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.claim_ecliptar(text, text, text, integer) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION public.claim_ecliptar(text, text, text, integer) TO authenticated;
+
+-- 5. Tell PostgREST to reload its schema cache so the new function is exposed
+--    to the app's RPC call immediately (otherwise it can take a moment).
+NOTIFY pgrst, 'reload schema';

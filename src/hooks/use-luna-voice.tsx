@@ -4,19 +4,28 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Voice I/O for Luna.
  *
- * Dictation: MediaRecorder captures a short audio clip on a user gesture,
- * then we POST it to the luna-stt edge function which proxies to Lovable AI
- * (openai/gpt-4o-mini-transcribe). Works across every modern browser, unlike
- * the legacy webkitSpeechRecognition path that was Chrome-only and silently
- * failed in many environments.
+ * Dictation (two paths, native preferred so it works with NO backend):
+ *  1. Web Speech API (SpeechRecognition / webkitSpeechRecognition) — built into
+ *     Chrome, Edge, and Safari. Needs no edge function, so the mic works even
+ *     before luna-stt is deployed.
+ *  2. Fallback: MediaRecorder captures a clip and POSTs it to the luna-stt edge
+ *     function (Lovable AI → openai/gpt-4o-mini-transcribe). Used when the
+ *     native API is unavailable (e.g. Firefox).
  *
- * Read-aloud: text is sent to luna-tts → Lovable AI (openai/gpt-4o-mini-tts)
- * which returns natural, conversational audio. Beats the browser
- * SpeechSynthesis voices (which sound robotic) by a wide margin.
+ * Read-aloud: text goes to luna-tts → Lovable AI (openai/gpt-4o-mini-tts) for a
+ * natural, conversational voice — far better than the robotic browser
+ * SpeechSynthesis voices.
  */
 
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-tts`;
 const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-stt`;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSpeechRecognition(): any {
+  if (typeof window === "undefined") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+}
 
 function pickRecorderMime(): string | undefined {
   if (typeof MediaRecorder === "undefined") return undefined;
@@ -59,19 +68,25 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   const onTranscriptRef = useRef(opts.onTranscript);
   useEffect(() => { onTranscriptRef.current = opts.onTranscript; }, [opts.onTranscript]);
 
+  // Native dictation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  // MediaRecorder fallback dictation
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Read-aloud
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const ttsAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const hasNative = !!getSpeechRecognition();
     const hasGUM = typeof navigator !== "undefined" && !!navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function";
-    const ok = hasGUM && typeof MediaRecorder !== "undefined";
-    setSupported(ok);
+    const hasRecorder = hasGUM && typeof MediaRecorder !== "undefined";
+    setSupported(hasNative || hasRecorder);
   }, []);
 
   const releaseRecorder = useCallback(() => {
@@ -123,13 +138,12 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     }
   }, []);
 
-  const startListening = useCallback(async () => {
-    if (listening) return;
+  // MediaRecorder fallback path (used only when native dictation is absent).
+  const startRecorder = useCallback(async () => {
     if (typeof window === "undefined" || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function" || typeof MediaRecorder === "undefined") {
       setVoiceError("Voice input isn't supported in this browser.");
       return;
     }
-    setVoiceError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -153,8 +167,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
       };
       recorder.start();
       setListening(true);
-      // Safety net: a forgotten recording shouldn't run forever. Auto-stop
-      // after 60s, which also flushes the clip to transcription.
+      // Safety net: a forgotten recording shouldn't run forever.
       maxTimerRef.current = setTimeout(() => {
         const rec = recorderRef.current;
         if (rec && rec.state !== "inactive") { try { rec.stop(); } catch { /* ignore */ } }
@@ -168,9 +181,60 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
       else if (name === "NotReadableError") setVoiceError("Microphone is in use by another app.");
       else setVoiceError("Couldn't start recording. Try again.");
     }
-  }, [listening, releaseRecorder, transcribe]);
+  }, [releaseRecorder, transcribe]);
+
+  const startListening = useCallback(async () => {
+    if (listening) return;
+    setVoiceError(null);
+
+    // Preferred: native Web Speech API — no edge function required.
+    const SR = getSpeechRecognition();
+    if (SR) {
+      try {
+        const rec = new SR();
+        rec.lang = (typeof navigator !== "undefined" && navigator.language) || "en-US";
+        rec.interimResults = false;
+        rec.continuous = false;
+        rec.maxAlternatives = 1;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rec.onresult = (e: any) => {
+          let final = "";
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) final += e.results[i][0].transcript;
+          }
+          const t = final.trim();
+          if (t) onTranscriptRef.current(t);
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rec.onerror = (e: any) => {
+          const err = e?.error;
+          if (err === "not-allowed" || err === "service-not-allowed") setVoiceError("Microphone access denied. Allow mic permission in your browser settings and try again.");
+          else if (err === "no-speech") setVoiceError("Didn't catch that — try again.");
+          else if (err === "audio-capture") setVoiceError("No microphone found. Plug one in and try again.");
+          else if (err && err !== "aborted") setVoiceError("Voice input hit a snag. Try again.");
+          setListening(false);
+        };
+        rec.onend = () => { setListening(false); recognitionRef.current = null; };
+        recognitionRef.current = rec;
+        rec.start();
+        setListening(true);
+        return;
+      } catch {
+        recognitionRef.current = null;
+        // fall through to the recorder path
+      }
+    }
+
+    await startRecorder();
+  }, [listening, startRecorder]);
 
   const stopListening = useCallback(() => {
+    // Native path
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { setListening(false); recognitionRef.current = null; }
+      return;
+    }
+    // Recorder path
     const rec = recorderRef.current;
     if (rec && rec.state !== "inactive") {
       try { rec.stop(); } catch { releaseRecorder(); setListening(false); }
@@ -229,8 +293,12 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     });
   }, [stopSpeaking]);
 
-  // Cleanup on unmount: stop mic and any in-flight TTS audio.
-  useEffect(() => () => { stopSpeaking(); releaseRecorder(); }, [stopSpeaking, releaseRecorder]);
+  // Cleanup on unmount: stop mic (both paths) and any in-flight TTS audio.
+  useEffect(() => () => {
+    stopSpeaking();
+    releaseRecorder();
+    if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch { /* ignore */ } recognitionRef.current = null; }
+  }, [stopSpeaking, releaseRecorder]);
 
   return {
     supported,

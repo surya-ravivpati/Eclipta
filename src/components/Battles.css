@@ -77,15 +77,18 @@
   -webkit-font-smoothing: antialiased;
 
   /* ── Design tokens ── */
+  /* pink/cyan/gold are battle-functional team cues (you vs foe), kept
+     local. --btt-purple is the shared brand blue; --btt-mono the shared
+     mono — both alias the brand spine in styles.css :root. */
   --btt-pink:    oklch(0.60 0.24 350);
   --btt-cyan:    oklch(0.75 0.15 180);
-  --btt-purple:  oklch(0.58 0.17 252);
+  --btt-purple:  var(--brand-accent-base);
   --btt-gold:    oklch(0.80 0.14 85);
   --btt-fog:     #7A7D85;
   --btt-line:    rgba(255, 255, 255, 0.07);
   --btt-line-s:  rgba(255, 255, 255, 0.14);
   --btt-display: 'Bebas Neue', 'RobotHeroes', sans-serif;
-  --btt-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --btt-mono:    var(--brand-mono);
 }
 
 /* ─── Enhanced glassmorphism in battles context ───────────────── */

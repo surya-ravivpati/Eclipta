@@ -109,9 +109,13 @@
   --ring: oklch(0.58 0.17 252);
 
   /* Eclipta custom colors.
-     --neon-purple is the site's interactive accent token; it now carries
-     the landing film's azure family (cool blue) rather than violet. */
-  --neon-purple: oklch(0.58 0.17 252);
+     --neon-purple is a DEPRECATED alias kept so the existing
+     bg-neon-purple / text-neon-purple utilities keep working — it now
+     simply tracks --accent (the cool azure brand blue, not violet).
+     New code should use the `accent`/`primary` Tailwind colors instead.
+     --neon-pink / --neon-cyan remain decorative-functional (glows,
+     team/opponent cues), not brand chrome. */
+  --neon-purple: var(--accent);
   --neon-pink: oklch(0.6 0.24 350);
   --neon-cyan: oklch(0.75 0.15 180);
   --arena: oklch(0.08 0.012 258);
@@ -119,6 +123,28 @@
   --marble: oklch(0.96 0.005 250);
   --acrylic: oklch(1 0 0 / 3%);
   --acrylic-border: oklch(1 0 0 / 10%);
+
+  /* ── Brand spine ──────────────────────────────────────────────
+     Canonical brand primitives shared by every cinematic surface
+     (.cf landing, .ab about, .btt battles). Those scopes alias their
+     local tokens to these, so a brand change happens in ONE place
+     instead of drifting across four files. */
+  --brand-bg:      #04050a;                /* the one Eclipta black   */
+  --brand-ink:     #f4f6fa;                /* primary text on brand-bg */
+  --brand-dim:     #b9bfcc;                /* secondary text           */
+  --brand-fog:     #767b87;                /* tertiary / labels        */
+  --brand-line:    rgba(255, 255, 255, 0.08);
+  --brand-line-2:  rgba(255, 255, 255, 0.14);
+  --brand-flash:   #dbe7ff;                /* light-burst highlight    */
+  --brand-accent:       oklch(0.82 0.12 235); /* cinematic azure       */
+  --brand-accent-base:  oklch(0.58 0.17 252); /* app interactive accent */
+
+  /* Brand type voice. --brand-cinematic-display is webfont-loaded
+     (Archivo, in __root.tsx) so the landing/About heroes render the
+     same off-Mac instead of silently falling back to Arial. */
+  --brand-cinematic-display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  --brand-serif: 'Instrument Serif', 'Times New Roman', serif;
+  --brand-mono:  'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Rank tier colors */
   --tier-bronze: oklch(0.6 0.12 55);
@@ -167,7 +193,7 @@
   --input: oklch(0 0 0 / 14%);
   --ring: oklch(0.45 0.15 252);
 
-  --neon-purple: oklch(0.45 0.15 252);
+  --neon-purple: var(--accent);
   --neon-pink: oklch(0.55 0.22 350);
   --neon-cyan: oklch(0.55 0.13 195);
   --arena: oklch(0.985 0.004 250);

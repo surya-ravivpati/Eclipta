@@ -6,22 +6,24 @@
    opacity / filter only, so the whole experience composites on
    the GPU. No grids, no scanlines, no chrome — light, type and
    depth carry the entire design.
-   Fonts (Instrument Serif, JetBrains Mono) load from the HTML head
-   in __root.tsx — no CSS @import here.
+   Fonts (Archivo display, Instrument Serif, JetBrains Mono) load from
+   the HTML head in __root.tsx — no CSS @import here. Color/type tokens
+   alias the brand spine in styles.css :root.
    ─────────────────────────────────────────────────────────────── */
 
 .cf {
-  --cf-bg:      #04050a;
-  --cf-ink:     #f4f6fa;
-  --cf-dim:     #b9bfcc;
-  --cf-fog:     #767b87;
-  --cf-line:    rgba(255, 255, 255, 0.08);
-  --cf-accent:  oklch(0.82 0.12 235);
-  --cf-flash:   #dbe7ff;
+  /* All primitives alias the brand spine in styles.css :root. */
+  --cf-bg:      var(--brand-bg);
+  --cf-ink:     var(--brand-ink);
+  --cf-dim:     var(--brand-dim);
+  --cf-fog:     var(--brand-fog);
+  --cf-line:    var(--brand-line);
+  --cf-accent:  var(--brand-accent);
+  --cf-flash:   var(--brand-flash);
 
-  --cf-display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  --cf-serif:   "Instrument Serif", "Times New Roman", serif;
-  --cf-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --cf-display: var(--brand-cinematic-display);
+  --cf-serif:   var(--brand-serif);
+  --cf-mono:    var(--brand-mono);
 
   background: var(--cf-bg);
   color: var(--cf-ink);

@@ -9,19 +9,21 @@
    ─────────────────────────────────────────────────────────────── */
 
 .ab {
-  --ab-bg:      #04050a;
-  --ab-ink:     #f4f6fa;
-  --ab-dim:     #b9bfcc;
-  --ab-fog:     #767b87;
-  --ab-line:    rgba(255, 255, 255, 0.08);
-  --ab-line-2:  rgba(255, 255, 255, 0.14);
-  --ab-accent:  oklch(0.82 0.12 235);
+  /* Primitives alias the brand spine in styles.css :root; --ab-pink is
+     an About-local accent and stays explicit. */
+  --ab-bg:      var(--brand-bg);
+  --ab-ink:     var(--brand-ink);
+  --ab-dim:     var(--brand-dim);
+  --ab-fog:     var(--brand-fog);
+  --ab-line:    var(--brand-line);
+  --ab-line-2:  var(--brand-line-2);
+  --ab-accent:  var(--brand-accent);
   --ab-pink:    oklch(0.72 0.19 350);
   --ab-panel:   rgba(255, 255, 255, 0.022);
 
-  --ab-display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  --ab-serif:   "Instrument Serif", "Times New Roman", serif;
-  --ab-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ab-display: var(--brand-cinematic-display);
+  --ab-serif:   var(--brand-serif);
+  --ab-mono:    var(--brand-mono);
 
   position: relative;
   min-height: 100vh;

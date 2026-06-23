@@ -46,7 +46,7 @@
   position: absolute; inset: -24%;
   background:
     radial-gradient(56% 50% at 50% 112%, oklch(0.50 0.10 250 / 0.45), transparent 64%),
-    radial-gradient(42% 46% at 14% -4%, oklch(0.48 0.10 285 / 0.26), transparent 62%),
+    radial-gradient(42% 46% at 14% -4%, oklch(0.48 0.10 255 / 0.26), transparent 62%),
     radial-gradient(38% 42% at 88% 12%, oklch(0.62 0.10 88 / 0.22), transparent 60%);
   filter: blur(80px);
   will-change: transform;

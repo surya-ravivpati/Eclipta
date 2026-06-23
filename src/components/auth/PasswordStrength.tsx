@@ -16,12 +16,13 @@ export function scorePassword(pw: string): StrengthResult {
   // Cap at 4
   const capped = Math.min(score, 4) as 0 | 1 | 2 | 3 | 4;
   const labels = ["Too weak", "Weak", "Fair", "Strong", "Excellent"];
+  // Palette: red (functional weak) → blue → gold (strong).
   const colors = [
     "bg-destructive",
     "bg-destructive",
-    "bg-amber-500",
     "bg-neon-cyan",
-    "bg-emerald-500",
+    "bg-neon-cyan",
+    "bg-primary",
   ];
   return { score: capped, label: labels[capped], color: colors[capped] };
 }

@@ -126,8 +126,12 @@
      --neon-pink / --neon-cyan remain decorative-functional (battle
      team/opponent cues) — slated to be muted/retired in the glow pass. */
   --neon-purple: var(--accent);
-  --neon-pink: oklch(0.6 0.24 350);
-  --neon-cyan: oklch(0.75 0.15 180);
+  /* Palette is strictly blue / navy / gold. These legacy "pink"/"cyan" names
+     now both carry BLUE so the whole app stays on-palette; --neon-purple is
+     gold. (Trophy Road tiers and Ecliptar archetype colors are exempt and use
+     their own tokens / literal classes.) */
+  --neon-pink: oklch(0.60 0.17 255);
+  --neon-cyan: oklch(0.70 0.14 245);
   --arena: #0B1020;
   --arena-light: #121831;
   --marble: #F4F1EA;
@@ -168,8 +172,8 @@
   --chart-1: #D4AF37;
   --chart-2: #3A4458;
   --chart-3: #C3C0B6;
-  --chart-4: oklch(0.7 0.2 60);
-  --chart-5: #8A6FB0;
+  --chart-4: oklch(0.70 0.14 245);
+  --chart-5: oklch(0.55 0.10 255);
   --sidebar: #0E1426;
   --sidebar-foreground: #F4F1EA;
   --sidebar-primary: #D4AF37;
@@ -204,8 +208,8 @@
   --ring: #9A7B1E;
 
   --neon-purple: var(--accent);
-  --neon-pink: oklch(0.55 0.22 350);
-  --neon-cyan: oklch(0.55 0.13 195);
+  --neon-pink: oklch(0.50 0.16 255);
+  --neon-cyan: oklch(0.52 0.14 248);
   --arena: #F4F1EA;
   --arena-light: #FBF9F4;
   --marble: #15192A;
@@ -288,7 +292,7 @@
   }
 
   .neon-glow-pink {
-    box-shadow: 0 0 30px oklch(0.6 0.24 350 / 40%), 0 0 60px oklch(0.6 0.24 350 / 20%);
+    box-shadow: 0 0 30px oklch(0.60 0.17 255 / 40%), 0 0 60px oklch(0.60 0.17 255 / 20%);
   }
 
   .neon-glow-bronze {
@@ -348,14 +352,14 @@
 @keyframes battle-charge {
   0%, 100% {
     box-shadow:
-      0 0 20px oklch(0.6 0.24 350 / 55%),
-      0 0 45px oklch(0.6 0.24 350 / 28%);
+      0 0 20px oklch(0.60 0.17 255 / 55%),
+      0 0 45px oklch(0.60 0.17 255 / 28%);
   }
   50% {
     box-shadow:
-      0 0 38px oklch(0.6 0.24 350 / 90%),
-      0 0 80px oklch(0.6 0.24 350 / 45%),
-      0 0 120px oklch(0.6 0.24 350 / 18%);
+      0 0 38px oklch(0.60 0.17 255 / 90%),
+      0 0 80px oklch(0.60 0.17 255 / 45%),
+      0 0 120px oklch(0.60 0.17 255 / 18%);
   }
 }
 
@@ -388,8 +392,8 @@
 /* Luna thinking indicator — CSS-only animations so they run on the compositor
    thread, independent of the requestAnimationFrame path-mutation loop. */
 @keyframes luna-thinking-glow {
-  0%, 100% { filter: drop-shadow(0 0 2px oklch(0.65 0.22 290 / 0.20)); }
-  50%       { filter: drop-shadow(0 0 8px oklch(0.65 0.22 290 / 0.58)); }
+  0%, 100% { filter: drop-shadow(0 0 2px oklch(0.78 0.13 88 / 0.20)); }
+  50%       { filter: drop-shadow(0 0 8px oklch(0.78 0.13 88 / 0.58)); }
 }
 @keyframes luna-thinking-fade {
   0%, 100% { opacity: 0.35; }

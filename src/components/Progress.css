@@ -13,8 +13,8 @@
   --pg-accent:    oklch(0.82 0.14 88);
   --pg-accent-s:  oklch(0.82 0.14 88 / 0.18);
   --pg-accent-h:  oklch(0.82 0.14 88 / 0.45);
-  --pg-gold:      oklch(0.82 0.14 165);
-  --pg-fire:      oklch(0.72 0.22 0);
+  --pg-gold:      oklch(0.82 0.14 88);
+  --pg-fire:      oklch(0.70 0.16 75);
   --pg-god:       oklch(0.92 0.06 90);
   --pg-shout:     var(--font-shout);
   --pg-mono:      var(--font-mono);
@@ -313,8 +313,8 @@
   color: var(--pg-accent);
 }
 .pg-path-type--casual {
-  background: oklch(0.82 0.14 165 / 0.10);
-  border: 1px solid oklch(0.82 0.14 165 / 0.24);
+  background: oklch(0.82 0.14 88 / 0.10);
+  border: 1px solid oklch(0.82 0.14 88 / 0.24);
   color: var(--pg-gold);
 }
 .pg-path-title {
@@ -347,9 +347,9 @@
   font-family: var(--pg-mono); font-size: 8px; font-weight: 500; flex-shrink: 0;
 }
 .pg-ms-dot--done  { background: oklch(0.78 0.13 88); color: #05060A; }
-.pg-ms-dot--now   { border: 2px solid var(--pg-fire); color: var(--pg-fire); background: oklch(0.72 0.22 0 / 0.08); animation: pg-ms-pulse 2.2s ease-in-out infinite; }
+.pg-ms-dot--now   { border: 2px solid var(--pg-fire); color: var(--pg-fire); background: oklch(0.70 0.16 75 /0.08); animation: pg-ms-pulse 2.2s ease-in-out infinite; }
 .pg-ms-dot--lock  { border: 1px solid rgba(255,255,255,0.07); color: rgba(122,125,133,0.3); background: rgba(255,255,255,0.02); }
-@keyframes pg-ms-pulse { 0%,100% { box-shadow: 0 0 0 0 var(--pg-fire); } 50% { box-shadow: 0 0 0 5px oklch(0.72 0.22 0 / 0); } }
+@keyframes pg-ms-pulse { 0%,100% { box-shadow: 0 0 0 0 var(--pg-fire); } 50% { box-shadow: 0 0 0 5px oklch(0.70 0.16 75 /0); } }
 
 .pg-ms-line { flex: 1; min-width: 10px; height: 1px; }
 .pg-ms-line--done { background: oklch(0.78 0.13 88 / 0.45); }
@@ -425,7 +425,7 @@
   backdrop-filter: blur(14px); cursor: pointer;
   transition: border-color 0.3s ease, transform 0.45s cubic-bezier(0.2,0.7,0.2,1);
 }
-.pg-group-card:hover { border-color: oklch(0.72 0.20 340 / 0.30); transform: translateY(-3px); }
+.pg-group-card:hover { border-color: oklch(0.70 0.14 245 / 0.30); transform: translateY(-3px); }
 
 .pg-group-header {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;

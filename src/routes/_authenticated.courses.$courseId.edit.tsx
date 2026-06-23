@@ -201,8 +201,8 @@ function CourseEditor() {
               <div className="flex items-center gap-2 mb-2">
                 <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 border ${
                   course.status === "published"
-                    ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
-                    : "border-amber-500/40 text-amber-400 bg-amber-500/10"
+                    ? "border-primary/40 text-primary bg-primary/10"
+                    : "border-neon-cyan/40 text-neon-cyan bg-neon-cyan/10"
                 }`}>
                   {course.status.toUpperCase()}
                 </span>

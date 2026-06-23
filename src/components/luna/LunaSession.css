@@ -22,7 +22,7 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(900px 700px at 15% 20%, oklch(0.50 0.10 270 / 0.12), transparent 60%),
+    radial-gradient(900px 700px at 15% 20%, oklch(0.50 0.10 255 / 0.12), transparent 60%),
     radial-gradient(800px 600px at 85% 85%, oklch(0.58 0.10 88 / 0.09), transparent 60%);
   pointer-events: none;
   z-index: 0;

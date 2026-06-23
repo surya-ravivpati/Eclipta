@@ -251,7 +251,7 @@ function ProfilePage() {
                           </Link>
                           <span className={cn(
                             "text-[9px] font-bold tracking-widest uppercase inline-flex items-center gap-1 shrink-0",
-                            c.status === "published" ? "text-emerald-400" : "text-neon-purple/80"
+                            c.status === "published" ? "text-primary" : "text-neon-purple/80"
                           )}>
                             <Pencil className="w-2.5 h-2.5" />{c.status}
                           </span>
@@ -453,7 +453,7 @@ function SettingsPanel({ profile, userId, onSaved }: {
           </div>
           <p className={cn(
             "text-[10px] mt-1 font-bold tracking-widest",
-            availability === "available" && "text-emerald-400",
+            availability === "available" && "text-primary",
             availability === "taken" && "text-destructive",
             availability === "invalid" && "text-neon-pink",
             (availability === "idle" || availability === "current" || availability === "checking") && "text-muted-foreground",
@@ -757,7 +757,7 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                   </div>
                   <span className={cn(
                     "text-[10px] font-bold tracking-widest px-2 py-1 rounded-full border",
-                    ownedCount === eclips.length ? "border-emerald-500/50 text-emerald-400" : "border-border text-muted-foreground"
+                    ownedCount === eclips.length ? "border-primary/50 text-primary" : "border-border text-muted-foreground"
                   )}>
                     {ownedCount}/{eclips.length}
                   </span>

@@ -2086,7 +2086,7 @@ function BattleArena() {
         <motion.div
           className="w-20 h-20 mx-auto mb-8 border flex items-center justify-center"
           animate={{
-            borderColor: ["oklch(0.6 0.24 350)", "oklch(0.58 0.17 252)", "oklch(0.75 0.15 180)", "oklch(0.6 0.24 350)"],
+            borderColor: ["oklch(0.60 0.17 255)", "oklch(0.58 0.17 252)", "oklch(0.78 0.13 88)", "oklch(0.60 0.17 255)"],
             rotate: 360,
           }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -2111,7 +2111,7 @@ function BattleArena() {
                 <motion.div
                   className={`flex items-center gap-1 px-2 py-1 border text-[10px] font-bold tracking-widest transition-all ${
                     active  ? `${cfg.color} ${cfg.glow} bg-white/5` :
-                    passed  ? "text-emerald-500 border-emerald-500/40 bg-emerald-500/5" :
+                    passed  ? "text-primary border-primary/40 bg-primary/5" :
                               "text-muted-foreground/30 border-border/30"
                   }`}
                   animate={active ? { opacity: [0.7, 1, 0.7] } : {}}
@@ -2202,7 +2202,7 @@ function BattleArena() {
           >
             <motion.p
               className="btt-stinger-word text-8xl md:text-9xl text-foreground"
-              style={{ textShadow: "0 0 70px oklch(0.6 0.24 350 / 0.55), 0 0 160px oklch(0.58 0.17 252 / 0.35)" }}
+              style={{ textShadow: "0 0 70px oklch(0.60 0.17 255 / 0.55), 0 0 160px oklch(0.58 0.17 252 / 0.35)" }}
               initial={{ scale: 2.3, opacity: 0, letterSpacing: "0.45em" }}
               animate={{ scale: 1, opacity: 1, letterSpacing: "0.06em" }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -2223,11 +2223,11 @@ function BattleArena() {
           >
             <div className="text-center px-6">
               <motion.p
-                className={`btt-stinger-word text-8xl md:text-9xl ${koBanner === "victory" ? "text-neon-cyan" : "text-neon-pink"}`}
+                className={`btt-stinger-word text-8xl md:text-9xl ${koBanner === "victory" ? "text-primary" : "text-neon-pink"}`}
                 style={{
                   textShadow: koBanner === "victory"
-                    ? "0 0 80px oklch(0.75 0.15 180 / 0.6), 0 0 200px oklch(0.75 0.15 180 / 0.3)"
-                    : "0 0 80px oklch(0.6 0.24 350 / 0.6), 0 0 200px oklch(0.6 0.24 350 / 0.3)",
+                    ? "0 0 80px oklch(0.78 0.13 88 / 0.6), 0 0 200px oklch(0.78 0.13 88 / 0.3)"
+                    : "0 0 80px oklch(0.60 0.17 255 / 0.6), 0 0 200px oklch(0.60 0.17 255 / 0.3)",
                 }}
                 initial={{ scale: 0.55, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -2266,7 +2266,7 @@ function BattleArena() {
             >
               <p
                 className="btt-shout text-7xl md:text-8xl text-neon-pink"
-                style={{ textShadow: "0 0 44px oklch(0.6 0.24 350 / 0.8), 0 0 120px oklch(0.6 0.24 350 / 0.4)" }}
+                style={{ textShadow: "0 0 44px oklch(0.60 0.17 255 / 0.8), 0 0 120px oklch(0.60 0.17 255 / 0.4)" }}
               >
                 COMBO ×{comboBurst.combo}
               </p>
@@ -2388,14 +2388,14 @@ function BattleArena() {
                       className={`h-2 flex-1 ${isFilled ? "bg-neon-pink" : "bg-secondary/40"}`}
                       animate={isPulse ? {
                         backgroundColor: [
-                          "oklch(0.6 0.24 350 / 0.15)",
-                          "oklch(0.6 0.24 350 / 0.60)",
-                          "oklch(0.6 0.24 350 / 0.15)",
+                          "oklch(0.60 0.17 255 / 0.15)",
+                          "oklch(0.60 0.17 255 / 0.60)",
+                          "oklch(0.60 0.17 255 / 0.15)",
                         ],
                         boxShadow: [
-                          "0 0 0px oklch(0.6 0.24 350 / 0)",
-                          "0 0 7px oklch(0.6 0.24 350 / 0.55)",
-                          "0 0 0px oklch(0.6 0.24 350 / 0)",
+                          "0 0 0px oklch(0.60 0.17 255 / 0)",
+                          "0 0 7px oklch(0.60 0.17 255 / 0.55)",
+                          "0 0 0px oklch(0.60 0.17 255 / 0)",
                         ],
                       } : {}}
                       transition={isPulse ? { duration: 0.75, repeat: Infinity, ease: "easeInOut" } : {}}

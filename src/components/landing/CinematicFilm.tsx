@@ -390,9 +390,9 @@ export function CinematicFilm() {
               <svg className="cf-ring-svg" viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <defs>
                   <radialGradient id="cfMoonGrad" cx="42%" cy="38%" r="75%">
-                    <stop offset="0%" stopColor="oklch(0.92 0.05 270)" />
-                    <stop offset="60%" stopColor="oklch(0.72 0.13 285 / 0.85)" />
-                    <stop offset="100%" stopColor="oklch(0.55 0.16 290 / 0.4)" />
+                    <stop offset="0%" stopColor="oklch(0.92 0.04 250)" />
+                    <stop offset="60%" stopColor="oklch(0.72 0.13 248 / 0.85)" />
+                    <stop offset="100%" stopColor="oklch(0.55 0.16 255 / 0.4)" />
                   </radialGradient>
                   <mask id="cfMoonMask">
                     <circle cx={RC} cy={RC} r="112" fill="#fff" />
@@ -429,7 +429,7 @@ export function CinematicFilm() {
                     key={i}
                     ref={el => { arcRefs.current[i] = el; }}
                     d={d}
-                    stroke="oklch(0.72 0.19 350 / 0.9)" strokeWidth="3"
+                    stroke="oklch(0.80 0.13 88 / 0.9)" strokeWidth="3"
                     strokeLinecap="round"
                     style={{ opacity: 0 }}
                   />

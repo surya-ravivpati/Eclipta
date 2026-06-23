@@ -16,8 +16,8 @@ import "./Progress.css";
 
 const enrolledCourses = [
   { id: 1, title: "Linear Algebra Foundations",    progress: 78, totalLessons: 24, completed: 19, category: "Mathematics",     streak: 5,  nextMilestone: "Chapter Quiz",      color: "oklch(0.80 0.16 240)" },
-  { id: 2, title: "FAANG Interview Prep",          progress: 42, totalLessons: 60, completed: 25, category: "Computer Science", streak: 12, nextMilestone: "Mock Interview #3", color: "oklch(0.72 0.22 0)"   },
-  { id: 3, title: "Organic Chemistry",             progress: 15, totalLessons: 32, completed: 5,  category: "Science",          streak: 2,  nextMilestone: "Lab Simulation",     color: "oklch(0.82 0.14 165)" },
+  { id: 2, title: "FAANG Interview Prep",          progress: 42, totalLessons: 60, completed: 25, category: "Computer Science", streak: 12, nextMilestone: "Mock Interview #3", color: "oklch(0.82 0.14 88)"  },
+  { id: 3, title: "Organic Chemistry",             progress: 15, totalLessons: 32, completed: 5,  category: "Science",          streak: 2,  nextMilestone: "Lab Simulation",     color: "oklch(0.70 0.14 245)" },
   { id: 4, title: "Data Structures & Algorithms",  progress: 91, totalLessons: 40, completed: 36, category: "Computer Science", streak: 8,  nextMilestone: "Final Assessment",   color: "oklch(0.80 0.16 240)" },
 ];
 
@@ -292,8 +292,8 @@ export function ProgressDashboard() {
 
   const stats = [
     { label: "Enrolled",    value: enrollCount,              suffix: enrollCount === 1 ? " Course" : " Courses", color: "oklch(0.80 0.16 240)", Icon: BookOpen },
-    { label: "Best Streak", value: profile?.best_streak ?? 0, suffix: " Days",                                  color: "oklch(0.72 0.22 0)",    Icon: Flame   },
-    { label: "Accuracy",    value: accuracy,                  suffix: "%",                                       color: "oklch(0.82 0.14 165)",  Icon: Target  },
+    { label: "Best Streak", value: profile?.best_streak ?? 0, suffix: " Days",                                  color: "oklch(0.82 0.14 88)",   Icon: Flame   },
+    { label: "Accuracy",    value: accuracy,                  suffix: "%",                                       color: "oklch(0.70 0.14 245)",  Icon: Target  },
     { label: "Trophies",    value: trophiesEarned,            suffix: ` / ${totalTrophies}`,                     color: "oklch(0.92 0.06 90)",   Icon: Award   },
   ];
 

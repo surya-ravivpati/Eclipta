@@ -33,8 +33,8 @@ export function DailyStreakCard() {
             className="relative"
           >
             <Flame
-              className={`w-12 h-12 ${streak.dailyStreak > 0 ? "text-neon-pink" : "text-muted-foreground/40"}`}
-              style={streak.dailyStreak > 0 ? { filter: "drop-shadow(0 0 16px oklch(0.6 0.24 350 / 0.55))" } : undefined}
+              className={`w-12 h-12 ${streak.dailyStreak > 0 ? "text-primary" : "text-muted-foreground/40"}`}
+              style={streak.dailyStreak > 0 ? { filter: "drop-shadow(0 0 16px oklch(0.78 0.13 88 / 0.55))" } : undefined}
             />
           </motion.div>
           <span className="btt-shout text-4xl leading-none mt-1">{streak.dailyStreak}</span>

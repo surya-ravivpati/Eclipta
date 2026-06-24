@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as CoursesSlugRouteImport } from './routes/courses.$slug'
+import { Route as AuthenticatedStreakRouteImport } from './routes/_authenticated.streak'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated.progress'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated.notifications'
@@ -32,7 +33,6 @@ import { Route as AuthenticatedCertifiedRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCalibrationRouteImport } from './routes/_authenticated.calibration'
 import { Route as AuthenticatedBuildCourseRouteImport } from './routes/_authenticated.build-course'
 import { Route as AuthenticatedBattlesRouteImport } from './routes/_authenticated.battles'
-import { Route as AuthenticatedAdaptiveTestsRouteImport } from './routes/_authenticated.adaptive-tests'
 import { Route as AuthenticatedGroupsRoomIdRouteImport } from './routes/_authenticated.groups_.$roomId'
 import { Route as AuthenticatedForumThreadIdRouteImport } from './routes/_authenticated.forum_.$threadId'
 import { Route as AuthenticatedCertifiedSlugRouteImport } from './routes/_authenticated.certified.$slug'
@@ -100,6 +100,11 @@ const CoursesSlugRoute = CoursesSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => CoursesRoute,
 } as any)
+const AuthenticatedStreakRoute = AuthenticatedStreakRouteImport.update({
+  id: '/streak',
+  path: '/streak',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -158,12 +163,6 @@ const AuthenticatedBattlesRoute = AuthenticatedBattlesRouteImport.update({
   path: '/battles',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAdaptiveTestsRoute =
-  AuthenticatedAdaptiveTestsRouteImport.update({
-    id: '/adaptive-tests',
-    path: '/adaptive-tests',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedGroupsRoomIdRoute =
   AuthenticatedGroupsRoomIdRouteImport.update({
     id: '/groups_/$roomId',
@@ -215,7 +214,6 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/battles': typeof AuthenticatedBattlesRoute
   '/build-course': typeof AuthenticatedBuildCourseRoute
   '/calibration': typeof AuthenticatedCalibrationRoute
@@ -227,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/streak': typeof AuthenticatedStreakRoute
   '/courses/$slug': typeof CoursesSlugRoute
   '/tags/$tag': typeof TagsTagRoute
   '/u/$username': typeof UUsernameRoute
@@ -247,7 +246,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/battles': typeof AuthenticatedBattlesRoute
   '/build-course': typeof AuthenticatedBuildCourseRoute
   '/calibration': typeof AuthenticatedCalibrationRoute
@@ -259,6 +257,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/streak': typeof AuthenticatedStreakRoute
   '/courses/$slug': typeof CoursesSlugRoute
   '/tags/$tag': typeof TagsTagRoute
   '/u/$username': typeof UUsernameRoute
@@ -281,7 +280,6 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/_authenticated/adaptive-tests': typeof AuthenticatedAdaptiveTestsRoute
   '/_authenticated/battles': typeof AuthenticatedBattlesRoute
   '/_authenticated/build-course': typeof AuthenticatedBuildCourseRoute
   '/_authenticated/calibration': typeof AuthenticatedCalibrationRoute
@@ -293,6 +291,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/_authenticated/streak': typeof AuthenticatedStreakRoute
   '/courses/$slug': typeof CoursesSlugRoute
   '/tags/$tag': typeof TagsTagRoute
   '/u/$username': typeof UUsernameRoute
@@ -315,7 +314,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/signup'
-    | '/adaptive-tests'
     | '/battles'
     | '/build-course'
     | '/calibration'
@@ -327,6 +325,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/progress'
+    | '/streak'
     | '/courses/$slug'
     | '/tags/$tag'
     | '/u/$username'
@@ -347,7 +346,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/signup'
-    | '/adaptive-tests'
     | '/battles'
     | '/build-course'
     | '/calibration'
@@ -359,6 +357,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/progress'
+    | '/streak'
     | '/courses/$slug'
     | '/tags/$tag'
     | '/u/$username'
@@ -380,7 +379,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/signup'
-    | '/_authenticated/adaptive-tests'
     | '/_authenticated/battles'
     | '/_authenticated/build-course'
     | '/_authenticated/calibration'
@@ -392,6 +390,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/profile'
     | '/_authenticated/progress'
+    | '/_authenticated/streak'
     | '/courses/$slug'
     | '/tags/$tag'
     | '/u/$username'
@@ -504,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesSlugRouteImport
       parentRoute: typeof CoursesRoute
     }
+    '/_authenticated/streak': {
+      id: '/_authenticated/streak'
+      path: '/streak'
+      fullPath: '/streak'
+      preLoaderRoute: typeof AuthenticatedStreakRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/progress': {
       id: '/_authenticated/progress'
       path: '/progress'
@@ -579,13 +585,6 @@ declare module '@tanstack/react-router' {
       path: '/battles'
       fullPath: '/battles'
       preLoaderRoute: typeof AuthenticatedBattlesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/adaptive-tests': {
-      id: '/_authenticated/adaptive-tests'
-      path: '/adaptive-tests'
-      fullPath: '/adaptive-tests'
-      preLoaderRoute: typeof AuthenticatedAdaptiveTestsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/groups_/$roomId': {
@@ -672,7 +671,6 @@ const AuthenticatedCertifiedRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdaptiveTestsRoute: typeof AuthenticatedAdaptiveTestsRoute
   AuthenticatedBattlesRoute: typeof AuthenticatedBattlesRoute
   AuthenticatedBuildCourseRoute: typeof AuthenticatedBuildCourseRoute
   AuthenticatedCalibrationRoute: typeof AuthenticatedCalibrationRoute
@@ -684,6 +682,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+  AuthenticatedStreakRoute: typeof AuthenticatedStreakRoute
   AuthenticatedAdminForumRoute: typeof AuthenticatedAdminForumRoute
   AuthenticatedForumThreadIdRoute: typeof AuthenticatedForumThreadIdRoute
   AuthenticatedGroupsRoomIdRoute: typeof AuthenticatedGroupsRoomIdRoute
@@ -691,7 +690,6 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdaptiveTestsRoute: AuthenticatedAdaptiveTestsRoute,
   AuthenticatedBattlesRoute: AuthenticatedBattlesRoute,
   AuthenticatedBuildCourseRoute: AuthenticatedBuildCourseRoute,
   AuthenticatedCalibrationRoute: AuthenticatedCalibrationRoute,
@@ -703,6 +701,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+  AuthenticatedStreakRoute: AuthenticatedStreakRoute,
   AuthenticatedAdminForumRoute: AuthenticatedAdminForumRoute,
   AuthenticatedForumThreadIdRoute: AuthenticatedForumThreadIdRoute,
   AuthenticatedGroupsRoomIdRoute: AuthenticatedGroupsRoomIdRoute,
@@ -740,3 +739,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

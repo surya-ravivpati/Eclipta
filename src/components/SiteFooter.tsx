@@ -73,7 +73,7 @@ export function SiteFooter() {
               <Mail className="w-4 h-4" />
             </a>
             <a
-              href="https://github.com"
+              href="https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey"
               target="_blank"
               rel="noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"

@@ -477,9 +477,9 @@ export function CinematicFilm() {
             </div>
             <div className="cf-freeze" ref={freezeRef}>
               <div>
-                <p className="cf-freeze-num">284</p>
-                <p className="cf-freeze-line">reached <em>God</em> this season.</p>
-                <p className="cf-freeze-note">Their names stay on the wall</p>
+                <p className="cf-freeze-num">08</p>
+                <p className="cf-freeze-line">tiers from Bronze to <em>God</em>.</p>
+                <p className="cf-freeze-note">Climb them all to reach the summit</p>
               </div>
             </div>
             <p className="cf-climb-meta">Ranked ascent — tier {String(activeTier + 1).padStart(2, "0")} / 08</p>

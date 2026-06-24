@@ -85,8 +85,6 @@ function CourseDetail() {
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-6">
               <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />{course.level}</span>
               <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{course.duration}</span>
-              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{course.enrolled} enrolled</span>
-              <span className="flex items-center gap-1 text-neon-pink"><Star className="w-3.5 h-3.5 fill-neon-pink" />{course.rating}</span>
             </div>
 
             <p className="text-base text-foreground/80 leading-relaxed mb-6">{course.description}</p>

@@ -10,65 +10,13 @@ import { TrophyRoad } from "@/components/TrophyRoad";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { listStudyRooms, type StudyRoom } from "@/lib/study-rooms";
+import { CERTIFIED_COURSES } from "@/lib/certified-courses";
 import "./Progress.css";
 
-/* ── Mock Data ─────────────────────────────────────────────── */
-
-const enrolledCourses = [
-  { id: 1, title: "Linear Algebra Foundations",    progress: 78, totalLessons: 24, completed: 19, category: "Mathematics",     streak: 5,  nextMilestone: "Chapter Quiz",      color: "oklch(0.80 0.16 240)" },
-  { id: 2, title: "FAANG Interview Prep",          progress: 42, totalLessons: 60, completed: 25, category: "Computer Science", streak: 12, nextMilestone: "Mock Interview #3", color: "oklch(0.82 0.14 88)"  },
-  { id: 3, title: "Organic Chemistry",             progress: 15, totalLessons: 32, completed: 5,  category: "Science",          streak: 2,  nextMilestone: "Lab Simulation",     color: "oklch(0.70 0.14 245)" },
-  { id: 4, title: "Data Structures & Algorithms",  progress: 91, totalLessons: 40, completed: 36, category: "Computer Science", streak: 8,  nextMilestone: "Final Assessment",   color: "oklch(0.80 0.16 240)" },
-];
-
-const learningPaths = [
-  {
-    id: 1, title: "Full-Stack Developer", type: "intensive" as const, duration: "6 months", courses: 8, completed: 3,
-    description: "A structured path from fundamentals to deployment, covering frontend, backend, databases, and DevOps.",
-    prerequisites: ["Basic Programming", "HTML/CSS Basics"],
-    milestones: [
-      { label: "Web Fundamentals",    done: true  },
-      { label: "JavaScript Deep Dive", done: true  },
-      { label: "React Mastery",        done: true  },
-      { label: "Backend & APIs",       done: false, current: true  },
-      { label: "Databases",            done: false },
-      { label: "DevOps & Deploy",      done: false },
-    ],
-  },
-  {
-    id: 2, title: "Quick Stats Refresher", type: "casual" as const, duration: "2 weeks", courses: 3, completed: 1,
-    description: "A short path to brush up on probability, distributions, and hypothesis testing.",
-    prerequisites: ["Algebra"],
-    milestones: [
-      { label: "Probability Basics",   done: true  },
-      { label: "Distributions",        done: false, current: true  },
-      { label: "Hypothesis Testing",   done: false },
-    ],
-  },
-  {
-    id: 3, title: "Machine Learning Engineer", type: "intensive" as const, duration: "9 months", courses: 12, completed: 0,
-    description: "From linear algebra through neural networks to production ML systems.",
-    prerequisites: ["Linear Algebra", "Python", "Statistics"],
-    milestones: [
-      { label: "Math Foundations", done: false, current: true  },
-      { label: "Classical ML",     done: false },
-      { label: "Deep Learning",    done: false },
-      { label: "NLP & Vision",     done: false },
-      { label: "MLOps",            done: false },
-    ],
-  },
-];
-
-const recommendations = [
-  { title: "Discrete Mathematics",    reason: "Complements your Data Structures course",  match: 94 },
-  { title: "System Design",           reason: "Next step after FAANG Interview Prep",      match: 89 },
-  { title: "Probability & Statistics", reason: "Prerequisite for Machine Learning path",  match: 85 },
-  { title: "Graph Theory",            reason: "You excelled at tree-based problems",       match: 78 },
-];
+const CERTIFIED_SLUGS = new Set(CERTIFIED_COURSES.map((c) => c.slug));
 
 const TABS = [
   { id: "overview",  label: "Continue Learning" },
-  { id: "paths",     label: "Paths"             },
   { id: "trophies",  label: "Trophy Road"       },
   { id: "discover",  label: "Discover"          },
 ] as const;
@@ -122,115 +70,6 @@ function AnimatedCounter({ to, suffix = "" }: { to: number; suffix?: string }) {
 
 /* ── Sub-components ────────────────────────────────────────── */
 
-function CourseProgressCard({ course, delay = 0 }: { course: typeof enrolledCourses[0]; delay?: number }) {
-  const ref = useReveal();
-  return (
-    <div
-      ref={ref}
-      className="pg-reveal pg-course-card"
-      style={{ "--cc": course.color, "--rd": `${delay}ms` } as React.CSSProperties}
-    >
-      <div className="pg-course-cat">{course.category}</div>
-      <div className="pg-course-title">{course.title}</div>
-      <div className="pg-bar-wrap">
-        <motion.div
-          className="pg-bar"
-          initial={{ scaleX: 0 }}
-          whileInView={{ scaleX: course.progress / 100 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: delay / 1000 + 0.2 }}
-        />
-      </div>
-      <div className="pg-course-meta">
-        <span>{course.completed}/{course.totalLessons} lessons</span>
-        <span className="pg-course-pct">{course.progress}%</span>
-      </div>
-      <div className="pg-course-foot">
-        <span className="pg-course-next">Next — {course.nextMilestone}</span>
-        <span className="pg-course-streak">
-          <Flame size={12} />
-          {course.streak}d
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function PathCard({ path, delay = 0 }: { path: typeof learningPaths[0]; delay?: number }) {
-  const ref = useReveal();
-  const pct = Math.round((path.completed / path.courses) * 100);
-  return (
-    <div
-      ref={ref}
-      className="pg-reveal pg-path-card"
-      style={{ "--rd": `${delay}ms` } as React.CSSProperties}
-    >
-      <div>
-        <span className={`pg-path-type pg-path-type--${path.type}`}>{path.type}</span>
-      </div>
-      <div className="pg-path-title">{path.title}</div>
-      <div className="pg-path-desc">{path.description}</div>
-      <div className="pg-path-meta">
-        <span><Clock size={11} />{path.duration}</span>
-        <span><Layers size={11} />{path.courses} courses</span>
-      </div>
-      <div className="pg-prereq-row">
-        {path.prerequisites.map(p => (
-          <span key={p} className="pg-prereq-tag">{p}</span>
-        ))}
-      </div>
-      <div className="pg-ms-row">
-        {path.milestones.map((m, i) => (
-          <React.Fragment key={m.label}>
-            <div
-              className={`pg-ms-dot ${m.done ? "pg-ms-dot--done" : (m as typeof m & { current?: boolean }).current ? "pg-ms-dot--now" : "pg-ms-dot--lock"}`}
-              title={m.label}
-            >
-              {m.done ? "✓" : (m as typeof m & { current?: boolean }).current ? "●" : <Lock size={8} />}
-            </div>
-            {i < path.milestones.length - 1 && (
-              <div className={`pg-ms-line ${m.done ? "pg-ms-line--done" : "pg-ms-line--pend"}`} />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-      <div>
-        <div className="pg-path-bar-wrap">
-          <motion.div
-            className="pg-path-bar"
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: pct / 100 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1], delay: delay / 1000 + 0.2 }}
-          />
-        </div>
-        <div className="pg-path-pct">{pct}% complete</div>
-      </div>
-    </div>
-  );
-}
-
-function RecCard({ rec, delay = 0 }: { rec: typeof recommendations[0]; delay?: number }) {
-  const ref = useReveal();
-  return (
-    <div
-      ref={ref}
-      className="pg-reveal pg-rec-card"
-      style={{ "--rd": `${delay}ms` } as React.CSSProperties}
-    >
-      <div className="pg-rec-icon"><Brain size={20} /></div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="pg-rec-title">{rec.title}</div>
-        <div className="pg-rec-reason">{rec.reason}</div>
-      </div>
-      <div className="pg-rec-match-col">
-        <div className="pg-rec-match-num">{rec.match}</div>
-        <div className="pg-rec-match-lbl">match</div>
-      </div>
-    </div>
-  );
-}
-
 function GroupCard({ room, delay = 0 }: { room: StudyRoom; delay?: number }) {
   const ref = useReveal();
   return (
@@ -263,6 +102,7 @@ export function ProgressDashboard() {
     best_streak: number; total_correct: number; total_questions: number; xp: number;
   } | null>(null);
   const [enrollCount, setEnrollCount] = useState(0);
+  const [enrolled, setEnrolled] = useState<{ course_slug: string; course_title: string }[]>([]);
   const [trophiesEarned, setTrophiesEarned] = useState(0);
   const [studyRooms, setStudyRooms] = useState<StudyRoom[]>([]);
 
@@ -274,12 +114,13 @@ export function ProgressDashboard() {
     (async () => {
       const [p, e, t] = await Promise.all([
         supabase.from("user_profiles").select("best_streak,total_correct,total_questions,xp").eq("user_id", user.id).maybeSingle(),
-        supabase.from("enrollments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("enrollments").select("course_slug,course_title", { count: "exact" }).eq("user_id", user.id).order("enrolled_at", { ascending: false }),
         supabase.from("user_ecliptars").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
       if (cancelled) return;
       if (p.data) setProfile(p.data);
       setEnrollCount(e.count ?? 0);
+      setEnrolled((e.data as { course_slug: string; course_title: string }[] | null) ?? []);
       setTrophiesEarned(t.count ?? 0);
     })();
     return () => { cancelled = true; };
@@ -385,35 +226,39 @@ export function ProgressDashboard() {
                   <div className="pg-sec-title">Active <em>courses</em></div>
                   <div className="pg-sec-desc">Jump back in where you left off.</div>
                 </div>
-                <div className="pg-course-grid">
-                  {enrolledCourses.map((c, i) => (
-                    <CourseProgressCard key={c.id} course={c} delay={i * 60} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "paths" && (
-              <div>
-                <div className="pg-sec-head">
-                  <div className="pg-sec-title">Learning <em>paths</em></div>
-                  <div className="pg-sec-desc">Follow structured intensive programs or pick casual refreshers.</div>
-                </div>
-                <div className="pg-pill-row">
-                  <button className="pg-pill pg-pill--active">All</button>
-                  <button className="pg-pill">Intensive</button>
-                  <button className="pg-pill">Casual</button>
-                </div>
-                <div className="pg-path-grid">
-                  {learningPaths.map((p, i) => (
-                    <PathCard key={p.id} path={p} delay={i * 60} />
-                  ))}
-                  <div className="pg-add-card">
-                    <span className="pg-add-card-icon"><GitBranch size={28} /></span>
-                    <span className="pg-add-card-lbl">Build Custom Path</span>
-                    <span className="pg-add-card-sub">Mix courses from any topic into your own learning journey</span>
+                {enrolled.length === 0 ? (
+                  <div className="pg-add-card" style={{ minHeight: 150 }}>
+                    <span className="pg-add-card-icon"><BookOpen size={26} /></span>
+                    <span className="pg-add-card-lbl">No courses yet</span>
+                    <span className="pg-add-card-sub" style={{ display: "flex", gap: 16, marginTop: 6 }}>
+                      <Link to="/certified" className="pg-group-open">Browse Certified <ChevronRight size={12} /></Link>
+                      <Link to="/courses" className="pg-group-open">Community Courses <ChevronRight size={12} /></Link>
+                    </span>
                   </div>
-                </div>
+                ) : (
+                  <div className="pg-course-grid">
+                    {enrolled.map((c) => {
+                      const isCert = CERTIFIED_SLUGS.has(c.course_slug);
+                      return (
+                        <Link
+                          key={c.course_slug}
+                          to={isCert ? "/certified/$slug" : "/courses/$slug"}
+                          params={{ slug: c.course_slug }}
+                          className="pg-reveal pg-group-card"
+                          style={{ display: "block", textDecoration: "none", color: "inherit" }}
+                        >
+                          <div className="pg-group-header">
+                            <div className="pg-group-name">{c.course_title}</div>
+                          </div>
+                          <div className="pg-group-footer">
+                            <span><BookOpen size={11} /> {isCert ? "Certified" : "Community"}</span>
+                            <span className="pg-group-open">Continue <ChevronRight size={11} /></span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -426,16 +271,6 @@ export function ProgressDashboard() {
             {activeTab === "discover" && (
               <div>
                 <div className="pg-sec-head">
-                  <div className="pg-sec-title">Recommended <em>for you</em></div>
-                  <div className="pg-sec-desc">Based on your goals and performance — Luna's next-step picks.</div>
-                </div>
-                <div className="pg-recs-grid">
-                  {recommendations.map((r, i) => (
-                    <RecCard key={r.title} rec={r} delay={i * 60} />
-                  ))}
-                </div>
-
-                <div className="pg-sec-head" style={{ marginTop: 52 }}>
                   <div className="pg-sec-title">Study <em>rooms</em></div>
                   <div className="pg-sec-desc">Learn together — join a public room or start your own.</div>
                 </div>

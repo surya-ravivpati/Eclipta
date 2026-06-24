@@ -398,7 +398,7 @@ function AboutPage() {
                 <h3>Direct Email</h3>
                 <p style={{ wordBreak: "break-all" }}>hello@eclipta.app</p>
               </a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="ab-channel">
+              <a href="https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey" target="_blank" rel="noopener noreferrer" className="ab-channel">
                 <Github className="w-5 h-5" />
                 <h3>Open Source</h3>
                 <p>Report bugs, suggest features, or contribute.</p>

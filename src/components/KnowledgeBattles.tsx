@@ -2577,6 +2577,35 @@ function BattleArena() {
           <QuestionOverlay question={question} timeLeft={timeLeft} maxTime={maxTime} onAnswer={handleAnswer} />
         )}
       </AnimatePresence>
+
+      {/* Forfeit confirmation — leaving counts as a loss by abandonment */}
+      <Dialog open={confirmExit} onOpenChange={setConfirmExit}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl flex items-center gap-2">
+              <X className="w-5 h-5 text-destructive" /> Leave this battle?
+            </DialogTitle>
+            <DialogDescription>
+              Leaving now counts as a <span className="text-foreground font-bold">loss by abandonment</span>.
+              You'll forfeit the match{opponentType !== "bot" ? " and lose rating, just like a defeat" : ""}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end mt-2">
+            <button
+              onClick={() => setConfirmExit(false)}
+              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md border border-border hover:border-foreground/30 transition-colors"
+            >
+              KEEP FIGHTING
+            </button>
+            <button
+              onClick={() => { setConfirmExit(false); finishBattle(false); }}
+              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+            >
+              FORFEIT (LOSS)
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -2950,7 +2979,6 @@ function DailyChallengeCard() {
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
-  const [confirmExit, setConfirmExit] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   return (
     <section className="btt-shell min-h-screen pt-24 pb-16">
@@ -3004,35 +3032,6 @@ export function KnowledgeBattles() {
       </div>
 
       <UserSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-
-      {/* Forfeit confirmation — leaving counts as a loss by abandonment */}
-      <Dialog open={confirmExit} onOpenChange={setConfirmExit}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl flex items-center gap-2">
-              <X className="w-5 h-5 text-destructive" /> Leave this battle?
-            </DialogTitle>
-            <DialogDescription>
-              Leaving now counts as a <span className="text-foreground font-bold">loss by abandonment</span>.
-              You'll forfeit the match{opponentType !== "bot" ? " and lose rating, just like a defeat" : ""}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 justify-end mt-2">
-            <button
-              onClick={() => setConfirmExit(false)}
-              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md border border-border hover:border-foreground/30 transition-colors"
-            >
-              KEEP FIGHTING
-            </button>
-            <button
-              onClick={() => { setConfirmExit(false); finishBattle(false); }}
-              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
-            >
-              FORFEIT (LOSS)
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Floating "How to Play" button */}
       <motion.button

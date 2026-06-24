@@ -1017,15 +1017,20 @@ export type Database = {
           bio: string | null
           created_at: string
           current_streak: number
+          daily_streak: number
           equipped_ecliptar: string | null
           id: string
+          last_practice_date: string | null
           learner_profile: Json | null
           learning_goal: string | null
+          longest_daily_streak: number
           luna_auto_notes: string | null
           luna_notes: string | null
           onboarded_at: string | null
+          practice_dates: string[]
           preferred_pace: string
           preferred_style: string
+          streak_freezes: number
           strong_areas: string[] | null
           total_correct: number
           total_questions: number
@@ -1045,15 +1050,20 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_streak?: number
+          daily_streak?: number
           equipped_ecliptar?: string | null
           id?: string
+          last_practice_date?: string | null
           learner_profile?: Json | null
           learning_goal?: string | null
+          longest_daily_streak?: number
           luna_auto_notes?: string | null
           luna_notes?: string | null
           onboarded_at?: string | null
+          practice_dates?: string[]
           preferred_pace?: string
           preferred_style?: string
+          streak_freezes?: number
           strong_areas?: string[] | null
           total_correct?: number
           total_questions?: number
@@ -1073,15 +1083,20 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_streak?: number
+          daily_streak?: number
           equipped_ecliptar?: string | null
           id?: string
+          last_practice_date?: string | null
           learner_profile?: Json | null
           learning_goal?: string | null
+          longest_daily_streak?: number
           luna_auto_notes?: string | null
           luna_notes?: string | null
           onboarded_at?: string | null
+          practice_dates?: string[]
           preferred_pace?: string
           preferred_style?: string
+          streak_freezes?: number
           strong_areas?: string[] | null
           total_correct?: number
           total_questions?: number
@@ -1404,6 +1419,7 @@ export type Database = {
         }
         Returns: string
       }
+      record_daily_practice: { Args: never; Returns: Json }
       request_pvp_rematch: {
         Args: { p_archetype: string; p_battle_id: string }
         Returns: Json

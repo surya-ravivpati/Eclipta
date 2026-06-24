@@ -32,7 +32,7 @@ const STRUCTURES = [
   { value: "linear", label: "Linear", description: "Sequential chapters, one after another" },
   { value: "modular", label: "Modular", description: "Independent modules, flexible order" },
   { value: "project-based", label: "Project-Based", description: "Learn by building real projects" },
-  { value: "challenge-driven", label: "Challenge-Driven", description: "Problem sets and adaptive tests" },
+  { value: "challenge-driven", label: "Challenge-Driven", description: "Problem sets and tough challenges" },
 ];
 
 type ReviewStatus = "idle" | "reviewing" | "approved" | "denied" | "error";

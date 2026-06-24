@@ -253,8 +253,8 @@ export type LunaAction =
   | { kind: "resource"; title: string; url: string };
 
 const ALLOWED_OPEN_ROUTES = new Set([
-  "/battles", "/adaptive-tests", "/forum", "/certified", "/progress",
-  "/luna", "/build-course", "/collection",
+  "/battles", "/groups", "/forum", "/certified", "/progress",
+  "/luna", "/build-course", "/collection", "/streak",
 ]);
 
 /** Pull `[[ACTION:...]]` lines out of a Luna reply and return them parsed. */

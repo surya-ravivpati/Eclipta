@@ -14,7 +14,6 @@ const FOOTER_GROUPS = [
   {
     label: "PRACTICE",
     links: [
-      { to: "/adaptive-tests", label: "Adaptive Tests" },
       { to: "/battles", label: "Knowledge Battles" },
       { to: "/progress", label: "Trophy Road" },
     ],

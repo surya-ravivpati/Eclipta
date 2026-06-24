@@ -22,10 +22,10 @@ const features = [
   {
     icon: Target,
     number: "03",
-    title: "Adaptive Tests",
-    description: "Tests that evolve with your performance. Struggle? More practice. Excel? Higher difficulty. Your weak spots get laser focus.",
+    title: "Study Rooms",
+    description: "Cozy public and private rooms to study together — live chat, lofi in the background, and an Ecliptar to represent you.",
     color: "neon-cyan" as const,
-    to: "/adaptive-tests" as const,
+    to: "/groups" as const,
   },
   {
     icon: Trophy,

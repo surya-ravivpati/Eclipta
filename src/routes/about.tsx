@@ -316,7 +316,7 @@ function AboutPage() {
           <motion.p className="ab-mission" {...reveal}>
             Traditional platforms reward <em>completion</em>. Eclipta rewards
             {" "}<strong>growth</strong> — every battle won, every course finished, every
-            adaptive test crushed feeds one engine: your XP, unlocking ranks, Ecliptars,
+            day you show up feeds one engine: your XP, unlocking ranks, Ecliptars,
             and challenges. Mastery should feel like <em>leveling up</em>, not grinding.
           </motion.p>
         </section>

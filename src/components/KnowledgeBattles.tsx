@@ -4,7 +4,7 @@ import {
   Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
   Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info, FastForward,
   Users, Ghost, Radio, TrendingUp, TrendingDown, MessageSquare, VolumeX, Volume2,
-  Crown, Medal,
+  Crown, Medal, X,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -56,40 +56,48 @@ const ACTIONS: Record<Action, ActionConfig> = {
 };
 
 /**
- * Issue 3: compute action button description from the active archetype's real stats.
- * No hardcoded values — every number comes directly from the archetype definition.
+ * Action button descriptions, derived from the ACTIVE archetype's real stats
+ * AND its signature identity — so Attack/Heal/Charge read differently for every
+ * class. The ± Focus is shown as a badge, so the text carries flavor instead.
  */
+const ATTACK_TAG: Record<string, string> = {
+  speedster: "fast = harder", tank: "low, relentless", chud: "glass cannon",
+  gambler: "rolled stats", healer: "soft hits", fulcrum: "combo every 2",
+  accelerator: "ramps each turn", god: "all maxed",
+};
+const HEAL_TAG: Record<string, string> = {
+  speedster: "quick patch", tank: "", chud: "risky pause", gambler: "rolled",
+  healer: "regen on hits too", fulcrum: "steady", accelerator: "scales up", god: "topped up",
+};
+const CHARGE_TAG: Record<string, string> = {
+  speedster: "fast = harder", tank: "rare big hit", chud: "devastating",
+  gambler: "rolled", healer: "burst heal-tank", fulcrum: "highest mult",
+  accelerator: "ramps", god: "finisher",
+};
+
 function getActionDesc(action: Action, arch: Archetype, recordCount: number): string {
+  const tag = (m: Record<string, string>) => (m[arch.id] ? ` · ${m[arch.id]}` : "");
   switch (action) {
     case "attack": {
-      if (arch.damageIsTimeScaled) {
-        // Speedster: base + up-to-base speed bonus → show range
-        return `${arch.baseDamage}–${arch.baseDamage * 2} DMG · +15 Focus`;
-      }
-      if (arch.multiplierScales) {
-        // Accelerator: damage grows with questions answered (13→27 over 10 Qs)
-        const dmg = Math.round(13 + Math.min(recordCount / 10, 1) * 14);
-        return `${dmg} DMG ↑ · +15 Focus`;
-      }
-      return `${arch.baseDamage} DMG · +15 Focus`;
+      let dmg: string;
+      if (arch.damageIsTimeScaled) dmg = `${arch.baseDamage}–${arch.baseDamage * 2} DMG`; // Speedster range
+      else if (arch.multiplierScales) dmg = `${Math.round(13 + Math.min(recordCount / 10, 1) * 14)} DMG ↑`; // Accelerator
+      else dmg = `${arch.baseDamage} DMG`;
+      return `${dmg}${tag(ATTACK_TAG)}`;
     }
     case "defend": {
-      if (arch.healAmount === null) return `+10 Focus only`;
-      return `+${arch.healAmount} HP · +10 Focus`;
+      if (arch.healAmount === null) return "Can't heal · builds Focus"; // Tank
+      return `+${arch.healAmount} HP${tag(HEAL_TAG)}`;
     }
     case "charge": {
-      if (arch.damageIsTimeScaled) {
-        const base = Math.floor(arch.baseDamage * 1.8);
-        return `${base}–${base * 2} DMG · −25 Focus`;
-      }
-      if (arch.multiplierScales) {
-        const base = Math.round(13 + Math.min(recordCount / 10, 1) * 14);
-        return `${Math.floor(base * 1.8)} DMG ↑ · −25 Focus`;
-      }
-      return `${Math.floor(arch.baseDamage * 1.8)} DMG · −25 Focus`;
+      let dmg: string;
+      if (arch.damageIsTimeScaled) { const b = Math.floor(arch.baseDamage * 1.8); dmg = `${b}–${b * 2} DMG`; }
+      else if (arch.multiplierScales) { const b = Math.round(13 + Math.min(recordCount / 10, 1) * 14); dmg = `${Math.floor(b * 1.8)} DMG ↑`; }
+      else dmg = `${Math.floor(arch.baseDamage * 1.8)} DMG`;
+      return `${dmg}${tag(CHARGE_TAG)}`;
     }
     case "wild":
-      return `Chaos effect · −15 Focus`;
+      return "Chaos effect";
   }
 }
 
@@ -2283,6 +2291,20 @@ function BattleArena() {
       <AnimatePresence>
         {wildEvent && <WildEventOverlay event={wildEvent} />}
       </AnimatePresence>
+
+      {/* Forfeit / leave control — confirms, then counts as a loss by abandonment */}
+      {(phase === "select" || phase === "question" || phase === "animate") && !koBanner && (
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setConfirmExit(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors"
+            title="Leave the battle (counts as a loss)"
+          >
+            <X className="w-3 h-3" /> Forfeit
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-3 mb-4">
         <FighterCard
           fighter={player} side="left" momentum={momentum} archetype={archetype}
@@ -2927,6 +2949,7 @@ function DailyChallengeCard() {
 // ─── Main Export ──────────────────────────────────────────────────────
 export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   return (
     <section className="btt-shell min-h-screen pt-24 pb-16">
@@ -2981,6 +3004,35 @@ export function KnowledgeBattles() {
 
       <UserSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
+      {/* Forfeit confirmation — leaving counts as a loss by abandonment */}
+      <Dialog open={confirmExit} onOpenChange={setConfirmExit}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl flex items-center gap-2">
+              <X className="w-5 h-5 text-destructive" /> Leave this battle?
+            </DialogTitle>
+            <DialogDescription>
+              Leaving now counts as a <span className="text-foreground font-bold">loss by abandonment</span>.
+              You'll forfeit the match{opponentType !== "bot" ? " and lose rating, just like a defeat" : ""}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end mt-2">
+            <button
+              onClick={() => setConfirmExit(false)}
+              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md border border-border hover:border-foreground/30 transition-colors"
+            >
+              KEEP FIGHTING
+            </button>
+            <button
+              onClick={() => { setConfirmExit(false); finishBattle(false); }}
+              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+            >
+              FORFEIT (LOSS)
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Floating "How to Play" button */}
       <motion.button
         onClick={() => setHowOpen(true)}
@@ -3025,14 +3077,15 @@ export function KnowledgeBattles() {
                 <Swords className="w-3.5 h-3.5" /> COMBAT
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li><span className="text-foreground font-bold">Attack</span> — medium Q, 18 DMG and <span className="text-neon-cyan">+15 Focus</span>. Your bread-and-butter focus builder.</li>
-                <li><span className="text-foreground font-bold">Heal</span> — easy Q, restores HP and <span className="text-neon-cyan">+10 Focus</span>.</li>
-                <li><span className="text-foreground font-bold">Charge</span> — hard Q, 32 DMG but <span className="text-neon-purple">−25 Focus</span>. The payoff move.</li>
-                <li><span className="text-foreground font-bold">Wild</span> — random effect for <span className="text-neon-purple">−15 Focus</span>.</li>
-                <li><span className="text-neon-purple font-bold">Focus</span> is the resource that <span className="text-foreground font-bold">unlocks Charge &amp; Wild</span>. Without it you can only Attack/Heal — so building Focus = setting up your finisher. Each archetype has a different pool size (Speedster small, Chud huge).</li>
-                <li>Bots think too — they heal when low, save Focus for finishers, and gamble Wild only when it pays.</li>
-                <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span>; each streak hit multiplies your damage.</li>
-                <li>Wrong answers or timeouts reset Momentum and trigger a counter-attack.</li>
+                <li>Each turn you answer a question, then pick an action. <span className="text-foreground font-bold">The action sets the question's difficulty</span> — Heal draws an easy one, Attack a medium one, Charge a hard one. Bigger payoff, harder question.</li>
+                <li><span className="text-foreground font-bold">Attack</span> — your class's base damage; builds <span className="text-neon-cyan">+15 Focus</span>. Your bread-and-butter.</li>
+                <li><span className="text-foreground font-bold">Heal</span> — restores HP; builds <span className="text-neon-cyan">+10 Focus</span>. <span className="text-foreground">A Tank can't Heal at all.</span></li>
+                <li><span className="text-foreground font-bold">Charge</span> — 1.8× your damage, but spends <span className="text-neon-purple">25 Focus</span>. Your finisher.</li>
+                <li><span className="text-foreground font-bold">Wild</span> — a chaotic effect for <span className="text-neon-purple">15 Focus</span>.</li>
+                <li><span className="text-foreground font-bold">Every number on the action buttons is YOUR archetype's</span> — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows each turn, a Chud's is brutal but fragile. Read them before you commit.</li>
+                <li><span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp; Wild — build it with Attack/Heal. Pool size differs by class (Speedster small, Chud huge).</li>
+                <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> → bigger damage multipliers. A wrong answer or timeout breaks Momentum and lets your opponent counter.</li>
+                <li><span className="text-foreground font-bold">Leaving a battle counts as a loss by abandonment</span> — finish what you start.</li>
               </ul>
             </section>
 
@@ -3041,8 +3094,8 @@ export function KnowledgeBattles() {
                 <Sparkles className="w-3.5 h-3.5" /> ARCHETYPES &amp; REWARDS
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li>Each archetype tweaks HP, time, damage, multiplier, and question difficulty.</li>
-                <li>Hit the <span className="text-foreground font-bold">daily challenge</span> goal to unlock today's bonus — the challenge changes every day.</li>
+                <li>Each archetype tweaks HP, time, damage, multiplier, and question difficulty — pick the one that fits your style.</li>
+                <li>Every battle counts toward your <span className="text-foreground font-bold">daily practice streak</span>; streak milestones grant bonus XP.</li>
                 <li>XP earned advances your Trophy Road and unlocks new Ecliptars to claim.</li>
               </ul>
             </section>

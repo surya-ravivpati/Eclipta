@@ -17,6 +17,12 @@ export interface StudyRoom {
   member_count: number;
   am_member: boolean;
   join_code: string | null;
+  /** Shared Session Clock — room-level, synced to all members. */
+  work_minutes: number;
+  break_minutes: number;
+  phase: "work" | "break";
+  phase_started_at: string;
+  last_activity_at: string;
 }
 
 export interface RoomMember {
@@ -35,6 +41,8 @@ export interface RoomMessage {
   ecliptar_slug: string | null;
   body: string;
   created_at: string;
+  /** `chat` = normal bubble, `system` = log line (pattern change, idle nudge). */
+  kind: "chat" | "system";
 }
 
 /** Current user's display name + their equipped Ecliptar (the room default). */
@@ -124,7 +132,7 @@ export async function getRoomMembers(roomId: string): Promise<RoomMember[]> {
 export async function getRoomMessages(roomId: string, limit = 100): Promise<RoomMessage[]> {
   const { data, error } = await supabase
     .from("study_room_messages" as any)
-    .select("id,room_id,user_id,author_name,ecliptar_slug,body,created_at")
+    .select("id,room_id,user_id,author_name,ecliptar_slug,body,created_at,kind")
     .eq("room_id", roomId)
     .order("created_at", { ascending: true })
     .limit(limit);
@@ -162,4 +170,37 @@ export async function setRoomEcliptar(roomId: string, slug: string): Promise<voi
     .eq("room_id", roomId)
     .eq("user_id", user.id);
   if (error) console.error("setRoomEcliptar", error);
+}
+
+// ── Shared Session Clock ────────────────────────────────────────────────────
+
+/** Change the work/break pattern for the room. Posts a system line in chat. */
+export async function setRoomPattern(
+  roomId: string, workMinutes: number, breakMinutes: number,
+): Promise<string | null> {
+  const { error } = await supabase.rpc("set_room_pattern" as any, {
+    p_room: roomId, p_work: workMinutes, p_break: breakMinutes,
+  });
+  return error ? error.message : null;
+}
+
+/** Idempotent phase flip — racing clients collapse to one update on the server. */
+export async function advanceRoomPhase(
+  roomId: string, fromPhase: "work" | "break", fromStartedAt: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("advance_room_phase" as any, {
+    p_room: roomId, p_from_phase: fromPhase, p_from_started_at: fromStartedAt,
+  });
+  if (error) console.error("advanceRoomPhase", error);
+}
+
+/** Ask the server to post the "still working?" nudge. Server enforces gating. */
+export async function postIdleNudge(roomId: string): Promise<void> {
+  const { error } = await supabase.rpc("post_idle_nudge" as any, { p_room: roomId });
+  if (error && !/Not a room member/i.test(error.message)) console.error("postIdleNudge", error);
+}
+
+/** Re-fetch a single room's current state (clock columns live on `get_study_rooms`). */
+export async function refetchRoom(roomId: string): Promise<StudyRoom | null> {
+  return await getRoom(roomId);
 }

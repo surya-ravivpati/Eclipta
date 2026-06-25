@@ -6,6 +6,7 @@ import "@/components/study/study.css";
 import { LofiPlayer } from "@/components/study/LofiPlayer";
 import { SessionClock } from "@/components/study/SessionClock";
 import { GoalPin } from "@/components/study/GoalPin";
+import { AskLuna, StuckLauncher, StuckCard, RecapPanel } from "@/components/study/RoomAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import {
@@ -14,6 +15,7 @@ import {
   setRoomGoal, setRoomLinks,
   type StudyRoom, type RoomMember, type RoomMessage,
 } from "@/lib/study-rooms";
+import { fetchStuckRequests, triggerStuckAi, type StuckRequest } from "@/lib/study-luna";
 
 export const Route = createFileRoute("/_authenticated/groups_/$roomId")({
   component: StudyRoomView,
@@ -39,10 +41,22 @@ function StudyRoomView() {
   /** Per-client buffer of chat messages received while in `work` phase that
    *  haven't been revealed yet. Never synced — purely local display state. */
   const [pending, setPending] = useState<RoomMessage[]>([]);
+  const [stuck, setStuck] = useState<StuckRequest[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const [sending, setSending] = useState(false);
+
+  const stuckRef = useRef<StuckRequest[]>([]);
+  stuckRef.current = stuck;
+  const aiAttemptedRef = useRef<Set<string>>(new Set());
+  const upsertStuck = useCallback((row: StuckRequest) => {
+    setStuck((prev) => {
+      const i = prev.findIndex((s) => s.id === row.id);
+      if (i === -1) return [...prev, row];
+      const next = [...prev]; next[i] = row; return next;
+    });
+  }, []);
 
   const meRef = useRef<{ userId: string | null; displayName: string; equippedSlug: string | null }>({
     userId: null, displayName: "Learner", equippedSlug: null,
@@ -69,6 +83,7 @@ function StudyRoomView() {
       setRoom(r);
       setMembers(await getRoomMembers(roomId));
       setMessages(await getRoomMessages(roomId));
+      setStuck(await fetchStuckRequests(roomId));
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -107,6 +122,9 @@ function StudyRoomView() {
           const fresh = await refetchRoom(roomId);
           if (fresh) setRoom(fresh);
         })
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "stuck_requests", filter: `room_id=eq.${roomId}` },
+        (payload) => { if (payload.new && (payload.new as StuckRequest).id) upsertStuck(payload.new as StuckRequest); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [roomId, denied, refreshMembers]);
@@ -133,6 +151,26 @@ function StudyRoomView() {
     const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
   }, [denied, room, roomId]);
+
+  // Stuck AI fallback driver — once a card's countdown hits zero with no human
+  // answer, fire the server claim. Each client attempts at most once per card;
+  // the server claims atomically so only one AI answer is ever produced.
+  useEffect(() => {
+    if (denied) return;
+    const tick = () => {
+      const nowMs = Date.now();
+      for (const s of stuckRef.current) {
+        if (s.status !== "open") continue;
+        if (aiAttemptedRef.current.has(s.id)) continue;
+        if (new Date(s.ai_due_at).getTime() <= nowMs) {
+          aiAttemptedRef.current.add(s.id);
+          void triggerStuckAi(s.id);
+        }
+      }
+    };
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [denied]);
 
   /** When phase flips, flush any buffered messages so break-time is normal. */
   const onPhaseFlip = useCallback((next: "work" | "break") => {
@@ -254,30 +292,38 @@ function StudyRoomView() {
           <section className="sr-chat">
             <SessionClock room={room} onPhaseFlip={onPhaseFlip} />
             <div className="sr-chat-scroll" ref={scrollRef}>
-              {messages.length === 0 ? (
+              {messages.length === 0 && stuck.length === 0 ? (
                 <div className="sr-chat-empty">It's quiet in here. Say hello and get the session going. ☕</div>
-              ) : messages.map((m) => {
-                if (m.kind === "system") {
-                  return (
-                    <div className="sr-system" key={m.id}>
-                      <span className="sr-system-text">{m.body}</span>
-                    </div>
-                  );
-                }
-                const isMe = m.user_id === meRef.current.userId;
-                return (
-                  <div className="sr-msg" key={m.id}>
-                    <EcliptarAvatar slug={m.ecliptar_slug} className="sr-msg-ava" />
-                    <div className="sr-msg-body">
-                      <div className="sr-msg-meta">
-                        <span className={`sr-msg-author ${isMe ? "sr-msg-author--me" : ""}`}>{m.author_name || "Learner"}</span>
-                        <span className="sr-msg-time">{clock(m.created_at)}</span>
+              ) : (
+                // Merge chat messages and Stuck cards into one time-ordered stream.
+                [
+                  ...messages.map((m) => ({
+                    at: m.created_at,
+                    node: m.kind === "system" ? (
+                      <div className="sr-system" key={`m-${m.id}`}>
+                        <span className="sr-system-text">{m.body}</span>
                       </div>
-                      <div className="sr-msg-text">{m.body}</div>
-                    </div>
-                  </div>
-                );
-              })}
+                    ) : (
+                      <div className="sr-msg" key={`m-${m.id}`}>
+                        <EcliptarAvatar slug={m.ecliptar_slug} className="sr-msg-ava" />
+                        <div className="sr-msg-body">
+                          <div className="sr-msg-meta">
+                            <span className={`sr-msg-author ${m.user_id === meRef.current.userId ? "sr-msg-author--me" : ""}`}>{m.author_name || "Learner"}</span>
+                            <span className="sr-msg-time">{clock(m.created_at)}</span>
+                          </div>
+                          <div className="sr-msg-text">{m.body}</div>
+                        </div>
+                      </div>
+                    ),
+                  })),
+                  ...stuck.map((s) => ({
+                    at: s.created_at,
+                    node: <StuckCard key={`s-${s.id}`} stuck={s} meId={meRef.current.userId} />,
+                  })),
+                ]
+                  .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
+                  .map((t) => t.node)
+              )}
             </div>
             {pending.length > 0 && (
               <div className="sr-pending">
@@ -286,6 +332,10 @@ function StudyRoomView() {
                 </button>
               </div>
             )}
+            <div className="sr-assist">
+              <StuckLauncher roomId={roomId} />
+              <RecapPanel stuck={stuck} goalText={room.goal_text ?? null} />
+            </div>
             <div className="sr-chat-input">
               <input
                 value={draft}
@@ -298,6 +348,9 @@ function StudyRoomView() {
                 {sending ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
               </button>
             </div>
+
+            {/* Ask Luna — private, only the asker sees this; never broadcast. */}
+            <AskLuna />
           </section>
         </div>
       </div>

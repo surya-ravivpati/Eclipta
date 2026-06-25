@@ -371,3 +371,74 @@
 .sr-pin-addok:hover { color: var(--sr-gold); border-color: var(--sr-gold); }
 .sr-pin-addcancel:hover { color: var(--brand-ink); }
 .sr-pin-err { flex-basis: 100%; font-size: 11px; color: oklch(0.66 0.18 22); margin-top: 2px; }
+
+/* ── Room assistant (Ask / Stuck / Recap) ─────────────────────── */
+.sr-assist { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px 0; }
+.sr-toolbtn {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 11.5px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--sr-line-2); background: transparent; color: var(--brand-dim, #BCBAB0);
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.sr-toolbtn:hover:not(:disabled) { border-color: var(--sr-gold); color: var(--sr-gold); }
+.sr-toolbtn:disabled { opacity: 0.5; cursor: default; }
+.sr-toolbtn--go { background: var(--sr-gold); color: #0B1020; border-color: transparent; font-weight: 700; }
+.sr-stuck-launch { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sr-stuck-launch input {
+  flex: 1 1 200px; min-width: 0; padding: 6px 10px; border-radius: 8px; font-size: 13px;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid var(--sr-line-2); color: var(--brand-ink); outline: none;
+}
+.sr-stuck-launch input:focus { border-color: var(--sr-gold); }
+
+/* Stuck card — interactive, visually distinct from chat bubbles */
+.sr-stuck {
+  border: 1px solid oklch(0.78 0.13 88 / 0.35); background: oklch(0.78 0.13 88 / 0.06);
+  border-radius: 12px; padding: 11px 13px; margin: 2px 0;
+}
+.sr-stuck--resolved { border-color: var(--sr-line-2); background: rgba(244, 241, 234, 0.03); }
+.sr-stuck-head { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; color: var(--brand-ink, #F4F1EA); }
+.sr-stuck-ico { color: var(--sr-gold); flex-shrink: 0; margin-top: 1px; }
+.sr-stuck-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; flex-wrap: wrap; }
+.sr-stuck-count { font-family: var(--font-mono, monospace); font-size: 12px; color: var(--sr-warm); }
+.sr-stuck-count b { color: var(--sr-gold); font-size: 13px; }
+.sr-stuck-take {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+  background: var(--sr-gold); color: #0B1020; border: none;
+}
+.sr-stuck-take:hover:not(:disabled) { opacity: 0.9; }
+.sr-stuck-take:disabled { opacity: 0.6; cursor: default; }
+.sr-stuck-resolved { margin-top: 9px; }
+.sr-stuck-by { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--sr-gold); }
+.sr-stuck-ai { margin-top: 6px; font-size: 13px; line-height: 1.5; color: var(--brand-dim, #BCBAB0); white-space: pre-wrap; }
+
+/* Ask Luna — private box, clearly separated from the public chat bar */
+.sr-ask { margin: 8px 12px 12px; padding: 10px; border-radius: 12px; border: 1px dashed var(--sr-line-2); background: rgba(0, 0, 0, 0.18); }
+.sr-ask-head {
+  display: flex; align-items: center; gap: 6px; font-family: var(--font-mono, monospace);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sr-fog); margin-bottom: 7px;
+}
+.sr-ask-note { margin-left: auto; text-transform: none; letter-spacing: 0; font-style: italic; opacity: 0.8; }
+.sr-ask-answer {
+  position: relative; font-size: 13px; line-height: 1.55; color: var(--brand-ink, #F4F1EA);
+  background: rgba(244, 241, 234, 0.03); border: 1px solid var(--sr-line); border-radius: 8px;
+  padding: 9px 26px 9px 10px; margin-bottom: 8px; max-height: 220px; overflow-y: auto; white-space: pre-wrap;
+}
+.sr-ask-clear { position: absolute; top: 6px; right: 6px; background: none; border: none; color: var(--sr-fog); cursor: pointer; }
+.sr-ask-clear:hover { color: var(--brand-ink); }
+.sr-ask-input { display: flex; gap: 8px; }
+.sr-ask-input input {
+  flex: 1; min-width: 0; padding: 8px 11px; border-radius: 9px; font-size: 13px;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid var(--sr-line-2); color: var(--brand-ink); outline: none;
+}
+.sr-ask-input input:focus { border-color: var(--sr-gold); }
+.sr-ask-send {
+  padding: 0 13px; border-radius: 9px; cursor: pointer; border: none;
+  background: oklch(0.70 0.14 245); color: #0B1020; display: flex; align-items: center;
+}
+.sr-ask-send:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.sr-recap-text {
+  white-space: pre-wrap; font-family: var(--font-body, Inter, sans-serif); font-size: 13.5px;
+  line-height: 1.6; color: var(--brand-ink, #F4F1EA); margin: 6px 0 0; max-height: 50vh; overflow-y: auto;
+}

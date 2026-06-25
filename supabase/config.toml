@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.luna-tts]
 verify_jwt = false
+
+[functions.luna-room]
+verify_jwt = false

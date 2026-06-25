@@ -4,11 +4,12 @@ import { ArrowLeft, Send, LogOut, Loader2, Users, Copy, Lock, Sparkles } from "l
 import { toast } from "sonner";
 import "@/components/study/study.css";
 import { LofiPlayer } from "@/components/study/LofiPlayer";
+import { SessionClock } from "@/components/study/SessionClock";
 import { supabase } from "@/integrations/supabase/client";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import {
   getRoom, getRoomMembers, getRoomMessages, sendRoomMessage, leaveStudyRoom,
-  joinStudyRoom, getMyRoomIdentity,
+  joinStudyRoom, getMyRoomIdentity, postIdleNudge, refetchRoom,
   type StudyRoom, type RoomMember, type RoomMessage,
 } from "@/lib/study-rooms";
 
@@ -33,6 +34,9 @@ function StudyRoomView() {
   const [room, setRoom] = useState<StudyRoom | null>(null);
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [messages, setMessages] = useState<RoomMessage[]>([]);
+  /** Per-client buffer of chat messages received while in `work` phase that
+   *  haven't been revealed yet. Never synced — purely local display state. */
+  const [pending, setPending] = useState<RoomMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
@@ -42,6 +46,8 @@ function StudyRoomView() {
     userId: null, displayName: "Learner", equippedSlug: null,
   });
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const roomRef = useRef<StudyRoom | null>(null);
+  roomRef.current = room;
 
   const refreshMembers = useCallback(async () => setMembers(await getRoomMembers(roomId)), [roomId]);
 
@@ -75,19 +81,81 @@ function StudyRoomView() {
         { event: "INSERT", schema: "public", table: "study_room_messages", filter: `room_id=eq.${roomId}` },
         (payload) => {
           const m = payload.new as RoomMessage;
-          setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          // Quiet-chat collapse: during work phases, buffer incoming *chat*
+          // messages from other people into the pending pill. System lines
+          // and our own messages always go straight through.
+          const r = roomRef.current;
+          const isMine = m.user_id === meRef.current.userId;
+          const shouldBuffer =
+            r?.phase === "work" && m.kind === "chat" && !isMine;
+          if (shouldBuffer) {
+            setPending((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          } else {
+            setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          }
         })
       .on("postgres_changes",
         { event: "*", schema: "public", table: "study_room_members", filter: `room_id=eq.${roomId}` },
         () => { void refreshMembers(); })
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "study_rooms", filter: `id=eq.${roomId}` },
+        async () => {
+          // Pattern change, phase flip, or activity-clock bump — re-fetch
+          // the full room (RPC returns clock columns + member flags).
+          const fresh = await refetchRoom(roomId);
+          if (fresh) setRoom(fresh);
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [roomId, denied, refreshMembers]);
 
-  // Keep chat pinned to the latest message.
+  // Keep chat pinned to the latest visible message.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  /**
+   * Idle nudge — every 30s while in `work` phase, if the room has been
+   * silent for 10+ minutes, ask the server to post the nudge. The server
+   * enforces "only one per idle stretch" and "never during break" so
+   * multiple clients calling this is harmless.
+   */
+  useEffect(() => {
+    if (denied || !room) return;
+    const tick = () => {
+      const r = roomRef.current;
+      if (!r || r.phase !== "work") return;
+      const idleMs = Date.now() - new Date(r.last_activity_at).getTime();
+      if (idleMs > 10 * 60_000) void postIdleNudge(roomId);
+    };
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, [denied, room, roomId]);
+
+  /** When phase flips, flush any buffered messages so break-time is normal. */
+  const onPhaseFlip = useCallback((next: "work" | "break") => {
+    if (next === "break") {
+      setPending((buf) => {
+        if (buf.length === 0) return buf;
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          return [...prev, ...buf.filter((m) => !seen.has(m.id))];
+        });
+        return [];
+      });
+    }
+  }, []);
+
+  const revealPending = () => {
+    setPending((buf) => {
+      if (buf.length === 0) return buf;
+      setMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        return [...prev, ...buf.filter((m) => !seen.has(m.id))];
+      });
+      return [];
+    });
+  };
 
   const send = async () => {
     const body = draft.trim();
@@ -175,10 +243,18 @@ function StudyRoomView() {
           </aside>
 
           <section className="sr-chat">
+            <SessionClock room={room} onPhaseFlip={onPhaseFlip} />
             <div className="sr-chat-scroll" ref={scrollRef}>
               {messages.length === 0 ? (
                 <div className="sr-chat-empty">It's quiet in here. Say hello and get the session going. ☕</div>
               ) : messages.map((m) => {
+                if (m.kind === "system") {
+                  return (
+                    <div className="sr-system" key={m.id}>
+                      <span className="sr-system-text">{m.body}</span>
+                    </div>
+                  );
+                }
                 const isMe = m.user_id === meRef.current.userId;
                 return (
                   <div className="sr-msg" key={m.id}>
@@ -194,6 +270,13 @@ function StudyRoomView() {
                 );
               })}
             </div>
+            {pending.length > 0 && (
+              <div className="sr-pending">
+                <button className="sr-pending-btn" onClick={revealPending}>
+                  {pending.length} new message{pending.length === 1 ? "" : "s"} — tap to show
+                </button>
+              </div>
+            )}
             <div className="sr-chat-input">
               <input
                 value={draft}

@@ -5,11 +5,13 @@ import { toast } from "sonner";
 import "@/components/study/study.css";
 import { LofiPlayer } from "@/components/study/LofiPlayer";
 import { SessionClock } from "@/components/study/SessionClock";
+import { GoalPin } from "@/components/study/GoalPin";
 import { supabase } from "@/integrations/supabase/client";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import {
   getRoom, getRoomMembers, getRoomMessages, sendRoomMessage, leaveStudyRoom,
   joinStudyRoom, getMyRoomIdentity, postIdleNudge, refetchRoom,
+  setRoomGoal, setRoomLinks,
   type StudyRoom, type RoomMember, type RoomMessage,
 } from "@/lib/study-rooms";
 
@@ -211,6 +213,13 @@ function StudyRoomView() {
             <button className="sr-btn" onClick={leave}><LogOut size={14} /> Leave</button>
           </div>
         </div>
+
+        {/* Goal/Resource Pin — always-visible, no-scroll room header strip */}
+        <GoalPin
+          room={room}
+          onSetGoal={(g) => setRoomGoal(roomId, g)}
+          onSetLinks={(l) => setRoomLinks(roomId, l)}
+        />
 
         <div className="sr-room">
           <aside className="sr-side">

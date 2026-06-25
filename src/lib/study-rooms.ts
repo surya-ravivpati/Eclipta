@@ -23,6 +23,14 @@ export interface StudyRoom {
   phase: "work" | "break";
   phase_started_at: string;
   last_activity_at: string;
+  /** Goal/Resource Pin — room-level, synced to all members. */
+  goal_text: string | null;
+  resource_links: ResourceLink[];
+}
+
+export interface ResourceLink {
+  url: string;
+  label: string | null;
 }
 
 export interface RoomMember {
@@ -203,4 +211,18 @@ export async function postIdleNudge(roomId: string): Promise<void> {
 /** Re-fetch a single room's current state (clock columns live on `get_study_rooms`). */
 export async function refetchRoom(roomId: string): Promise<StudyRoom | null> {
   return await getRoom(roomId);
+}
+
+// ─── Goal/Resource Pin ──────────────────────────────────────────────────────
+
+/** Set the room's single goal line (any member; null/empty clears it). */
+export async function setRoomGoal(roomId: string, goal: string | null): Promise<string | null> {
+  const { error } = await supabase.rpc("set_room_goal" as any, { p_room: roomId, p_goal: goal });
+  return error ? error.message : null;
+}
+
+/** Replace the room's resource links (the full list, max 3 — server enforces). */
+export async function setRoomLinks(roomId: string, links: ResourceLink[]): Promise<string | null> {
+  const { error } = await supabase.rpc("set_room_links" as any, { p_room: roomId, p_links: links });
+  return error ? error.message : null;
 }

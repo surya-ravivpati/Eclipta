@@ -306,3 +306,68 @@
   font-size: 11px; letter-spacing: 0.06em;
 }
 .sr-pending-btn:hover { color: var(--brand-ink); border-color: var(--sr-warm); }
+
+/* ── Goal/Resource Pin ────────────────────────────────────────── */
+.sr-pin {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin: 0 0 16px; padding: 10px 14px; border-radius: 12px;
+  background: rgba(244, 241, 234, 0.025); border: 1px solid var(--sr-line);
+}
+.sr-pin-goal { display: flex; align-items: center; gap: 8px; flex: 1 1 240px; min-width: 0; }
+.sr-pin-goalico { color: var(--sr-gold); flex-shrink: 0; }
+.sr-pin-goaltext {
+  background: none; border: none; cursor: text; text-align: left; padding: 2px 0;
+  font-size: 14px; color: var(--brand-ink, #F4F1EA); min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.sr-pin-goaltext:hover { color: var(--sr-warm); }
+.sr-pin-goalempty {
+  background: none; border: none; cursor: pointer; text-align: left; padding: 2px 0;
+  font-size: 13px; font-style: italic; color: var(--sr-fog);
+}
+.sr-pin-goalempty:hover { color: var(--brand-dim, #BCBAB0); }
+.sr-pin-goalinput {
+  flex: 1; min-width: 0; padding: 4px 8px; border-radius: 7px; font-size: 14px;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid var(--sr-gold); color: var(--brand-ink); outline: none;
+}
+
+.sr-pin-links { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.sr-pin-chip {
+  display: inline-flex; align-items: center; border-radius: 999px;
+  border: 1px solid var(--sr-line-2); background: rgba(0, 0, 0, 0.2); overflow: hidden;
+}
+.sr-pin-chip-link {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px;
+  color: var(--brand-dim, #BCBAB0); text-decoration: none; font-size: 11.5px; max-width: 160px;
+}
+.sr-pin-chip-link:hover { color: var(--sr-gold); }
+.sr-pin-chip-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sr-pin-chip-x {
+  display: inline-flex; align-items: center; padding: 5px 7px 5px 4px; border: none;
+  background: none; cursor: pointer; color: var(--sr-fog); border-left: 1px solid var(--sr-line);
+}
+.sr-pin-chip-x:hover { color: oklch(0.64 0.20 22); }
+
+.sr-pin-slot {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 5px 10px; border-radius: 999px; border: 1px dashed var(--sr-line-2);
+  background: none; color: var(--sr-fog); font-size: 11.5px;
+}
+.sr-pin-slot:hover { border-color: var(--sr-gold); color: var(--sr-warm); }
+.sr-pin-slot-count { font-family: var(--font-mono, monospace); font-size: 9px; opacity: 0.7; margin-left: 2px; }
+.sr-pin-full { font-size: 10.5px; color: var(--sr-fog); font-style: italic; }
+
+.sr-pin-add { display: inline-flex; align-items: center; gap: 5px; }
+.sr-pin-addurl, .sr-pin-addlbl {
+  padding: 5px 8px; border-radius: 7px; font-size: 12px;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid var(--sr-line-2); color: var(--brand-ink); outline: none;
+}
+.sr-pin-addurl { width: 150px; } .sr-pin-addlbl { width: 110px; }
+.sr-pin-addurl:focus, .sr-pin-addlbl:focus { border-color: var(--sr-gold); }
+.sr-pin-addok, .sr-pin-addcancel {
+  display: inline-flex; align-items: center; padding: 5px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--sr-line-2); background: none; color: var(--brand-dim);
+}
+.sr-pin-addok:hover { color: var(--sr-gold); border-color: var(--sr-gold); }
+.sr-pin-addcancel:hover { color: var(--brand-ink); }
+.sr-pin-err { flex-basis: 100%; font-size: 11px; color: oklch(0.66 0.18 22); margin-top: 2px; }

@@ -810,6 +810,7 @@ export type Database = {
           created_at: string
           ecliptar_slug: string | null
           id: string
+          kind: string
           room_id: string
           user_id: string
         }
@@ -819,6 +820,7 @@ export type Database = {
           created_at?: string
           ecliptar_slug?: string | null
           id?: string
+          kind?: string
           room_id: string
           user_id: string
         }
@@ -828,6 +830,7 @@ export type Database = {
           created_at?: string
           ecliptar_slug?: string | null
           id?: string
+          kind?: string
           room_id?: string
           user_id?: string
         }
@@ -843,31 +846,49 @@ export type Database = {
       }
       study_rooms: {
         Row: {
+          break_minutes: number
           created_at: string
           id: string
           is_public: boolean
           join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
           name: string
           owner_id: string
+          phase: string
+          phase_started_at: string
           topic: string | null
+          work_minutes: number
         }
         Insert: {
+          break_minutes?: number
           created_at?: string
           id?: string
           is_public?: boolean
           join_code?: string | null
+          last_activity_at?: string
+          last_idle_nudge_at?: string | null
           name: string
           owner_id: string
+          phase?: string
+          phase_started_at?: string
           topic?: string | null
+          work_minutes?: number
         }
         Update: {
+          break_minutes?: number
           created_at?: string
           id?: string
           is_public?: boolean
           join_code?: string | null
+          last_activity_at?: string
+          last_idle_nudge_at?: string | null
           name?: string
           owner_id?: string
+          phase?: string
+          phase_started_at?: string
           topic?: string | null
+          work_minutes?: number
         }
         Relationships: []
       }
@@ -1195,6 +1216,34 @@ export type Database = {
       }
     }
     Functions: {
+      advance_room_phase: {
+        Args: {
+          p_from_phase: string
+          p_from_started_at: string
+          p_room: string
+        }
+        Returns: {
+          break_minutes: number
+          created_at: string
+          id: string
+          is_public: boolean
+          join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
+          name: string
+          owner_id: string
+          phase: string
+          phase_started_at: string
+          topic: string | null
+          work_minutes: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "study_rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       apply_pvp_rating_pair: {
         Args: {
           p_challenger_id: string
@@ -1252,13 +1301,19 @@ export type Database = {
           p_topic: string
         }
         Returns: {
+          break_minutes: number
           created_at: string
           id: string
           is_public: boolean
           join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
           name: string
           owner_id: string
+          phase: string
+          phase_started_at: string
           topic: string | null
+          work_minutes: number
         }
         SetofOptions: {
           from: "*"
@@ -1329,14 +1384,19 @@ export type Database = {
         Args: never
         Returns: {
           am_member: boolean
+          break_minutes: number
           created_at: string
           id: string
           is_public: boolean
           join_code: string
+          last_activity_at: string
           member_count: number
           name: string
           owner_id: string
+          phase: string
+          phase_started_at: string
           topic: string
+          work_minutes: number
         }[]
       }
       has_role: {
@@ -1356,13 +1416,19 @@ export type Database = {
           p_room: string
         }
         Returns: {
+          break_minutes: number
           created_at: string
           id: string
           is_public: boolean
           join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
           name: string
           owner_id: string
+          phase: string
+          phase_started_at: string
           topic: string | null
+          work_minutes: number
         }
         SetofOptions: {
           from: "*"
@@ -1395,6 +1461,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      post_idle_nudge: { Args: { p_room: string }; Returns: boolean }
       record_battle_mastery: {
         Args: {
           p_archetype: string
@@ -1441,6 +1508,30 @@ export type Database = {
           username: string
           xp: number
         }[]
+      }
+      set_room_pattern: {
+        Args: { p_break: number; p_room: string; p_work: number }
+        Returns: {
+          break_minutes: number
+          created_at: string
+          id: string
+          is_public: boolean
+          join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
+          name: string
+          owner_id: string
+          phase: string
+          phase_started_at: string
+          topic: string | null
+          work_minutes: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "study_rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       submit_pvp_turn_action: {
         Args: {

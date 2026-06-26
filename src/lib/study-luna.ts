@@ -6,6 +6,7 @@
  * Recap. Recap is fed ONLY structured events, never chat.
  */
 import { supabase } from "@/integrations/supabase/client";
+import type { TeachBackRound } from "./study-teachback";
 
 const ROOM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-room`;
 
@@ -72,13 +73,12 @@ export async function triggerStuckAi(stuckId: string): Promise<void> {
 export interface RecapEvent { type: string; text: string; }
 
 /**
- * Build the structured-event list Recap is allowed to see. Currently the only
- * event source that exists is resolved Stuck cards; break check-ins and
- * teach-back outcomes will append here once those systems produce them. Chat is
- * NEVER included.
+ * Build the structured-event list Recap is allowed to see. Two event types
+ * exist today: resolved Stuck cards and completed teach-back outcomes. Chat is
+ * NEVER included. (Both share the {type, text} shape Recap reads.)
  */
-export function gatherRecapEvents(stuck: StuckRequest[]): RecapEvent[] {
-  return stuck
+export function gatherRecapEvents(stuck: StuckRequest[], rounds: TeachBackRound[] = []): RecapEvent[] {
+  const stuckEvents: RecapEvent[] = stuck
     .filter((s) => s.status === "resolved")
     .map((s) => ({
       type: "stuck_resolved",
@@ -87,6 +87,23 @@ export function gatherRecapEvents(stuck: StuckRequest[]): RecapEvent[] {
         (s.resolved_by === "ai" ? "Luna stepped in" : `${s.resolver_name || "a member"} helped`) +
         (s.resolved_by === "ai" && s.resolution_summary ? `. Luna's hint: ${s.resolution_summary.slice(0, 300)}` : "."),
     }));
+
+  const teachBackEvents: RecapEvent[] = rounds
+    .filter((r) => r.status === "answered" || r.status === "skipped" || r.status === "expired")
+    .map((r) => {
+      const who = r.explainer_name || "A member";
+      const concept = r.concept_text ? `"${r.concept_text}"` : "a concept";
+      if (r.status === "answered") {
+        const tally = `👍${r.up_count} 🤔${r.kinda_count} ❓${r.lost_count}`;
+        return { type: "teach_back", text: `${who} taught back ${concept} — the room reacted ${tally}.` };
+      }
+      if (r.status === "skipped") {
+        return { type: "teach_back", text: `${who} passed their teach-back turn on ${concept}.` };
+      }
+      return { type: "teach_back", text: `A teach-back on ${concept} went unanswered.` };
+    });
+
+  return [...stuckEvents, ...teachBackEvents];
 }
 
 /**

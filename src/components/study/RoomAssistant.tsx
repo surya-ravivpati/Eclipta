@@ -6,6 +6,7 @@ import {
   createStuckRequest, resolveStuckHuman, generateRecap, gatherRecapEvents,
   type StuckRequest, type RecapEvent,
 } from "@/lib/study-luna";
+import type { TeachBackRound } from "@/lib/study-teachback";
 
 /* ── Ask: private, personal help. Ephemeral, client-only — never broadcast. ── */
 export function AskLuna() {
@@ -156,7 +157,7 @@ export function StuckCard({ stuck, meId }: { stuck: StuckRequest; meId: string |
 }
 
 /* ── Recap: structured-event-only summary; copyable artifact. ── */
-export function RecapPanel({ stuck, goalText }: { stuck: StuckRequest[]; goalText: string | null }) {
+export function RecapPanel({ stuck, rounds = [], goalText }: { stuck: StuckRequest[]; rounds?: TeachBackRound[]; goalText: string | null }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState<string | null>(null);
@@ -164,7 +165,7 @@ export function RecapPanel({ stuck, goalText }: { stuck: StuckRequest[]; goalTex
 
   const run = async () => {
     setOpen(true); setText(null); setEmpty(false);
-    const events: RecapEvent[] = gatherRecapEvents(stuck);
+    const events: RecapEvent[] = gatherRecapEvents(stuck, rounds);
     if (events.length === 0) { setEmpty(true); return; }   // hard guard: never call the model with no events
     setLoading(true);
     const { text: out, error } = await generateRecap(events, goalText);

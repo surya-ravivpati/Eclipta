@@ -26,6 +26,10 @@ export interface StudyRoom {
   /** Goal/Resource Pin — room-level, synced to all members. */
   goal_text: string | null;
   resource_links: ResourceLink[];
+  /** Teach-Back Rotation — room-level, synced to all members. */
+  teach_back_enabled: boolean;
+  tb_queue: string[];
+  tb_position: number;
 }
 
 export interface ResourceLink {
@@ -39,6 +43,8 @@ export interface RoomMember {
   display_name: string | null;
   ecliptar_slug: string | null;
   joined_at: string;
+  /** Teach-Back — has this member used their one free skip this session. */
+  tb_skip_used?: boolean;
 }
 
 export interface RoomMessage {
@@ -130,7 +136,7 @@ export async function getRoom(roomId: string): Promise<StudyRoom | null> {
 export async function getRoomMembers(roomId: string): Promise<RoomMember[]> {
   const { data, error } = await supabase
     .from("study_room_members" as any)
-    .select("room_id,user_id,display_name,ecliptar_slug,joined_at")
+    .select("room_id,user_id,display_name,ecliptar_slug,joined_at,tb_skip_used")
     .eq("room_id", roomId)
     .order("joined_at", { ascending: true });
   if (error) { console.error("getRoomMembers", error); return []; }

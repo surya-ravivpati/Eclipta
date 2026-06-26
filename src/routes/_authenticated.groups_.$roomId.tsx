@@ -7,6 +7,7 @@ import { LofiPlayer } from "@/components/study/LofiPlayer";
 import { SessionClock } from "@/components/study/SessionClock";
 import { GoalPin } from "@/components/study/GoalPin";
 import { AskLuna, StuckLauncher, StuckCard, RecapPanel } from "@/components/study/RoomAssistant";
+import { TeachBackBar, TeachBackCard } from "@/components/study/TeachBack";
 import { supabase } from "@/integrations/supabase/client";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import {
@@ -16,6 +17,9 @@ import {
   type StudyRoom, type RoomMember, type RoomMessage,
 } from "@/lib/study-rooms";
 import { fetchStuckRequests, triggerStuckAi, type StuckRequest } from "@/lib/study-luna";
+import {
+  fetchTeachBackRounds, openTeachBackRound, passTeachBack, type TeachBackRound,
+} from "@/lib/study-teachback";
 
 export const Route = createFileRoute("/_authenticated/groups_/$roomId")({
   component: StudyRoomView,
@@ -58,6 +62,18 @@ function StudyRoomView() {
     });
   }, []);
 
+  const [rounds, setRounds] = useState<TeachBackRound[]>([]);
+  const roundsRef = useRef<TeachBackRound[]>([]);
+  roundsRef.current = rounds;
+  const passAttemptedRef = useRef<Set<string>>(new Set());
+  const upsertRound = useCallback((row: TeachBackRound) => {
+    setRounds((prev) => {
+      const i = prev.findIndex((r) => r.id === row.id);
+      if (i === -1) return [...prev, row];
+      const next = [...prev]; next[i] = row; return next;
+    });
+  }, []);
+
   const meRef = useRef<{ userId: string | null; displayName: string; equippedSlug: string | null }>({
     userId: null, displayName: "Learner", equippedSlug: null,
   });
@@ -84,6 +100,7 @@ function StudyRoomView() {
       setMembers(await getRoomMembers(roomId));
       setMessages(await getRoomMessages(roomId));
       setStuck(await fetchStuckRequests(roomId));
+      setRounds(await fetchTeachBackRounds(roomId));
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -125,9 +142,19 @@ function StudyRoomView() {
       .on("postgres_changes",
         { event: "*", schema: "public", table: "stuck_requests", filter: `room_id=eq.${roomId}` },
         (payload) => { if (payload.new && (payload.new as StuckRequest).id) upsertStuck(payload.new as StuckRequest); })
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "teach_back_rounds", filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const id = (payload.old as TeachBackRound)?.id;
+            if (id) setRounds((prev) => prev.filter((r) => r.id !== id));
+          } else if (payload.new && (payload.new as TeachBackRound).id) {
+            upsertRound(payload.new as TeachBackRound);
+          }
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [roomId, denied, refreshMembers]);
+  }, [roomId, denied, refreshMembers, upsertStuck, upsertRound]);
 
   // Keep chat pinned to the latest visible message.
   useEffect(() => {
@@ -172,7 +199,9 @@ function StudyRoomView() {
     return () => window.clearInterval(id);
   }, [denied]);
 
-  /** When phase flips, flush any buffered messages so break-time is normal. */
+  /** When phase flips, flush any buffered messages so break-time is normal, and
+   *  — if Teach-Back is on — open a round for the next person. Every client
+   *  fires this; the server gates so exactly one round is created per flip. */
   const onPhaseFlip = useCallback((next: "work" | "break") => {
     if (next === "break") {
       setPending((buf) => {
@@ -183,8 +212,26 @@ function StudyRoomView() {
         });
         return [];
       });
+      const r = roomRef.current;
+      if (r?.teach_back_enabled) {
+        // trigger_key = the break phase's start time → unique per transition.
+        void openTeachBackRound(roomId, r.phase_started_at);
+      }
     }
-  }, []);
+  }, [roomId]);
+
+  // Leaver mid-turn → auto-pass to the next person (no skip charged). Any
+  // remaining client may call it; the server collapses concurrent calls.
+  useEffect(() => {
+    const memberIds = new Set(members.map((m) => m.user_id));
+    for (const r of rounds) {
+      if (r.status !== "pending" || !r.explainer_id) continue;
+      if (memberIds.has(r.explainer_id)) continue;
+      if (passAttemptedRef.current.has(r.id)) continue;
+      passAttemptedRef.current.add(r.id);
+      void passTeachBack(r.id);
+    }
+  }, [members, rounds]);
 
   const revealPending = () => {
     setPending((buf) => {
@@ -291,11 +338,13 @@ function StudyRoomView() {
 
           <section className="sr-chat">
             <SessionClock room={room} onPhaseFlip={onPhaseFlip} />
+            <TeachBackBar room={room} members={members} />
             <div className="sr-chat-scroll" ref={scrollRef}>
-              {messages.length === 0 && stuck.length === 0 ? (
+              {messages.length === 0 && stuck.length === 0 && rounds.length === 0 ? (
                 <div className="sr-chat-empty">It's quiet in here. Say hello and get the session going. ☕</div>
               ) : (
-                // Merge chat messages and Stuck cards into one time-ordered stream.
+                // Merge chat messages, Stuck cards and Teach-Back rounds into one
+                // time-ordered stream.
                 [
                   ...messages.map((m) => ({
                     at: m.created_at,
@@ -320,6 +369,19 @@ function StudyRoomView() {
                     at: s.created_at,
                     node: <StuckCard key={`s-${s.id}`} stuck={s} meId={meRef.current.userId} />,
                   })),
+                  ...rounds
+                    .filter((r) => r.status !== "claiming" && r.explainer_id)
+                    .map((r) => ({
+                      at: r.created_at,
+                      node: (
+                        <TeachBackCard
+                          key={`tb-${r.id}`}
+                          round={r}
+                          meId={meRef.current.userId}
+                          mySkipUsed={!!members.find((m) => m.user_id === meRef.current.userId)?.tb_skip_used}
+                        />
+                      ),
+                    })),
                 ]
                   .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
                   .map((t) => t.node)
@@ -334,7 +396,7 @@ function StudyRoomView() {
             )}
             <div className="sr-assist">
               <StuckLauncher roomId={roomId} />
-              <RecapPanel stuck={stuck} goalText={room.goal_text ?? null} />
+              <RecapPanel stuck={stuck} rounds={rounds} goalText={room.goal_text ?? null} />
             </div>
             <div className="sr-chat-input">
               <input

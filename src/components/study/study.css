@@ -442,3 +442,101 @@
   white-space: pre-wrap; font-family: var(--font-body, Inter, sans-serif); font-size: 13.5px;
   line-height: 1.6; color: var(--brand-ink, #F4F1EA); margin: 6px 0 0; max-height: 50vh; overflow-y: auto;
 }
+
+/* ── Teach-Back Rotation ───────────────────────────────────────────────────
+   Sibling of the Stuck card but a distinct prompt: blue accent (vs Stuck's
+   gold) + graduation-cap label, so the two are never confused. */
+.sr {
+  --sr-blue: oklch(0.70 0.14 245);
+}
+
+/* Control strip under the clock: toggle + visible rotation queue */
+.sr-tb-bar {
+  margin: 0 0 14px; padding: 9px 12px; border-radius: 12px;
+  border: 1px solid var(--sr-line); background: rgba(0, 0, 0, 0.18);
+}
+.sr-tb-bar-row { display: flex; align-items: center; gap: 12px; }
+.sr-tb-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono, monospace); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--sr-blue);
+}
+.sr-tb-off-note { font-size: 11.5px; color: var(--sr-fog); font-style: italic; }
+.sr-tb-toggle {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 5px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  border: 1px solid var(--sr-line-2); background: transparent; color: var(--brand-dim);
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.sr-tb-toggle:hover:not(:disabled) { border-color: var(--sr-blue); color: var(--brand-ink); }
+.sr-tb-toggle:disabled { opacity: 0.6; cursor: default; }
+.sr-tb-toggle .sr-tb-dot {
+  width: 8px; height: 8px; border-radius: 999px; background: var(--sr-fog);
+}
+.sr-tb-toggle.is-on {
+  border-color: var(--sr-blue); color: var(--sr-blue); background: oklch(0.70 0.14 245 / 0.10);
+}
+.sr-tb-toggle.is-on .sr-tb-dot { background: var(--sr-blue); box-shadow: 0 0 8px oklch(0.70 0.14 245 / 0.7); }
+
+.sr-tb-queue { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+.sr-tb-qslot { display: inline-flex; }
+.sr-tb-ava {
+  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(244, 241, 234, 0.05); border: 1px solid var(--sr-line-2); color: var(--brand-dim);
+}
+.sr-tb-ava.is-next {
+  color: var(--sr-blue); border-color: var(--sr-blue);
+  background: oklch(0.70 0.14 245 / 0.12); box-shadow: 0 0 0 2px oklch(0.70 0.14 245 / 0.25);
+}
+.sr-tb-queue-note {
+  font-family: var(--font-mono, monospace); font-size: 10.5px; color: var(--sr-fog);
+  margin-left: 4px;
+}
+
+/* The round card */
+.sr-tb-card {
+  border: 1px solid oklch(0.70 0.14 245 / 0.38); background: oklch(0.70 0.14 245 / 0.07);
+  border-radius: 12px; padding: 11px 13px; margin: 2px 0;
+}
+.sr-tb-card--closed { border-color: var(--sr-line-2); background: rgba(244, 241, 234, 0.03); opacity: 0.85; }
+.sr-tb-card-head { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+.sr-tb-card-ico { color: var(--sr-blue); flex-shrink: 0; }
+.sr-tb-card-tag {
+  font-family: var(--font-mono, monospace); font-size: 9.5px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--sr-blue);
+}
+.sr-tb-card-state {
+  margin-left: 2px; font-family: var(--font-mono, monospace); font-size: 9px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--sr-fog);
+  padding: 2px 7px; border-radius: 999px; border: 1px solid var(--sr-line);
+}
+.sr-tb-card-prompt { font-size: 13.5px; line-height: 1.5; color: var(--brand-ink, #F4F1EA); }
+.sr-tb-card-prompt b { color: var(--sr-warm); font-weight: 600; }
+.sr-tb-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; flex-wrap: wrap;
+}
+.sr-tb-reacts { display: inline-flex; align-items: center; gap: 6px; }
+.sr-tb-react {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  padding: 4px 9px; border-radius: 999px; font-size: 13px; line-height: 1;
+  border: 1px solid var(--sr-line-2); background: rgba(0, 0, 0, 0.2); color: var(--brand-dim);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.sr-tb-react:hover { border-color: var(--sr-blue); transform: translateY(-1px); }
+.sr-tb-react.is-mine { border-color: var(--sr-blue); background: oklch(0.70 0.14 245 / 0.16); }
+.sr-tb-react-emoji { font-size: 14px; }
+.sr-tb-react-n { font-family: var(--font-mono, monospace); font-size: 10.5px; color: var(--brand-dim); }
+.sr-tb-skip {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  font-size: 11px; padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--sr-line-2); background: transparent; color: var(--sr-fog);
+}
+.sr-tb-skip:hover:not(:disabled) { border-color: var(--sr-blue); color: var(--brand-ink); }
+.sr-tb-skip:disabled { opacity: 0.6; cursor: default; }
+.sr-tb-skip-spent { font-family: var(--font-mono, monospace); font-size: 10px; color: var(--sr-fog); font-style: italic; }
+.sr-tb-tally {
+  display: flex; gap: 12px; margin-top: 9px; font-family: var(--font-mono, monospace);
+  font-size: 11.5px; color: var(--brand-dim);
+}

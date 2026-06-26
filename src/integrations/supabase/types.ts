@@ -684,6 +684,102 @@ export type Database = {
         }
         Relationships: []
       }
+      moderation_config: {
+        Row: {
+          key: string
+          notes: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          notes?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          notes?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      moderation_decisions: {
+        Row: {
+          author_id: string | null
+          category: string | null
+          confidence: number | null
+          content_ref: string | null
+          created_at: string
+          decision: string
+          id: string
+          layers: string[]
+          self_harm: boolean
+          surface_type: string
+          target_type: string
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string | null
+          confidence?: number | null
+          content_ref?: string | null
+          created_at?: string
+          decision: string
+          id?: string
+          layers?: string[]
+          self_harm?: boolean
+          surface_type: string
+          target_type: string
+        }
+        Update: {
+          author_id?: string | null
+          category?: string | null
+          confidence?: number | null
+          content_ref?: string | null
+          created_at?: string
+          decision?: string
+          id?: string
+          layers?: string[]
+          self_harm?: boolean
+          surface_type?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      moderation_rescan_queue: {
+        Row: {
+          author_id: string | null
+          content_ref: string | null
+          created_at: string
+          id: string
+          processed: boolean
+          reason: string
+          snapshot: string
+          surface_type: string
+          target_type: string
+        }
+        Insert: {
+          author_id?: string | null
+          content_ref?: string | null
+          created_at?: string
+          id?: string
+          processed?: boolean
+          reason?: string
+          snapshot: string
+          surface_type: string
+          target_type: string
+        }
+        Update: {
+          author_id?: string | null
+          content_ref?: string | null
+          created_at?: string
+          id?: string
+          processed?: boolean
+          reason?: string
+          snapshot?: string
+          surface_type?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       moderation_terms: {
         Row: {
           category: string
@@ -936,6 +1032,54 @@ export type Database = {
         }
         Relationships: []
       }
+      review_queue: {
+        Row: {
+          author_id: string | null
+          category: string | null
+          confidence: number
+          content_ref: string | null
+          created_at: string
+          id: string
+          resolved_at: string | null
+          resolver_id: string | null
+          severity: number
+          snapshot: string | null
+          status: string
+          surface_type: string
+          target_type: string
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string | null
+          confidence?: number
+          content_ref?: string | null
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          resolver_id?: string | null
+          severity?: number
+          snapshot?: string | null
+          status?: string
+          surface_type: string
+          target_type: string
+        }
+        Update: {
+          author_id?: string | null
+          category?: string | null
+          confidence?: number
+          content_ref?: string | null
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          resolver_id?: string | null
+          severity?: number
+          snapshot?: string | null
+          status?: string
+          surface_type?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       stuck_requests: {
         Row: {
           ai_due_at: string
@@ -1032,6 +1176,10 @@ export type Database = {
           ecliptar_slug: string | null
           id: string
           kind: string
+          moderation_category: string | null
+          moderation_reason: string | null
+          moderation_score: number | null
+          moderation_status: string
           room_id: string
           user_id: string
         }
@@ -1042,6 +1190,10 @@ export type Database = {
           ecliptar_slug?: string | null
           id?: string
           kind?: string
+          moderation_category?: string | null
+          moderation_reason?: string | null
+          moderation_score?: number | null
+          moderation_status?: string
           room_id: string
           user_id: string
         }
@@ -1052,6 +1204,10 @@ export type Database = {
           ecliptar_slug?: string | null
           id?: string
           kind?: string
+          moderation_category?: string | null
+          moderation_reason?: string | null
+          moderation_score?: number | null
+          moderation_status?: string
           room_id?: string
           user_id?: string
         }
@@ -1406,6 +1562,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_posting_pauses: {
+        Row: {
+          created_at: string
+          id: string
+          pending_review: boolean
+          reason: string | null
+          status: string
+          until: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pending_review?: boolean
+          reason?: string | null
+          status?: string
+          until: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pending_review?: boolean
+          reason?: string | null
+          status?: string
+          until?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           age: number | null
@@ -1529,6 +1715,39 @@ export type Database = {
         }
         Relationships: []
       }
+      wellbeing_alerts: {
+        Row: {
+          content_ref: string | null
+          created_at: string
+          id: string
+          reviewed: boolean
+          reviewer_id: string | null
+          snapshot: string | null
+          surface_type: string
+          user_id: string
+        }
+        Insert: {
+          content_ref?: string | null
+          created_at?: string
+          id?: string
+          reviewed?: boolean
+          reviewer_id?: string | null
+          snapshot?: string | null
+          surface_type: string
+          user_id: string
+        }
+        Update: {
+          content_ref?: string | null
+          created_at?: string
+          id?: string
+          reviewed?: boolean
+          reviewer_id?: string | null
+          snapshot?: string | null
+          surface_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       xp_award_log: {
         Row: {
           amount: number
@@ -1591,6 +1810,15 @@ export type Database = {
         }
         Relationships: []
       }
+      user_violation_counts: {
+        Row: {
+          category: string | null
+          last_at: string | null
+          user_id: string | null
+          violations: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       advance_room_phase: {
@@ -1642,6 +1870,23 @@ export type Database = {
           p_verdict: string
         }
         Returns: undefined
+      }
+      apply_moderation_outcome: {
+        Args: {
+          p_author: string
+          p_category: string
+          p_confidence: number
+          p_content_ref: string
+          p_decision: string
+          p_layers: string[]
+          p_needs_rescan: boolean
+          p_self_harm: boolean
+          p_severity: number
+          p_snapshot: string
+          p_surface: string
+          p_target_type: string
+        }
+        Returns: Json
       }
       apply_pvp_rating_pair: {
         Args: {
@@ -1847,6 +2092,7 @@ export type Database = {
         Returns: boolean
       }
       increment_daily_challenge_win: { Args: never; Returns: number }
+      is_posting_paused: { Args: { p_user: string }; Returns: string }
       is_study_member: { Args: { p_room: string }; Returns: boolean }
       join_study_room: {
         Args: {
@@ -1897,12 +2143,36 @@ export type Database = {
         }
         Returns: undefined
       }
+      moderation_cfg: { Args: { p_key: string }; Returns: Json }
+      moderation_floor: {
+        Args: { p_text: string }
+        Returns: {
+          category: string
+          severity: number
+          term_layer: string
+        }[]
+      }
       moderation_match: {
         Args: { p_text: string }
         Returns: {
           category: string
           severity: number
           term: string
+        }[]
+      }
+      moderation_pattern_scan: {
+        Args: { p_text: string }
+        Returns: {
+          category: string
+          severity: number
+        }[]
+      }
+      moderation_scan: {
+        Args: { p_text: string }
+        Returns: {
+          category: string
+          layer: string
+          severity: number
         }[]
       }
       normalize_for_moderation: { Args: { p_text: string }; Returns: string }

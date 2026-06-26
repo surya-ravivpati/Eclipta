@@ -371,7 +371,7 @@ export function CourseBuilder() {
                 {/* Summary */}
                 <div className="space-y-3">
                   <h3 className="font-display font-bold tracking-widest text-xs text-muted-foreground">COURSE SUMMARY</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <SummaryCard label="Topic" value={topic} />
                     <SummaryCard label="Level" value={LEVELS.find(l => l.value === level)?.label || ""} />
                     <SummaryCard label="Structure" value={STRUCTURES.find(s => s.value === structure)?.label || ""} />

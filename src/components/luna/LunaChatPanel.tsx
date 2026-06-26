@@ -108,7 +108,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-24 right-6 z-50 w-[380px] max-h-[min(520px,80vh)] flex flex-col glass-panel border border-acrylic-border overflow-hidden rounded-lg"
+          className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[min(520px,80vh)] flex flex-col glass-panel border border-acrylic-border overflow-hidden rounded-lg"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">

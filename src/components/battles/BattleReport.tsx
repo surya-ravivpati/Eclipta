@@ -304,7 +304,7 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
                   <p className={`text-[10px] italic mb-3 ${rank.color}`}>"{rank.flavor}"</p>
                 )}
 
-                <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                   {[
                     { label: "BATTLES", value: String(m.battles_played) },
                     { label: "WIN RATE", value: `${winRate}%` },

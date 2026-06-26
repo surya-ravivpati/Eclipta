@@ -264,7 +264,7 @@ function AdminForumPage() {
                   )}
                   <div className="mb-3 p-3 border-l-2 border-neon-purple/40 bg-secondary/30 rounded-sm">
                     {q.title && <p className="text-xs font-bold font-display mb-1">{q.title}</p>}
-                    <p className="text-xs text-muted-foreground line-clamp-4 whitespace-pre-wrap">{q.body}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-4 whitespace-pre-wrap break-words">{q.body}</p>
                     {q.author_name && <p className="text-[10px] text-muted-foreground mt-1.5">— {q.author_name}</p>}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -326,7 +326,7 @@ function AdminForumPage() {
                       {reportSnippets[r.target_id].title && (
                         <p className="text-xs font-bold font-display mb-1">{reportSnippets[r.target_id].title}</p>
                       )}
-                      <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{reportSnippets[r.target_id].body}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap break-words">{reportSnippets[r.target_id].body}</p>
                       {reportSnippets[r.target_id].author && (
                         <p className="text-[10px] text-muted-foreground mt-1.5">— {reportSnippets[r.target_id].author}</p>
                       )}
@@ -367,9 +367,10 @@ function AdminForumPage() {
               <p className="text-sm">No moderation activity yet.</p>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="overflow-x-auto">
+            <div className="space-y-1.5 min-w-[640px]">
               {log.map((l) => (
-                <div key={l.id} className="flex items-center gap-3 px-3 py-2 border border-border/40 bg-secondary/20 text-[11px]">
+                <div key={l.id} className="flex items-center gap-3 px-3 py-2 border border-border/40 bg-secondary/20 text-[11px] whitespace-nowrap">
                   <span className="text-[10px] font-bold tracking-widest text-neon-cyan w-16">{l.source.toUpperCase()}</span>
                   <span className="text-[10px] font-bold tracking-widest text-neon-purple w-20">{l.action.replace(/_/g, " ").toUpperCase()}</span>
                   <span className="text-muted-foreground w-20">{l.target_type}</span>
@@ -380,6 +381,7 @@ function AdminForumPage() {
                   <span className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleString()}</span>
                 </div>
               ))}
+            </div>
             </div>
           )
         )}

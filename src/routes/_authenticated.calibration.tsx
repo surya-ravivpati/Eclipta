@@ -219,7 +219,7 @@ function CalibrationPage() {
               <p className="text-[10px] font-bold tracking-widest text-muted-foreground mb-2 uppercase">
                 How sure are you?
               </p>
-              <div className="grid grid-cols-4 gap-2 mb-7">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-7">
                 {([1, 2, 3, 4] as Confidence[]).map((c) => (
                   <button
                     key={c}

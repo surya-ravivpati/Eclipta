@@ -269,7 +269,7 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
               className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Category</label>
               {lockedCourse ? (

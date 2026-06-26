@@ -155,7 +155,7 @@ function ProfilePage() {
             <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-neon-purple" /></div>
           ) : (
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-6">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 h-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="companions">Ecliptars</TabsTrigger>
                 <TabsTrigger value="creator">Creator</TabsTrigger>

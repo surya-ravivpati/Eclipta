@@ -777,6 +777,7 @@ export type Database = {
           ecliptar_slug: string | null
           joined_at: string
           room_id: string
+          tb_skip_used: boolean
           user_id: string
         }
         Insert: {
@@ -784,6 +785,7 @@ export type Database = {
           ecliptar_slug?: string | null
           joined_at?: string
           room_id: string
+          tb_skip_used?: boolean
           user_id: string
         }
         Update: {
@@ -791,6 +793,7 @@ export type Database = {
           ecliptar_slug?: string | null
           joined_at?: string
           room_id?: string
+          tb_skip_used?: boolean
           user_id?: string
         }
         Relationships: [
@@ -848,6 +851,7 @@ export type Database = {
         Row: {
           break_minutes: number
           created_at: string
+          goal_text: string | null
           id: string
           is_public: boolean
           join_code: string | null
@@ -857,12 +861,17 @@ export type Database = {
           owner_id: string
           phase: string
           phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
           topic: string | null
           work_minutes: number
         }
         Insert: {
           break_minutes?: number
           created_at?: string
+          goal_text?: string | null
           id?: string
           is_public?: boolean
           join_code?: string | null
@@ -872,12 +881,17 @@ export type Database = {
           owner_id: string
           phase?: string
           phase_started_at?: string
+          resource_links?: Json
+          tb_position?: number
+          tb_queue?: string[]
+          teach_back_enabled?: boolean
           topic?: string | null
           work_minutes?: number
         }
         Update: {
           break_minutes?: number
           created_at?: string
+          goal_text?: string | null
           id?: string
           is_public?: boolean
           join_code?: string | null
@@ -887,6 +901,10 @@ export type Database = {
           owner_id?: string
           phase?: string
           phase_started_at?: string
+          resource_links?: Json
+          tb_position?: number
+          tb_queue?: string[]
+          teach_back_enabled?: boolean
           topic?: string | null
           work_minutes?: number
         }
@@ -1225,6 +1243,7 @@ export type Database = {
         Returns: {
           break_minutes: number
           created_at: string
+          goal_text: string | null
           id: string
           is_public: boolean
           join_code: string | null
@@ -1234,6 +1253,10 @@ export type Database = {
           owner_id: string
           phase: string
           phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
           topic: string | null
           work_minutes: number
         }
@@ -1303,6 +1326,7 @@ export type Database = {
         Returns: {
           break_minutes: number
           created_at: string
+          goal_text: string | null
           id: string
           is_public: boolean
           join_code: string | null
@@ -1312,6 +1336,10 @@ export type Database = {
           owner_id: string
           phase: string
           phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
           topic: string | null
           work_minutes: number
         }
@@ -1385,6 +1413,7 @@ export type Database = {
         Returns: {
           break_minutes: number
           created_at: string
+          goal_text: string
           id: string
           is_member: boolean
           is_public: boolean
@@ -1396,6 +1425,10 @@ export type Database = {
           owner_id: string
           phase: string
           phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
           topic: string
           work_minutes: number
         }[]
@@ -1419,6 +1452,7 @@ export type Database = {
         Returns: {
           break_minutes: number
           created_at: string
+          goal_text: string | null
           id: string
           is_public: boolean
           join_code: string | null
@@ -1428,6 +1462,10 @@ export type Database = {
           owner_id: string
           phase: string
           phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
           topic: string | null
           work_minutes: number
         }
@@ -1510,11 +1548,12 @@ export type Database = {
           xp: number
         }[]
       }
-      set_room_pattern: {
-        Args: { p_break: number; p_room: string; p_work: number }
+      set_room_goal: {
+        Args: { p_goal: string; p_room: string }
         Returns: {
           break_minutes: number
           created_at: string
+          goal_text: string | null
           id: string
           is_public: boolean
           join_code: string | null
@@ -1524,6 +1563,68 @@ export type Database = {
           owner_id: string
           phase: string
           phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
+          topic: string | null
+          work_minutes: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "study_rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_room_links: {
+        Args: { p_links: Json; p_room: string }
+        Returns: {
+          break_minutes: number
+          created_at: string
+          goal_text: string | null
+          id: string
+          is_public: boolean
+          join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
+          name: string
+          owner_id: string
+          phase: string
+          phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
+          topic: string | null
+          work_minutes: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "study_rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_room_pattern: {
+        Args: { p_break: number; p_room: string; p_work: number }
+        Returns: {
+          break_minutes: number
+          created_at: string
+          goal_text: string | null
+          id: string
+          is_public: boolean
+          join_code: string | null
+          last_activity_at: string
+          last_idle_nudge_at: string | null
+          name: string
+          owner_id: string
+          phase: string
+          phase_started_at: string
+          resource_links: Json
+          tb_position: number
+          tb_queue: string[]
+          teach_back_enabled: boolean
           topic: string | null
           work_minutes: number
         }

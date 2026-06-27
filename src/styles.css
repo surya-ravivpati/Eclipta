@@ -287,12 +287,14 @@
     box-shadow: 0 8px 32px 0 oklch(0 0 0 / 30%);
   }
 
+  /* Refined elevation — a grounded shadow with a faint brand-tinted lift,
+     instead of a glowing halo. Reads as intentional depth, not neon. */
   .neon-glow-purple {
-    box-shadow: 0 0 30px oklch(0.78 0.13 88 / 38%), 0 0 60px oklch(0.78 0.13 88 / 18%);
+    box-shadow: 0 1px 2px oklch(0 0 0 / 28%), 0 10px 28px oklch(0.78 0.13 88 / 14%);
   }
 
   .neon-glow-pink {
-    box-shadow: 0 0 30px oklch(0.60 0.17 255 / 40%), 0 0 60px oklch(0.60 0.17 255 / 20%);
+    box-shadow: 0 1px 2px oklch(0 0 0 / 28%), 0 10px 28px oklch(0.60 0.17 255 / 14%);
   }
 
   .neon-glow-bronze {
@@ -333,36 +335,6 @@
 
 /* ─── Eclipta motion keyframes ──────────────────────────────── */
 
-/* Background orbs drift organically — replaces generic animate-pulse */
-@keyframes arena-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25%       { transform: translate(-1.5%, 2.5%) scale(1.05); }
-  50%       { transform: translate(2.5%, -1.5%) scale(0.96); }
-  75%       { transform: translate(-0.5%, -2%) scale(1.03); }
-}
-
-/* Neon text flickers like a live arena display */
-@keyframes neon-flicker {
-  0%, 88%, 91%, 94%, 100% { opacity: 1; }
-  89%, 92%                 { opacity: 0.55; }
-  93%                      { opacity: 0.8; }
-}
-
-/* Battle CTA button glow breathes with energy */
-@keyframes battle-charge {
-  0%, 100% {
-    box-shadow:
-      0 0 20px oklch(0.60 0.17 255 / 55%),
-      0 0 45px oklch(0.60 0.17 255 / 28%);
-  }
-  50% {
-    box-shadow:
-      0 0 38px oklch(0.60 0.17 255 / 90%),
-      0 0 80px oklch(0.60 0.17 255 / 45%),
-      0 0 120px oklch(0.60 0.17 255 / 18%);
-  }
-}
-
 /* Progress / XP bar shimmer sweep */
 @keyframes xp-shimmer {
   0%   { transform: translateX(-100%); }
@@ -382,9 +354,6 @@
 }
 
 @layer utilities {
-  .animate-arena-drift  { animation: arena-drift 18s ease-in-out infinite; }
-  .animate-neon-flicker { animation: neon-flicker 10s ease-in-out infinite; }
-  .animate-battle-charge { animation: battle-charge 2.8s ease-in-out infinite; }
   .animate-xp-shimmer   { animation: xp-shimmer 2.2s linear infinite; }
   .animate-rank-aura    { animation: rank-aura 2.2s ease-in-out infinite; }
 }

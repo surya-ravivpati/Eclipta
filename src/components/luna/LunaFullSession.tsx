@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { LunaMark } from "./LunaMark";
 import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { getAccuracy, detectFatigue, resetSession as resetLunaSessionContext } from "@/lib/luna-context";
 import { useLunaSessionTimer } from "@/hooks/use-luna-session-timer";
@@ -106,7 +107,7 @@ export function LunaFullSession() {
             <ArrowLeft size={16} />
           </Link>
           <div className="luna-brand-row">
-            <span className="luna-moon-glyph" aria-hidden="true">🌙</span>
+            <span className="luna-moon-glyph" aria-hidden="true"><LunaMark size={20} /></span>
             <div>
               <div className="luna-name">Luna</div>
               <div className="luna-sub">Deep tutoring session</div>

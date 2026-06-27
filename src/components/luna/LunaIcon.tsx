@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { LunaMark } from "./LunaMark";
 
 type LunaState = "idle" | "thinking" | "alert" | "happy";
 
@@ -36,8 +37,6 @@ export function LunaIcon({ state, hasNudge, onClick }: LunaIconProps) {
     },
   };
 
-  const emoji = state === "thinking" ? "🤔" : state === "alert" ? "⚡" : state === "happy" ? "✨" : "🌙";
-
   return (
     <motion.button
       onClick={onClick}
@@ -46,7 +45,7 @@ export function LunaIcon({ state, hasNudge, onClick }: LunaIconProps) {
       whileTap={{ scale: 0.95 }}
       aria-label="Open Luna AI assistant"
     >
-      <span className="text-xl font-display font-bold">{emoji}</span>
+      <LunaMark size={22} />
       {/* Thinking ring — orbits when Luna is processing */}
       {state === "thinking" && (
         <motion.span

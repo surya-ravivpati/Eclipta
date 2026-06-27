@@ -185,8 +185,8 @@ function OnboardingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased relative overflow-hidden">
       {/* ambient glow */}
-      <div className="absolute top-[-20%] right-[-10%] w-[36rem] h-[36rem] bg-neon-purple/15 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-15%] left-[-10%] w-[28rem] h-[28rem] bg-neon-pink/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-20%] right-[-10%] w-[36rem] h-[36rem] bg-neon-purple/8 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[-15%] left-[-10%] w-[28rem] h-[28rem] bg-neon-pink/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="relative max-w-xl mx-auto px-6 pt-16 pb-12">
         {/* progress */}

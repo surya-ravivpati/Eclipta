@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, ArrowRight, Monitor, Loader2, RotateCcw, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
+import { LunaMark } from "./LunaMark";
 import { parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { Link } from "@tanstack/react-router";
@@ -113,7 +114,7 @@ export function LunaChatPanel({ open, onClose, messages, setMessages, onStreamin
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
-              <span className="text-lg">🌙</span>
+              <LunaMark size={18} className="text-primary" />
               <div>
                 <span className="font-display font-bold text-sm tracking-wide">LUNA</span>
                 <span className="text-[10px] text-muted-foreground ml-2 tracking-widest">AI TUTOR</span>

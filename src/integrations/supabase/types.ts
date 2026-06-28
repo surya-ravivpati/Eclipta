@@ -303,6 +303,78 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_question_records: {
+        Row: {
+          concept: string
+          correct: boolean
+          created_at: string
+          difficulty: string
+          id: string
+          subject: string
+          time_spent: number | null
+          user_id: string
+        }
+        Insert: {
+          concept: string
+          correct: boolean
+          created_at?: string
+          difficulty: string
+          id?: string
+          subject?: string
+          time_spent?: number | null
+          user_id: string
+        }
+        Update: {
+          concept?: string
+          correct?: boolean
+          created_at?: string
+          difficulty?: string
+          id?: string
+          subject?: string
+          time_spent?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      concept_mastery: {
+        Row: {
+          concept: string
+          confidence: number
+          correct_count: number
+          evidence_count: number
+          id: string
+          last_seen: string
+          next_review: string | null
+          state: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          concept: string
+          confidence?: number
+          correct_count?: number
+          evidence_count?: number
+          id?: string
+          last_seen?: string
+          next_review?: string | null
+          state?: string
+          subject?: string
+          user_id: string
+        }
+        Update: {
+          concept?: string
+          confidence?: number
+          correct_count?: number
+          evidence_count?: number
+          id?: string
+          last_seen?: string
+          next_review?: string | null
+          state?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       course_progress: {
         Row: {
           completed_at: string | null

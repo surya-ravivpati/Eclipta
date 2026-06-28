@@ -68,3 +68,28 @@ export function generateQuestion(difficulty: Difficulty): MathQuestion {
 }
 
 export const TIMER_DURATIONS: Record<Difficulty, number> = { easy: 10, medium: 12, hard: 15 };
+
+/** The difficulty tier each emitted topic belongs to (for weak-spot practice). */
+export const TOPIC_DIFFICULTY: Record<string, Difficulty> = {
+  Addition: "easy",
+  Subtraction: "easy",
+  Multiplication: "medium",
+  Division: "medium",
+  Exponents: "hard",
+  "Order of Operations": "hard",
+  Algebra: "hard",
+};
+
+/**
+ * Generate a question for a specific topic (used by Practice Weak Spots). The
+ * base generator picks a random topic within a tier, so we draw from the right
+ * tier and retry until the topic matches; falls back to any same-tier question.
+ */
+export function generateQuestionForTopic(topic: string): MathQuestion {
+  const diff = TOPIC_DIFFICULTY[topic] ?? "medium";
+  for (let i = 0; i < 16; i++) {
+    const q = generateQuestion(diff);
+    if (q.topic === topic) return q;
+  }
+  return generateQuestion(diff);
+}

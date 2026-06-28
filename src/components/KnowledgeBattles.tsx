@@ -20,8 +20,10 @@ import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDia
 import { BattleReport } from "./battles/BattleReport";
 import { UserSearchDialog } from "./battles/UserSearchDialog";
 import { ChallengeInbox } from "./battles/ChallengeInbox";
+import { WeakSpotPractice } from "./battles/WeakSpotPractice";
 import { StreakHub } from "./streak/StreakHub";
 import { recordDailyPractice } from "@/lib/record-practice";
+import { recordOutcomes } from "@/lib/concept-mastery";
 import { ECLIPTARS, ECLIPTAR_NAMES, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodayChallenge } from "@/lib/daily-challenge";
@@ -933,6 +935,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
 // ─── Main Battle Engine ──────────────────────────────────────────────
 function BattleArena() {
   const [phase, setPhase] = useState<Phase>("idle");
+  const [showPractice, setShowPractice] = useState(false);
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
   const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: User });
@@ -1565,6 +1568,20 @@ function BattleArena() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Feed every answered question into the shared concept-mastery store so
+      // Practice Weak Spots (and the Courses readiness engine) can use it.
+      // Best-effort — a missing table never affects the battle result.
+      void recordOutcomes(
+        user.id,
+        finalRecords.map((r) => ({
+          concept: r.question.topic,
+          subject: "Mathematics",
+          difficulty: r.question.difficulty,
+          correct: r.correct,
+          timeSpent: r.timeSpent,
+        })),
+      );
+
       // Award XP here — at the guaranteed battle-end hook — rather than relying
       // on the result screen mounting (which a live rematch or an early exit can
       // skip). Server computes the amount from correct/total/won.
@@ -2049,6 +2066,14 @@ function BattleArena() {
 
   // ── Idle ──
   if (phase === "idle") {
+    if (showPractice) {
+      return (
+        <WeakSpotPractice
+          onClose={() => setShowPractice(false)}
+          onBattle={() => { setShowPractice(false); setPhase("classSelect"); }}
+        />
+      );
+    }
     return (
       <motion.div className="btt-card text-center py-16 px-10 relative overflow-hidden" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
         <div className="btt-idle-glow" aria-hidden />
@@ -2063,14 +2088,23 @@ function BattleArena() {
         <p className="btt-mono-text text-[12px] text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
           Choose your archetype. Solve equations under pressure.<br />Build combos. Destroy your opponent.
         </p>
-        <motion.button
-          onClick={() => setPhase("classSelect")}
-          className="btt-idle-cta btt-mono-text inline-flex items-center gap-3 px-10 py-4 font-bold text-[12px] tracking-widest"
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-        >
-          <Zap className="w-4 h-4" />
-          CHOOSE CLASS
-        </motion.button>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <motion.button
+            onClick={() => setPhase("classSelect")}
+            className="btt-idle-cta btt-mono-text inline-flex items-center gap-3 px-10 py-4 font-bold text-[12px] tracking-widest"
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+          >
+            <Zap className="w-4 h-4" />
+            CHOOSE CLASS
+          </motion.button>
+          <button
+            onClick={() => setShowPractice(true)}
+            className="btt-mono-text inline-flex items-center gap-2 px-6 py-4 font-bold text-[11px] tracking-widest text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors"
+          >
+            <Target className="w-4 h-4" />
+            PRACTICE WEAK SPOTS
+          </button>
+        </div>
       </motion.div>
     );
   }

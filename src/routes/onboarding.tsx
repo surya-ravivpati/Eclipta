@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Check, Sparkles, Target, Clock, Brain, User2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Sparkles, Target, Clock, Brain, User2, Sigma, Languages, FlaskConical, Code2, ScrollText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
@@ -39,12 +39,12 @@ type Form = {
 };
 
 const GOALS = [
-  { id: "math",      label: "Math",        emoji: "📐" },
-  { id: "languages", label: "Languages",   emoji: "🗣️" },
-  { id: "science",   label: "Science",     emoji: "🔬" },
-  { id: "coding",    label: "Coding",      emoji: "💻" },
-  { id: "history",   label: "History",     emoji: "📜" },
-  { id: "custom",    label: "Something else", emoji: "✨" },
+  { id: "math",      label: "Math",           icon: Sigma },
+  { id: "languages", label: "Languages",      icon: Languages },
+  { id: "science",   label: "Science",        icon: FlaskConical },
+  { id: "coding",    label: "Coding",         icon: Code2 },
+  { id: "history",   label: "History",        icon: ScrollText },
+  { id: "custom",    label: "Something else", icon: Sparkles },
 ] as const;
 
 const HOURS = [
@@ -164,7 +164,7 @@ function OnboardingPage() {
         throw error;
       }
 
-      toast.success("You're in. Welcome to the arena. 🌙");
+      toast.success("You're in. Welcome to the arena.");
       navigate({ to: "/" });
     } catch (err: any) {
       toast.error(err.message || "Something went wrong. Try again.");
@@ -183,11 +183,7 @@ function OnboardingPage() {
   /* ============= render ============= */
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased relative overflow-hidden">
-      {/* ambient glow */}
-      <div className="absolute top-[-20%] right-[-10%] w-[36rem] h-[36rem] bg-neon-purple/8 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-15%] left-[-10%] w-[28rem] h-[28rem] bg-neon-pink/5 rounded-full blur-[150px] pointer-events-none" />
-
+    <div className="min-h-screen bg-background text-foreground antialiased relative">
       <div className="relative max-w-xl mx-auto px-6 pt-16 pb-12">
         {/* progress */}
         <div className="flex items-center gap-2 mb-10">
@@ -195,13 +191,13 @@ function OnboardingPage() {
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-colors ${
-                i < step ? "bg-neon-purple" : i === step ? "bg-neon-pink" : "bg-border"
+                i < step ? "bg-primary" : i === step ? "bg-primary/40" : "bg-border"
               }`}
             />
           ))}
         </div>
 
-        <p className="text-[11px] font-bold tracking-[0.3em] uppercase text-neon-pink mb-3">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-primary mb-3">
           Step {step + 1} of {total}
         </p>
 
@@ -230,7 +226,7 @@ function OnboardingPage() {
                     onChange={(e) => setForm({ ...form, username: e.target.value })}
                     placeholder="your_handle"
                     maxLength={20}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-neon-purple/50"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -253,7 +249,7 @@ function OnboardingPage() {
                     value={form.age}
                     onChange={(e) => setForm({ ...form, age: e.target.value })}
                     placeholder="e.g. 17"
-                    className="w-32 px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-neon-purple/50"
+                    className="w-32 px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <div>
@@ -266,7 +262,7 @@ function OnboardingPage() {
                     placeholder="A line about you — interests, goals, anything."
                     rows={3}
                     maxLength={240}
-                    className="w-full px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neon-purple/50"
+                    className="w-full px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   <p className="text-[11px] text-muted-foreground mt-1 text-right">{form.bio.length}/240</p>
                 </div>
@@ -277,6 +273,7 @@ function OnboardingPage() {
               <div className="grid grid-cols-2 gap-3">
                 {GOALS.map((g) => {
                   const active = form.goals.includes(g.id);
+                  const Icon = g.icon;
                   return (
                     <button
                       key={g.id}
@@ -289,19 +286,11 @@ function OnboardingPage() {
                             : [...form.goals, g.id],
                         })
                       }
-                      style={
-                        active
-                          ? {
-                              background: "oklch(0.58 0.17 252 / 18%)",
-                              borderColor: "oklch(0.58 0.17 252)",
-                              boxShadow:
-                                "0 0 0 2px oklch(0.58 0.17 252), 0 0 24px oklch(0.58 0.17 252 / 45%)",
-                            }
-                          : undefined
-                      }
-                      className="p-4 text-left glass-panel transition-all rounded-md hover:border-neon-purple/60"
+                      className={`p-4 text-left glass-panel rounded-md transition-colors hover:border-primary/50 ${
+                        active ? "border-primary bg-primary/10" : ""
+                      }`}
                     >
-                      <div className="text-2xl mb-2">{g.emoji}</div>
+                      <Icon className={`w-5 h-5 mb-2.5 ${active ? "text-primary" : "text-muted-foreground"}`} aria-hidden="true" />
                       <div className="font-bold text-sm">{g.label}</div>
                     </button>
                   );
@@ -318,19 +307,11 @@ function OnboardingPage() {
                       key={h.value}
                       type="button"
                       onClick={() => setForm({ ...form, hours: h.value })}
-                      style={
-                        active
-                          ? {
-                              background: "oklch(0.58 0.17 252 / 18%)",
-                              borderColor: "oklch(0.58 0.17 252)",
-                              boxShadow:
-                                "0 0 0 2px oklch(0.58 0.17 252), 0 0 24px oklch(0.58 0.17 252 / 45%)",
-                            }
-                          : undefined
-                      }
-                      className="p-4 text-left glass-panel transition-all rounded-md flex items-center gap-3 hover:border-neon-purple/60"
+                      className={`p-4 text-left glass-panel rounded-md transition-colors flex items-center gap-3 hover:border-primary/50 ${
+                        active ? "border-primary bg-primary/10" : ""
+                      }`}
                     >
-                      <Clock className={`w-5 h-5 ${active ? "text-neon-purple" : "text-muted-foreground"}`} />
+                      <Clock className={`w-5 h-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
                       <div>
                         <div className="font-bold text-sm">{h.label}</div>
                         <div className="text-xs text-muted-foreground">{h.desc}</div>
@@ -351,28 +332,20 @@ function OnboardingPage() {
                       key={s.id}
                       type="button"
                       onClick={() => setForm({ ...form, style: s.id })}
-                      style={
-                        active
-                          ? {
-                              background: "oklch(0.58 0.17 252 / 18%)",
-                              borderColor: "oklch(0.58 0.17 252)",
-                              boxShadow:
-                                "0 0 0 2px oklch(0.58 0.17 252), 0 0 24px oklch(0.58 0.17 252 / 45%)",
-                            }
-                          : undefined
-                      }
-                      className="w-full p-4 text-left glass-panel transition-all rounded-md flex items-start gap-4 hover:border-neon-purple/60"
+                      className={`w-full p-4 text-left glass-panel rounded-md transition-colors flex items-start gap-4 hover:border-primary/50 ${
+                        active ? "border-primary bg-primary/10" : ""
+                      }`}
                     >
                       <div className={`w-10 h-10 shrink-0 border flex items-center justify-center ${
-                        active ? "border-neon-purple bg-neon-purple/15" : "border-border bg-secondary/30"
+                        active ? "border-primary bg-primary/15" : "border-border bg-secondary/30"
                       }`}>
-                        <Icon className={`w-5 h-5 ${active ? "text-neon-purple" : "text-muted-foreground"}`} />
+                        <Icon className={`w-5 h-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
                       </div>
                       <div className="flex-1">
                         <div className="font-bold text-sm mb-1">{s.title}</div>
                         <div className="text-xs text-muted-foreground leading-relaxed">{s.desc}</div>
                       </div>
-                      {active && <Check className="w-4 h-4 text-neon-purple shrink-0 mt-1" />}
+                      {active && <Check className="w-4 h-4 text-primary shrink-0 mt-1" />}
                     </button>
                   );
                 })}
@@ -395,7 +368,7 @@ function OnboardingPage() {
             type="button"
             onClick={next}
             disabled={!canAdvance || saving}
-            className="px-6 py-3 bg-neon-pink text-foreground font-bold text-sm tracking-widest uppercase inline-flex items-center gap-2 transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 neon-glow-pink"
+            className="px-6 py-3 rounded-md bg-primary text-primary-foreground font-bold text-sm tracking-widest uppercase inline-flex items-center gap-2 transition-colors hover:bg-primary/90 disabled:opacity-40 elev-1"
           >
             {saving ? "Saving…" : step === total - 1 ? "Enter the arena" : "Continue"}
             <ArrowRight className="w-4 h-4" />

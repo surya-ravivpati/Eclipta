@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, SkipForward, Loader2, Sparkles } from "lucide-react";
+import { GraduationCap, SkipForward, Loader2, Sparkles, ThumbsUp, Meh, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import type { RoomMember, StudyRoom } from "@/lib/study-rooms";
@@ -115,10 +115,10 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
     if (err) toast(err);
   };
 
-  const REACTIONS: ReadonlyArray<{ key: TbReaction; emoji: string; label: string; count: number }> = [
-    { key: "up",    emoji: "👍", label: "got it",  count: round.up_count },
-    { key: "kinda", emoji: "🤔", label: "kinda",   count: round.kinda_count },
-    { key: "lost",  emoji: "❓", label: "lost me", count: round.lost_count },
+  const REACTIONS: ReadonlyArray<{ key: TbReaction; Icon: typeof ThumbsUp; label: string; count: number }> = [
+    { key: "up",    Icon: ThumbsUp,   label: "got it",  count: round.up_count },
+    { key: "kinda", Icon: Meh,        label: "kinda",   count: round.kinda_count },
+    { key: "lost",  Icon: HelpCircle, label: "lost me", count: round.lost_count },
   ];
 
   return (
@@ -151,7 +151,7 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
                   aria-label={`${r.label}${r.count > 0 ? ` (${r.count})` : ""}`}
                   aria-pressed={mine === r.key}
                 >
-                  <span className="sr-tb-react-emoji" aria-hidden="true">{r.emoji}</span>
+                  <r.Icon className="sr-tb-react-ico" size={14} aria-hidden="true" />
                   {r.count > 0 && <span className="sr-tb-react-n">{r.count}</span>}
                 </button>
               ))}
@@ -173,7 +173,9 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
 
       {round.status === "answered" && (isExplainer || REACTIONS.some((r) => r.count > 0)) && (
         <div className="sr-tb-tally">
-          {REACTIONS.map((r) => <span key={r.key}>{r.emoji} {r.count}</span>)}
+          {REACTIONS.map((r) => (
+            <span key={r.key} className="sr-tb-tally-item"><r.Icon size={12} aria-hidden="true" /> {r.count}</span>
+          ))}
         </div>
       )}
     </div>

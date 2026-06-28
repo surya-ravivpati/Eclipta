@@ -525,8 +525,8 @@
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
 }
 .sr-tb-react:hover { border-color: var(--sr-blue); transform: translateY(-1px); }
-.sr-tb-react.is-mine { border-color: var(--sr-blue); background: oklch(0.70 0.14 245 / 0.16); }
-.sr-tb-react-emoji { font-size: 14px; }
+.sr-tb-react.is-mine { border-color: var(--sr-blue); color: var(--brand-ink); background: oklch(0.70 0.14 245 / 0.16); }
+.sr-tb-react-ico { width: 14px; height: 14px; }
 .sr-tb-react-n { font-family: var(--font-mono, monospace); font-size: 10.5px; color: var(--brand-dim); }
 .sr-tb-skip {
   display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
@@ -540,6 +540,7 @@
   display: flex; gap: 12px; margin-top: 9px; font-family: var(--font-mono, monospace);
   font-size: 11.5px; color: var(--brand-dim);
 }
+.sr-tb-tally-item { display: inline-flex; align-items: center; gap: 4px; }
 
 /* ── Safety & host controls ────────────────────────────────────────────────
    Quiet, non-adversarial. Host-only controls render only for the host. */

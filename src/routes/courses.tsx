@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search, Sparkles, ArrowRight, BookOpen, Loader2, Users, Star,
-  ShieldCheck, GraduationCap, X,
+  ShieldCheck, GraduationCap, X, Check, Lock, CircleDot, Circle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,10 @@ import {
   SUBJECTS, type Subject, type UnifiedCourse, type CommunityCourseRow,
   certifiedToUnified, communityToUnified, searchScore,
 } from "@/lib/courses";
+import {
+  recommend, deriveMastery, buildPath, activeSubject,
+  type Recommendation, type PathStep, type LearnerState,
+} from "@/lib/recommend";
 
 export const Route = createFileRoute("/courses")({
   head: () => ({
@@ -45,6 +49,8 @@ function CoursesHub() {
   const [loading, setLoading] = useState(true);
   const [enrolledSlugs, setEnrolledSlugs] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, Progress>>({});
+  const [strongAreas, setStrongAreas] = useState<string[]>([]);
+  const [weakAreas, setWeakAreas] = useState<string[]>([]);
 
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<Subject | null>(null);
@@ -67,7 +73,10 @@ function CoursesHub() {
   }, []);
 
   useEffect(() => {
-    if (!user) { setEnrolledSlugs(new Set()); setProgress({}); return; }
+    if (!user) {
+      setEnrolledSlugs(new Set()); setProgress({}); setStrongAreas([]); setWeakAreas([]);
+      return;
+    }
     let cancelled = false;
     (async () => {
       const { data: en } = await supabase
@@ -76,6 +85,17 @@ function CoursesHub() {
         .eq("user_id", user.id);
       if (cancelled) return;
       setEnrolledSlugs(new Set((en ?? []).map((r) => r.course_slug)));
+
+      // Weak/strong areas feed the recommendation engine (Phase 2).
+      const { data: prof } = await supabase
+        .from("user_profiles")
+        .select("weak_areas,strong_areas")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled && prof) {
+        setStrongAreas(Array.isArray(prof.strong_areas) ? prof.strong_areas : []);
+        setWeakAreas(Array.isArray(prof.weak_areas) ? prof.weak_areas : []);
+      }
 
       // Best-effort: course_progress may not be migrated yet. Seed lastOpened
       // from enrollments so Continue Learning works either way.
@@ -128,6 +148,29 @@ function CoursesHub() {
       .sort((a, b) => (b.rating ?? 0) * 100 + (b.enrolledCount ?? 0) - ((a.rating ?? 0) * 100 + (a.enrolledCount ?? 0)))
       .slice(0, 6);
   }, [allCourses, enrolledSlugs]);
+
+  // ── Phase 2: personalized recommendations + learning path ──────────────
+  const completedSlugs = useMemo(() => {
+    const s = new Set<string>();
+    for (const [slug, p] of Object.entries(progress)) {
+      if (p.status === "completed" || p.percent >= 100) s.add(slug);
+    }
+    return s;
+  }, [progress]);
+
+  const learnerState = useMemo<LearnerState>(
+    () => ({ completedSlugs, enrolledSlugs, strongAreas, weakAreas }),
+    [completedSlugs, enrolledSlugs, strongAreas, weakAreas],
+  );
+  const recommendations = useMemo<Recommendation[]>(
+    () => recommend(allCourses, learnerState),
+    [allCourses, learnerState],
+  );
+  const pathSubject = useMemo(() => activeSubject(learnerState, allCourses), [learnerState, allCourses]);
+  const path = useMemo<PathStep[]>(
+    () => buildPath(pathSubject, deriveMastery(learnerState), allCourses),
+    [pathSubject, learnerState, allCourses],
+  );
 
   // Filtered library (search + subject).
   const filtered = useMemo<UnifiedCourse[]>(() => {
@@ -216,12 +259,25 @@ function CoursesHub() {
                   </Section>
                 )}
 
-                {/* ── Popular (Phase-1 stand-in for personalized recs) ── */}
-                {popular.length > 0 && (
+                {/* ── Recommended Next (personalized) or Popular (cold start) ── */}
+                {recommendations.length > 0 ? (
+                  <Section title="Recommended next" subtitle="Chosen from what you've learned — every pick has a reason">
+                    <Rail>
+                      {recommendations.map((r) => <RecCard key={r.course.slug} rec={r} />)}
+                    </Rail>
+                  </Section>
+                ) : popular.length > 0 ? (
                   <Section title="Popular on Eclipta" subtitle="Get started with what learners are loving right now">
                     <Rail>
                       {popular.map((c) => <CourseCard key={c.slug} c={c} wide />)}
                     </Rail>
+                  </Section>
+                ) : null}
+
+                {/* ── Your learning path (the progression spine) ──── */}
+                {isAuthenticated && path.length > 0 && (
+                  <Section title="Your learning path" subtitle={`${pathSubject} — where you are and what's next`}>
+                    <LearningPathView steps={path} />
                   </Section>
                 )}
 
@@ -375,6 +431,75 @@ function ContinueCard({ c }: { c: ContinueItem }) {
       {inner}
     </Link>
   );
+}
+
+function RecCard({ rec }: { rec: Recommendation }) {
+  const { course, reason, readiness, kind } = rec;
+  const pct = Math.round(readiness * 100);
+  return (
+    <DetailLink
+      c={course}
+      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[280px] sm:min-w-[300px]"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <SourceBadge source={course.source} />
+        {kind === "remediation" ? (
+          <span className="font-mono text-[9px] tracking-widest uppercase text-primary">Review first</span>
+        ) : readiness < 1 ? (
+          <span className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground tabular-nums">{pct}% ready</span>
+        ) : null}
+      </div>
+      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">{course.title}</h3>
+      <p className="text-xs text-primary/90 leading-snug flex items-start gap-1.5 flex-1">
+        <Sparkles className="w-3 h-3 mt-0.5 shrink-0" /> <span>{reason}</span>
+      </p>
+      {readiness > 0 && readiness < 1 && (
+        <div className="h-1 rounded-full bg-border overflow-hidden">
+          <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-primary">
+        Start <ArrowRight className="w-3.5 h-3.5" />
+      </span>
+    </DetailLink>
+  );
+}
+
+function LearningPathView({ steps }: { steps: PathStep[] }) {
+  return (
+    <div className="flex items-center overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {steps.map((s, i) => (
+        <div key={s.concept.id} className="flex items-center shrink-0">
+          <PathNode step={s} />
+          {i < steps.length - 1 && (
+            <div className={`h-px w-8 sm:w-10 shrink-0 ${s.state === "done" ? "bg-primary" : "bg-border"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PathNode({ step }: { step: PathStep }) {
+  const { concept, state, course } = step;
+  const dot =
+    state === "done" ? <Check className="w-3.5 h-3.5 text-primary-foreground" />
+    : state === "current" ? <CircleDot className="w-3.5 h-3.5 text-primary" />
+    : state === "locked" ? <Lock className="w-3 h-3 text-muted-foreground" />
+    : <Circle className="w-3 h-3 text-muted-foreground" />;
+  const ring =
+    state === "done" ? "bg-primary border-primary"
+    : state === "current" ? "border-primary ring-2 ring-primary/25"
+    : "border-border";
+  const body = (
+    <div className="flex flex-col items-center gap-1.5 w-[72px] text-center">
+      <span className={`w-8 h-8 rounded-full border flex items-center justify-center ${ring}`}>{dot}</span>
+      <span className={`text-[10px] leading-tight ${state === "locked" ? "text-muted-foreground" : "text-foreground"}`}>{concept.label}</span>
+    </div>
+  );
+  return course && state !== "locked" ? (
+    <DetailLink c={course} className="hover:opacity-80 transition-opacity">{body}</DetailLink>
+  ) : body;
 }
 
 function EmptyResults({ query }: { query: string }) {

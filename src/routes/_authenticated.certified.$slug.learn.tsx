@@ -6,6 +6,8 @@ import {
   PlayCircle, MessagesSquare, Trophy, Lightbulb,
 } from "lucide-react";
 import { getCourseBySlug, type CertifiedCourse } from "@/lib/certified-courses";
+import { useAuth } from "@/hooks/use-auth";
+import { syncCourseProgress } from "@/lib/course-progress";
 import { z } from "zod";
 
 /* ---------------- Route ---------------- */
@@ -103,6 +105,7 @@ function CoursePlayer() {
   const { course } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const lessons = useMemo(() => flattenLessons(course), [course]);
   const [completed, setCompleted] = useState<Set<string>>(() => new Set());
@@ -151,6 +154,22 @@ function CoursePlayer() {
   };
 
   const isCourseComplete = completedCount === totalLessons && totalLessons > 0;
+
+  // Mirror progress into course_progress so the Courses hub's Continue Learning
+  // can resume this course. Best-effort; localStorage stays the player's own
+  // source of truth.
+  useEffect(() => {
+    if (!user) return;
+    void syncCourseProgress({
+      userId: user.id,
+      courseSlug: course.slug,
+      courseTitle: course.title,
+      source: "official",
+      lessonsDone: completedCount,
+      lessonsTotal: totalLessons,
+      currentBlockId: `${lesson.moduleIdx}:${lesson.lessonIdx}`,
+    });
+  }, [user, course.slug, course.title, completedCount, totalLessons, lesson.moduleIdx, lesson.lessonIdx]);
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">

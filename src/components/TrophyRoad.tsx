@@ -46,15 +46,17 @@ interface TierMeta {
   xpRequired: number;
 }
 
+// The eight realms trace a single eclipse — from first light, through the sun's
+// peak, into deepening shadow, to totality and the Eclipse itself.
 const TIERS: Record<TierId, TierMeta> = {
-  bronze:   { id: "bronze",   name: "Observatory",     label: "Genesis",         description: "Where the journey begins, under the first eclipse. Learn to read the stars.",     xpRequired:      0 },
-  silver:   { id: "silver",   name: "Tidelock Belt",   label: "First Drift",     description: "Ocean-moons and slow asteroids. Find your rhythm and build momentum.",            xpRequired:   7500 },
-  gold:     { id: "gold",     name: "Ember Wastes",    label: "Trial by Fire",   description: "A scorched world where pressure forges precision.",                               xpRequired:  20000 },
-  diamond:  { id: "diamond",  name: "Resonance",       label: "Harmonic Depths", description: "Crystalline caverns that hum. Patterns crystallize into instinct.",                xpRequired:  43000 },
-  platinum: { id: "platinum", name: "Aurora Span",     label: "The Bridge",      description: "A bridge of light between worlds. Your craft becomes a signature.",               xpRequired:  78000 },
-  champion: { id: "champion", name: "Long Drift",      label: "Deep Space",      description: "Open void, far from home. The solitude of real mastery.",                         xpRequired: 145000 },
-  unreal:   { id: "unreal",   name: "Celestial Nexus", label: "Convergence",     description: "Where every path in the cosmos meets. Beyond competition.",                       xpRequired: 265000 },
-  god:      { id: "god",      name: "Eclipse",         label: "The Threshold",   description: "The final dark. Where Newton and Ecliptadon wait at the edge of knowing.",         xpRequired: 460000 },
+  bronze:   { id: "bronze",   name: "Dawn",      label: "First Light",    description: "Where the journey begins, under the first light. Learn to read the sky.",       xpRequired:      0 },
+  silver:   { id: "silver",   name: "Moonrise",  label: "The Waxing",     description: "The moon climbs and your momentum builds. Find your rhythm.",                   xpRequired:   7500 },
+  gold:     { id: "gold",     name: "Meridian",  label: "High Noon",      description: "The sky at its brightest, where pressure forges precision.",                    xpRequired:  20000 },
+  diamond:  { id: "diamond",  name: "Penumbra",  label: "Half-Light",     description: "The first shadow falls. Patterns sharpen in the dimming light.",                 xpRequired:  43000 },
+  platinum: { id: "platinum", name: "Umbra",     label: "Deep Shadow",    description: "Into true shadow. Your craft becomes a signature in the dark.",                  xpRequired:  78000 },
+  champion: { id: "champion", name: "Nightfall", label: "The Long Night", description: "Far from any light — the solitude of real mastery.",                            xpRequired: 145000 },
+  unreal:   { id: "unreal",   name: "Totality",  label: "Convergence",    description: "The moment every path aligns and the sky goes dark. Beyond competition.",        xpRequired: 265000 },
+  god:      { id: "god",      name: "Eclipse",   label: "The Threshold",  description: "The corona's edge, where Newton and Ecliptadon wait at the edge of knowing.",    xpRequired: 460000 },
 };
 
 /* ── Archetypes ────────────────────────────────────────────── */
@@ -833,7 +835,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
           >
             <h2 className="tr-compact-title">Your <em>expedition</em></h2>
             <p className="tr-compact-desc">
-              Chart a path from the Observatory to the Eclipse across eight realms. Each realm hides
+              Chart a path from first light to total eclipse across eight realms. Each realm hides
               new archetypes, reward caches, and guardian encounters.
             </p>
             <div className="tr-compact-tiers">

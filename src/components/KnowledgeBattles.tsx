@@ -136,25 +136,25 @@ type LiveTurnActionRow = {
 // matching the re-skinned Trophy Road. Thresholds mirror the TIERS xpRequired.
 function xpToTier(xp: number): string {
   if (xp >= 460000) return "Eclipse";
-  if (xp >= 265000) return "Celestial Nexus";
-  if (xp >= 145000) return "Long Drift";
-  if (xp >= 78000)  return "Aurora Span";
-  if (xp >= 43000)  return "Resonance";
-  if (xp >= 20000)  return "Ember Wastes";
-  if (xp >= 7500)   return "Tidelock Belt";
-  return "Observatory";
+  if (xp >= 265000) return "Totality";
+  if (xp >= 145000) return "Nightfall";
+  if (xp >= 78000)  return "Umbra";
+  if (xp >= 43000)  return "Penumbra";
+  if (xp >= 20000)  return "Meridian";
+  if (xp >= 7500)   return "Moonrise";
+  return "Dawn";
 }
 
 const tierColors: Record<string, string> = {
   // Expedition realms (XP leaderboard)
   Eclipse: "text-tier-god",
-  "Celestial Nexus": "text-tier-unreal",
-  "Long Drift": "text-tier-champion",
-  "Aurora Span": "text-tier-platinum",
-  Resonance: "text-tier-diamond",
-  "Ember Wastes": "text-tier-gold",
-  "Tidelock Belt": "text-tier-silver",
-  Observatory: "text-tier-bronze",
+  Totality: "text-tier-unreal",
+  Nightfall: "text-tier-champion",
+  Umbra: "text-tier-platinum",
+  Penumbra: "text-tier-diamond",
+  Meridian: "text-tier-gold",
+  Moonrise: "text-tier-silver",
+  Dawn: "text-tier-bronze",
   // Competitive leagues (rating leaderboard)
   "God Tier": "text-tier-god",
   Unreal: "text-tier-unreal",

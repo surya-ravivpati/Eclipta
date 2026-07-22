@@ -2189,7 +2189,7 @@ function BattleArena() {
             transition={{ duration: 0.2 }}
           >
             <motion.p
-              className="btt-stinger-word text-8xl md:text-9xl text-foreground"
+              className="btt-stinger-word text-7xl sm:text-8xl md:text-9xl text-foreground"
               style={{ textShadow: "0 0 70px oklch(0.60 0.17 255 / 0.55), 0 0 160px oklch(0.58 0.17 252 / 0.35)" }}
               initial={{ scale: 2.3, opacity: 0, letterSpacing: "0.45em" }}
               animate={{ scale: 1, opacity: 1, letterSpacing: "0.06em" }}
@@ -2211,7 +2211,7 @@ function BattleArena() {
           >
             <div className="text-center px-6">
               <motion.p
-                className={`btt-stinger-word text-8xl md:text-9xl ${koBanner === "victory" ? "text-primary" : "text-neon-pink"}`}
+                className={`btt-stinger-word text-7xl sm:text-8xl md:text-9xl ${koBanner === "victory" ? "text-primary" : "text-neon-pink"}`}
                 style={{
                   textShadow: koBanner === "victory"
                     ? "0 0 80px oklch(0.78 0.13 88 / 0.6), 0 0 200px oklch(0.78 0.13 88 / 0.3)"
@@ -2253,7 +2253,7 @@ function BattleArena() {
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
               <p
-                className="btt-shout text-7xl md:text-8xl text-neon-pink"
+                className="btt-shout text-6xl sm:text-7xl md:text-8xl text-neon-pink px-4"
                 style={{ textShadow: "0 0 44px oklch(0.60 0.17 255 / 0.8), 0 0 120px oklch(0.60 0.17 255 / 0.4)" }}
               >
                 COMBO ×{comboBurst.combo}

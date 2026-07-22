@@ -360,6 +360,18 @@
   animation: luna-thinking-fade 1.8s ease-in-out infinite;
 }
 
+/* ─── Long-form content safety (mobile) ──────────────────────
+   KaTeX ships `.katex-display > .katex { white-space: nowrap }` but never
+   makes the display wrapper scrollable, so a single long equation ($$…$$)
+   pushes the whole page sideways on narrow screens. Let the equation scroll
+   inside its own box instead of warping the layout. */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 2px;
+  max-width: 100%;
+}
+
 /* Milestone celebration toast */
 .milestone-toast {
   border: 1px solid oklch(0.78 0.13 88 / 42%) !important;

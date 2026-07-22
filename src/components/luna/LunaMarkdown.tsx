@@ -104,7 +104,7 @@ interface Props {
 export function LunaMarkdown({ children, className }: Props) {
   const normalized = normalizeLatex(children);
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 ${className ?? ""}`}>
+    <div className={`prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 break-words ${className ?? ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}

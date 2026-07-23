@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Sparkles, Target, Swords, Trophy, Brain, Users, Mail, Github,
-  MessageSquare, Send, CheckCircle2, Loader2, AlertCircle,
+  Mail, Github, MessageSquare, Send, CheckCircle2, Loader2, AlertCircle, Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import "./About.css";
@@ -62,23 +61,23 @@ function ContactForm() {
         p_user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       });
       if (error) {
-        toast.error(error.message || "Couldn't send — try again in a moment.");
+        toast.error(error.message || "Couldn't send. Try again in a moment.");
         return;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((data as any)?.moderation_status === "hidden") {
-        toast.message("Message received — held for review", {
-          description: "We'll look at it shortly.",
+        toast.message("Message received, held for review", {
+          description: "I'll look at it shortly.",
         });
       } else {
-        toast.success("Message sent — we usually reply within 48 hours.");
+        toast.success("Message sent. I usually reply within a couple of days.");
       }
       setSent(true);
       setName(""); setEmail(""); setSubject(""); setMessage("");
       setErrors({});
     } catch (err) {
       console.error("contact form submit failed", err);
-      toast.error("Network hiccup — please try again.");
+      toast.error("Network hiccup. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -90,8 +89,8 @@ function ContactForm() {
         <CheckCircle2 className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--ab-accent)" }} />
         <h3 className="ab-serif" style={{ fontSize: 22, marginBottom: 8 }}>Message received</h3>
         <p style={{ fontSize: 14, color: "var(--ab-dim)", maxWidth: 360, margin: "0 auto 20px", lineHeight: 1.6 }}>
-          Thanks for reaching out. We read everything that lands in the inbox
-          and usually reply within 48 hours.
+          Thanks for reaching out. I read everything that lands in the inbox
+          and usually reply within a couple of days.
         </p>
         <button type="button" onClick={() => setSent(false)} className="ab-link" style={{ borderRadius: 6 }}>
           Send another
@@ -112,8 +111,8 @@ function ContactForm() {
           <Mail className="w-4 h-4" />
         </div>
         <div>
-          <h3 className="ab-serif" style={{ fontSize: 18, lineHeight: 1.1 }}>Send us a message</h3>
-          <p style={{ fontSize: 11, color: "var(--ab-fog)", marginTop: 2 }}>Goes straight to the team inbox.</p>
+          <h3 className="ab-serif" style={{ fontSize: 18, lineHeight: 1.1 }}>Send me a message</h3>
+          <p style={{ fontSize: 11, color: "var(--ab-fog)", marginTop: 2 }}>Goes straight to my inbox.</p>
         </div>
       </div>
 
@@ -150,7 +149,7 @@ function ContactForm() {
           onBlur={onBlur("message")}
           rows={6}
           maxLength={4000}
-          placeholder="How can we help? Feedback, questions, bug reports — all welcome."
+          placeholder="What's on your mind? Feedback, questions, bugs, all welcome."
           className={`ab-textarea${errors.message ? " is-error" : ""}`}
           required
         />
@@ -214,53 +213,51 @@ function Field({
 
 // ─── Page content ────────────────────────────────────────────────────
 
-const FOUNDERS = [
-  {
-    name: "Surya Ravipati",
-    role: "Co-Founder · Engineering",
-    bio: "Architect of Eclipta's adaptive learning engine and the arena that wraps it.",
-    initials: "SR",
-  },
-  {
-    name: "Aarit Perswal",
-    role: "Co-Founder · Product",
-    bio: "Builds the battle systems and gamified progression that make learning addictive.",
-    initials: "AP",
-  },
-];
-
-const PILLARS = [
-  { icon: Brain,     title: "Adaptive AI",             desc: "Luna learns your pace, your weak spots, and the way you think — then meets you there." },
-  { icon: Swords,    title: "Battles, not worksheets", desc: "Knowledge battles turn rote practice into competitive duels with real stakes." },
-  { icon: Trophy,    title: "An expedition, not a ladder", desc: "Chart realms from first light to total eclipse — each unlocks new Ecliptars, caches, and story." },
-  { icon: Target,    title: "Personalized mastery",    desc: "Adaptive tests and personalized courses target the exact skills you need next." },
-  { icon: Users,     title: "Built for learners",      desc: "Forums, leaderboards, and community challenges keep momentum alive." },
-  { icon: Sparkles,  title: "Designed to delight",     desc: "A cinematic arena aesthetic that makes you actually want to come back tomorrow." },
-];
-
-const STATS = [
-  { value: "7",    label: "Archetypes" },
-  { value: "8",    label: "Trophy tiers" },
-  { value: "AI",   label: "Adaptive tutor" },
-  { value: "24/7", label: "Live battles" },
-];
-
-// shared scroll-reveal — same easing + blur grammar as the homepage film
+// shared scroll-reveal — a gentle blur-in for reading, calmer than the
+// homepage film's big cinematic beats.
 const EASE: [number, number, number, number] = [0.2, 0.7, 0.2, 1];
 const reveal = {
-  initial: { opacity: 0, y: 28, filter: "blur(10px)" },
+  initial: { opacity: 0, y: 20, filter: "blur(8px)" },
   whileInView: { opacity: 1, y: 0, filter: "blur(0px)" },
-  viewport: { once: true, amount: 0.3 },
-  transition: { duration: 0.9, ease: EASE },
+  viewport: { once: true, amount: 0.4 },
+  transition: { duration: 0.8, ease: EASE },
 };
+
+/**
+ * A snapshot frame. Drop a real photo at the given /public path and it shows;
+ * until then it falls back to a tasteful placeholder instead of a broken
+ * image. Swap in: public/about/brothers.jpg, public/about/desk.jpg, etc.
+ */
+function Snapshot({ src, caption, tilt = 0 }: { src: string; caption: string; tilt?: number }) {
+  // Start on the placeholder and only swap in the real photo once it actually
+  // loads. A missing file simply never fires onLoad, so a broken-image icon or
+  // stray alt text can never flash — the frame just stays a tasteful stand-in.
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <figure className="ab-photo">
+      <div className="ab-photo-inner" style={{ ["--tilt" as string]: `${tilt}deg` }}>
+        {!loaded && (
+          <div className="ab-photo-ph"><Camera className="w-5 h-5" /><span>photo</span></div>
+        )}
+        <img
+          src={src}
+          alt={caption}
+          onLoad={() => setLoaded(true)}
+          style={{ display: loaded ? "block" : "none" }}
+        />
+      </div>
+      <figcaption>{caption}</figcaption>
+    </figure>
+  );
+}
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Eclipta – A Smarter Way to Learn" },
-      { name: "description", content: "Eclipta turns learning into a battle arena. Meet the team and the mission behind the world's first adaptive learning playground." },
-      { property: "og:title", content: "About Eclipta" },
-      { property: "og:description", content: "How Eclipta turns learning into a competitive arena powered by AI, battles, and trophy roads." },
+      { title: "About the Creator – Eclipta" },
+      { name: "description", content: "Why Eclipta exists, told by the person who built it. A short, honest letter about failing at a project, learning to actually understand the code, and building the course he wished he'd had." },
+      { property: "og:title", content: "About the Creator – Eclipta" },
+      { property: "og:description", content: "The honest story behind Eclipta: one builder, one abandoned game, and the course that came out of it." },
     ],
   }),
   component: AboutPage,
@@ -281,127 +278,140 @@ function AboutPage() {
         <header className="ab-hero">
           <div>
             <img src="/eclipta-logo.png" alt="Eclipta" className="ab-hero-logo" width={124} height={124} draggable={false} />
-            <p className="ab-kicker">Eclipta · About</p>
+            <p className="ab-kicker">About · The Creator</p>
             <h1 className="ab-title">
-              Learning, but make it <em>an arena.</em>
+              Hi, I'm <em>Aarit.</em>
             </h1>
             <p className="ab-lead">
-              The world's first adaptive learning arena — rebuilt from the ground up around
-              AI-driven growth, knowledge battles, and a trophy road that actually feels like progress.
+              I wanted to build a game where you can box an AI with your webcam.
+              Somehow that turned into this. Here's the honest version of how.
             </p>
           </div>
           <div className="ab-scrollhint" aria-hidden="true">
             <span />
-            Scroll
+            Read
           </div>
         </header>
 
-        {/* ── Stats ────────────────────────────────────────────── */}
-        <section className="ab-section">
-          <motion.div className="ab-stats" {...reveal}>
-            {STATS.map((s) => (
-              <div key={s.label} className="ab-stat">
-                <div className="ab-stat-num">{s.value}</div>
-                <div className="ab-stat-lbl">{s.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        </section>
+        {/* ── The letter ───────────────────────────────────────── */}
+        <section className="ab-letter-wrap">
+          <motion.p className="ab-actlabel is-accent" {...reveal}>The whole story</motion.p>
 
-        {/* ── 01 · Mission ─────────────────────────────────────── */}
-        <section className="ab-section">
-          <motion.div className="ab-section-head" {...reveal}>
-            <p className="ab-actlabel is-accent">01 · The Mission</p>
-          </motion.div>
-          <motion.p className="ab-mission" {...reveal}>
-            Traditional platforms reward <em>completion</em>. Eclipta rewards
-            {" "}<strong>growth</strong> — every battle won, every course finished, every
-            day you show up feeds one engine: your XP, unlocking ranks, Ecliptars,
-            and challenges. Mastery should feel like <em>leveling up</em>, not grinding.
-          </motion.p>
-        </section>
+          <div className="ab-letter">
+            <motion.p {...reveal}>
+              I built this because I wanted to make a game where you can box an AI with your webcam.
+            </motion.p>
 
-        {/* ── 02 · The Arena (pillars) ─────────────────────────── */}
-        <section className="ab-section">
-          <motion.div className="ab-section-head is-center" {...reveal}>
-            <p className="ab-actlabel">02 · The Arena</p>
-            <h2 className="ab-h2">Six pillars, <em>one arena.</em></h2>
-          </motion.div>
-          <motion.div
-            className="ab-grid"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={{ show: { transition: { staggerChildren: 0.07 } } }}
-          >
-            {PILLARS.map((p) => {
-              const Icon = p.icon;
-              return (
-                <motion.div
-                  key={p.title}
-                  className="ab-pillar"
-                  variants={{
-                    hidden: { opacity: 0, y: 22, filter: "blur(8px)" },
-                    show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7, ease: EASE } },
-                  }}
-                >
-                  <div className="ab-pillar-icon"><Icon className="w-5 h-5" /></div>
-                  <h3>{p.title}</h3>
-                  <p>{p.desc}</p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </section>
+            <motion.p {...reveal}>
+              I tried building it once already. I mostly leaned on AI to write the code. It worked for a
+              while, then the whole project turned into a pile of code I didn't understand. Every change
+              broke something else. After a few weeks, I gave up.
+            </motion.p>
 
-        {/* ── 03 · The Team ────────────────────────────────────── */}
-        <section className="ab-section">
-          <motion.div className="ab-section-head is-center" {...reveal}>
-            <p className="ab-actlabel">03 · The Team</p>
-            <h2 className="ab-h2">Meet the <em>founders.</em></h2>
-          </motion.div>
-          <div className="ab-founders">
-            {FOUNDERS.map((f, i) => (
-              <motion.div
-                key={f.name}
-                className="ab-founder"
-                {...reveal}
-                transition={{ ...reveal.transition, delay: i * 0.1 }}
-              >
-                <div className="ab-monogram">{f.initials}</div>
-                <div style={{ minWidth: 0 }}>
-                  <h3>{f.name}</h3>
-                  <p className="ab-founder-role">{f.role}</p>
-                  <p>{f.bio}</p>
-                </div>
-              </motion.div>
-            ))}
+            <motion.blockquote className="ab-pull" {...reveal}>
+              That bugged me more than the game itself.
+            </motion.blockquote>
+
+            <motion.div className="ab-photos" {...reveal}>
+              <Snapshot src="/about/me.jpg" caption="Me, mid-project, pretending it was fine." tilt={-3} />
+              <Snapshot src="/about/brothers.jpg" caption="My brother (the handsome guy on the left) and me." tilt={2.5} />
+            </motion.div>
+
+            <motion.p {...reveal}>
+              My brother (the handsome guy on the left in the second picture) builds stuff with AI too,
+              but his projects don't fall apart like mine. I kept asking myself why.
+            </motion.p>
+
+            <motion.p {...reveal}>
+              Then I went on vacation with him, and I figured it out. He knows what's going on under the
+              hood. I don't. If AI writes something weird, he can spot it. I usually can't.
+            </motion.p>
+
+            <motion.blockquote className="ab-pull" {...reveal}>
+              I was using AI to replace understanding instead of helping it along.
+            </motion.blockquote>
+
+            <motion.p {...reveal}>
+              That was enough to change my plan.
+            </motion.p>
+
+            <motion.p {...reveal}>
+              Instead of trying to build the game again, I decided to build the course I wish I had the
+              first time. If I can explain each piece well enough for someone else to learn it, I'll
+              probably understand it well enough to build the game without creating another mess. And if
+              this course helps other people make their own games, that's even better.
+            </motion.p>
+
+            <motion.p {...reveal}>
+              My goal is still the same as it was on day one. I still want to step in front of my webcam
+              and box an AI. I'm just taking the longer road to get there because I think it'll end up
+              being the shorter one.
+            </motion.p>
+
+            <motion.p {...reveal}>
+              Hope this isn't the last thing I build. (Besides, I already have a list of projects I want
+              to make after this one.)
+            </motion.p>
+
+            <motion.div className="ab-signoff" {...reveal}>
+              <p className="ab-sign">Aarit</p>
+              <a href="mailto:perswalaarit@gmail.com" className="ab-sign-mail">perswalaarit@gmail.com</a>
+            </motion.div>
+
+            <motion.div className="ab-ps" {...reveal}>
+              <p>
+                <span className="ab-ps-tag">PS</span>
+                Yes, I took all those background pictures myself cuz im tuff like that.
+              </p>
+              <p>
+                <span className="ab-ps-tag">PSS</span>
+                Thanks for reading all this. In fact, I have a present for you. But I need you to click the
+                {" "}
+                <span className="ab-hint-logo" aria-hidden="true">
+                  <img src="/eclipta-logo.png" alt="" width={18} height={18} draggable={false} />
+                </span>
+                {" "}
+                <b>logo in the top-left 5 times, quickly</b>, to get it.
+              </p>
+            </motion.div>
           </div>
         </section>
 
-        {/* ── 04 · Contact ─────────────────────────────────────── */}
+        {/* ── What this is ─────────────────────────────────────── */}
+        <section className="ab-section">
+          <motion.div className="ab-section-head" {...reveal}>
+            <p className="ab-actlabel">What this is</p>
+          </motion.div>
+          <motion.p className="ab-brief" {...reveal}>
+            <strong>Eclipta is that course.</strong> A place to actually learn the thing you keep asking AI
+            to do for you, one piece at a time, until you can read what it writes and know when it's
+            {" "}<em>wrong.</em>
+          </motion.p>
+        </section>
+
+        {/* ── Reach me ─────────────────────────────────────────── */}
         <section className="ab-section" id="contact" style={{ scrollMarginTop: 96 }}>
           <motion.div className="ab-section-head is-center" {...reveal}>
-            <p className="ab-actlabel">04 · Say Hello</p>
-            <h2 className="ab-h2">Get in <em>touch.</em></h2>
+            <p className="ab-actlabel">Say hello</p>
+            <h2 className="ab-h2">Reach <em>me.</em></h2>
           </motion.div>
           <motion.div className="ab-contact-grid" {...reveal}>
             <ContactForm />
             <div className="ab-channels">
+              <a href="mailto:perswalaarit@gmail.com" className="ab-channel">
+                <Mail className="w-5 h-5" />
+                <h3>Email me directly</h3>
+                <p style={{ wordBreak: "break-all" }}>perswalaarit@gmail.com</p>
+              </a>
               <Link to="/forum" className="ab-channel">
                 <MessageSquare className="w-5 h-5" />
                 <h3>Community Forum</h3>
-                <p>Best for product questions and learner support.</p>
+                <p>Questions, help, and learning out loud with everyone else.</p>
               </Link>
-              <a href="mailto:hello@eclipta.app" className="ab-channel">
-                <Mail className="w-5 h-5" />
-                <h3>Direct Email</h3>
-                <p style={{ wordBreak: "break-all" }}>hello@eclipta.app</p>
-              </a>
               <a href="https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey" target="_blank" rel="noopener noreferrer" className="ab-channel">
                 <Github className="w-5 h-5" />
-                <h3>Open Source</h3>
-                <p>Report bugs, suggest features, or contribute.</p>
+                <h3>The code</h3>
+                <p>It's open. Poke around, report bugs, or contribute.</p>
               </a>
             </div>
           </motion.div>
@@ -410,20 +420,19 @@ function AboutPage() {
         {/* ── Finale ───────────────────────────────────────────── */}
         <section className="ab-finale">
           <motion.div {...reveal}>
-            <p className="ab-actlabel" style={{ justifyContent: "center" }}>Your move</p>
-            <h2>Enter the <em>arena.</em></h2>
+            <p className="ab-actlabel" style={{ justifyContent: "center" }}>Your turn</p>
+            <h2>Start the <em>course.</em></h2>
             <p className="ab-finale-sub">
-              Pick an archetype, claim your first Ecliptar, and begin your expedition across the realms.
-              Free to play — find out what you actually know.
+              Learn the thing you keep leaning on AI for. Free to start, no pretending you already get it.
             </p>
             <div className="ab-cta-row">
-              <Link to="/signup" className="ab-btn ab-btn--accent">
-                Create account
+              <Link to="/courses" className="ab-btn ab-btn--accent">
+                Browse courses
                 <svg width="14" height="10" viewBox="0 0 14 10" fill="none" aria-hidden="true">
                   <path d="M0 5 H11 M8 1 L12 5 L8 9" stroke="currentColor" strokeWidth="1.3" />
                 </svg>
               </Link>
-              <Link to="/" className="ab-link">Explore first</Link>
+              <Link to="/signup" className="ab-link">Create an account</Link>
             </div>
           </motion.div>
         </section>

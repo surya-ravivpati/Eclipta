@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/hooks/use-notifications";
 import { BrandLockup } from "@/components/BrandLockup";
+import { useLogoPresent } from "@/components/BrandPresent";
 
 const NAV_GROUPS = [
   {
@@ -59,6 +60,7 @@ export function Navbar() {
   const themeNext = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { onLogoClick, present } = useLogoPresent();
 
   const isGroupActive = (group: typeof NAV_GROUPS[number]) =>
     group.items.some((it) => pathname.startsWith(it.to));
@@ -72,7 +74,7 @@ export function Navbar() {
     <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/70 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-9 min-w-0">
-          <Link to="/" className="shrink-0" aria-label="Eclipta home">
+          <Link to="/" className="shrink-0" aria-label="Eclipta home" onClick={onLogoClick}>
             <BrandLockup size="sm" />
           </Link>
           <div className="hidden lg:flex gap-1">
@@ -266,6 +268,8 @@ export function Navbar() {
           </div>
         </div>
       )}
+
+      {present}
     </nav>
   );
 }

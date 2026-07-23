@@ -1,0 +1,148 @@
+/* Logo easter-egg present — a self-contained overlay, portalled to <body>
+   so it sits above the fixed navbar and covers the viewport. Dark scope so it
+   reads the same in light or dark site themes. */
+
+.bp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 5, 10, 0.74);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+/* ── Confetti ── */
+.bp-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bp-confetti-piece {
+  position: absolute;
+  top: -6%;
+  display: block;
+  opacity: 0;
+  animation-name: bp-fall;
+  animation-timing-function: cubic-bezier(0.3, 0.2, 0.6, 1);
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
+@keyframes bp-fall {
+  0%   { transform: translateY(-10vh) rotate(0deg);   opacity: 0; }
+  8%   { opacity: 1; }
+  100% { transform: translateY(112vh) rotate(var(--rot, 360deg)); opacity: 0.9; }
+}
+
+/* ── Card ── */
+.bp-card {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 34px 30px 28px;
+  text-align: center;
+  color: #F4F1EA;
+  background:
+    radial-gradient(120% 90% at 50% -10%, oklch(0.62 0.13 88 / 0.16), transparent 60%),
+    rgba(18, 24, 49, 0.92);
+  border: 1px solid oklch(0.80 0.13 88 / 0.32);
+  border-radius: 18px;
+  box-shadow:
+    0 0 44px oklch(0.80 0.13 88 / 0.16),
+    0 30px 80px -24px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-cinematic, system-ui, sans-serif);
+}
+.bp-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  color: #9AA1B5;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(244, 241, 234, 0.12);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.bp-close:hover { color: #F4F1EA; border-color: rgba(244, 241, 234, 0.3); background: rgba(255, 255, 255, 0.08); }
+.bp-close:focus-visible { outline: 2px solid #D4AF37; outline-offset: 2px; }
+
+.bp-glove {
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 14px;
+  animation: bp-glove-swing 2.6s ease-in-out infinite;
+  transform-origin: 70% 20%;
+}
+@keyframes bp-glove-swing {
+  0%, 100% { transform: rotate(-8deg); }
+  50%      { transform: rotate(8deg); }
+}
+
+.bp-eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #D4AF37;
+  margin: 0 0 10px;
+}
+.bp-title {
+  font-family: var(--font-cinematic, system-ui, sans-serif);
+  font-weight: 300;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+.bp-title em {
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+  font-weight: 400;
+}
+.bp-body {
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: #BCBAB0;
+  margin: 0 0 12px;
+}
+.bp-signoff {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(244, 241, 234, 0.1);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.bp-sign {
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+  font-size: 24px;
+  color: #F4F1EA;
+}
+.bp-mail {
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  color: #D4AF37;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.25s ease;
+  word-break: break-all;
+}
+.bp-mail:hover { border-color: #D4AF37; }
+.bp-fine {
+  margin: 16px 0 0;
+  font-size: 11px;
+  font-style: italic;
+  color: #7C8093;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-confetti-piece { animation: none; opacity: 0; }
+  .bp-glove { animation: none; }
+}

@@ -3062,8 +3062,8 @@ export function KnowledgeBattles() {
                 <li><span className="text-foreground font-bold">Heal</span> — restores HP; builds <span className="text-neon-cyan">+10 Focus</span>. <span className="text-foreground">The Tank and the God can't Heal — they build Focus instead.</span></li>
                 <li><span className="text-foreground font-bold">Charge</span> — 1.8× your damage, but spends <span className="text-neon-purple">25 Focus</span>. Your finisher.</li>
                 <li><span className="text-foreground font-bold">Wild</span> — a chaotic effect for <span className="text-neon-purple">15 Focus</span>.</li>
-                <li><span className="text-foreground font-bold">Every number on the action buttons is YOUR archetype's</span> — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows each turn, a Chud's is brutal but fragile. Read them before you commit.</li>
-                <li><span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp; Wild — build it with Attack/Heal. Pool size differs by class (Speedster small, Chud huge).</li>
+                <li><span className="text-foreground font-bold">Every number on the action buttons is YOUR archetype's</span> — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows each turn, an Apex's is brutal but fragile. Read them before you commit.</li>
+                <li><span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp; Wild — build it with Attack/Heal. Pool size differs by class (Speedster small, Apex huge).</li>
                 <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> → bigger damage multipliers. A wrong answer or timeout breaks Momentum and lets your opponent counter.</li>
                 <li><span className="text-foreground font-bold">Leaving a battle counts as a loss by abandonment</span> — finish what you start.</li>
               </ul>

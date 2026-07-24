@@ -36,7 +36,7 @@ const ARCH_ICON: Record<MonsterArchetypeKey, LucideIcon> = {
 export const ECLIPTAR_NAMES: Record<MonsterArchetypeKey, string[]> = {
   speedster:   ["Griffinink", "Spark", "Correr", "Zypheroo"],
   tank:        ["Dingus", "Syntium", "Mammorock", "Ironhide"],
-  chud:        ["Flingus", "Broco Lee", "Squirt", "Gibit"],
+  chud:        ["Razorwing", "Crownscar", "Nightthorn", "Nitpick"],
   gambler:     ["Mr. McHenry", "Rattleslot", "Snail-ette", "Fortunox"],
   healer:      ["Brighteye", "Chobroni", "Bloomheart", "Moss Golem"],
   fulcrum:     ["Fuego", "Petrona", "Ticonder", "Equinox"],

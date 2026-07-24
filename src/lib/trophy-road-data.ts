@@ -58,13 +58,13 @@ export const ROAD_NODES: RoadNode[] = [
 
   // ── Gold ────────────────────────────────────────────────────────
   { id: 15, tier: "gold",     type: "rank",    label: "Meridian I",          xp:  20000, band: "trials" },
-  { id: 16, tier: "gold",     type: "monster", label: "Chud",            xp:  22000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-a", "chud-b"] },
-  { id: 63, tier: "gold", type: "ecliptar", label: "Squirt", xp: 23000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-c"] },
+  { id: 16, tier: "gold",     type: "monster", label: "Apex",            xp:  22000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-a", "chud-b"] },
+  { id: 63, tier: "gold", type: "ecliptar", label: "Nightthorn", xp: 23000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-c"] },
   { id: 17, tier: "gold",     type: "chest",   rewardKey: "Gold Chest", label: "Meridian Cache",      xp:  24000, band: "trials" },
   { id: 18, tier: "gold",     type: "rank",    label: "Meridian II",         xp:  27000, band: "trials" },
   { id: 19, tier: "gold",     type: "chest",   rewardKey: "Gold Cache", label: "Meridian Vault",      xp:  30000, band: "trials" },
   { id: 20, tier: "gold",     type: "boss",    label: "Meridian Guardian",       xp:  34000, band: "trials" },
-  { id: 64, tier: "gold", type: "ecliptar", label: "Gibit", xp: 36000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-d"] },
+  { id: 64, tier: "gold", type: "ecliptar", label: "Nitpick", xp: 36000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-d"] },
   { id: 21, tier: "gold",     type: "rank",    label: "Meridian III",        xp:  38000, band: "trials" },
 
   // ── Diamond ─────────────────────────────────────────────────────

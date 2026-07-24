@@ -41,7 +41,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
   },
   chud: {
     id: "chud",
-    name: "The Chud",
+    name: "The Apex",
     icon: Skull,
     color: "text-tier-champion",
     borderColor: "border-tier-champion/40",

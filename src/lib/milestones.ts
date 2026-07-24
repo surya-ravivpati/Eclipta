@@ -20,7 +20,7 @@ const XP_MESSAGES: Record<number, { title: string; desc: string }> = {
 const NODE_MESSAGES: Record<string, string> = {
   Speedster: "You've unlocked the Speedster! Lightning-fast reflexes, meet lightning-fast mind. ⚡",
   Tank: "The Tank is yours! Nothing can stop you now. 🛡️",
-  Chud: "Chud joins your roster! Unpredictable and powerful. 🃏",
+  Apex: "Apex joins your roster! Unpredictable and powerful. 🃏",
   Gambler: "The Gambler emerges! Fortune favors the bold. 🎲",
   Healer: "Healer unlocked! Knowledge heals all wounds. 💚",
   Fulcrum: "The Fulcrum awakens! Balance of all forces. ⚖️",

@@ -72,7 +72,7 @@ interface MonsterArchetype {
 const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   speedster:    { id: "speedster",    name: "Speedster",    icon: Zap,        stats: { health: "Mid",  time: "Low",  damage: "Mid",        multiplier: "High",   difficulty: "Mid"    } },
   tank:         { id: "tank",         name: "Tank",         icon: Shield,     stats: { health: "High", time: "High", damage: "Low",        multiplier: "None",   difficulty: "Mid"    } },
-  chud:         { id: "chud",         name: "Chud",         icon: Skull,      stats: { health: "Low",  time: "Low",  damage: "Ultra High", multiplier: "None",   difficulty: "High"   } },
+  chud:         { id: "chud",         name: "Apex",         icon: Skull,      stats: { health: "Low",  time: "Low",  damage: "Ultra High", multiplier: "None",   difficulty: "High"   } },
   gambler:      { id: "gambler",      name: "Gambler",      icon: Dice5,      stats: { health: "Rand", time: "Rand", damage: "Rand",       multiplier: "Rand",   difficulty: "Rand"   } },
   healer:       { id: "healer",       name: "Healer",       icon: Heart,      stats: { health: "Low",  time: "Mid",  damage: "Low",        multiplier: "Mid",    difficulty: "Mid"    }, special: "Can heal instead of attacking" },
   fulcrum:      { id: "fulcrum",      name: "Fulcrum",      icon: Scale,      stats: { health: "Mid",  time: "Mid",  damage: "Mid",        multiplier: "Mid",    difficulty: "Mid"    } },

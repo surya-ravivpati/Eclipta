@@ -78,7 +78,7 @@ export function streakToMultiplier(momentum: number, step: number): number {
 /**
  * Self-damage multiplier when missing a question (tankier = less self-damage).
  * Formula: 1.30 − ((maxHp − 75) / 175) × 0.80
- * At  75 HP (Chud): 1.30  — glass cannons take extra punishment
+ * At  75 HP (Apex): 1.30  — glass cannons take extra punishment
  * At 250 HP (Tank): 0.50  — heavily armored, barely stings
  */
 export function hpToSelfDmgMult(maxHp: number): number {

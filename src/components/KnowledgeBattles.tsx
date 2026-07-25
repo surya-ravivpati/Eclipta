@@ -341,12 +341,18 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
       </div>
       <div className="relative z-10">
         {showSprite && (
-          <div className="flex justify-center mb-3">
+          <div className="relative flex justify-center mb-3">
+            {/* Soft spotlight so the creature always separates from the card,
+                whether its art is dark or light. */}
+            <div
+              aria-hidden
+              className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-40 sm:h-52 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.12),transparent_68%)]"
+            />
             <img
               src={fighter.sprite}
               alt={fighter.name}
               onError={() => setSpriteFailed(true)}
-              className="h-24 sm:h-32 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_6px_16px_rgba(0,0,0,0.5)]"
+              className="relative h-32 sm:h-44 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)]"
             />
           </div>
         )}

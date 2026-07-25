@@ -118,3 +118,35 @@ export async function fetchClaimedChestNodeIds(): Promise<Set<number>> {
     .eq("user_id", user.id);
   return new Set(((data ?? []) as unknown as { node_id: number }[]).map((r) => r.node_id));
 }
+
+/**
+ * Admin: grant XP to a user by ID. Increments their current XP.
+ * Returns the new total XP, or null on error.
+ */
+export async function adminGrantXp(userId: string, amount: number): Promise<number | null> {
+  const { data, error } = await supabase.rpc("admin_grant_xp" as any, {
+    p_user_id: userId,
+    p_amount: amount,
+  });
+  if (error) {
+    console.error("Failed to grant XP:", error);
+    return null;
+  }
+  return (data as number | null) ?? null;
+}
+
+/**
+ * Admin: set a user's XP to a specific value.
+ * Returns the new total XP, or null on error.
+ */
+export async function adminSetXp(userId: string, xpAmount: number): Promise<number | null> {
+  const { data, error } = await supabase.rpc("admin_set_xp" as any, {
+    p_user_id: userId,
+    p_xp: xpAmount,
+  });
+  if (error) {
+    console.error("Failed to set XP:", error);
+    return null;
+  }
+  return (data as number | null) ?? null;
+}

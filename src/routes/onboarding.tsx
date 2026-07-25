@@ -152,7 +152,6 @@ function OnboardingPage() {
           weekly_hours: form.hours,
           preferred_style: styleMap[form.style] ?? "mixed",
           onboarded_at: new Date().toISOString(),
-          xp: 500,
         })
         .eq("user_id", user.id);
 

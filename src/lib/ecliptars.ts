@@ -34,14 +34,14 @@ const ARCH_ICON: Record<MonsterArchetypeKey, LucideIcon> = {
  * stable (`<arch>-a` / `<arch>-b`) because they're a server claim contract.
  */
 export const ECLIPTAR_NAMES: Record<MonsterArchetypeKey, string[]> = {
-  speedster:   ["Griffinink", "Spark", "Correr", "Zypheroo"],
+  speedster:   ["Griffstrike", "Spark", "Correr", "Zypheroo"],
   tank:        ["Dingus", "Syntium", "Mammorock", "Ironhide"],
-  chud:        ["Razorwing", "Crownscar", "Nightthorn", "Nitpick"],
-  gambler:     ["Mr. McHenry", "Rattleslot", "Snail-ette", "Fortunox"],
-  healer:      ["Brighteye", "Chobroni", "Bloomheart", "Moss Golem"],
+  chud:        ["Razorwing", "Crownscar", "Nighthorn", "Nitpick"],
+  gambler:     ["Mr. McHenry", "Rattleslot", "Snailouette", "Fortunox"],
+  healer:      ["BrightEye", "Chobroni", "Bloomheart", "Mossy Golem"],
   fulcrum:     ["Fuego", "Petrona", "Ticonder", "Equinox"],
-  accelerator: ["Venuk", "Fueljaw", "Adrenalynx", "Chronovex"],
-  god:         ["Newton", "Ecliptadon", "Einsteinium", "Temporobys"],
+  accelerator: ["Venuck", "Fueljaw", "Adrenalynx", "Chronovex"],
+  god:         ["Newton", "Ecliptadon", "Einsteinium", "Temporubyss"],
 };
 
 const SLOTS = ["a", "b", "c", "d"] as const;
@@ -54,7 +54,7 @@ export const ECLIPTARS: Ecliptar[] = (
       { slug: "newton",      name: "Newton",      archetype: "god", icon: Apple },
       { slug: "ecliptadon",  name: "Ecliptadon",  archetype: "god", icon: Atom  },
       { slug: "einsteinium", name: "Einsteinium", archetype: "god", icon: Crown },
-      { slug: "temporobys",  name: "Temporobys",  archetype: "god", icon: Crown },
+      { slug: "temporobys",  name: "Temporubyss",  archetype: "god", icon: Crown },
     ];
   }
   // Four claimable per archetype, all granted from the archetype's monster node.

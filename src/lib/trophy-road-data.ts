@@ -59,7 +59,7 @@ export const ROAD_NODES: RoadNode[] = [
   // ── Gold ────────────────────────────────────────────────────────
   { id: 15, tier: "gold",     type: "rank",    label: "Meridian I",          xp:  20000, band: "trials" },
   { id: 16, tier: "gold",     type: "monster", label: "Apex",            xp:  22000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-a", "chud-b"] },
-  { id: 63, tier: "gold", type: "ecliptar", label: "Nightthorn", xp: 23000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-c"] },
+  { id: 63, tier: "gold", type: "ecliptar", label: "Nighthorn", xp: 23000, band: "trials", archetype: "chud", ecliptarSlugs: ["chud-c"] },
   { id: 17, tier: "gold",     type: "chest",   rewardKey: "Gold Chest", label: "Meridian Cache",      xp:  24000, band: "trials" },
   { id: 18, tier: "gold",     type: "rank",    label: "Meridian II",         xp:  27000, band: "trials" },
   { id: 19, tier: "gold",     type: "chest",   rewardKey: "Gold Cache", label: "Meridian Vault",      xp:  30000, band: "trials" },
@@ -70,7 +70,7 @@ export const ROAD_NODES: RoadNode[] = [
   // ── Diamond ─────────────────────────────────────────────────────
   { id: 22, tier: "diamond",  type: "rank",    label: "Penumbra I",       xp:  43000, band: "trials" },
   { id: 23, tier: "diamond",  type: "monster", label: "Gambler",         xp:  46000, band: "trials", archetype: "gambler", ecliptarSlugs: ["gambler-a", "gambler-b"] },
-  { id: 65, tier: "diamond", type: "ecliptar", label: "Snail-ette", xp: 47500, band: "trials", archetype: "gambler", ecliptarSlugs: ["gambler-c"] },
+  { id: 65, tier: "diamond", type: "ecliptar", label: "Snailouette", xp: 47500, band: "trials", archetype: "gambler", ecliptarSlugs: ["gambler-c"] },
   { id: 24, tier: "diamond",  type: "chest",   rewardKey: "Diamond Chest", label: "Penumbra Cache",   xp:  49500, band: "trials" },
   { id: 25, tier: "diamond",  type: "rank",    label: "Penumbra II",      xp:  54000, band: "trials" },
   { id: 26, tier: "diamond",  type: "chest",   rewardKey: "Diamond Cache", label: "Penumbra Vault",   xp:  59000, band: "trials" },
@@ -91,7 +91,7 @@ export const ROAD_NODES: RoadNode[] = [
   { id: 32, tier: "platinum", type: "rank",    label: "Umbra II",     xp:  98000, band: "ascension" },
   { id: 33, tier: "platinum", type: "chest",   rewardKey: "Platinum Cache", label: "Umbra Vault",  xp: 107000, band: "ascension" },
   { id: 34, tier: "platinum", type: "boss",    label: "Umbra Guardian",   xp: 118000, band: "ascension" },
-  { id: 68, tier: "platinum", type: "ecliptar", label: "Moss Golem", xp: 124000, band: "ascension", archetype: "healer", ecliptarSlugs: ["healer-d"] },
+  { id: 68, tier: "platinum", type: "ecliptar", label: "Mossy Golem", xp: 124000, band: "ascension", archetype: "healer", ecliptarSlugs: ["healer-d"] },
   { id: 35, tier: "platinum", type: "rank",    label: "Umbra III",    xp: 130000, band: "ascension" },
 
   // ── Champion ────────────────────────────────────────────────────

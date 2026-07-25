@@ -18,23 +18,25 @@ import { join, extname } from "node:path";
 
 // Keep in sync with ECLIPTAR_NAMES in src/lib/ecliptars.ts.
 const ROSTER = {
-  speedster:   ["Griffinink", "Spark", "Correr", "Zypheroo"],
+  speedster:   ["Griffstrike", "Spark", "Correr", "Zypheroo"],
   tank:        ["Dingus", "Syntium", "Mammorock", "Ironhide"],
-  chud:        ["Razorwing", "Crownscar", "Nightthorn", "Nitpick"],
-  gambler:     ["Mr. McHenry", "Rattleslot", "Snail-ette", "Fortunox"],
-  healer:      ["Brighteye", "Chobroni", "Bloomheart", "Moss Golem"],
+  chud:        ["Razorwing", "Crownscar", "Nighthorn", "Nitpick"],
+  gambler:     ["Mr. McHenry", "Rattleslot", "Snailouette", "Fortunox"],
+  healer:      ["BrightEye", "Chobroni", "Bloomheart", "Mossy Golem"],
   fulcrum:     ["Fuego", "Petrona", "Ticonder", "Equinox"],
-  accelerator: ["Venuk", "Fueljaw", "Adrenalynx", "Chronovex"],
-  god:         ["Newton", "Ecliptadon", "Einsteinium", "Temporobys"],
+  accelerator: ["Venuck", "Fueljaw", "Adrenalynx", "Chronovex"],
+  god:         ["Newton", "Ecliptadon", "Einsteinium", "Temporubyss"],
 };
 const SLOTS = ["a", "b", "c", "d"];
+// God Ecliptars use named slugs (not god-a..d). Order matches ROSTER.god.
+const GOD_SLUGS = ["newton", "ecliptadon", "einsteinium", "temporobys"];
 const IMG_EXT = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const nameToSlug = {};
 for (const [arch, names] of Object.entries(ROSTER)) {
   names.forEach((n, i) => {
-    nameToSlug[norm(n)] = arch === "god" ? norm(n) : `${arch}-${SLOTS[i]}`;
+    nameToSlug[norm(n)] = arch === "god" ? GOD_SLUGS[i] : `${arch}-${SLOTS[i]}`;
   });
 }
 

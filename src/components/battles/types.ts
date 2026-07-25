@@ -28,6 +28,8 @@ export interface Fighter {
   focus: number;
   maxFocus: number;
   icon: LucideIcon;
+  /** Optional in-battle creature art (falls back to `icon` when absent/broken). */
+  sprite?: string;
 }
 
 export interface Archetype {

@@ -75,6 +75,16 @@ export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
 }
 
 /**
+ * URL of an Ecliptar's in-battle sprite, served from public/ecliptars/<slug>.png.
+ * Only some sprites exist yet — consumers render this in an <img> that falls
+ * back to the Ecliptar's Lucide icon on error, so slugs without art degrade
+ * gracefully and light up automatically as more sprites are added.
+ */
+export function ecliptarSpriteUrl(slug: string): string {
+  return `/ecliptars/${slug}.png`;
+}
+
+/**
  * Grant one Ecliptar to a user via the SECURITY DEFINER RPC, which is the
  * only valid server path (direct INSERTs are no longer allowed by RLS).
  * A unique violation (23505) means it's already owned — treated as success.

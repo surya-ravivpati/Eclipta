@@ -25,7 +25,7 @@ import { BattleIntro } from "./battles/BattleIntro";
 import { StreakHub } from "./streak/StreakHub";
 import { recordDailyPractice } from "@/lib/record-practice";
 import { recordOutcomes } from "@/lib/concept-mastery";
-import { ECLIPTARS, ECLIPTAR_NAMES, type Ecliptar } from "@/lib/ecliptars";
+import { ECLIPTARS, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
@@ -291,6 +291,12 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
 
+  // In-battle creature art. Falls back to the Lucide icon if the sprite is
+  // missing or fails to load; reset when the fighter's sprite changes.
+  const [spriteFailed, setSpriteFailed] = useState(false);
+  useEffect(() => { setSpriteFailed(false); }, [fighter.sprite]);
+  const showSprite = !!fighter.sprite && !spriteFailed;
+
   // Floating combat numbers — derived from HP deltas so every damage source
   // (bot, ghost, live PvP, wild events, heals) produces one automatically.
   const prevHpRef = useRef(fighter.hp);
@@ -334,10 +340,22 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
         </AnimatePresence>
       </div>
       <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-11 h-11 border flex items-center justify-center ${side === "left" ? "border-neon-cyan/40 text-neon-cyan" : "border-neon-pink/40 text-neon-pink"}`}>
-            <fighter.icon className="w-6 h-6" />
+        {showSprite && (
+          <div className="flex justify-center mb-3">
+            <img
+              src={fighter.sprite}
+              alt={fighter.name}
+              onError={() => setSpriteFailed(true)}
+              className="h-24 sm:h-32 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_6px_16px_rgba(0,0,0,0.5)]"
+            />
           </div>
+        )}
+        <div className="flex items-center gap-3 mb-4">
+          {!showSprite && (
+            <div className={`w-11 h-11 border flex items-center justify-center ${side === "left" ? "border-neon-cyan/40 text-neon-cyan" : "border-neon-pink/40 text-neon-pink"}`}>
+              <fighter.icon className="w-6 h-6" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h4 className="btt-shout text-xl truncate">{fighter.name}</h4>
             {arch && (
@@ -1894,18 +1912,18 @@ function BattleArena() {
       // Resolve opponent from match result
       let oppArchetype: ArchetypeId;
       let oppName: string;
+      let oppSlug: string | undefined;   // opponent's ecliptar (for its battle sprite)
 
       if (match.opponentArchetype) {
         oppArchetype = match.opponentArchetype;
         oppName = match.opponentName;
       } else {
-        // Bot: pick a random ecliptar so the opponent has a real archetype
-        // identity, then name it from that archetype's full roster (all four
-        // creatures, not just the two claimable slots).
+        // Bot: pick a real ecliptar so the opponent has a coherent identity —
+        // its creature, name, and sprite all match.
         const oppEclip = pickOpponent(cls);
         oppArchetype = oppEclip.archetype;
-        const pool   = ECLIPTAR_NAMES[oppArchetype];
-        oppName      = pool[Math.floor(Math.random() * pool.length)];
+        oppName      = oppEclip.name;
+        oppSlug      = oppEclip.slug;
       }
       // Always use the archetype's icon so ghost / bot / live opponents
       // visually reflect their build instead of a generic robot.
@@ -1944,10 +1962,12 @@ function BattleArena() {
       setPlayer({
         name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
         focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+        sprite: eclip ? ecliptarSpriteUrl(eclip.slug) : undefined,
       });
       setOpponent({
         name: oppName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
         focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppIcon,
+        sprite: oppSlug ? ecliptarSpriteUrl(oppSlug) : undefined,
       });
       setOpponentArchetype(oppArchetype);
       battleMemoryRef.current = createBattleMemory();
@@ -2024,6 +2044,7 @@ function BattleArena() {
     setPlayer({
       name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
       focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+      sprite: ecliptar ? ecliptarSpriteUrl(ecliptar.slug) : undefined,
     });
     setOpponent({
       name: opts.opponentName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,

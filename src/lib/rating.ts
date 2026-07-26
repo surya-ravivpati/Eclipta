@@ -3,6 +3,7 @@
  * Only live and ghost matches affect rating — bots never do.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { completeGhostBattleRpc, getPlayerRating } from "@/repositories/battles";
 
 export interface PlayerRating {
   rating: number;
@@ -11,36 +12,31 @@ export interface PlayerRating {
   losses: number;
 }
 
+const UNRATED: PlayerRating = { rating: 1000, peakRating: 1000, wins: 0, losses: 0 };
+
 export async function fetchPlayerRating(): Promise<PlayerRating> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { rating: 1000, peakRating: 1000, wins: 0, losses: 0 };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return UNRATED;
 
-  const { data } = await supabase
-    .from("player_ratings")
-    .select("rating, peak_rating, wins, losses")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const row = await getPlayerRating(user.id);
+  if (!row) return UNRATED;
 
-  if (!data) return { rating: 1000, peakRating: 1000, wins: 0, losses: 0 };
   return {
-    rating:     data.rating      ?? 1000,
-    peakRating: data.peak_rating ?? 1000,
-    wins:       data.wins        ?? 0,
-    losses:     data.losses      ?? 0,
+    rating: row.rating,
+    peakRating: row.peak_rating,
+    wins: row.wins,
+    losses: row.losses,
   };
 }
 
 /** Complete a recorded Ghost PvP battle exactly once and return the authoritative rating result. */
-export async function completeGhostBattle(sessionId: string, opponentRating: number): Promise<{ ratingAfter: number; ratingDelta: number }> {
-  const { data, error } = await supabase.rpc("complete_ghost_battle", {
-    p_session_id: sessionId,
-    p_opponent_rating: opponentRating,
-  });
-  if (error) throw error;
-  return {
-    ratingAfter: data?.rating_after ?? 1000,
-    ratingDelta: data?.rating_delta ?? 0,
-  };
+export async function completeGhostBattle(
+  sessionId: string,
+  opponentRating: number,
+): Promise<{ ratingAfter: number; ratingDelta: number }> {
+  return completeGhostBattleRpc(sessionId, opponentRating);
 }
 
 /** Human-readable tier name for a given ELO rating. */
@@ -66,13 +62,13 @@ export interface RatingLeague {
 }
 
 const LEAGUES: RatingLeague[] = [
-  { id: "bronze",   name: "Bronze",   floor: 0,    ceiling: 1050 },
-  { id: "silver",   name: "Silver",   floor: 1050, ceiling: 1200 },
-  { id: "gold",     name: "Gold",     floor: 1200, ceiling: 1400 },
-  { id: "diamond",  name: "Diamond",  floor: 1400, ceiling: 1600 },
+  { id: "bronze", name: "Bronze", floor: 0, ceiling: 1050 },
+  { id: "silver", name: "Silver", floor: 1050, ceiling: 1200 },
+  { id: "gold", name: "Gold", floor: 1200, ceiling: 1400 },
+  { id: "diamond", name: "Diamond", floor: 1400, ceiling: 1600 },
   { id: "platinum", name: "Platinum", floor: 1600, ceiling: 1800 },
   { id: "champion", name: "Champion", floor: 1800, ceiling: 2000 },
-  { id: "unreal",   name: "Unreal",   floor: 2000, ceiling: null },
+  { id: "unreal", name: "Unreal", floor: 2000, ceiling: null },
 ];
 
 /** The competitive league a rating currently sits in. */
@@ -84,12 +80,16 @@ export function ratingLeague(rating: number): RatingLeague {
 }
 
 /** Progress (0–1) through the current league, and points to the next gate. */
-export function leagueProgress(rating: number): { pct: number; toNext: number | null; next: RatingLeague | null } {
+export function leagueProgress(rating: number): {
+  pct: number;
+  toNext: number | null;
+  next: RatingLeague | null;
+} {
   const league = ratingLeague(rating);
   if (league.ceiling === null) return { pct: 1, toNext: null, next: null };
   const span = league.ceiling - league.floor;
   const pct = Math.max(0, Math.min(1, (rating - league.floor) / span));
-  const next = LEAGUES[LEAGUES.findIndex(l => l.id === league.id) + 1] ?? null;
+  const next = LEAGUES[LEAGUES.findIndex((l) => l.id === league.id) + 1] ?? null;
   return { pct, toNext: league.ceiling - rating, next };
 }
 

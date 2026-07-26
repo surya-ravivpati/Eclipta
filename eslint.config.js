@@ -56,6 +56,7 @@ export default tseslint.config(
       "vitest.config.ts",
       "playwright.config.ts",
       "vite.config.ts",
+      "drizzle.config.ts",
     ],
     extends: [
       js.configs.recommended,
@@ -182,7 +183,7 @@ export default tseslint.config(
   // Build and test configuration legitimately reads the environment directly;
   // it runs before the app, so the app's config module does not exist yet.
   {
-    files: ["vitest.config.ts", "playwright.config.ts", "vite.config.ts"],
+    files: ["vitest.config.ts", "playwright.config.ts", "vite.config.ts", "drizzle.config.ts"],
     rules: { "no-restricted-syntax": "off" },
   },
 
@@ -195,6 +196,11 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-member-access": "off",
       "no-restricted-syntax": "off",
       "no-console": "off",
+
+      // vi.mocked(obj.method) is Vitest's own documented mocking idiom, and
+      // this rule cannot tell that apart from a genuine unbound-`this` bug —
+      // it fires on every mocked method reference in every test that uses it.
+      "@typescript-eslint/unbound-method": "off",
     },
   },
 

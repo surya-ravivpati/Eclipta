@@ -4,10 +4,11 @@
 --
 -- Model: a snapshot table `old_profile_json` holds one row per old account
 -- (email + the whole old user_profiles row as JSON, exported from Lovable).
--- apply_old_progress() merges the meaningful fields onto a new login by email
--- using GREATEST (never lowers a value), so it's safe to run repeatedly and
--- never destroys progress earned on the new account. handle_new_user calls it
--- on signup so users who return LATER are restored automatically.
+-- apply_old_progress() writes the old (Lovable) fields onto a new login matched
+-- by email — "old wins" — falling back to the current value only when the old
+-- row lacks that field. This is deliberate: the new accounts had spurious high
+-- XP, and the intent is to restore the real old progress. handle_new_user calls
+-- it on signup so users who return LATER are restored automatically.
 --
 -- Reading fields out of JSON with (data->>'k') tolerates old/new schema drift:
 -- a missing key is NULL -> coalesced to 0, so a column the old DB lacked simply
@@ -37,16 +38,16 @@ BEGIN
   IF d IS NULL THEN RETURN; END IF;   -- no old account for this email
 
   UPDATE public.user_profiles np SET
-    xp                   = greatest(coalesce(np.xp,0),                   coalesce((d->>'xp')::int,0)),
-    current_streak       = greatest(coalesce(np.current_streak,0),       coalesce((d->>'current_streak')::int,0)),
-    best_streak          = greatest(coalesce(np.best_streak,0),          coalesce((d->>'best_streak')::int,0)),
-    daily_streak         = greatest(coalesce(np.daily_streak,0),         coalesce((d->>'daily_streak')::int,0)),
-    longest_daily_streak = greatest(coalesce(np.longest_daily_streak,0), coalesce((d->>'longest_daily_streak')::int,0)),
-    total_correct        = greatest(coalesce(np.total_correct,0),        coalesce((d->>'total_correct')::int,0)),
-    total_questions      = greatest(coalesce(np.total_questions,0),      coalesce((d->>'total_questions')::int,0)),
-    total_sessions       = greatest(coalesce(np.total_sessions,0),       coalesce((d->>'total_sessions')::int,0)),
-    streak_freezes       = greatest(coalesce(np.streak_freezes,0),       coalesce((d->>'streak_freezes')::int,0)),
-    equipped_ecliptar    = coalesce(np.equipped_ecliptar, nullif(d->>'equipped_ecliptar',''))
+    xp                   = coalesce((d->>'xp')::int,                   np.xp),
+    current_streak       = coalesce((d->>'current_streak')::int,       np.current_streak),
+    best_streak          = coalesce((d->>'best_streak')::int,          np.best_streak),
+    daily_streak         = coalesce((d->>'daily_streak')::int,         np.daily_streak),
+    longest_daily_streak = coalesce((d->>'longest_daily_streak')::int, np.longest_daily_streak),
+    total_correct        = coalesce((d->>'total_correct')::int,        np.total_correct),
+    total_questions      = coalesce((d->>'total_questions')::int,      np.total_questions),
+    total_sessions       = coalesce((d->>'total_sessions')::int,       np.total_sessions),
+    streak_freezes       = coalesce((d->>'streak_freezes')::int,       np.streak_freezes),
+    equipped_ecliptar    = coalesce(nullif(d->>'equipped_ecliptar',''), np.equipped_ecliptar)
   WHERE np.user_id = p_new_uid;
 END;
 $$;

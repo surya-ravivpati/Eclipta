@@ -4,6 +4,9 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { completeGhostBattleRpc, getPlayerRating } from "@/repositories/battles";
+import { RATING_LEAGUES, type RatingLeague } from "@/config/battle-tuning";
+
+export type { RatingLeague };
 
 export interface PlayerRating {
   rating: number;
@@ -44,39 +47,15 @@ export function ratingToTier(rating: number): string {
   return ratingLeague(rating).name;
 }
 
-/**
- * Competitive leagues on the rating ladder. These are the *seasonal* standing
- * (gain/loss) — distinct from the Trophy Road's permanent XP tiers, but they
- * deliberately share the same vocabulary and color tokens (`--tr-<id>`) so the
- * player reads one world across two axes. Floors double as the league gates
- * referenced in the redesign blueprint (docs/trophy-road-redesign.md).
- */
-export interface RatingLeague {
-  /** matches the CSS color token `--tr-<id>` and TierId vocabulary */
-  id: "bronze" | "silver" | "gold" | "diamond" | "platinum" | "champion" | "unreal";
-  name: string;
-  /** lowest rating in this league */
-  floor: number;
-  /** floor of the next league, or null at the top */
-  ceiling: number | null;
-}
-
-const LEAGUES: RatingLeague[] = [
-  { id: "bronze", name: "Bronze", floor: 0, ceiling: 1050 },
-  { id: "silver", name: "Silver", floor: 1050, ceiling: 1200 },
-  { id: "gold", name: "Gold", floor: 1200, ceiling: 1400 },
-  { id: "diamond", name: "Diamond", floor: 1400, ceiling: 1600 },
-  { id: "platinum", name: "Platinum", floor: 1600, ceiling: 1800 },
-  { id: "champion", name: "Champion", floor: 1800, ceiling: 2000 },
-  { id: "unreal", name: "Unreal", floor: 2000, ceiling: null },
-];
-
-/** The competitive league a rating currently sits in. */
+/** The competitive league a rating currently sits in. See src/config/battle-tuning.ts for the league table itself. */
 export function ratingLeague(rating: number): RatingLeague {
-  for (let i = LEAGUES.length - 1; i >= 0; i--) {
-    if (rating >= LEAGUES[i].floor) return LEAGUES[i];
+  for (let i = RATING_LEAGUES.length - 1; i >= 0; i--) {
+    const league = RATING_LEAGUES[i];
+    if (league && rating >= league.floor) return league;
   }
-  return LEAGUES[0];
+  const bronze = RATING_LEAGUES[0];
+  if (!bronze) throw new Error("RATING_LEAGUES must have at least one league");
+  return bronze;
 }
 
 /** Progress (0–1) through the current league, and points to the next gate. */
@@ -89,7 +68,7 @@ export function leagueProgress(rating: number): {
   if (league.ceiling === null) return { pct: 1, toNext: null, next: null };
   const span = league.ceiling - league.floor;
   const pct = Math.max(0, Math.min(1, (rating - league.floor) / span));
-  const next = LEAGUES[LEAGUES.findIndex((l) => l.id === league.id) + 1] ?? null;
+  const next = RATING_LEAGUES[RATING_LEAGUES.findIndex((l) => l.id === league.id) + 1] ?? null;
   return { pct, toNext: league.ceiling - rating, next };
 }
 

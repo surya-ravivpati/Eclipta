@@ -1,5 +1,6 @@
 import type { Archetype, Action } from "./types";
 import type { Difficulty } from "./types";
+import { BOT_ACCURACY, DAMAGE_TUNING } from "@/config/battle-tuning";
 
 /** Map a numeric difficulty level (1–10) to an easy/medium/hard question category. */
 export function levelToCategory(level: number): Difficulty {
@@ -18,10 +19,14 @@ export function levelToCategory(level: number): Difficulty {
 export function getActionDifficultyLevel(arch: Archetype, action: Action): number {
   const { diffMin, diffMax } = arch;
   switch (action) {
-    case "defend": return diffMin;
-    case "attack": return Math.round((diffMin + diffMax) / 2);
-    case "charge": return diffMax;
-    case "wild":   return diffMin + Math.floor(Math.random() * (diffMax - diffMin + 1));
+    case "defend":
+      return diffMin;
+    case "attack":
+      return Math.round((diffMin + diffMax) / 2);
+    case "charge":
+      return diffMax;
+    case "wild":
+      return diffMin + Math.floor(Math.random() * (diffMax - diffMin + 1));
   }
 }
 
@@ -41,11 +46,12 @@ export function getEffectiveDamage(
   let base = arch.baseDamage;
 
   if (arch.multiplierScales && opts.recordCount !== undefined) {
-    base = 13 + Math.min(opts.recordCount / 10, 1) * 14;
+    const { baseDamage, damageRange, questionsToMaxScale } = DAMAGE_TUNING.accelerator;
+    base = baseDamage + Math.min(opts.recordCount / questionsToMaxScale, 1) * damageRange;
   }
 
   if (opts.action === "charge") {
-    base *= 1.8;
+    base *= DAMAGE_TUNING.chargeMultiplier;
   }
 
   if (arch.damageIsTimeScaled && opts.timeSpent !== undefined && opts.maxTime && opts.maxTime > 0) {
@@ -61,7 +67,8 @@ export function getEffectiveDamage(
  */
 export function getEffectiveMultiplierStep(arch: Archetype, recordCount: number): number {
   if (arch.multiplierScales) {
-    return 0.15 + Math.min(recordCount / 10, 1) * 0.25;
+    const { stepBase, stepRange, questionsToMaxScale } = DAMAGE_TUNING.accelerator;
+    return stepBase + Math.min(recordCount / questionsToMaxScale, 1) * stepRange;
   }
   return arch.multiplierStep;
 }
@@ -82,7 +89,8 @@ export function streakToMultiplier(momentum: number, step: number): number {
  * At 250 HP (Tank): 0.50  — heavily armored, barely stings
  */
 export function hpToSelfDmgMult(maxHp: number): number {
-  return 1.30 - Math.max(0, (maxHp - 75) / 175) * 0.80;
+  const { baseMultiplier, referenceHp, hpDivisor, hpMultiplierRange } = DAMAGE_TUNING.selfDamage;
+  return baseMultiplier - Math.max(0, (maxHp - referenceHp) / hpDivisor) * hpMultiplierRange;
 }
 
 /**
@@ -91,5 +99,8 @@ export function hpToSelfDmgMult(maxHp: number): number {
  */
 export function botAccuracy(arch: Archetype): number {
   const avg = (arch.diffMin + arch.diffMax) / 2;
-  return Math.max(0.42, 0.85 - ((avg - 1) / 9) * 0.38);
+  return Math.max(
+    BOT_ACCURACY.min,
+    BOT_ACCURACY.max - ((avg - 1) / BOT_ACCURACY.difficultyScaleWidth) * BOT_ACCURACY.range,
+  );
 }

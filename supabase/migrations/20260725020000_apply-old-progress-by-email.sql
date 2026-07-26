@@ -54,17 +54,46 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.apply_old_progress(uuid, text) FROM PUBLIC, anon, authenticated;
 
--- 3. On signup: starter grant, then restore any old progress for this email.
---    Both side effects are guarded so they can never block account creation.
+-- 3. On signup: create the profile with the OLD (Lovable) values inserted
+--    DIRECTLY when a snapshot exists for this email. This deliberately INSERTs
+--    the old values rather than inserting 500 and UPDATE-ing afterward, because
+--    guard_xp_update (a BEFORE UPDATE trigger) forbids the large XP jump a
+--    restore requires. Brand-new users (no snapshot) get the normal 500 start
+--    and column defaults. The Ecliptar grant stays guarded so it can never
+--    block signup.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
+DECLARE d jsonb;
 BEGIN
-  INSERT INTO public.user_profiles (user_id, xp)
-  VALUES (NEW.id, 500);
+  SELECT data INTO d FROM public.old_profile_json WHERE email = lower(NEW.email);
+
+  IF d IS NULL THEN
+    -- Genuinely new user: normal starter XP, other columns take their defaults.
+    INSERT INTO public.user_profiles (user_id, xp)
+    VALUES (NEW.id, 500);
+  ELSE
+    -- Returning user: restore the old progress directly (bypasses the guard).
+    INSERT INTO public.user_profiles (
+      user_id, xp, current_streak, best_streak, daily_streak, longest_daily_streak,
+      total_correct, total_questions, total_sessions, streak_freezes, equipped_ecliptar
+    ) VALUES (
+      NEW.id,
+      coalesce((d->>'xp')::int, 500),
+      coalesce((d->>'current_streak')::int, 0),
+      coalesce((d->>'best_streak')::int, 0),
+      coalesce((d->>'daily_streak')::int, 0),
+      coalesce((d->>'longest_daily_streak')::int, 0),
+      coalesce((d->>'total_correct')::int, 0),
+      coalesce((d->>'total_questions')::int, 0),
+      coalesce((d->>'total_sessions')::int, 0),
+      coalesce((d->>'streak_freezes')::int, 0),
+      nullif(d->>'equipped_ecliptar', '')
+    );
+  END IF;
 
   BEGIN
     INSERT INTO public.user_ecliptars (user_id, archetype, ecliptar_slug, ecliptar_name, node_id)
@@ -72,12 +101,6 @@ BEGIN
       (NEW.id, 'speedster', 'speedster-a', 'Griffinink', 2),
       (NEW.id, 'speedster', 'speedster-b', 'Spark',      2)
     ON CONFLICT (user_id, ecliptar_slug) DO NOTHING;
-  EXCEPTION WHEN OTHERS THEN
-    NULL;
-  END;
-
-  BEGIN
-    PERFORM public.apply_old_progress(NEW.id, NEW.email);
   EXCEPTION WHEN OTHERS THEN
     NULL;
   END;

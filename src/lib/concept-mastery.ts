@@ -9,7 +9,12 @@
  * rather than throwing, so the battle loop and Practice degrade gracefully.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { insertBattleQuestionRecords } from "@/repositories/battles";
+import {
+  getConceptMasteryEvidence,
+  getWeakConceptRows,
+  upsertConceptMastery,
+} from "@/repositories/courses";
 
 export type MasteryState = "struggling" | "developing" | "solid" | "mastered";
 
@@ -52,7 +57,7 @@ export async function recordOutcomes(userId: string, outcomes: ConceptOutcome[])
   if (!userId || outcomes.length === 0) return;
   try {
     // 1) Append the raw evidence stream.
-    await supabase.from("battle_question_records").insert(
+    await insertBattleQuestionRecords(
       outcomes.map((o) => ({
         user_id: userId,
         concept: o.concept,
@@ -74,12 +79,8 @@ export async function recordOutcomes(userId: string, outcomes: ConceptOutcome[])
     const concepts = [...byConcept.keys()];
 
     // 3) Merge onto existing mastery rows (read-then-upsert; best-effort).
-    const { data: existing } = await supabase
-      .from("concept_mastery")
-      .select("concept,evidence_count,correct_count")
-      .eq("user_id", userId)
-      .in("concept", concepts);
-    const prevByConcept = new Map((existing ?? []).map((r) => [r.concept, r]));
+    const existing = await getConceptMasteryEvidence(userId, concepts);
+    const prevByConcept = new Map(existing.map((r) => [r.concept, r]));
 
     const rows = concepts.map((concept) => {
       const agg = byConcept.get(concept)!;
@@ -100,7 +101,7 @@ export async function recordOutcomes(userId: string, outcomes: ConceptOutcome[])
         next_review: nextReviewISO(state),
       };
     });
-    await supabase.from("concept_mastery").upsert(rows, { onConflict: "user_id,concept" });
+    await upsertConceptMastery(rows);
   } catch (e) {
     console.warn("concept_mastery write skipped:", e);
   }
@@ -110,14 +111,8 @@ export async function recordOutcomes(userId: string, outcomes: ConceptOutcome[])
 export async function getWeakConcepts(userId: string, limit = 8): Promise<WeakConcept[]> {
   if (!userId) return [];
   try {
-    const { data } = await supabase
-      .from("concept_mastery")
-      .select("concept,subject,state,confidence,evidence_count")
-      .eq("user_id", userId)
-      .in("state", ["struggling", "developing"])
-      .order("confidence", { ascending: true })
-      .limit(limit);
-    return (data ?? []).map((r) => ({
+    const rows = await getWeakConceptRows(userId, limit);
+    return rows.map((r) => ({
       concept: r.concept,
       subject: r.subject,
       state: r.state as MasteryState,

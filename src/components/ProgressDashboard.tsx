@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { listStudyRooms, type StudyRoom } from "@/lib/study-rooms";
 import { CERTIFIED_COURSES } from "@/lib/certified-courses";
+import { getEnrollmentsWithCount } from "@/repositories/courses";
 import "./Progress.css";
 
 const CERTIFIED_SLUGS = new Set(CERTIFIED_COURSES.map((c) => c.slug));
@@ -154,11 +155,7 @@ export function ProgressDashboard() {
           .select("best_streak,total_correct,total_questions,xp")
           .eq("user_id", user.id)
           .maybeSingle(),
-        supabase
-          .from("enrollments")
-          .select("course_slug,course_title", { count: "exact" })
-          .eq("user_id", user.id)
-          .order("enrolled_at", { ascending: false }),
+        getEnrollmentsWithCount(user.id),
         supabase
           .from("user_ecliptars")
           .select("id", { count: "exact", head: true })
@@ -166,8 +163,8 @@ export function ProgressDashboard() {
       ]);
       if (cancelled) return;
       if (p.data) setProfile(p.data);
-      setEnrollCount(e.count ?? 0);
-      setEnrolled(e.data ?? []);
+      setEnrollCount(e.count);
+      setEnrolled(e.rows);
       setTrophiesEarned(t.count ?? 0);
     })();
     return () => {

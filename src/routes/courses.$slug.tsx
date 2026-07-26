@@ -2,10 +2,19 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, Check, Layers, User as UserIcon, Loader2, Play } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { toCourseBlock, type CourseBlock } from "@/lib/course-blocks";
+import {
+  enrollInCourse,
+  getCourseBlocksForModules,
+  getCourseBySlug,
+  getCourseCreatorUsername,
+  getCourseModules,
+  isEnrolled,
+  type CourseModuleRow,
+  type CourseSummary,
+} from "@/repositories/courses";
 
 export const Route = createFileRoute("/courses/$slug")({
   head: ({ params }) => ({
@@ -17,22 +26,8 @@ export const Route = createFileRoute("/courses/$slug")({
   component: CommunityCoursePage,
 });
 
-interface Course {
-  id: string;
-  user_id: string;
-  slug: string;
-  title: string;
-  summary: string | null;
-  level: string;
-  structure: string;
-  depth: string;
-  status: string;
-}
-interface Module {
-  id: string;
-  title: string;
-  position: number;
-}
+type Course = CourseSummary;
+type Module = CourseModuleRow;
 
 function ytId(url: string): string | null {
   if (!url) return null;
@@ -57,54 +52,32 @@ function CommunityCoursePage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: c } = await supabase
-        .from("user_courses")
-        .select("id,user_id,slug,title,summary,level,structure,depth,status")
-        .eq("slug", slug)
-        .maybeSingle();
+      const c = await getCourseBySlug(slug);
       if (!c || cancelled) {
         setLoading(false);
         return;
       }
       setCourse(c);
 
-      const [{ data: m }, { data: cr }] = await Promise.all([
-        supabase
-          .from("course_modules")
-          .select("id,title,position")
-          .eq("course_id", c.id)
-          .order("position"),
-        supabase.from("public_profiles").select("username").eq("user_id", c.user_id).maybeSingle(),
+      const [mods, creatorUsername] = await Promise.all([
+        getCourseModules(c.id),
+        getCourseCreatorUsername(c.user_id),
       ]);
-      const mods = (m as Module[]) || [];
       setModules(mods);
-      setCreatorName(cr?.username || "Anonymous");
+      setCreatorName(creatorUsername || "Anonymous");
       if (mods.length) setActiveId(mods[0].id);
 
       if (mods.length) {
-        const { data: b } = await supabase
-          .from("course_blocks")
-          .select("id,module_id,type,data,position")
-          .in(
-            "module_id",
-            mods.map((x) => x.id),
-          )
-          .order("position");
+        const b = await getCourseBlocksForModules(mods.map((x) => x.id));
         const grouped: Record<string, CourseBlock[]> = {};
-        (b ?? []).flatMap(toCourseBlock).forEach((blk) => {
+        b.flatMap(toCourseBlock).forEach((blk) => {
           (grouped[blk.module_id] ||= []).push(blk);
         });
         setBlocks(grouped);
       }
 
       if (user) {
-        const { data: en } = await supabase
-          .from("enrollments")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("course_slug", slug)
-          .maybeSingle();
-        setEnrolled(!!en);
+        setEnrolled(await isEnrolled(user.id, slug));
       }
       setLoading(false);
     })();
@@ -119,12 +92,16 @@ function CommunityCoursePage() {
       return;
     }
     if (!course) return;
-    const { error } = await supabase.from("enrollments").insert({
-      user_id: user.id,
-      course_slug: course.slug,
-      course_title: course.title,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await enrollInCourse({
+        user_id: user.id,
+        course_slug: course.slug,
+        course_title: course.title,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not enroll");
+      return;
+    }
     setEnrolled(true);
     toast.success(`Enrolled in ${course.title}`);
   };

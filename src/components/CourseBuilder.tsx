@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { insertCourseProposal } from "@/repositories/courses";
 
 const STEPS = [
   { id: "topic", label: "TOPIC", icon: BookOpen },
@@ -133,9 +134,9 @@ export function CourseBuilder() {
     setReviewChecks(checks);
 
     // Persist proposal to DB first
-    const { data: inserted, error } = await supabase
-      .from("course_proposals")
-      .insert({
+    let proposalId: string;
+    try {
+      proposalId = await insertCourseProposal({
         user_id: user.id,
         topic: topic.trim(),
         description: topicDescription.trim() || null,
@@ -146,12 +147,11 @@ export function CourseBuilder() {
         prerequisites: prerequisites.trim() || null,
         creator_reasoning: creatorReasoning.trim(),
         status: "reviewing",
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      toast.error("Could not save proposal", { description: error.message });
+      });
+    } catch (e) {
+      toast.error("Could not save proposal", {
+        description: e instanceof Error ? e.message : undefined,
+      });
       setReviewStatus("idle");
       return;
     }
@@ -180,7 +180,7 @@ export function CourseBuilder() {
 
     try {
       const { data, error: fnErr } = await supabase.functions.invoke("review-course-proposal", {
-        body: { proposalId: inserted.id },
+        body: { proposalId },
       });
       if (fnErr) throw fnErr;
       const v = data as Verdict;

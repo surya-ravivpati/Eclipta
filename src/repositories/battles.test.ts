@@ -14,7 +14,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { supabase } from "@/integrations/supabase/client";
-import { completeGhostBattleRpc, getPlayerRating } from "./battles";
+import { completeGhostBattleRpc, getPlayerRating, insertBattleQuestionRecords } from "./battles";
 
 function mockFrom(result: { data: unknown; error: unknown }) {
   const maybeSingle = vi.fn().mockResolvedValue(result);
@@ -116,5 +116,38 @@ describe("completeGhostBattleRpc", () => {
     await expect(completeGhostBattleRpc("session-1", 1150)).rejects.toThrow(
       "session already applied",
     );
+  });
+});
+
+describe("insertBattleQuestionRecords", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("inserts the given rows into battle_question_records", async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    vi.mocked(supabase.from).mockReturnValue({ insert } as never);
+
+    const rows = [
+      {
+        user_id: "u1",
+        concept: "derivatives",
+        subject: "Mathematics",
+        difficulty: "medium",
+        correct: true,
+        time_spent: 12.5,
+      },
+    ];
+    await insertBattleQuestionRecords(rows);
+
+    expect(supabase.from).toHaveBeenCalledWith("battle_question_records");
+    expect(insert).toHaveBeenCalledWith(rows);
+  });
+
+  it("throws on a genuine database error", async () => {
+    const insert = vi.fn().mockResolvedValue({ error: { message: "connection reset" } });
+    vi.mocked(supabase.from).mockReturnValue({ insert } as never);
+
+    await expect(insertBattleQuestionRecords([])).rejects.toThrow("connection reset");
   });
 });

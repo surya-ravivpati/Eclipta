@@ -148,6 +148,25 @@ export async function recordBattleSessionRpc(
   return data ?? null;
 }
 
+// ── Concept-mastery evidence stream ─────────────────────────────────────────
+
+export interface BattleQuestionRecordInsert {
+  user_id: string;
+  concept: string;
+  subject: string;
+  difficulty: string;
+  correct: boolean;
+  time_spent: number | null;
+}
+
+/** Appends one battle's answered questions to the evidence stream src/lib/concept-mastery.ts aggregates from. */
+export async function insertBattleQuestionRecords(
+  rows: BattleQuestionRecordInsert[],
+): Promise<void> {
+  const { error } = await supabase.from("battle_question_records").insert(rows);
+  if (error) throw new Error(error.message);
+}
+
 /** The raw ghost session row shape the RPC returns, before src/lib/battle-replay.ts reshapes it. */
 export interface RawGhostSession {
   id: string;

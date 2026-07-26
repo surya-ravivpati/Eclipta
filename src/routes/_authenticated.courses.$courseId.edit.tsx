@@ -22,10 +22,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import {
-  toCourseBlock, emptyBlockData,
-  type CourseBlock, type CourseBlockType, type CourseBlockData,
-  type TextBlockData, type MediaBlockData, type QuizBlockData,
+  toCourseBlock,
+  emptyBlockData,
+  type CourseBlock,
+  type CourseBlockType,
+  type CourseBlockData,
+  type TextBlockData,
+  type MediaBlockData,
+  type QuizBlockData,
 } from "@/lib/course-blocks";
+import {
+  deleteCourseBlock,
+  deleteCourseModule,
+  getCourseBlocksForModules,
+  getCourseForEdit,
+  getCourseModules,
+  insertCourseBlock,
+  insertCourseModule,
+  renameCourseModule,
+  updateCourseBlockData,
+  updateCourseFields,
+  type CourseEditRow,
+  type CourseModuleEditRow,
+} from "@/repositories/courses";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId/edit")({
   head: () => ({
@@ -40,22 +59,8 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId/edit")({
   component: CourseEditor,
 });
 
-interface Course {
-  id: string;
-  user_id: string;
-  slug: string;
-  title: string;
-  summary: string | null;
-  level: string;
-  status: string;
-  cover_image_url: string | null;
-}
-interface Module {
-  id: string;
-  course_id: string;
-  title: string;
-  position: number;
-}
+type Course = CourseEditRow;
+type Module = CourseModuleEditRow;
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -82,12 +87,13 @@ function CourseEditor() {
 
   const reload = useCallback(async () => {
     if (!user) return;
-    const { data: c, error: cErr } = await supabase
-      .from("user_courses")
-      .select("id,user_id,slug,title,summary,level,status,cover_image_url")
-      .eq("id", courseId)
-      .maybeSingle();
-    if (cErr || !c) {
+    let c: CourseEditRow | null;
+    try {
+      c = await getCourseForEdit(courseId);
+    } catch {
+      c = null;
+    }
+    if (!c) {
       toast.error("Couldn't load course");
       navigate({ to: "/profile" });
       return;
@@ -99,26 +105,15 @@ function CourseEditor() {
     }
     setCourse(c);
 
-    const { data: m } = await supabase
-      .from("course_modules")
-      .select("id,course_id,title,position")
-      .eq("course_id", courseId)
-      .order("position");
-    const mods = (m as Module[]) || [];
+    const rawMods = await getCourseModules(courseId);
+    const mods: Module[] = rawMods.map((mod) => ({ ...mod, course_id: courseId }));
     setModules(mods);
     if (mods.length && !activeModuleId) setActiveModuleId(mods[0].id);
 
     if (mods.length) {
-      const { data: b } = await supabase
-        .from("course_blocks")
-        .select("id,module_id,type,data,position")
-        .in(
-          "module_id",
-          mods.map((x) => x.id),
-        )
-        .order("position");
+      const b = await getCourseBlocksForModules(mods.map((x) => x.id));
       const grouped: Record<string, CourseBlock[]> = {};
-      (b ?? []).flatMap(toCourseBlock).forEach((blk) => {
+      b.flatMap(toCourseBlock).forEach((blk) => {
         (grouped[blk.module_id] ||= []).push(blk);
       });
       setBlocks(grouped);
@@ -140,10 +135,17 @@ function CourseEditor() {
     );
   }
 
-  const updateCourseField = async (patch: Partial<Course>) => {
+  const updateCourseField = async (patch: {
+    title?: string;
+    summary?: string;
+    status?: string;
+  }) => {
     setCourse({ ...course, ...patch });
-    const { error } = await supabase.from("user_courses").update(patch).eq("id", courseId);
-    if (error) toast.error(error.message);
+    try {
+      await updateCourseFields(courseId, patch);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save");
+    }
   };
 
   const togglePublish = async () => {
@@ -164,25 +166,26 @@ function CourseEditor() {
 
   const addModule = async () => {
     const position = modules.length;
-    const { data, error } = await supabase
-      .from("course_modules")
-      .insert({ course_id: courseId, title: "New module", position })
-      .select("id,course_id,title,position")
-      .single();
-    if (error) return toast.error(error.message);
-    const newMod = data;
+    let newMod: CourseModuleEditRow;
+    try {
+      const inserted = await insertCourseModule(courseId, "New module", position);
+      newMod = { ...inserted, course_id: courseId };
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't add module");
+      return;
+    }
     setModules([...modules, newMod]);
     setActiveModuleId(newMod.id);
   };
 
   const renameModule = async (id: string, title: string) => {
     setModules((prev) => prev.map((m) => (m.id === id ? { ...m, title } : m)));
-    await supabase.from("course_modules").update({ title }).eq("id", id);
+    await renameCourseModule(id, title);
   };
 
   const deleteModule = async (id: string) => {
     if (!confirm("Delete this module and all its content?")) return;
-    await supabase.from("course_modules").delete().eq("id", id);
+    await deleteCourseModule(id);
     setModules((prev) => prev.filter((m) => m.id !== id));
     if (activeModuleId === id) setActiveModuleId(modules.find((m) => m.id !== id)?.id || null);
     toast.success("Module deleted");
@@ -192,15 +195,16 @@ function CourseEditor() {
     if (!activeModuleId) return;
     const moduleBlocks = blocks[activeModuleId] || [];
     const position = moduleBlocks.length;
-    const { data, error } = await supabase
-      .from("course_blocks")
-      .insert({ module_id: activeModuleId, type, data: emptyBlockData(type), position })
-      .select("id,module_id,type,data,position")
-      .single();
-    if (error) return toast.error(error.message);
+    let row;
+    try {
+      row = await insertCourseBlock(activeModuleId, type, emptyBlockData(type), position);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't add block");
+      return;
+    }
     setBlocks((prev) => ({
       ...prev,
-      [activeModuleId]: [...(prev[activeModuleId] || []), ...toCourseBlock(data)],
+      [activeModuleId]: [...(prev[activeModuleId] || []), ...toCourseBlock(row)],
     }));
   };
 
@@ -215,11 +219,11 @@ function CourseEditor() {
       }
       return copy;
     });
-    await supabase.from("course_blocks").update({ data }).eq("id", id);
+    await updateCourseBlockData(id, data);
   };
 
   const deleteBlock = async (id: string, moduleId: string) => {
-    await supabase.from("course_blocks").delete().eq("id", id);
+    await deleteCourseBlock(id);
     setBlocks((prev) => ({ ...prev, [moduleId]: prev[moduleId].filter((b) => b.id !== id) }));
   };
 
@@ -510,7 +514,13 @@ function BlockEditor({
   );
 }
 
-function TextBlockEditor({ data, onChange }: { data: TextBlockData; onChange: (d: TextBlockData) => void }) {
+function TextBlockEditor({
+  data,
+  onChange,
+}: {
+  data: TextBlockData;
+  onChange: (d: TextBlockData) => void;
+}) {
   const [text, setText] = useState(data.text || "");
   return (
     <textarea
@@ -524,7 +534,13 @@ function TextBlockEditor({ data, onChange }: { data: TextBlockData; onChange: (d
   );
 }
 
-function YouTubeBlockEditor({ data, onChange }: { data: MediaBlockData; onChange: (d: MediaBlockData) => void }) {
+function YouTubeBlockEditor({
+  data,
+  onChange,
+}: {
+  data: MediaBlockData;
+  onChange: (d: MediaBlockData) => void;
+}) {
   const [url, setUrl] = useState(data.url || "");
   const [caption, setCaption] = useState(data.caption || "");
   const id = extractYouTubeId(url);
@@ -640,7 +656,13 @@ function ImageBlockEditor({
   );
 }
 
-function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d: QuizBlockData) => void }) {
+function QuizBlockEditor({
+  data,
+  onChange,
+}: {
+  data: QuizBlockData;
+  onChange: (d: QuizBlockData) => void;
+}) {
   const [question, setQuestion] = useState(data.question || "");
   const [options, setOptions] = useState<string[]>(data.options || ["", "", "", ""]);
   const [correctIndex, setCorrectIndex] = useState<number>(

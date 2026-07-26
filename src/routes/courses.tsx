@@ -21,10 +21,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { EASING } from "@/config/motion";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  getCourseProgressForUser,
+  getEnrollmentSlugsWithDates,
+  getPublishedCommunityCourses,
+} from "@/repositories/courses";
+import {
   SUBJECTS,
   type Subject,
   type UnifiedCourse,
-  type CommunityCourseRow,
   certifiedToUnified,
   communityToUnified,
   searchScore,
@@ -86,14 +90,9 @@ function CoursesHub() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("user_courses")
-        .select("id,slug,title,summary,level,depth,enrolled_count,cover_image_url")
-        .eq("status", "published")
-        .order("enrolled_count", { ascending: false })
-        .limit(120);
+      const data = await getPublishedCommunityCourses(120);
       if (cancelled) return;
-      setCommunity(communityToUnified((data as CommunityCourseRow[]) || []));
+      setCommunity(communityToUnified(data));
       setLoading(false);
     })();
     return () => {
@@ -111,12 +110,9 @@ function CoursesHub() {
     }
     let cancelled = false;
     (async () => {
-      const { data: en } = await supabase
-        .from("enrollments")
-        .select("course_slug,enrolled_at")
-        .eq("user_id", user.id);
+      const en = await getEnrollmentSlugsWithDates(user.id);
       if (cancelled) return;
-      setEnrolledSlugs(new Set((en ?? []).map((r) => r.course_slug)));
+      setEnrolledSlugs(new Set(en.map((r) => r.course_slug)));
 
       // Weak/strong areas feed the recommendation engine (Phase 2).
       const { data: prof } = await supabase
@@ -129,27 +125,17 @@ function CoursesHub() {
         setWeakAreas(Array.isArray(prof.weak_areas) ? prof.weak_areas : []);
       }
 
-      // Best-effort: course_progress may not be migrated yet. Seed lastOpened
-      // from enrollments so Continue Learning works either way.
+      // Seed lastOpened from enrollments, then let real course_progress rows override it.
       const base: Record<string, Progress> = {};
-      for (const r of en ?? [])
+      for (const r of en)
         base[r.course_slug] = { percent: 0, status: "enrolled", lastOpened: r.enrolled_at };
-      try {
-        const { data: prog, error } = await supabase
-          .from("course_progress")
-          .select("course_slug,percent,status,last_opened_at")
-          .eq("user_id", user.id);
-        if (!error && prog) {
-          for (const p of prog) {
-            base[p.course_slug] = {
-              percent: p.percent ?? 0,
-              status: p.status ?? "enrolled",
-              lastOpened: p.last_opened_at,
-            };
-          }
-        }
-      } catch {
-        /* table absent — enrollments fallback already in place */
+      const prog = await getCourseProgressForUser(user.id);
+      for (const p of prog) {
+        base[p.course_slug] = {
+          percent: p.percent,
+          status: p.status,
+          lastOpened: p.last_opened_at,
+        };
       }
       if (!cancelled) setProgress(base);
     })();

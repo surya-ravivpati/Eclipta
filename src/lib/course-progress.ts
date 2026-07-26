@@ -7,7 +7,7 @@
  * forget.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { upsertCourseProgress as upsertCourseProgressRow } from "@/repositories/courses";
 import type { CourseSource } from "./courses";
 
 export interface ProgressSync {
@@ -30,21 +30,18 @@ export async function syncCourseProgress(p: ProgressSync): Promise<void> {
         : "enrolled";
   const now = new Date().toISOString();
   try {
-    await supabase.from("course_progress").upsert(
-      {
-        user_id: p.userId,
-        course_slug: p.courseSlug,
-        course_title: p.courseTitle,
-        source: p.source,
-        status,
-        lessons_done: p.lessonsDone,
-        lessons_total: p.lessonsTotal,
-        current_block_id: p.currentBlockId ?? null,
-        last_opened_at: now,
-        completed_at: status === "completed" ? now : null,
-      },
-      { onConflict: "user_id,course_slug" },
-    );
+    await upsertCourseProgressRow({
+      user_id: p.userId,
+      course_slug: p.courseSlug,
+      course_title: p.courseTitle,
+      source: p.source,
+      status,
+      lessons_done: p.lessonsDone,
+      lessons_total: p.lessonsTotal,
+      current_block_id: p.currentBlockId ?? null,
+      last_opened_at: now,
+      completed_at: status === "completed" ? now : null,
+    });
   } catch (e) {
     // Table not migrated yet, or transient failure — never block the player.
     console.warn("course_progress sync skipped:", e);

@@ -4,8 +4,11 @@
  * see AGENTS.md's "Database" and "Tuning" sections for the plan.
  *
  * Currently covers: battles (archetype mastery, solo/bot/ghost sessions, live
- * PvP, player ratings) and profile (account XP/streaks, claimed Ecliptars,
- * claimed chests). The remaining ~36 tables are not yet modelled.
+ * PvP, player ratings), profile (account XP/streaks, claimed Ecliptars,
+ * claimed chests), and courses (community courses and content, enrollment
+ * and progress, proposals, concept mastery, daily challenge). The remaining
+ * ~28 tables are not yet modelled.
  */
 export * from "./battles";
 export * from "./profile";
+export * from "./courses";

@@ -84,6 +84,7 @@ import { recordOutcomes } from "@/lib/concept-mastery";
 import { ECLIPTARS, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import type { TableRow } from "@/integrations/supabase/database";
+import { getDailyChallengeProgress } from "@/repositories/courses";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
@@ -452,7 +453,9 @@ function FighterCard({
   // In-battle creature art. Falls back to the Lucide icon if the sprite is
   // missing or fails to load; reset when the fighter's sprite changes.
   const [spriteFailed, setSpriteFailed] = useState(false);
-  useEffect(() => { setSpriteFailed(false); }, [fighter.sprite]);
+  useEffect(() => {
+    setSpriteFailed(false);
+  }, [fighter.sprite]);
   const showSprite = !!fighter.sprite && !spriteFailed;
 
   // Floating combat numbers — derived from HP deltas so every damage source
@@ -528,12 +531,13 @@ function FighterCard({
               onError={() => setSpriteFailed(true)}
               className="relative h-32 sm:h-44 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)]"
             />
-
           </div>
         )}
         <div className="flex items-center gap-3 mb-4">
           {!showSprite && (
-            <div className={`w-11 h-11 border flex items-center justify-center ${side === "left" ? "border-neon-cyan/40 text-neon-cyan" : "border-neon-pink/40 text-neon-pink"}`}>
+            <div
+              className={`w-11 h-11 border flex items-center justify-center ${side === "left" ? "border-neon-cyan/40 text-neon-cyan" : "border-neon-pink/40 text-neon-pink"}`}
+            >
               <fighter.icon className="w-6 h-6" />
             </div>
           )}
@@ -1722,7 +1726,6 @@ function BattleArena() {
           setPhase("select");
         }
       }, 900);
-       
     },
     [addLog, resetLiveTurnLocks],
   );
@@ -2584,7 +2587,7 @@ function BattleArena() {
       // Resolve opponent from match result
       let oppArchetype: ArchetypeId;
       let oppName: string;
-      let oppSlug: string | undefined;   // opponent's ecliptar (for its battle sprite)
+      let oppSlug: string | undefined; // opponent's ecliptar (for its battle sprite)
 
       if (match.opponentArchetype) {
         oppArchetype = match.opponentArchetype;
@@ -2768,7 +2771,6 @@ function BattleArena() {
           result: `Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · LIVE`,
         });
       }
-       
     },
     [ecliptar],
   );
@@ -3724,12 +3726,7 @@ function DailyChallengeCard() {
     }
     setAuthed(true);
     const today = new Date().toISOString().slice(0, 10);
-    const { data } = await supabase
-      .from("daily_challenge_progress")
-      .select("wins, bonus_claimed")
-      .eq("user_id", user.id)
-      .eq("challenge_date", today)
-      .maybeSingle();
+    const data = await getDailyChallengeProgress(user.id, today);
     setWins(data?.wins ?? 0);
     setClaimed(!!data?.bonus_claimed);
   }, []);

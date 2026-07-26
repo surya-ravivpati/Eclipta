@@ -1,11 +1,22 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ShieldCheck, Star, Clock, Users, BookOpen, ArrowLeft, Check, Layers, PlayCircle, MessagesSquare } from "lucide-react";
+import {
+  ShieldCheck,
+  Star,
+  Clock,
+  Users,
+  BookOpen,
+  ArrowLeft,
+  Check,
+  Layers,
+  PlayCircle,
+  MessagesSquare,
+} from "lucide-react";
 import { getCourseBySlug } from "@/lib/certified-courses";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { enrollInCourse, isEnrolled as isEnrolledInCourse } from "@/repositories/courses";
 
 export const Route = createFileRoute("/_authenticated/certified/$slug")({
   component: CourseDetail,
@@ -16,11 +27,15 @@ export const Route = createFileRoute("/_authenticated/certified/$slug")({
   },
   notFoundComponent: () => (
     <div className="min-h-screen flex items-center justify-center">
-      <Link to="/courses" className="text-neon-purple">← Back to courses</Link>
+      <Link to="/courses" className="text-neon-purple">
+        ← Back to courses
+      </Link>
     </div>
   ),
   errorComponent: ({ error }) => (
-    <div className="min-h-screen flex items-center justify-center text-muted-foreground">{error.message}</div>
+    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      {error.message}
+    </div>
   ),
 });
 
@@ -32,30 +47,34 @@ function CourseDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("enrollments")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("course_slug", course.slug)
-        .maybeSingle();
+      const enrolled = await isEnrolledInCourse(user.id, course.slug);
       if (cancelled) return;
-      setIsEnrolled(!!data);
+      setIsEnrolled(enrolled);
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user, course.slug]);
 
   const enroll = async () => {
     if (!user) return;
-    const { error } = await supabase.from("enrollments").insert({
-      user_id: user.id,
-      course_slug: course.slug,
-      course_title: course.title,
-    });
-    if (error) { toast.error(error.message); return; }
+    try {
+      await enrollInCourse({
+        user_id: user.id,
+        course_slug: course.slug,
+        course_title: course.title,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not enroll");
+      return;
+    }
     setIsEnrolled(true);
     toast.success(`Enrolled in ${course.title}`);
     // Send straight into the player on first enroll.
@@ -66,32 +85,56 @@ function CourseDetail() {
     <>
       <div className="pt-24 pb-16 px-6 min-h-screen">
         <div className="max-w-4xl mx-auto">
-          <Link to="/courses" className="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground hover:text-neon-purple mb-6">
+          <Link
+            to="/courses"
+            className="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground hover:text-neon-purple mb-6"
+          >
             <ArrowLeft className="w-3 h-3" /> ALL COURSES
           </Link>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold tracking-widest mb-4 ${
-              course.badge === "ECLIPTA OFFICIAL"
-                ? "bg-neon-purple/15 text-neon-purple border border-neon-purple/20"
-                : "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20"
-            }`}>
-              {course.badge === "ECLIPTA OFFICIAL" ? <ShieldCheck className="w-3 h-3" /> : <Star className="w-3 h-3" />}
+            <div
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold tracking-widest mb-4 ${
+                course.badge === "ECLIPTA OFFICIAL"
+                  ? "bg-neon-purple/15 text-neon-purple border border-neon-purple/20"
+                  : "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20"
+              }`}
+            >
+              {course.badge === "ECLIPTA OFFICIAL" ? (
+                <ShieldCheck className="w-3 h-3" />
+              ) : (
+                <Star className="w-3 h-3" />
+              )}
               {course.badge}
             </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-2">{course.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-2">
+              {course.title}
+            </h1>
             <p className="text-sm text-muted-foreground mb-4">by {course.creator}</p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-6">
-              <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />{course.level}</span>
-              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{course.duration}</span>
+              <span className="flex items-center gap-1">
+                <BookOpen className="w-3.5 h-3.5" />
+                {course.level}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {course.duration}
+              </span>
             </div>
 
-            <p className="text-base text-foreground/80 leading-relaxed mb-6">{course.description}</p>
+            <p className="text-base text-foreground/80 leading-relaxed mb-6">
+              {course.description}
+            </p>
 
             <div className="flex flex-wrap gap-1.5 mb-8">
               {course.tags.map((t: string) => (
-                <span key={t} className="px-2 py-0.5 text-[10px] font-bold tracking-wide border border-border text-muted-foreground">{t}</span>
+                <span
+                  key={t}
+                  className="px-2 py-0.5 text-[10px] font-bold tracking-wide border border-border text-muted-foreground"
+                >
+                  {t}
+                </span>
               ))}
             </div>
 
@@ -138,7 +181,8 @@ function CourseDetail() {
                   className="glass-panel p-5"
                 >
                   <h3 className="font-display font-bold text-sm mb-3">
-                    <span className="text-neon-purple mr-2">0{i + 1}</span>{mod.title}
+                    <span className="text-neon-purple mr-2">0{i + 1}</span>
+                    {mod.title}
                   </h3>
                   <ul className="space-y-1.5">
                     {mod.lessons.map((l: string) => (
@@ -152,7 +196,9 @@ function CourseDetail() {
             </div>
           </div>
 
-          <h3 className="font-display font-bold tracking-widest text-xs text-muted-foreground mt-12 mb-3">YOU'LL LEARN TO</h3>
+          <h3 className="font-display font-bold tracking-widest text-xs text-muted-foreground mt-12 mb-3">
+            YOU'LL LEARN TO
+          </h3>
           <ul className="space-y-2">
             {course.outcomes.map((o: string) => (
               <li key={o} className="flex items-start gap-2 text-sm">

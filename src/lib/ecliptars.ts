@@ -14,6 +14,8 @@ export interface Ecliptar {
   name: string;
   archetype: MonsterArchetypeKey;
   icon: LucideIcon;
+  /** Lore blurb shown on the collection detail view. Empty until written. */
+  description?: string;
 }
 
 const ARCH_ICON: Record<MonsterArchetypeKey, LucideIcon> = {

@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { Lock, Check, Zap, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ECLIPTARS, getEcliptarsByArchetype, type Ecliptar } from "@/lib/ecliptars";
+import { ECLIPTARS, getEcliptarsByArchetype, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { getUnlockedArchetypes, ROAD_NODES, type MonsterArchetypeKey } from "@/lib/trophy-road-data";
 import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
@@ -29,16 +30,18 @@ function unlockXp(arch: MonsterArchetypeKey): number | null {
 }
 
 function EcliptarCell({
-  e, owned, archUnlocked, equipped, onEquip,
+  e, owned, archUnlocked, equipped, onOpen,
 }: {
   e: Ecliptar; owned: boolean; archUnlocked: boolean; equipped: boolean;
-  onEquip: (e: Ecliptar) => void;
+  onOpen: (e: Ecliptar) => void;
 }) {
   const Icon = e.icon;
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onOpen(e)}
       className={cn(
-        "relative rounded-xl border p-4 flex flex-col items-center text-center transition-colors",
+        "relative rounded-xl border p-4 flex flex-col items-center text-center transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
         owned ? "border-primary/40 bg-primary/[0.06]" : "border-white/10 bg-white/[0.02]",
       )}
     >
@@ -62,24 +65,90 @@ function EcliptarCell({
               <Check className="w-3 h-3" /> ACTIVE
             </div>
           ) : (
-            <button
-              onClick={() => onEquip(e)}
-              className="text-[10px] font-bold tracking-widest text-primary/80 hover:text-primary border border-primary/30 hover:border-primary/60 rounded-full px-3 py-1 transition-colors w-full"
-            >
-              EQUIP
-            </button>
+            <div className="text-[10px] font-bold tracking-widest text-muted-foreground/70 w-full">
+              VIEW
+            </div>
           )
         ) : archUnlocked ? (
-          <Link to="/progress" className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-foreground inline-flex items-center gap-1 justify-center w-full">
-            <Sparkles className="w-3 h-3" /> CLAIM ON TROPHY ROAD
-          </Link>
+          <div className="text-[10px] font-bold tracking-widest text-muted-foreground inline-flex items-center gap-1 justify-center w-full">
+            <Sparkles className="w-3 h-3" /> UNCLAIMED
+          </div>
         ) : (
           <div className="text-[10px] font-bold tracking-widest text-muted-foreground/50 inline-flex items-center gap-1 justify-center w-full">
             <Lock className="w-3 h-3" /> LOCKED
           </div>
         )}
       </div>
-    </div>
+    </button>
+  );
+}
+
+function EcliptarDetail({
+  e, owned, archUnlocked, equipped, onEquip, onClose,
+}: {
+  e: Ecliptar | null; owned: boolean; archUnlocked: boolean; equipped: boolean;
+  onEquip: (e: Ecliptar) => void; onClose: () => void;
+}) {
+  const [spriteFailed, setSpriteFailed] = useState(false);
+  useEffect(() => setSpriteFailed(false), [e?.slug]);
+  if (!e) return null;
+  const Icon = e.icon;
+  const arch = ARCHETYPES[e.archetype];
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden border-white/10" style={{ background: "var(--brand-bg, #0B1020)" }}>
+        <div className="grid sm:grid-cols-2">
+          <div className="p-7 flex flex-col justify-center order-2 sm:order-1">
+            <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-primary mb-2">{arch.name}</p>
+            <DialogTitle className="font-display text-3xl font-bold leading-none">{e.name}</DialogTitle>
+            <p className="text-muted-foreground text-sm mt-4 min-h-[4.5rem] leading-relaxed">
+              {e.description ?? ""}
+            </p>
+            <div className="mt-6">
+              {owned ? (
+                equipped ? (
+                  <div className="text-[11px] font-bold tracking-widest text-primary inline-flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5" /> EQUIPPED
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onEquip(e)}
+                    className="text-[11px] font-bold tracking-widest text-primary/80 hover:text-primary border border-primary/30 hover:border-primary/60 rounded-full px-5 py-2 transition-colors"
+                  >
+                    EQUIP
+                  </button>
+                )
+              ) : archUnlocked ? (
+                <Link to="/progress" className="text-[11px] font-bold tracking-widest text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> CLAIM ON TROPHY ROAD
+                </Link>
+              ) : (
+                <div className="text-[11px] font-bold tracking-widest text-muted-foreground/50 inline-flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> LOCKED
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="relative order-1 sm:order-2 min-h-[220px] sm:min-h-[340px] flex items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.10),transparent_70%)]">
+            {spriteFailed ? (
+              <Icon size={96} className={cn(owned ? "text-primary" : "text-muted-foreground/30")} />
+            ) : (
+              <img
+                src={ecliptarSpriteUrl(e.slug)}
+                alt={e.name}
+                onError={() => setSpriteFailed(true)}
+                className={cn(
+                  "h-full w-full object-contain p-6 drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)]",
+                  !owned && "grayscale opacity-40",
+                )}
+              />
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -88,6 +157,7 @@ function CollectionPage() {
   const { slugs: owned } = useOwnedEcliptars();
   const unlocked = new Set(getUnlockedArchetypes(xp));
   const [equipped, setEquipped] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Ecliptar | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -172,7 +242,7 @@ function CollectionPage() {
                       owned={owned.has(e.slug)}
                       archUnlocked={archUnlocked}
                       equipped={equipped === e.slug}
-                      onEquip={equip}
+                      onOpen={setSelected}
                     />
                   ))}
                 </div>
@@ -187,6 +257,15 @@ function CollectionPage() {
           </Link>
         </div>
       </div>
+
+      <EcliptarDetail
+        e={selected}
+        owned={!!selected && owned.has(selected.slug)}
+        archUnlocked={!!selected && unlocked.has(selected.archetype)}
+        equipped={!!selected && equipped === selected.slug}
+        onEquip={equip}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

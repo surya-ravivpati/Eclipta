@@ -7,12 +7,23 @@
  * leaderboard. Keeping both visible on the road is the whole point — skill and
  * dedication are different journeys, and the player should see both at once.
  *
- * Mirrors the realtime pattern in use-player-xp: initial fetch + a Realtime
- * subscription so a freshly-resolved battle updates standing instantly, with a
- * visibility-change refresh as a safety net.
+ * TanStack Query owns the fetch, cache, and loading state. A Supabase Realtime
+ * subscription is still needed on top: nothing about a normal query tells this
+ * client that a *different* process (the battle-completion RPC, running
+ * server-side) just changed this row, so a completed battle invalidates the
+ * cached query instead of writing to it directly — the next fetch re-reads
+ * from the same repository function everything else uses.
+ *
+ * Window-focus refetching (Query's default) replaces the previous
+ * visibilitychange listener — Query's focus manager already reacts to tab
+ * visibility changes in a browser environment, so the manual listener this
+ * hook used before TanStack Query would now just be redundant.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { getPlayerRating } from "@/repositories/battles";
 
 export interface PlayerRatingState {
   rating: number;
@@ -25,6 +36,10 @@ export interface PlayerRatingState {
   ranked: boolean;
 }
 
+export interface UsePlayerRatingResult extends PlayerRatingState {
+  refresh: () => void;
+}
+
 const DEFAULT: Omit<PlayerRatingState, "loading"> = {
   rating: 1000,
   peakRating: 1000,
@@ -33,57 +48,56 @@ const DEFAULT: Omit<PlayerRatingState, "loading"> = {
   ranked: false,
 };
 
-export function usePlayerRating() {
-  const [state, setState] = useState<PlayerRatingState>({ ...DEFAULT, loading: true });
-  const userIdRef = useRef<string | null>(null);
+function playerRatingQueryKey(userId: string) {
+  return ["player-rating", userId] as const;
+}
 
-  const refresh = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    userIdRef.current = user?.id ?? null;
-    if (!user) { setState({ ...DEFAULT, loading: false }); return; }
+export function usePlayerRating(): UsePlayerRatingResult {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-    const { data } = await supabase
-      .from("player_ratings")
-      .select("rating, peak_rating, wins, losses")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!data) { setState({ ...DEFAULT, loading: false }); return; }
-    setState({
-      rating:     data.rating      ?? 1000,
-      peakRating: data.peak_rating ?? 1000,
-      wins:       data.wins        ?? 0,
-      losses:     data.losses      ?? 0,
-      ranked:     (data.wins ?? 0) + (data.losses ?? 0) > 0,
-      loading:    false,
-    });
-  }, []);
+  const query = useQuery({
+    queryKey: user ? playerRatingQueryKey(user.id) : ["player-rating", "signed-out"],
+    queryFn: user ? () => getPlayerRating(user.id) : skipToken,
+  });
 
   useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
-    (async () => {
-      await refresh();
-      if (cancelled || !userIdRef.current) return;
-      channel = supabase
-        .channel(`rating:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "player_ratings", filter: `user_id=eq.${userIdRef.current}` },
-          () => { void refresh(); }
-        )
-        .subscribe();
-    })();
+    if (!user) return;
 
-    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
-    document.addEventListener("visibilitychange", onVisible);
+    const channel = supabase
+      .channel(`rating:${user.id}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_ratings", filter: `user_id=eq.${user.id}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: playerRatingQueryKey(user.id) });
+        },
+      )
+      .subscribe();
 
     return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", onVisible);
-      if (channel) supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [refresh]);
+  }, [user, queryClient]);
 
-  return { ...state, refresh };
+  const refresh = () => void query.refetch();
+
+  if (!user) {
+    return { ...DEFAULT, loading: false, refresh };
+  }
+
+  const row = query.data;
+  if (!row) {
+    return { ...DEFAULT, loading: query.isLoading, refresh };
+  }
+
+  return {
+    rating: row.rating,
+    peakRating: row.peak_rating,
+    wins: row.wins,
+    losses: row.losses,
+    ranked: row.wins + row.losses > 0,
+    loading: query.isLoading,
+    refresh,
+  };
 }

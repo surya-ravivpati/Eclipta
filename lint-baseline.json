@@ -1,13 +1,13 @@
 {
-  "warnings": 607,
+  "warnings": 604,
   "counts": {
     "react-refresh/only-export-components": 11,
-    "@typescript-eslint/no-floating-promises": 94,
-    "no-restricted-syntax": 218,
+    "@typescript-eslint/no-floating-promises": 91,
+    "no-restricted-syntax": 217,
     "@typescript-eslint/no-unsafe-assignment": 34,
     "@typescript-eslint/prefer-nullish-coalescing": 111,
     "@typescript-eslint/no-unused-vars": 32,
-    "@typescript-eslint/no-empty-function": 7,
+    "@typescript-eslint/no-empty-function": 8,
     "@typescript-eslint/no-misused-promises": 10,
     "@typescript-eslint/no-unsafe-member-access": 20,
     "react-hooks/exhaustive-deps": 11,

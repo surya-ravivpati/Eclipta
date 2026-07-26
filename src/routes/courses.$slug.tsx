@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, Check, Layers, User as UserIcon, Loader2, Play } f
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { toCourseBlock, type CourseBlock } from "@/lib/course-blocks";
 
 export const Route = createFileRoute("/courses/$slug")({
   head: ({ params }) => ({
@@ -18,7 +19,6 @@ export const Route = createFileRoute("/courses/$slug")({
 
 type Course = { id: string; user_id: string; slug: string; title: string; summary: string | null; level: string; structure: string; depth: string; status: string };
 type Module = { id: string; title: string; position: number };
-type Block = { id: string; module_id: string; type: "text" | "youtube" | "image" | "quiz"; data: any; position: number };
 
 function ytId(url: string): string | null {
   if (!url) return null;
@@ -31,7 +31,7 @@ function CommunityCoursePage() {
   const { user } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
-  const [blocks, setBlocks] = useState<Record<string, Block[]>>({});
+  const [blocks, setBlocks] = useState<Record<string, CourseBlock[]>>({});
   const [creatorName, setCreatorName] = useState<string>("");
   const [enrolled, setEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ function CommunityCoursePage() {
 
       const [{ data: m }, { data: cr }] = await Promise.all([
         supabase.from("course_modules").select("id,title,position").eq("course_id", c.id).order("position"),
-        supabase.from("public_profiles" as any).select("username").eq("user_id", c.user_id).maybeSingle() as unknown as Promise<{ data: { username: string | null } | null }>,
+        supabase.from("public_profiles").select("username").eq("user_id", c.user_id).maybeSingle(),
       ]);
       const mods = (m as Module[]) || [];
       setModules(mods);
@@ -64,8 +64,8 @@ function CommunityCoursePage() {
           .select("id,module_id,type,data,position")
           .in("module_id", mods.map(x => x.id))
           .order("position");
-        const grouped: Record<string, Block[]> = {};
-        (b as Block[] || []).forEach(blk => { (grouped[blk.module_id] ||= []).push(blk); });
+        const grouped: Record<string, CourseBlock[]> = {};
+        (b ?? []).flatMap(toCourseBlock).forEach(blk => { (grouped[blk.module_id] ||= []).push(blk); });
         setBlocks(grouped);
       }
 

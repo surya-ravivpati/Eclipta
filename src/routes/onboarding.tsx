@@ -166,8 +166,8 @@ function OnboardingPage() {
 
       toast.success("You're in. Welcome to the arena.");
       navigate({ to: "/" });
-    } catch (err: any) {
-      toast.error(err.message || "Something went wrong. Try again.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Try again.");
     } finally {
       setSaving(false);
     }

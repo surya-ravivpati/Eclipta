@@ -28,7 +28,9 @@ export const Route = createFileRoute("/courses")({
   component: CoursesHub,
 });
 
-const EASE = [0.2, 0.7, 0.2, 1];
+// `as const` pins this to the readonly 4-tuple framer-motion's
+// BezierDefinition wants; a bare array widens to number[] and is rejected.
+const EASE = [0.2, 0.7, 0.2, 1] as const;
 
 /* Progress (best-effort — course_progress may not exist yet; we fall back to
    enrollments). Keyed by course_slug. */

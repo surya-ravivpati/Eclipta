@@ -43,19 +43,18 @@ export function usePlayerRating() {
     if (!user) { setState({ ...DEFAULT, loading: false }); return; }
 
     const { data } = await supabase
-      .from("player_ratings" as any)
+      .from("player_ratings")
       .select("rating, peak_rating, wins, losses")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (!data) { setState({ ...DEFAULT, loading: false }); return; }
-    const d = data as any;
     setState({
-      rating:     d.rating      ?? 1000,
-      peakRating: d.peak_rating ?? 1000,
-      wins:       d.wins        ?? 0,
-      losses:     d.losses      ?? 0,
-      ranked:     (d.wins ?? 0) + (d.losses ?? 0) > 0,
+      rating:     data.rating      ?? 1000,
+      peakRating: data.peak_rating ?? 1000,
+      wins:       data.wins        ?? 0,
+      losses:     data.losses      ?? 0,
+      ranked:     (data.wins ?? 0) + (data.losses ?? 0) > 0,
       loading:    false,
     });
   }, []);

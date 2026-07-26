@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import "@/components/study/study.css";
 import {
   listStudyRooms, createStudyRoom, joinStudyRoom, getMyRoomIdentity,
-  type StudyRoom,
+  type StudyRoom, type StudyRoomDetails,
 } from "@/lib/study-rooms";
 import { useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { ECLIPTARS, getEcliptarBySlug } from "@/lib/ecliptars";
@@ -172,7 +172,7 @@ function CreateModal({
   ownedSlugs, defaultSlug, displayName, onClose, onCreated,
 }: {
   ownedSlugs: Set<string>; defaultSlug: string | null; displayName: string;
-  onClose: () => void; onCreated: (room: StudyRoom) => void;
+  onClose: () => void; onCreated: (room: StudyRoomDetails) => void;
 }) {
   const [name, setName] = useState("");
   const [topic, setTopic] = useState("");
@@ -235,7 +235,7 @@ function JoinModal({
   ownedSlugs, defaultSlug, displayName, onClose, onJoined,
 }: {
   ownedSlugs: Set<string>; defaultSlug: string | null; displayName: string;
-  onClose: () => void; onJoined: (room: StudyRoom) => void;
+  onClose: () => void; onJoined: (room: StudyRoomDetails) => void;
 }) {
   const [code, setCode] = useState("");
   const [slug, setSlug] = useState<string | null>(defaultSlug);

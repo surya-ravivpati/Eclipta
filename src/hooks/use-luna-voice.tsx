@@ -20,11 +20,10 @@ import { supabase } from "@/integrations/supabase/client";
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-tts`;
 const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-stt`;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getSpeechRecognition(): any {
+/** Null on browsers without native dictation — callers fall back to MediaRecorder. */
+function getSpeechRecognition(): SpeechRecognitionConstructor | null {
   if (typeof window === "undefined") return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+  return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
 }
 
 function pickRecorderMime(): string | undefined {
@@ -69,8 +68,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   useEffect(() => { onTranscriptRef.current = opts.onTranscript; }, [opts.onTranscript]);
 
   // Native dictation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   // MediaRecorder fallback dictation
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -196,8 +194,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
         rec.interimResults = false;
         rec.continuous = false;
         rec.maxAlternatives = 1;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rec.onresult = (e: any) => {
+        rec.onresult = (e) => {
           let final = "";
           for (let i = e.resultIndex; i < e.results.length; i++) {
             if (e.results[i].isFinal) final += e.results[i][0].transcript;
@@ -205,9 +202,8 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
           const t = final.trim();
           if (t) onTranscriptRef.current(t);
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rec.onerror = (e: any) => {
-          const err = e?.error;
+        rec.onerror = (e) => {
+          const err = e.error;
           if (err === "not-allowed" || err === "service-not-allowed") setVoiceError("Microphone access denied. Allow mic permission in your browser settings and try again.");
           else if (err === "no-speech") setVoiceError("Didn't catch that — try again.");
           else if (err === "audio-capture") setVoiceError("No microphone found. Plug one in and try again.");

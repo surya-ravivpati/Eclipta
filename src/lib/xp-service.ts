@@ -59,16 +59,17 @@ export async function awardXp(event: string, fallbackAmount = 0): Promise<{ luna
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const prevXp = (profile as any)?.xp ?? 0;
+  const prevXp = profile?.xp ?? 0;
   markExistingMilestones(prevXp);
 
-  const { data: newXp } = await supabase.rpc("award_xp" as any, { p_event: event });
+  const { data: newXp } = await supabase.rpc("award_xp", { p_event: event });
+  const finalXp = newXp ?? prevXp + fallbackAmount;
 
-  const { toasts, lunaMessages } = checkMilestones(prevXp, (newXp as number | null) ?? prevXp + fallbackAmount);
+  const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
 
   fireMilestoneToasts(toasts);
 
-  return { lunaMessages, newXp: (newXp as number | null) ?? prevXp + fallbackAmount };
+  return { lunaMessages, newXp: finalXp };
 }
 
 /**
@@ -79,12 +80,12 @@ export async function awardBattleXp(correct: number, total: number, won: boolean
   if (!user) return { lunaMessages: [], newXp: 0 };
   const { data: profile } = await supabase
     .from("user_profiles").select("xp").eq("user_id", user.id).maybeSingle();
-  const prevXp = (profile as any)?.xp ?? 0;
+  const prevXp = profile?.xp ?? 0;
   markExistingMilestones(prevXp);
-  const { data: newXp } = await supabase.rpc("award_battle_xp" as any, {
+  const { data: newXp } = await supabase.rpc("award_battle_xp", {
     p_correct: correct, p_total: total, p_won: won,
   });
-  const finalXp = (newXp as number | null) ?? prevXp;
+  const finalXp = newXp ?? prevXp;
   const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
   fireMilestoneToasts(toasts);
   return { lunaMessages, newXp: finalXp };
@@ -101,11 +102,11 @@ export async function claimChest(nodeId: number, chestLabel: string): Promise<nu
   if (!node) return 0;
   // Server validates eligibility, prevents double-claim (unique index), and
   // credits the chest's fixed bonus XP atomically.
-  const { data, error } = await supabase.rpc("claim_chest" as any, {
+  const { data, error } = await supabase.rpc("claim_chest", {
     p_node_id: nodeId, p_chest_label: chestLabel,
   });
   if (error) return 0;
-  return (data as number | null) ?? 0;
+  return data ?? 0;
 }
 
 /** Fetch the set of node_ids the current user has already claimed. */
@@ -113,10 +114,10 @@ export async function fetchClaimedChestNodeIds(): Promise<Set<number>> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Set();
   const { data } = await supabase
-    .from("user_chest_claims" as any)
+    .from("user_chest_claims")
     .select("node_id")
     .eq("user_id", user.id);
-  return new Set(((data ?? []) as unknown as { node_id: number }[]).map((r) => r.node_id));
+  return new Set((data ?? []).map((r) => r.node_id));
 }
 
 /**

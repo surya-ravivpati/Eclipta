@@ -200,13 +200,15 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
               .replace(/\\[a-zA-Z]+\{[^}]*\}/g, " ")
               .replace(/\s+/g, " ")
               .trim();
-            await supabase.rpc("log_learning_history" as any, {
+            await supabase.rpc("log_learning_history", {
               p_session_type:     sessionType,
               p_topic:            ctx.lessonTitle || ctx.courseId || null,
               p_question_text:    text.slice(0, 500),
               p_was_correct:      null,
               p_response_time_ms: null,
-              p_hint_level_used:  ctx.hintLevel,
+              // No DEFAULT on this parameter, so an omitted key leaves
+              // PostgREST unable to match the function signature at all.
+              p_hint_level_used:  ctx.hintLevel ?? 0,
               p_luna_summary:     tag ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}` : cleanedSummary.slice(0, 200),
             });
             // Background memory extraction — best effort, never blocks UI.

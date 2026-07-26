@@ -38,7 +38,7 @@ export function ChallengeInbox() {
   const refresh = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
-      .from("pvp_challenges" as any)
+      .from("pvp_challenges")
       .select("*")
       .eq("challenged_id", user.id)
       .eq("status", "pending")
@@ -102,17 +102,19 @@ export function ChallengeInbox() {
         if (row.status === "accepted" && row.battle_id) {
           // Look up opponent username + their chosen archetype from pvp_battles
           const { data: battle } = await supabase
-            .from("pvp_battles" as any)
+            .from("pvp_battles")
             .select("opponent_archetype, opponent_id")
             .eq("id", row.battle_id)
             .maybeSingle();
-          const oppArch = (battle as { opponent_archetype: ArchetypeId } | null)?.opponent_archetype ?? row.challenger_archetype;
-          const oppId = (battle as { opponent_id: string } | null)?.opponent_id;
+          // Written by this client on enqueue, so the `text` column holds an
+          // ArchetypeId by construction.
+          const oppArch = (battle?.opponent_archetype as ArchetypeId | undefined) ?? row.challenger_archetype;
+          const oppId = battle?.opponent_id;
           let oppName = "Challenger";
           if (oppId) {
             const { data: prof } = await supabase
               .from("user_profiles").select("username").eq("user_id", oppId).maybeSingle();
-            oppName = (prof as { username: string | null } | null)?.username ?? oppName;
+            oppName = prof?.username ?? oppName;
           }
           toast.success(`${oppName} accepted! Starting battle…`);
           dispatchDirectBattle({
@@ -133,14 +135,13 @@ export function ChallengeInbox() {
   const respond = async (c: Challenge & { challenger_username: string | null }, accept: boolean) => {
     setBusy(c.id);
     try {
-      const { data, error } = await supabase.rpc("respond_pvp_challenge" as any, {
+      const { data, error } = await supabase.rpc("respond_pvp_challenge", {
         p_challenge_id: c.id, p_accept: accept, p_archetype: defaultArch,
       });
       if (error) throw error;
-      if (accept && data) {
-        const d = data as { battle_id: string };
+      if (accept && data?.accepted) {
         dispatchDirectBattle({
-          battleId: d.battle_id,
+          battleId: data.battle_id,
           myArchetype: defaultArch,
           opponentArchetype: c.challenger_archetype,
           opponentName: c.challenger_username ?? "Challenger",

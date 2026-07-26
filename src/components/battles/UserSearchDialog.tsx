@@ -38,7 +38,7 @@ export function UserSearchDialog({ open, onOpenChange }: { open: boolean; onOpen
     if (query.trim().length < 2) { setResults([]); setLoading(false); return; }
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
-      const { data, error } = await supabase.rpc("search_users" as any, {
+      const { data, error } = await supabase.rpc("search_users", {
         p_query: query.trim(),
         p_limit: 12,
       });
@@ -53,7 +53,7 @@ export function UserSearchDialog({ open, onOpenChange }: { open: boolean; onOpen
     if (!user) { toast.error("Sign in to challenge."); return; }
     setBusyId(target.user_id);
     try {
-      const { error } = await supabase.rpc("create_pvp_challenge" as any, {
+      const { error } = await supabase.rpc("create_pvp_challenge", {
         p_challenged_id: target.user_id,
         p_archetype: archetype,
       });

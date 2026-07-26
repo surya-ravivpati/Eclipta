@@ -16,32 +16,30 @@ export async function fetchPlayerRating(): Promise<PlayerRating> {
   if (!user) return { rating: 1000, peakRating: 1000, wins: 0, losses: 0 };
 
   const { data } = await supabase
-    .from("player_ratings" as any)
+    .from("player_ratings")
     .select("rating, peak_rating, wins, losses")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!data) return { rating: 1000, peakRating: 1000, wins: 0, losses: 0 };
-  const d = data as any;
   return {
-    rating:     d.rating      ?? 1000,
-    peakRating: d.peak_rating ?? 1000,
-    wins:       d.wins        ?? 0,
-    losses:     d.losses      ?? 0,
+    rating:     data.rating      ?? 1000,
+    peakRating: data.peak_rating ?? 1000,
+    wins:       data.wins        ?? 0,
+    losses:     data.losses      ?? 0,
   };
 }
 
 /** Complete a recorded Ghost PvP battle exactly once and return the authoritative rating result. */
 export async function completeGhostBattle(sessionId: string, opponentRating: number): Promise<{ ratingAfter: number; ratingDelta: number }> {
-  const { data, error } = await supabase.rpc("complete_ghost_battle" as any, {
+  const { data, error } = await supabase.rpc("complete_ghost_battle", {
     p_session_id: sessionId,
     p_opponent_rating: opponentRating,
   });
   if (error) throw error;
-  const d = data as { rating_after?: number | null; rating_delta?: number | null } | null;
   return {
-    ratingAfter: d?.rating_after ?? 1000,
-    ratingDelta: d?.rating_delta ?? 0,
+    ratingAfter: data?.rating_after ?? 1000,
+    ratingDelta: data?.rating_delta ?? 0,
   };
 }
 

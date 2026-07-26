@@ -56,7 +56,7 @@ function PublicProfilePage() {
       // returned regardless of who is calling (anon or authenticated).
       // Direct user_profiles SELECT is now restricted to own row only.
       const { data: rows } = await supabase
-        .rpc("get_public_profile" as any, { p_username: username });
+        .rpc("get_public_profile", { p_username: username });
       const p = Array.isArray(rows) ? rows[0] ?? null : rows ?? null;
       if (!p) { setNotFound(true); setLoading(false); return; }
       setProfile(p as PublicProfile);
@@ -108,7 +108,7 @@ function PublicProfilePage() {
     if (user.id === profile.user_id) return;
     setChallengeBusy(true);
     try {
-      const { error } = await supabase.rpc("create_pvp_challenge" as any, {
+      const { error } = await supabase.rpc("create_pvp_challenge", {
         p_challenged_id: profile.user_id,
         p_archetype: challengeArch,
       });

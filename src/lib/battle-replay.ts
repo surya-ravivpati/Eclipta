@@ -40,7 +40,7 @@ export async function recordBattleSession(params: {
 
   // Server-side RPC validates and clamps fields; clients can't fabricate
   // rating/correct values that bypass the matchmaking pipeline.
-  const { data, error } = await supabase.rpc("record_battle_session" as any, {
+  const { data, error } = await supabase.rpc("record_battle_session", {
     p_archetype:        params.archetype,
     p_won:              params.won,
     p_rating:           params.rating,
@@ -58,7 +58,7 @@ export async function recordBattleSession(params: {
     console.warn("recordBattleSession failed", error);
     return null;
   }
-  return (data as string | null) ?? null;
+  return data ?? null;
 }
 
 /**
@@ -68,8 +68,7 @@ export async function recordBattleSession(params: {
  * actual recorded behaviour to replay.
  */
 export async function fetchGhostSession(playerRating: number): Promise<GhostSession | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await supabase.rpc("get_ghost_session" as any, {
+  const { data, error } = await supabase.rpc("get_ghost_session", {
     p_player_rating: playerRating,
   });
   if (error) {
@@ -78,9 +77,9 @@ export async function fetchGhostSession(playerRating: number): Promise<GhostSess
   }
   if (!data) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const d = data as any;
-  const records = (d.question_records ?? []) as GhostSession["questionRecords"];
+  // question_records stays `Json` in the schema — it's a free-form jsonb
+  // column, so this is the one field that genuinely needs narrowing.
+  const records = (data.question_records ?? []) as GhostSession["questionRecords"];
   if (!Array.isArray(records) || records.length === 0) {
     // Authenticity guard: an empty record set isn't a ghost, it's a stub.
     // Refusing it here drops us cleanly through the matchmaker to the bot
@@ -89,14 +88,14 @@ export async function fetchGhostSession(playerRating: number): Promise<GhostSess
   }
 
   return {
-    id:              d.id,
-    archetype:       d.archetype as ArchetypeId,
-    won:             d.won,
-    rating:          d.rating,
-    totalQuestions:  d.total_questions,
-    correctAnswers:  d.correct_answers,
-    bestStreak:      d.best_streak,
-    username:        d.username ?? null,
+    id:              data.id,
+    archetype:       data.archetype as ArchetypeId,
+    won:             data.won,
+    rating:          data.rating,
+    totalQuestions:  data.total_questions,
+    correctAnswers:  data.correct_answers,
+    bestStreak:      data.best_streak,
+    username:        data.username ?? null,
     questionRecords: records,
   };
 }

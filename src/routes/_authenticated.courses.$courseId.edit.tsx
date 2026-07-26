@@ -5,6 +5,11 @@ import { ArrowLeft, Plus, GripVertical, Trash2, Type, Youtube, Image as ImageIco
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import {
+  toCourseBlock, emptyBlockData,
+  type CourseBlock, type CourseBlockType, type CourseBlockData,
+  type TextBlockData, type MediaBlockData, type QuizBlockData,
+} from "@/lib/course-blocks";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId/edit")({
   head: () => ({
@@ -21,7 +26,6 @@ type Course = {
   level: string; status: string; cover_image_url: string | null;
 };
 type Module = { id: string; course_id: string; title: string; position: number };
-type Block = { id: string; module_id: string; type: "text" | "youtube" | "image" | "quiz"; data: any; position: number };
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -42,7 +46,7 @@ function CourseEditor() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
-  const [blocks, setBlocks] = useState<Record<string, Block[]>>({});
+  const [blocks, setBlocks] = useState<Record<string, CourseBlock[]>>({});
   const [loading, setLoading] = useState(true);
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
 
@@ -80,8 +84,8 @@ function CourseEditor() {
         .select("id,module_id,type,data,position")
         .in("module_id", mods.map(x => x.id))
         .order("position");
-      const grouped: Record<string, Block[]> = {};
-      (b as Block[] || []).forEach(blk => {
+      const grouped: Record<string, CourseBlock[]> = {};
+      (b ?? []).flatMap(toCourseBlock).forEach(blk => {
         (grouped[blk.module_id] ||= []).push(blk);
       });
       setBlocks(grouped);
@@ -145,32 +149,30 @@ function CourseEditor() {
     toast.success("Module deleted");
   };
 
-  const addBlock = async (type: Block["type"]) => {
+  const addBlock = async (type: CourseBlockType) => {
     if (!activeModuleId) return;
     const moduleBlocks = blocks[activeModuleId] || [];
     const position = moduleBlocks.length;
-    const defaultData =
-      type === "text" ? { text: "" } :
-      type === "youtube" ? { url: "", caption: "" } :
-      type === "image" ? { url: "", caption: "" } :
-      { question: "", options: ["", "", "", ""], correctIndex: 0 };
     const { data, error } = await supabase
       .from("course_blocks")
-      .insert({ module_id: activeModuleId, type, data: defaultData, position })
+      .insert({ module_id: activeModuleId, type, data: emptyBlockData(type), position })
       .select("id,module_id,type,data,position")
       .single();
     if (error) return toast.error(error.message);
     setBlocks(prev => ({
       ...prev,
-      [activeModuleId]: [...(prev[activeModuleId] || []), data as Block],
+      [activeModuleId]: [...(prev[activeModuleId] || []), ...toCourseBlock(data)],
     }));
   };
 
-  const updateBlock = async (id: string, data: any) => {
+  const updateBlock = async (id: string, data: CourseBlockData) => {
     setBlocks(prev => {
       const copy = { ...prev };
       for (const mid of Object.keys(copy)) {
-        copy[mid] = copy[mid].map(b => b.id === id ? { ...b, data } : b);
+        // Each editor only ever emits the payload matching its own block's
+        // type, so the discriminant and the payload stay in step. The
+        // compiler can't see that across the callback boundary.
+        copy[mid] = copy[mid].map(b => b.id === id ? { ...b, data } as CourseBlock : b);
       }
       return copy;
     });
@@ -357,7 +359,7 @@ function BlockButton({ icon, label, onClick }: { icon: React.ReactNode; label: s
 }
 
 function BlockEditor({ block, onChange, onDelete, userId }: {
-  block: Block; onChange: (data: any) => void; onDelete: () => void; userId: string;
+  block: CourseBlock; onChange: (data: CourseBlockData) => void; onDelete: () => void; userId: string;
 }) {
   return (
     <div className="glass-panel p-4 group relative">
@@ -381,7 +383,7 @@ function BlockEditor({ block, onChange, onDelete, userId }: {
   );
 }
 
-function TextBlockEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function TextBlockEditor({ data, onChange }: { data: TextBlockData; onChange: (d: TextBlockData) => void }) {
   const [text, setText] = useState(data.text || "");
   return (
     <textarea
@@ -395,7 +397,7 @@ function TextBlockEditor({ data, onChange }: { data: any; onChange: (d: any) => 
   );
 }
 
-function YouTubeBlockEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function YouTubeBlockEditor({ data, onChange }: { data: MediaBlockData; onChange: (d: MediaBlockData) => void }) {
   const [url, setUrl] = useState(data.url || "");
   const [caption, setCaption] = useState(data.caption || "");
   const id = extractYouTubeId(url);
@@ -432,7 +434,7 @@ function YouTubeBlockEditor({ data, onChange }: { data: any; onChange: (d: any) 
   );
 }
 
-function ImageBlockEditor({ data, onChange, userId }: { data: any; onChange: (d: any) => void; userId: string }) {
+function ImageBlockEditor({ data, onChange, userId }: { data: MediaBlockData; onChange: (d: MediaBlockData) => void; userId: string }) {
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState(data.caption || "");
 
@@ -487,7 +489,7 @@ function ImageBlockEditor({ data, onChange, userId }: { data: any; onChange: (d:
   );
 }
 
-function QuizBlockEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d: QuizBlockData) => void }) {
   const [question, setQuestion] = useState(data.question || "");
   const [options, setOptions] = useState<string[]>(data.options || ["", "", "", ""]);
   const [correctIndex, setCorrectIndex] = useState<number>(typeof data.correctIndex === "number" ? data.correctIndex : 0);

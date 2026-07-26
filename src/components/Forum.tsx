@@ -206,8 +206,7 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
 
     // 3. Insert. The DB trigger is a final safety net for anything the
     //    edge function missed (or skipped, e.g. AI gateway outage).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inserted, error } = await (supabase.from("forum_threads") as any).insert({
+    const { data: inserted, error } = await supabase.from("forum_threads").insert({
       user_id: user.id,
       author_name,
       title: title.trim().slice(0, 200),

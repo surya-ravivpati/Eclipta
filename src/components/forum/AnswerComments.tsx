@@ -48,8 +48,7 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
 
   const load = async () => {
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from("forum_comments") as any)
+    const { data } = await supabase.from("forum_comments")
       .select("id,user_id,author_name,body,created_at,moderation_status,moderation_reason")
       .eq("answer_id", answerId)
       .order("created_at", { ascending: true });
@@ -75,8 +74,7 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
 
     const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
     const author_name = prof?.username || user.email?.split("@")[0] || "Learner";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inserted, error } = await (supabase.from("forum_comments") as any).insert({
+    const { data: inserted, error } = await supabase.from("forum_comments").insert({
       answer_id: answerId, user_id: user.id, author_name, body,
       moderation_status: verdict.verdict === "hide" ? "hidden" : "visible",
       moderation_category: verdict.category,

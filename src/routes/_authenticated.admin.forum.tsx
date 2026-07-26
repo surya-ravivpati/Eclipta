@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ShieldCheck, Loader2, ExternalLink, Check, X, Trash2, EyeOff, RotateCcw, Flag, Bot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TableRow } from "@/integrations/supabase/database";
 import { useModerator } from "@/hooks/use-moderator";
 import { setModerationStatus } from "@/lib/moderation";
 import { toast } from "sonner";
@@ -57,6 +58,68 @@ type ActionLog = {
   created_at: string;
 };
 
+/**
+ * Shapes of the snippet lookups below. Declared so the "nothing to fetch"
+ * branch of each `Promise.all` leg can produce a correctly-typed empty
+ * array instead of one the compiler has to guess at.
+ */
+type BodySnippetRow = { id: string; body: string; author_name: string; moderation_status: string };
+type ThreadSnippetRow = BodySnippetRow & { title: string };
+
+const TARGET_TYPES = ["thread", "answer", "comment"] as const;
+const MODERATION_STATUSES = ["visible", "pending", "hidden", "removed"] as const;
+const REPORT_STATUSES = ["pending", "reviewed", "dismissed"] as const;
+
+function isTargetType(value: string): value is QueueItem["target_type"] {
+  return (TARGET_TYPES as readonly string[]).includes(value);
+}
+
+/**
+ * `admin_moderation_queue` is a `UNION ALL` view, so Postgres proves no
+ * column NOT NULL and every field arrives nullable. A row missing its
+ * identity can't be acted on by a moderator, so it's dropped rather than
+ * rendered with placeholder values.
+ */
+function toQueueItem(row: TableRow<"admin_moderation_queue">): QueueItem[] {
+  const { target_type, target_id, author_id, created_at, updated_at } = row;
+  if (!target_type || !isTargetType(target_type)) return [];
+  if (!target_id || !author_id || !created_at || !updated_at) return [];
+  const status = row.moderation_status ?? "";
+  return [{
+    target_type,
+    target_id,
+    author_id,
+    author_name: row.author_name,
+    title: row.title,
+    body: row.body ?? "",
+    moderation_status: (MODERATION_STATUSES as readonly string[]).includes(status)
+      ? (status as QueueItem["moderation_status"])
+      : "visible",
+    moderation_reason: row.moderation_reason,
+    moderation_score: row.moderation_score,
+    moderation_category: row.moderation_category,
+    report_count: row.report_count ?? 0,
+    hidden_at: row.hidden_at,
+    created_at,
+    updated_at,
+  }];
+}
+
+/** Reports whose type or status the UI can't classify are not shown. */
+function toReport(row: TableRow<"forum_reports">): Report[] {
+  if (!isTargetType(row.target_type)) return [];
+  if (!(REPORT_STATUSES as readonly string[]).includes(row.status)) return [];
+  return [{
+    id: row.id,
+    reporter_id: row.reporter_id,
+    target_type: row.target_type,
+    target_id: row.target_id,
+    reason: row.reason,
+    status: row.status as Report["status"],
+    created_at: row.created_at,
+  }];
+}
+
 function AdminForumPage() {
   const { isModerator, loading: roleLoading } = useModerator();
   const [tab, setTab] = useState<"queue" | "reports" | "log">("queue");
@@ -69,15 +132,14 @@ function AdminForumPage() {
 
   const loadQueue = async () => {
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from("admin_moderation_queue" as any) as any)
+    const { data, error } = await supabase.from("admin_moderation_queue")
       .select("*")
       .order("hidden_at", { ascending: false, nullsFirst: false })
       .order("report_count", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) toast.error(error.message);
-    setQueue((data as QueueItem[]) || []);
+    setQueue((data ?? []).flatMap(toQueueItem));
     setLoading(false);
   };
 
@@ -86,7 +148,7 @@ function AdminForumPage() {
     let q = supabase.from("forum_reports").select("*").order("created_at", { ascending: false }).limit(200);
     if (filter === "pending") q = q.eq("status", "pending");
     const { data } = await q;
-    const list = (data as Report[]) || [];
+    const list = (data ?? []).flatMap(toReport);
     setReports(list);
 
     const grouped = { thread: [] as string[], answer: [] as string[], comment: [] as string[] };
@@ -95,35 +157,28 @@ function AdminForumPage() {
     const [tRes, aRes, cRes] = await Promise.all([
       grouped.thread.length
         ? supabase.from("forum_threads").select("id, title, body, author_name, moderation_status").in("id", grouped.thread)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        : Promise.resolve({ data: [] as any[] }),
+        : Promise.resolve({ data: [] as ThreadSnippetRow[] }),
       grouped.answer.length
         ? supabase.from("forum_answers").select("id, body, author_name, moderation_status").in("id", grouped.answer)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        : Promise.resolve({ data: [] as any[] }),
+        : Promise.resolve({ data: [] as BodySnippetRow[] }),
       grouped.comment.length
         ? supabase.from("forum_comments").select("id, body, author_name, moderation_status").in("id", grouped.comment)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        : Promise.resolve({ data: [] as any[] }),
+        : Promise.resolve({ data: [] as BodySnippetRow[] }),
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (tRes.data || []).forEach((row: any) => { next[row.id] = { title: row.title, body: row.body, author: row.author_name, status: row.moderation_status }; });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (aRes.data || []).forEach((row: any) => { next[row.id] = { body: row.body, author: row.author_name, status: row.moderation_status }; });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (cRes.data || []).forEach((row: any) => { next[row.id] = { body: row.body, author: row.author_name, status: row.moderation_status }; });
+    (tRes.data ?? []).forEach((row) => { next[row.id] = { title: row.title, body: row.body, author: row.author_name, status: row.moderation_status }; });
+    (aRes.data ?? []).forEach((row) => { next[row.id] = { body: row.body, author: row.author_name, status: row.moderation_status }; });
+    (cRes.data ?? []).forEach((row) => { next[row.id] = { body: row.body, author: row.author_name, status: row.moderation_status }; });
     setReportSnippets(next);
     setLoading(false);
   };
 
   const loadLog = async () => {
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from("moderation_actions" as any) as any)
+    const { data } = await supabase.from("moderation_actions")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
-    setLog((data as ActionLog[]) || []);
+    setLog(data ?? []);
     setLoading(false);
   };
 

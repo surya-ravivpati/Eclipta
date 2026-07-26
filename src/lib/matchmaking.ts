@@ -37,13 +37,13 @@ export async function joinQueue(
   if (!user) return;
   // Server-side enqueue: rating and username are read from authoritative
   // tables inside the SECURITY DEFINER RPC so clients can't spoof them.
-  await supabase.rpc("enqueue_pvp" as any, { p_archetype: archetype });
+  await supabase.rpc("enqueue_pvp", { p_archetype: archetype });
 }
 
 export async function leaveQueue(): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from("pvp_queue" as any).delete().eq("user_id", user.id);
+  await supabase.from("pvp_queue").delete().eq("user_id", user.id);
 }
 
 // ── Live match attempt ───────────────────────────────────────────────────
@@ -56,20 +56,21 @@ async function tryLiveMatch(
   if (!user) return null;
 
   // Case 1: We initiate and find a match (challenger side).
-  const { data } = await supabase.rpc("find_pvp_match" as any, {
+  const { data } = await supabase.rpc("find_pvp_match", {
     p_archetype: archetype,
     p_rating:    rating,
   });
-  if (data && (data as any).matched) {
-    const d = data as any;
+  if (data?.matched) {
     return {
       type:              "live",
-      opponentName:      d.opponent_username ?? `Player_${(d.opponent_user_id as string).slice(0, 6)}`,
-      opponentUserId:    d.opponent_user_id as string,
-      opponentArchetype: d.opponent_archetype as ArchetypeId,
-      opponentRating:    d.opponent_rating ?? 1000,
-      pvpBattleId:       d.battle_id as string,
-      pvpChannelName:    `pvp-battle:${d.battle_id}`,
+      opponentName:      data.opponent_username ?? `Player_${data.opponent_user_id.slice(0, 6)}`,
+      opponentUserId:    data.opponent_user_id,
+      // The queue only ever holds archetypes this client wrote, so the
+      // server's `text` column is an ArchetypeId by construction.
+      opponentArchetype: data.opponent_archetype as ArchetypeId,
+      opponentRating:    data.opponent_rating ?? 1000,
+      pvpBattleId:       data.battle_id,
+      pvpChannelName:    `pvp-battle:${data.battle_id}`,
       iAmChallenger:     true,
     };
   }
@@ -79,7 +80,7 @@ async function tryLiveMatch(
   // silently, so they must detect the match by polling pvp_battles directly.
   const since = new Date(Date.now() - 30_000).toISOString();
   const { data: battles } = await supabase
-    .from("pvp_battles" as any)
+    .from("pvp_battles")
     .select("id,challenger_id,opponent_id,challenger_archetype,opponent_archetype,status")
     .or(`challenger_id.eq.${user.id},opponent_id.eq.${user.id}`)
     .eq("status", "active")
@@ -87,30 +88,31 @@ async function tryLiveMatch(
     .order("created_at", { ascending: false })
     .limit(1);
 
-  if (battles && (battles as any[]).length > 0) {
-    const b = (battles as any[])[0];
+  const b = battles?.[0];
+  if (b) {
     const isChallenger = b.challenger_id === user.id;
     const oppId   = isChallenger ? b.opponent_id        : b.challenger_id;
     const oppArch = isChallenger ? b.opponent_archetype : b.challenger_archetype;
 
     const { data: oppProfile } = await supabase
-      .from("user_profiles" as any)
+      .from("user_profiles")
       .select("username")
       .eq("user_id", oppId)
       .maybeSingle();
     const { data: oppRating } = await supabase
-      .from("player_ratings" as any)
+      .from("player_ratings")
       .select("rating")
       .eq("user_id", oppId)
       .maybeSingle();
 
     return {
       type:              "live",
-      opponentName:      (oppProfile as any)?.username ?? `Player_${(oppId as string).slice(0, 6)}`,
-      opponentUserId:    oppId as string,
+      opponentName:      oppProfile?.username ?? `Player_${oppId.slice(0, 6)}`,
+      opponentUserId:    oppId,
+      // Written by this client on enqueue — see the note in Case 1.
       opponentArchetype: oppArch as ArchetypeId,
-      opponentRating:    (oppRating as any)?.rating ?? 1000,
-      pvpBattleId:       b.id as string,
+      opponentRating:    oppRating?.rating ?? 1000,
+      pvpBattleId:       b.id,
       pvpChannelName:    `pvp-battle:${b.id}`,
       iAmChallenger:     isChallenger,
     };

@@ -18,7 +18,9 @@ import "./BattleIntro.css";
  * still tableau under prefers-reduced-motion. See backup/RESTORE.md to revert.
  */
 
-const EASE = [0.2, 0.7, 0.2, 1];
+// `as const` pins this to the readonly 4-tuple framer-motion's
+// BezierDefinition wants; a bare array widens to number[] and is rejected.
+const EASE = [0.2, 0.7, 0.2, 1] as const;
 
 // Deterministic mote field — golden-angle spread so it reads organic, not
 // gridded. Each mote starts at an edge offset and falls inward to the core.

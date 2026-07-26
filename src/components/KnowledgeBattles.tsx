@@ -27,6 +27,8 @@ import { recordDailyPractice } from "@/lib/record-practice";
 import { recordOutcomes } from "@/lib/concept-mastery";
 import { ECLIPTARS, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
+import type { TableRow } from "@/integrations/supabase/database";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
@@ -600,7 +602,7 @@ function BattleChat({
   phase,
   incomingItems,
 }: {
-  pvpChannelRef: React.MutableRefObject<any>;
+  pvpChannelRef: React.MutableRefObject<RealtimeChannel | null>;
   opponentType: OpponentType;
   opponentName: string;
   playerName: string;
@@ -1028,7 +1030,7 @@ function BattleArena() {
   const [liveRematchState, setLiveRematchState] = useState<"idle" | "waiting" | "starting">("idle");
 
   // Refs for async-safe access inside callbacks
-  const pvpChannelRef     = useRef<any>(null);
+  const pvpChannelRef     = useRef<RealtimeChannel | null>(null);
   const ghostSessionRef   = useRef<GhostSession | null>(null);
   const ghostTurnIndexRef = useRef(0);
   const playerRatingRef   = useRef(1000);
@@ -1063,8 +1065,8 @@ function BattleArena() {
         supabase.from("user_profiles").select("xp, username").eq("user_id", user.id).maybeSingle(),
         fetchPlayerRating(),
       ]);
-      setPlayerXp((profileRes.data as any)?.xp ?? 0);
-      setPlayerUsername((profileRes.data as any)?.username ?? null);
+      setPlayerXp(profileRes.data?.xp ?? 0);
+      setPlayerUsername(profileRes.data?.username ?? null);
       setPlayerRating(ratingData.rating);
       playerRatingRef.current = ratingData.rating;
     })();
@@ -1090,18 +1092,18 @@ function BattleArena() {
           setLiveOpponentLocked(true);
         }
         if (liveActionLockedRef.current) {
-          const { data } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+          const { data } = await supabase.rpc("get_pvp_turn_resolution", {
             p_battle_id: pvpBattleId,
             p_turn_number: row.turn_number,
           });
-          if ((data as any)?.ready) liveResolutionRef.current((data as any).actions ?? [], row.turn_number);
+          if (data?.ready) liveResolutionRef.current(data.actions ?? [], row.turn_number);
         }
       })
       .on("postgres_changes", {
         event: "UPDATE", schema: "public", table: "pvp_battles",
         filter: `id=eq.${pvpBattleId}`,
       }, async (payload) => {
-        const row = payload.new as any;
+        const row = payload.new as TableRow<"pvp_battles">;
         if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
           finishBattle(row.winner_id === myUserIdRef.current);
         }
@@ -1268,22 +1270,23 @@ function BattleArena() {
     if (!user) return;
     myUserIdRef.current = user.id;
     const { data: battle } = await supabase
-      .from("pvp_battles" as any)
+      .from("pvp_battles")
       .select("challenger_id, opponent_id, challenger_archetype, opponent_archetype")
       .eq("id", battleId)
       .maybeSingle();
-    const b = battle as any;
-    if (!b) return;
-    const iAmChallenger = b.challenger_id === user.id;
-    const oppId = iAmChallenger ? b.opponent_id : b.challenger_id;
-    const { data: prof } = await supabase.from("user_profiles" as any).select("username").eq("user_id", oppId).maybeSingle();
-    const { data: rating } = await supabase.from("player_ratings" as any).select("rating").eq("user_id", oppId).maybeSingle();
+    if (!battle) return;
+    const iAmChallenger = battle.challenger_id === user.id;
+    const oppId = iAmChallenger ? battle.opponent_id : battle.challenger_id;
+    const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", oppId).maybeSingle();
+    const { data: rating } = await supabase.from("player_ratings").select("rating").eq("user_id", oppId).maybeSingle();
     startDirectBattle({
       battleId,
-      myArchetype: (iAmChallenger ? b.challenger_archetype : b.opponent_archetype) as ArchetypeId,
-      opponentArchetype: (iAmChallenger ? b.opponent_archetype : b.challenger_archetype) as ArchetypeId,
-      opponentName: (prof as any)?.username ?? `Player_${String(oppId).slice(0, 6)}`,
-      opponentRating: (rating as any)?.rating ?? 1000,
+      // Archetypes are written by this client on enqueue, so the `text`
+      // columns hold ArchetypeId values by construction.
+      myArchetype: (iAmChallenger ? battle.challenger_archetype : battle.opponent_archetype) as ArchetypeId,
+      opponentArchetype: (iAmChallenger ? battle.opponent_archetype : battle.challenger_archetype) as ArchetypeId,
+      opponentName: prof?.username ?? `Player_${oppId.slice(0, 6)}`,
+      opponentRating: rating?.rating ?? 1000,
       iAmChallenger,
       opponentUserId: oppId,
     });
@@ -1389,7 +1392,7 @@ function BattleArena() {
       void (async () => {
         const battleId = pvpBattleIdRef.current;
         if (!battleId) return;
-        const { data, error } = await supabase.rpc("submit_pvp_turn_action" as any, {
+        const { data, error } = await supabase.rpc("submit_pvp_turn_action", {
           p_battle_id: battleId,
           p_turn_number: liveTurnNumberRef.current,
           p_action: currentAction,
@@ -1408,8 +1411,8 @@ function BattleArena() {
           toast.error("Couldn't lock PvP action — try again.");
           return;
         }
-        if ((data as any)?.ready) {
-          liveResolutionRef.current((data as any).actions ?? [], liveTurnNumberRef.current);
+        if (data?.ready) {
+          liveResolutionRef.current(data.actions ?? [], liveTurnNumberRef.current);
         } else {
           // Polling fallback: realtime INSERT events on pvp_turn_actions are
           // the primary path that wakes the resolver, but if the websocket
@@ -1430,13 +1433,13 @@ function BattleArena() {
               clearInterval(poll);
               return;
             }
-            const { data: res } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+            const { data: res } = await supabase.rpc("get_pvp_turn_resolution", {
               p_battle_id: battleIdAtSubmit,
               p_turn_number: turnAtSubmit,
             });
-            if ((res as any)?.ready) {
+            if (res?.ready) {
               clearInterval(poll);
-              liveResolutionRef.current((res as any).actions ?? [], turnAtSubmit);
+              liveResolutionRef.current(res.actions ?? [], turnAtSubmit);
             }
           }, 1500);
         }
@@ -1616,7 +1619,7 @@ function BattleArena() {
       // idempotent per day). Fires the milestone celebration when crossed.
       await recordDailyPractice();
 
-      await supabase.rpc("log_learning_history" as any, {
+      await supabase.rpc("log_learning_history", {
         p_session_type:     "battle",
         p_topic:            ARCHETYPES[archetype].name,
         p_question_text:    null,
@@ -1627,7 +1630,7 @@ function BattleArena() {
       });
       if (won) {
         // Server-side atomic increment; clients can no longer set wins directly.
-        await supabase.rpc("increment_daily_challenge_win" as any);
+        await supabase.rpc("increment_daily_challenge_win");
         window.dispatchEvent(new Event("daily-challenge-updated"));
       }
 
@@ -1643,12 +1646,11 @@ function BattleArena() {
 
       // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
       if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
-        const { data } = await supabase.rpc("complete_pvp_battle" as any, {
+        const { data } = await supabase.rpc("complete_pvp_battle", {
           p_battle_id: pvpBattleIdRef.current,
           p_winner_id: winnerId,
         });
-        const d = data as any;
-        const nextRating = iAmChallengerRef.current ? d?.challenger_rating_after : d?.opponent_rating_after;
+        const nextRating = iAmChallengerRef.current ? data?.challenger_rating_after : data?.opponent_rating_after;
         if (typeof nextRating === "number") {
           setRatingChange(nextRating - playerRatingRef.current);
           setPlayerRating(nextRating);
@@ -1664,12 +1666,11 @@ function BattleArena() {
       } else if (opponentTypeRef.current === "bot" && sessionId) {
         // Bot battles count too, at a reduced rating change (server-enforced),
         // and update the W/L record via the same applied-session truth model.
-        const { data } = await supabase.rpc("complete_bot_battle" as any, { p_session_id: sessionId });
-        const d = data as { rating_after?: number | null; rating_delta?: number | null } | null;
-        if (typeof d?.rating_after === "number") {
-          setRatingChange(d.rating_delta ?? 0);
-          setPlayerRating(d.rating_after);
-          playerRatingRef.current = d.rating_after;
+        const { data } = await supabase.rpc("complete_bot_battle", { p_session_id: sessionId });
+        if (typeof data?.rating_after === "number") {
+          setRatingChange(data.rating_delta ?? 0);
+          setPlayerRating(data.rating_after);
+          playerRatingRef.current = data.rating_after;
           window.dispatchEvent(new Event("pvp-leaderboard-updated"));
         }
       }
@@ -1691,7 +1692,7 @@ function BattleArena() {
       }
     }, 30000);
     try {
-      const { data, error } = await supabase.rpc("request_pvp_rematch" as any, {
+      const { data, error } = await supabase.rpc("request_pvp_rematch", {
         p_battle_id: battleId,
         p_archetype: archetype,
       });
@@ -2666,8 +2667,8 @@ function LeaderboardCard() {
       const { data: { user } } = await supabase.auth.getUser();
       const myId = user?.id ?? null;
       const [xpRes, pvpRes] = await Promise.all([
-        supabase.rpc("get_leaderboard" as any, { p_limit: 10 }),
-        supabase.rpc("get_pvp_leaderboard" as any, { p_limit: 10 }),
+        supabase.rpc("get_leaderboard", { p_limit: 10 }),
+        supabase.rpc("get_pvp_leaderboard", { p_limit: 10 }),
       ]);
       if (cancelled) return;
       setXpEntries(
@@ -2917,7 +2918,7 @@ function DailyChallengeCard() {
       // Server-side atomic claim: validates wins>=target and bonus_claimed=false
       // in a single UPDATE so concurrent clicks can't double-claim.
       const { data: claimedOk, error: claimErr } = await supabase
-        .rpc("claim_daily_challenge_bonus" as any, { p_required_wins: target });
+        .rpc("claim_daily_challenge_bonus", { p_required_wins: target });
       if (claimErr || !claimedOk) { toast.error("Couldn't claim — try again"); return; }
       // Award the XP via the rate-limited server RPC. The amount (100) is
       // enforced server-side; the client cannot inflate it.

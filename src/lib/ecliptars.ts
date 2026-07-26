@@ -96,7 +96,7 @@ async function grantEcliptar(
   nodeId: number,
   _userId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
-  const { error } = await supabase.rpc("claim_ecliptar" as any, {
+  const { error } = await supabase.rpc("claim_ecliptar", {
     p_slug: ec.slug,
     p_archetype: ec.archetype,
     p_name: ec.name,
@@ -157,10 +157,10 @@ export async function fetchOwnedEcliptarSlugs(): Promise<Set<string>> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Set();
   const { data } = await supabase
-    .from("user_ecliptars" as any)
+    .from("user_ecliptars")
     .select("ecliptar_slug")
     .eq("user_id", user.id);
-  return new Set(((data ?? []) as unknown as { ecliptar_slug: string }[]).map((r) => r.ecliptar_slug));
+  return new Set((data ?? []).map((r) => r.ecliptar_slug));
 }
 
 /**

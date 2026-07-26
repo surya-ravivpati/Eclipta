@@ -119,25 +119,40 @@ const SAFE_OUTCOME: ModerationOutcome = {
  * logs the decision and applies side effects (queue, wellbeing, repeat-offender
  * pause); `mode: "check"` is a pure pre-submit gate.
  */
+/**
+ * Wire shape of the `moderate-content` edge function's response.
+ *
+ * Every field is optional because this crosses a network boundary the
+ * schema types don't cover — the caller must guard each one rather than
+ * trust the payload.
+ */
+interface ModerationResponsePayload {
+  decision?: string;
+  category?: string;
+  confidence?: number;
+  selfHarm?: boolean;
+  paused?: boolean;
+}
+
 export async function moderate(
   text: string,
   targetType: ModerationTarget | "chat_message",
   opts?: { mode?: "check" | "record"; targetId?: string | null },
 ): Promise<ModerationOutcome> {
   try {
-    const { data, error } = await supabase.functions.invoke("moderate-content", {
-      body: { text, targetType, targetId: opts?.targetId ?? null, mode: opts?.mode ?? "record" },
-    });
+    const { data, error } = await supabase.functions.invoke<ModerationResponsePayload>(
+      "moderate-content",
+      { body: { text, targetType, targetId: opts?.targetId ?? null, mode: opts?.mode ?? "record" } },
+    );
     if (error || !data || typeof data !== "object") return SAFE_OUTCOME;
-    const d = data as any;
     const decision: ModerationDecision =
-      d.decision === "block" ? "block" : d.decision === "flag" ? "flag" : "allow";
+      data.decision === "block" ? "block" : data.decision === "flag" ? "flag" : "allow";
     return {
       decision,
-      category: typeof d.category === "string" ? d.category : "none",
-      confidence: typeof d.confidence === "number" ? d.confidence : 0,
-      selfHarm: d.selfHarm === true,
-      paused: d.paused === true,
+      category: typeof data.category === "string" ? data.category : "none",
+      confidence: typeof data.confidence === "number" ? data.confidence : 0,
+      selfHarm: data.selfHarm === true,
+      paused: data.paused === true,
       blocked: decision === "block",
     };
   } catch (e) {
@@ -171,20 +186,17 @@ export async function submitForumReport(
   targetId: string,
   reason: string,
 ): Promise<{ ok: true; deduplicated?: boolean; autoHidden?: boolean; reportCount?: number } | { ok: false; error: string }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await supabase.rpc("submit_forum_report" as any, {
+  const { data, error } = await supabase.rpc("submit_forum_report", {
     p_target_type: targetType,
     p_target_id: targetId,
     p_reason: reason,
   });
   if (error) return { ok: false, error: error.message };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const d = data as any;
   return {
     ok: true,
-    deduplicated: !!d?.deduplicated,
-    autoHidden: !!d?.auto_hidden,
-    reportCount: d?.report_count ?? undefined,
+    deduplicated: !!data?.deduplicated,
+    autoHidden: !!data?.auto_hidden,
+    reportCount: data?.report_count ?? undefined,
   };
 }
 
@@ -197,8 +209,7 @@ export async function setModerationStatus(
   status: "visible" | "hidden" | "removed",
   reason?: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await supabase.rpc("set_moderation_status" as any, {
+  const { error } = await supabase.rpc("set_moderation_status", {
     p_target_type: targetType,
     p_target_id: targetId,
     p_status: status,

@@ -52,8 +52,7 @@ function ContactForm() {
 
     setSubmitting(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc("submit_contact_message" as any, {
+      const { data, error } = await supabase.rpc("submit_contact_message", {
         p_name:       name.trim(),
         p_email:      email.trim(),
         p_subject:    subject.trim() || null,
@@ -64,8 +63,7 @@ function ContactForm() {
         toast.error(error.message || "Couldn't send. Try again in a moment.");
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((data as any)?.moderation_status === "hidden") {
+      if (data?.moderation_status === "hidden") {
         toast.message("Message received, held for review", {
           description: "We'll look at it shortly.",
         });

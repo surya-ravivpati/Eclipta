@@ -5,6 +5,7 @@
  */
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TableRow } from "@/integrations/supabase/database";
 
 export function usePlayerXp() {
   const [xp, setXp] = useState<number>(0);
@@ -20,7 +21,7 @@ export function usePlayerXp() {
       .select("xp")
       .eq("user_id", user.id)
       .maybeSingle();
-    setXp((data as any)?.xp ?? 0);
+    setXp(data?.xp ?? 0);
     setLoading(false);
   }, []);
 
@@ -32,12 +33,11 @@ export function usePlayerXp() {
       if (cancelled || !userIdRef.current) return;
       channel = supabase
         .channel(`xp:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
-        .on(
+        .on<TableRow<"user_profiles">>(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${userIdRef.current}` },
           (payload) => {
-            const newXp = (payload.new as any)?.xp;
-            if (typeof newXp === "number") setXp(newXp);
+            if ("xp" in payload.new && typeof payload.new.xp === "number") setXp(payload.new.xp);
           }
         )
         .subscribe();
@@ -66,10 +66,10 @@ export function useOwnedEcliptars() {
     userIdRef.current = user?.id ?? null;
     if (!user) { setSlugs(new Set()); setLoading(false); return; }
     const { data } = await supabase
-      .from("user_ecliptars" as any)
+      .from("user_ecliptars")
       .select("ecliptar_slug")
       .eq("user_id", user.id);
-    setSlugs(new Set(((data ?? []) as unknown as { ecliptar_slug: string }[]).map((r) => r.ecliptar_slug)));
+    setSlugs(new Set((data ?? []).map((r) => r.ecliptar_slug)));
     setLoading(false);
   }, []);
 

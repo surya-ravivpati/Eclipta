@@ -187,12 +187,14 @@ function NotificationRow({
     try {
       const url = new URL(href, window.location.origin);
       const search = url.search ? Object.fromEntries(new URLSearchParams(url.search)) : undefined;
-      navigate({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        to: url.pathname as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(search ? { search: search as any } : {}),
-      });
+      // `navigate` is typed against the statically-known route table, which a
+      // path assembled at runtime can never satisfy. Widening it once, here,
+      // keeps the opt-out to a single named line instead of spreading `any`
+      // across the call.
+      const navigateToDynamicPath = navigate as unknown as (
+        options: { to: string; search?: Record<string, string> },
+      ) => void;
+      navigateToDynamicPath({ to: url.pathname, ...(search ? { search } : {}) });
     } catch {
       window.location.assign(href);
     }

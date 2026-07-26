@@ -141,8 +141,7 @@ function ThreadPage() {
 
     const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
     const author_name = prof?.username || user.email?.split("@")[0] || "Learner";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inserted, error } = await (supabase.from("forum_answers") as any).insert({
+    const { data: inserted, error } = await supabase.from("forum_answers").insert({
       thread_id: thread.id, user_id: user.id, author_name, body,
       moderation_status: verdict.verdict === "hide" ? "hidden" : "visible",
       moderation_category: verdict.category,

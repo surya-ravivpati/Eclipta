@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "@/lib/milestones";
+import type { TableRow } from "@/integrations/supabase/database";
 
 export function useXpMilestones(opts: { onLunaMessages?: (msgs: string[]) => void } = {}) {
   const lastXpRef = useRef<number>(0);
@@ -40,16 +41,15 @@ export function useXpMilestones(opts: { onLunaMessages?: (msgs: string[]) => voi
         .select("xp")
         .eq("user_id", user.id)
         .maybeSingle();
-      handleNewXp((data as any)?.xp ?? 0);
+      handleNewXp(data?.xp ?? 0);
       if (cancelled) return;
       channel = supabase
         .channel(`xp-milestones:${user.id}:${Math.random().toString(36).slice(2)}`)
-        .on(
+        .on<TableRow<"user_profiles">>(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${user.id}` },
           (payload) => {
-            const newXp = (payload.new as any)?.xp;
-            if (typeof newXp === "number") handleNewXp(newXp);
+            if ("xp" in payload.new && typeof payload.new.xp === "number") handleNewXp(payload.new.xp);
           }
         )
         .subscribe();

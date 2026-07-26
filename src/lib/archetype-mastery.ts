@@ -134,7 +134,7 @@ export async function recordBattleMastery(
   total:       number,
 ): Promise<void> {
   const perfect = won && total > 0 && correct === total;
-  await supabase.rpc("record_battle_mastery" as any, {
+  await supabase.rpc("record_battle_mastery", {
     p_archetype:   archetype,
     p_won:         won,
     p_best_streak: bestStreak,
@@ -149,12 +149,12 @@ export async function fetchMastery(archetype: ArchetypeId): Promise<ArchetypeMas
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase
-    .from("archetype_mastery" as any)
+    .from("archetype_mastery")
     .select("archetype,battles_played,wins,best_streak,total_correct,total_questions,perfect_battles")
     .eq("user_id", user.id)
     .eq("archetype", archetype)
     .maybeSingle();
-  return (data ?? null) as ArchetypeMastery | null;
+  return data;
 }
 
 /** Fetch all archetype mastery rows for the current user. */
@@ -162,8 +162,8 @@ export async function fetchAllMastery(): Promise<ArchetypeMastery[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
   const { data } = await supabase
-    .from("archetype_mastery" as any)
+    .from("archetype_mastery")
     .select("archetype,battles_played,wins,best_streak,total_correct,total_questions,perfect_battles")
     .eq("user_id", user.id);
-  return (data ?? []) as unknown as ArchetypeMastery[];
+  return data ?? [];
 }

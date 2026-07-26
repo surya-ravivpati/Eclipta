@@ -63,23 +63,22 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
           .maybeSingle();
 
         if (profile) {
-          const p = profile as any;
-          const newStreak = stats.won ? (p.current_streak ?? 0) + 1 : 0;
-          const newBest = Math.max(p.best_streak ?? 0, newStreak);
+          const newStreak = stats.won ? (profile.current_streak ?? 0) + 1 : 0;
+          const newBest = Math.max(profile.best_streak ?? 0, newStreak);
 
           // Detect weak topics from missed questions
           const missedTopics = stats.records
             .filter(r => !r.correct)
             .map(r => r.question.topic);
-          const existingWeak: string[] = p.weak_areas ?? [];
+          const existingWeak: string[] = profile.weak_areas ?? [];
           const mergedWeak = [...new Set([...existingWeak, ...missedTopics])].slice(0, 10);
 
           await supabase
             .from("user_profiles")
             .update({
-              total_sessions: (p.total_sessions ?? 0) + 1,
-              total_questions: (p.total_questions ?? 0) + stats.totalQuestions,
-              total_correct: (p.total_correct ?? 0) + stats.correctAnswers,
+              total_sessions: (profile.total_sessions ?? 0) + 1,
+              total_questions: (profile.total_questions ?? 0) + stats.totalQuestions,
+              total_correct: (profile.total_correct ?? 0) + stats.correctAnswers,
               current_streak: newStreak,
               best_streak: newBest,
               weak_areas: mergedWeak,
@@ -87,7 +86,7 @@ export function BattleReport({ stats, onRematch, onContinueWithEcliptar, onBack,
             .eq("user_id", user.id);
 
           // Log battle to learning_history via server RPC (validated + rate-limited)
-          await supabase.rpc("log_learning_history" as any, {
+          await supabase.rpc("log_learning_history", {
             p_session_type:     "battle",
             p_topic:            `Battle as ${ARCHETYPES[stats.archetype].name}`,
             p_question_text:    null,

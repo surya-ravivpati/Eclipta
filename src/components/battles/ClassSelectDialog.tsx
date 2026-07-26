@@ -64,7 +64,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
         .select("equipped_ecliptar")
         .eq("user_id", user.id)
         .maybeSingle();
-      setEquippedSlug((data as any)?.equipped_ecliptar ?? null);
+      setEquippedSlug(data?.equipped_ecliptar ?? null);
     })();
   }, []);
 

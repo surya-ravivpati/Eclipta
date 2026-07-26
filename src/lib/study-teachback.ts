@@ -35,29 +35,39 @@ export async function fetchTeachBackRounds(roomId: string): Promise<TeachBackRou
     .select("*")
     .eq("room_id", roomId)
     .order("created_at", { ascending: true });
-  if (error) { console.error("fetchTeachBackRounds", error); return []; }
-  return (data ?? []) as unknown as TeachBackRound[];
+  if (error) {
+    console.error("fetchTeachBackRounds", error);
+    return [];
+  }
+  return data ?? [];
 }
 
 /** Toggle the ritual on/off (any member). Rebuilds the rotation + resets the
  *  one-skip allowance — a fresh session. Posts a system line. */
 export async function setTeachBack(roomId: string, on: boolean): Promise<string | null> {
-  const { error } = await supabase.rpc("set_teach_back" as never, { p_room: roomId, p_on: on } as never);
+  const { error } = await supabase.rpc(
+    "set_teach_back" as never,
+    { p_room: roomId, p_on: on } as never,
+  );
   return error ? error.message : null;
 }
 
 /** Fire once at work→break on every client; the server gates so only one round
  *  is created. `triggerKey` is the break phase's start time (unique per flip). */
 export async function openTeachBackRound(roomId: string, triggerKey: string): Promise<void> {
-  const { error } = await supabase.rpc("tb_open_round" as never,
-    { p_room: roomId, p_trigger_key: triggerKey } as never);
+  const { error } = await supabase.rpc(
+    "tb_open_round" as never,
+    { p_room: roomId, p_trigger_key: triggerKey } as never,
+  );
   if (error) console.error("openTeachBackRound", error);
 }
 
 /** One-tap validation. Informational only — never a per-user score. */
 export async function reactTeachBack(roundId: string, reaction: TbReaction): Promise<void> {
-  const { error } = await supabase.rpc("react_teach_back" as never,
-    { p_round: roundId, p_reaction: reaction } as never);
+  const { error } = await supabase.rpc(
+    "react_teach_back" as never,
+    { p_round: roundId, p_reaction: reaction } as never,
+  );
   if (error) console.error("reactTeachBack", error);
 }
 

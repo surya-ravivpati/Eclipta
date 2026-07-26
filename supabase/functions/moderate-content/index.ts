@@ -37,8 +37,11 @@ type TargetType = "thread" | "answer" | "comment" | "username" | "chat_message";
 type Decision = "allow" | "flag" | "block";
 
 const SURFACE_OF: Record<TargetType, string> = {
-  thread: "forum", answer: "forum", comment: "forum",
-  username: "username", chat_message: "chat",
+  thread: "forum",
+  answer: "forum",
+  comment: "forum",
+  username: "username",
+  chat_message: "chat",
 };
 
 // Unbranded moderation classifier. Deliberately NOT "Luna" — moderation must
@@ -62,7 +65,7 @@ interface AiVerdict {
   category: string;
   confidence: number;
   self_harm: boolean;
-  available: boolean;   // false when the classifier could not be reached
+  available: boolean; // false when the classifier could not be reached
 }
 
 const rateBucket = new Map<string, number[]>();
@@ -75,13 +78,19 @@ function checkRate(userId: string, maxPerMinute = 60): boolean {
   return true;
 }
 
-async function classifyWithAi(text: string, targetType: TargetType, apiKey: string, note?: string): Promise<AiVerdict> {
+async function classifyWithAi(
+  text: string,
+  targetType: TargetType,
+  apiKey: string,
+  note?: string,
+): Promise<AiVerdict> {
   const trimmed = text.slice(0, 4000);
   // A reporter's note is EXTRA CONTEXT for ambiguous cases only — never
   // authoritative. The classifier still judges the content on its own.
-  const reporterContext = note && note.trim()
-    ? `\n\nA user reported this with the note (treat as a possibly-biased hint, judge the content independently): "${note.trim().slice(0, 400)}"`
-    : "";
+  const reporterContext =
+    note && note.trim()
+      ? `\n\nA user reported this with the note (treat as a possibly-biased hint, judge the content independently): "${note.trim().slice(0, 400)}"`
+      : "";
   try {
     const response = await fetch(`${AI_GATEWAY_URL}/chat/completions`, {
       method: "POST",
@@ -90,44 +99,73 @@ async function classifyWithAi(text: string, targetType: TargetType, apiKey: stri
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `surface: ${SURFACE_OF[targetType]}\ntargetType: ${targetType}\n---\n${trimmed}${reporterContext}` },
+          {
+            role: "user",
+            content: `surface: ${SURFACE_OF[targetType]}\ntargetType: ${targetType}\n---\n${trimmed}${reporterContext}`,
+          },
         ],
         temperature: 0,
       }),
     });
     if (!response.ok) {
       console.error("moderate: AI gateway", response.status);
-      return { decision: "allow", category: "none", confidence: 0, self_harm: false, available: false };
+      return {
+        decision: "allow",
+        category: "none",
+        confidence: 0,
+        self_harm: false,
+        available: false,
+      };
     }
     const data = await response.json();
     const raw = String(data?.choices?.[0]?.message?.content ?? "");
     const match = raw.match(/\{[\s\S]*?\}/);
-    if (!match) return { decision: "allow", category: "none", confidence: 0, self_harm: false, available: false };
+    if (!match)
+      return {
+        decision: "allow",
+        category: "none",
+        confidence: 0,
+        self_harm: false,
+        available: false,
+      };
     const parsed = JSON.parse(match[0]) as any;
     const v = parsed.verdict;
     const decision: Decision = v === "block" ? "block" : v === "flag" ? "flag" : "allow";
     return {
       decision,
       category: typeof parsed.category === "string" ? parsed.category : "none",
-      confidence: typeof parsed.confidence === "number" ? Math.min(100, Math.max(0, parsed.confidence)) : 50,
+      confidence:
+        typeof parsed.confidence === "number" ? Math.min(100, Math.max(0, parsed.confidence)) : 50,
       self_harm: parsed.self_harm === true,
       available: true,
     };
   } catch (e) {
     console.error("moderate: AI threw", e);
-    return { decision: "allow", category: "none", confidence: 0, self_harm: false, available: false };
+    return {
+      decision: "allow",
+      category: "none",
+      confidence: 0,
+      self_harm: false,
+      available: false,
+    };
   }
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const json = (b: unknown, status = 200) =>
-    new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    new Response(JSON.stringify(b), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   try {
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
     if (!token) return json({ error: "Unauthorized" }, 401);
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
     const { data: userData } = await sb.auth.getUser(token);
     if (!userData?.user) return json({ error: "Unauthorized" }, 401);
     const userId = userData.user.id;
@@ -135,19 +173,38 @@ serve(async (req) => {
 
     const raw = await req.text();
     if (raw.length > 32 * 1024) return json({ error: "Request too large" }, 413);
-    let payload: { text?: string; targetType?: TargetType; targetId?: string | null; mode?: "check" | "record"; note?: string };
-    try { payload = JSON.parse(raw); } catch { return json({ error: "Invalid JSON" }, 400); }
+    let payload: {
+      text?: string;
+      targetType?: TargetType;
+      targetId?: string | null;
+      mode?: "check" | "record";
+      note?: string;
+    };
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      return json({ error: "Invalid JSON" }, 400);
+    }
 
     const text = (payload.text ?? "").toString();
     const targetType: TargetType = (payload.targetType as TargetType) ?? "thread";
     const targetId = payload.targetId ?? null;
     const mode = payload.mode === "check" ? "check" : "record";
-    const note = typeof payload.note === "string" ? payload.note : undefined;   // reporter context (re-scan)
-    if (!Object.keys(SURFACE_OF).includes(targetType)) return json({ error: "Invalid targetType" }, 400);
+    const note = typeof payload.note === "string" ? payload.note : undefined; // reporter context (re-scan)
+    if (!Object.keys(SURFACE_OF).includes(targetType))
+      return json({ error: "Invalid targetType" }, 400);
     const surface = SURFACE_OF[targetType];
 
     if (!text.trim()) {
-      return json({ verdict: "allow", decision: "allow", category: "none", score: 0, confidence: 0, selfHarm: false, reason: "Empty" });
+      return json({
+        verdict: "allow",
+        decision: "allow",
+        category: "none",
+        score: 0,
+        confidence: 0,
+        selfHarm: false,
+        reason: "Empty",
+      });
     }
 
     // Thresholds from the single config location (fallbacks if unreadable).
@@ -160,14 +217,19 @@ serve(async (req) => {
 
     // ── Layer A: deterministic dictionary + pattern scan (no external dep). ──
     const { data: scanRows } = await sb.rpc("moderation_scan" as any, { p_text: text });
-    const hits = (Array.isArray(scanRows) ? scanRows : []) as { category: string; severity: number; layer: string }[];
+    const hits = (Array.isArray(scanRows) ? scanRows : []) as {
+      category: string;
+      severity: number;
+      layer: string;
+    }[];
     const isUsername = targetType === "username";
     // Self-harm is never a deterministic action. Casual profanity is NOT
     // policed in forum/chat (the non-goal: don't filter normal banter) — the AI
     // judges whether it's directed harassment. Usernames stay strict (a profane
     // handle is a public identity), so they keep generic_profanity.
-    const considered = hits.filter((h) =>
-      h.category !== "self_harm" && (isUsername || h.category !== "generic_profanity"));
+    const considered = hits.filter(
+      (h) => h.category !== "self_harm" && (isUsername || h.category !== "generic_profanity"),
+    );
     const top = considered.sort((a, b) => b.severity - a.severity)[0] ?? null;
     const layersFired = new Set<string>();
     let aDecision: Decision = "allow";
@@ -175,15 +237,28 @@ serve(async (req) => {
     let aSeverity = 0;
     if (top) {
       layersFired.add(top.layer);
-      aCategory = top.category; aSeverity = top.severity;
+      aCategory = top.category;
+      aSeverity = top.severity;
       aDecision = isUsername
-        ? (top.severity >= FLAG_SEV ? "block" : "allow")   // usernames: deterministic-weighted, any hit blocks
-        : (top.severity >= BLOCK_SEV ? "block" : top.severity >= FLAG_SEV ? "flag" : "allow");
+        ? top.severity >= FLAG_SEV
+          ? "block"
+          : "allow" // usernames: deterministic-weighted, any hit blocks
+        : top.severity >= BLOCK_SEV
+          ? "block"
+          : top.severity >= FLAG_SEV
+            ? "flag"
+            : "allow";
     }
 
     // ── Layer B: contextual AI classifier (lighter weight for usernames). ──
     const apiKey = AI_GATEWAY_API_KEY;
-    let ai: AiVerdict = { decision: "allow", category: "none", confidence: 0, self_harm: false, available: false };
+    let ai: AiVerdict = {
+      decision: "allow",
+      category: "none",
+      confidence: 0,
+      self_harm: false,
+      available: false,
+    };
     if (apiKey) ai = await classifyWithAi(text, targetType, apiKey, note);
     if (ai.available) layersFired.add("ai");
 
@@ -197,27 +272,42 @@ serve(async (req) => {
     // ── Combine: strongest decision wins; self-harm is detection-only. ──
     const rank: Record<Decision, number> = { allow: 0, flag: 1, block: 2 };
     let decision: Decision = rank[aDecision] >= rank[bDecision] ? aDecision : bDecision;
-    let category = decision === aDecision && aCategory !== "none" ? aCategory : (ai.category !== "none" ? ai.category : aCategory);
-    let confidence = decision === aDecision ? Math.max(aSeverity * 10, ai.confidence) : ai.confidence;
+    let category =
+      decision === aDecision && aCategory !== "none"
+        ? aCategory
+        : ai.category !== "none"
+          ? ai.category
+          : aCategory;
+    const confidence =
+      decision === aDecision ? Math.max(aSeverity * 10, ai.confidence) : ai.confidence;
     const selfHarm = ai.self_harm === true;
 
     // Fail-safe: classifier unavailable AND Layer A clean → allow, but queue a
     // re-scan so the AI pass happens once it recovers (never silently skipped).
-    const needsRescan = !ai.available && aDecision === "allow" && (surface !== "username"); // usernames are deterministic-weighted
+    const needsRescan = !ai.available && aDecision === "allow" && surface !== "username"; // usernames are deterministic-weighted
 
     // Self-harm never produces a punitive block on its own.
-    if (selfHarm && decision === "block" && category === "self_harm") { decision = "allow"; category = "none"; }
+    if (selfHarm && decision === "block" && category === "self_harm") {
+      decision = "allow";
+      category = "none";
+    }
 
     let paused = false;
     let decisionId: string | null = null;
     if (mode === "record") {
       const { data: outcome } = await sb.rpc("apply_moderation_outcome" as any, {
-        p_surface: surface, p_target_type: targetType,
-        p_content_ref: targetId, p_author: userId,
-        p_decision: decision, p_category: category === "none" ? null : category,
-        p_confidence: Math.round(confidence), p_layers: Array.from(layersFired),
-        p_self_harm: selfHarm, p_severity: Math.max(aSeverity, Math.round(confidence / 10)),
-        p_snapshot: text, p_needs_rescan: needsRescan,
+        p_surface: surface,
+        p_target_type: targetType,
+        p_content_ref: targetId,
+        p_author: userId,
+        p_decision: decision,
+        p_category: category === "none" ? null : category,
+        p_confidence: Math.round(confidence),
+        p_layers: Array.from(layersFired),
+        p_self_harm: selfHarm,
+        p_severity: Math.max(aSeverity, Math.round(confidence / 10)),
+        p_snapshot: text,
+        p_needs_rescan: needsRescan,
       });
       paused = !!(outcome as any)?.paused;
       decisionId = (outcome as any)?.decision_id ?? null;
@@ -225,9 +315,12 @@ serve(async (req) => {
       // Forum rows: push the visibility verdict onto the existing row.
       if (targetId && surface === "forum") {
         await sb.rpc("apply_ai_moderation_result" as any, {
-          p_target_type: targetType, p_target_id: targetId,
-          p_verdict: decision === "flag" ? "hide" : decision,   // allow|hide|block
-          p_category: category, p_score: Math.round(confidence), p_reason: `Auto: ${category}`,
+          p_target_type: targetType,
+          p_target_id: targetId,
+          p_verdict: decision === "flag" ? "hide" : decision, // allow|hide|block
+          p_category: category,
+          p_score: Math.round(confidence),
+          p_reason: `Auto: ${category}`,
         });
       }
     }
@@ -235,13 +328,29 @@ serve(async (req) => {
     // Back-compat verdict field (existing forum callers read .verdict/.reason).
     const verdict = decision === "flag" ? "hide" : decision;
     return json({
-      verdict, decision, category, confidence: Math.round(confidence), score: Math.round(confidence),
-      selfHarm, paused, needsRescan, decisionId,
+      verdict,
+      decision,
+      category,
+      confidence: Math.round(confidence),
+      score: Math.round(confidence),
+      selfHarm,
+      paused,
+      needsRescan,
+      decisionId,
       reason: decision === "block" ? `This was flagged as ${category}.` : "",
     });
   } catch (e) {
     console.error("moderate fatal:", e);
     // Fail-safe: on an unexpected error, do NOT block the user platform-wide.
-    return json({ verdict: "allow", decision: "allow", category: "none", confidence: 0, score: 0, selfHarm: false, paused: false, reason: "" });
+    return json({
+      verdict: "allow",
+      decision: "allow",
+      category: "none",
+      confidence: 0,
+      score: 0,
+      selfHarm: false,
+      paused: false,
+      reason: "",
+    });
   }
 });

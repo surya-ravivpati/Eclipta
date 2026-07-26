@@ -2,8 +2,17 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, Check, CircleDot, Menu, X, BookOpen,
-  PlayCircle, MessagesSquare, Trophy, Lightbulb,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleDot,
+  Menu,
+  X,
+  BookOpen,
+  PlayCircle,
+  MessagesSquare,
+  Trophy,
+  Lightbulb,
 } from "lucide-react";
 import { getCourseBySlug, type CertifiedCourse } from "@/lib/certified-courses";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,23 +36,35 @@ export const Route = createFileRoute("/_authenticated/certified/$slug/learn")({
   head: ({ loaderData }) => ({
     meta: [
       { title: `Learn: ${loaderData?.course.title ?? "Course"} – Eclipta` },
-      { name: "description", content: `Course player for ${loaderData?.course.title ?? "this course"}.` },
+      {
+        name: "description",
+        content: `Course player for ${loaderData?.course.title ?? "this course"}.`,
+      },
     ],
   }),
   notFoundComponent: () => (
     <div className="min-h-screen flex items-center justify-center">
-      <Link to="/courses" className="text-neon-purple">← Back to courses</Link>
+      <Link to="/courses" className="text-neon-purple">
+        ← Back to courses
+      </Link>
     </div>
   ),
   errorComponent: ({ error }) => (
-    <div className="min-h-screen flex items-center justify-center text-muted-foreground">{error.message}</div>
+    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      {error.message}
+    </div>
   ),
   component: CoursePlayer,
 });
 
 /* ---------------- Helpers ---------------- */
 
-type Lesson = { moduleIdx: number; lessonIdx: number; moduleTitle: string; lessonTitle: string };
+interface Lesson {
+  moduleIdx: number;
+  lessonIdx: number;
+  moduleTitle: string;
+  lessonTitle: string;
+}
 
 function flattenLessons(course: CertifiedCourse): Lesson[] {
   const out: Lesson[] = [];
@@ -75,7 +96,10 @@ function loadCompletion(slug: string, lessons: Lesson[]): Set<string> {
  * have hand-written content; build a useful scaffold (overview, key ideas,
  * exercise prompt) from the metadata so the player feels real.
  */
-function lessonContent(course: CertifiedCourse, lesson: Lesson): {
+function lessonContent(
+  course: CertifiedCourse,
+  lesson: Lesson,
+): {
   overview: string;
   keyIdeas: string[];
   exercise: string;
@@ -119,7 +143,7 @@ function CoursePlayer() {
   const currentIndex = useMemo(() => {
     const m = search.m ?? 0;
     const l = search.l ?? 0;
-    const idx = lessons.findIndex(x => x.moduleIdx === m && x.lessonIdx === l);
+    const idx = lessons.findIndex((x) => x.moduleIdx === m && x.lessonIdx === l);
     return idx === -1 ? 0 : idx;
   }, [lessons, search.m, search.l]);
 
@@ -145,7 +169,7 @@ function CoursePlayer() {
     if (typeof window !== "undefined") {
       localStorage.setItem(lessonKey(course.slug, lesson.moduleIdx, lesson.lessonIdx), "1");
     }
-    setCompleted(prev => new Set(prev).add(k));
+    setCompleted((prev) => new Set(prev).add(k));
   };
 
   const next = () => {
@@ -169,11 +193,18 @@ function CoursePlayer() {
       lessonsTotal: totalLessons,
       currentBlockId: `${lesson.moduleIdx}:${lesson.lessonIdx}`,
     });
-  }, [user, course.slug, course.title, completedCount, totalLessons, lesson.moduleIdx, lesson.lessonIdx]);
+  }, [
+    user,
+    course.slug,
+    course.title,
+    completedCount,
+    totalLessons,
+    lesson.moduleIdx,
+    lesson.lessonIdx,
+  ]);
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
-
       {/* Mobile sidebar trigger */}
       <button
         onClick={() => setSidebarOpen(true)}
@@ -188,7 +219,10 @@ function CoursePlayer() {
           className={`${sidebarOpen ? "fixed inset-0 z-40 bg-background/95 backdrop-blur-xl overflow-y-auto pt-20 px-6" : "hidden"} lg:block lg:relative lg:inset-auto lg:bg-transparent lg:backdrop-blur-none lg:pt-4 lg:px-0`}
         >
           {sidebarOpen && (
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden absolute top-4 right-4 p-2 text-foreground">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden absolute top-4 right-4 p-2 text-foreground"
+            >
               <X className="w-5 h-5" />
             </button>
           )}
@@ -201,19 +235,20 @@ function CoursePlayer() {
               <ArrowLeft className="w-3 h-3" /> COURSE OVERVIEW
             </Link>
 
-            <h2 className="font-display font-bold text-base tracking-tight mb-1 leading-tight">{course.title}</h2>
+            <h2 className="font-display font-bold text-base tracking-tight mb-1 leading-tight">
+              {course.title}
+            </h2>
             <p className="text-[10px] text-muted-foreground mb-3">by {course.creator}</p>
 
             {/* Progress bar */}
             <div className="mb-2 flex items-center justify-between text-[10px] tracking-widest font-bold text-muted-foreground">
               <span>PROGRESS</span>
-              <span className="text-neon-purple tabular-nums">{completedCount}/{totalLessons}</span>
+              <span className="text-neon-purple tabular-nums">
+                {completedCount}/{totalLessons}
+              </span>
             </div>
             <div className="w-full h-1.5 bg-secondary/50 mb-5 overflow-hidden">
-              <div
-                className="h-full bg-neon-purple transition-all"
-                style={{ width: `${pct}%` }}
-              />
+              <div className="h-full bg-neon-purple transition-all" style={{ width: `${pct}%` }} />
             </div>
 
             <Link
@@ -232,7 +267,9 @@ function CoursePlayer() {
                   </p>
                   <ul className="space-y-0.5">
                     {mod.lessons.map((title: string, li: number) => {
-                      const idx = lessons.findIndex(x => x.moduleIdx === mi && x.lessonIdx === li);
+                      const idx = lessons.findIndex(
+                        (x) => x.moduleIdx === mi && x.lessonIdx === li,
+                      );
                       const active = idx === currentIndex;
                       const done = completed.has(`${mi}:${li}`);
                       return (
@@ -273,7 +310,8 @@ function CoursePlayer() {
             transition={{ duration: 0.25 }}
           >
             <p className="text-[10px] font-bold tracking-widest text-neon-purple/70 mb-2">
-              MODULE {String(lesson.moduleIdx + 1).padStart(2, "0")} · LESSON {String(lesson.lessonIdx + 1).padStart(2, "0")}
+              MODULE {String(lesson.moduleIdx + 1).padStart(2, "0")} · LESSON{" "}
+              {String(lesson.lessonIdx + 1).padStart(2, "0")}
             </p>
             <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight leading-tight mb-1">
               {lesson.lessonTitle}
@@ -289,7 +327,8 @@ function CoursePlayer() {
                   Written Lesson
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  An auto-generated study outline for "{lesson.lessonTitle}" — read it below. Video walkthroughs aren't available yet.
+                  An auto-generated study outline for "{lesson.lessonTitle}" — read it below. Video
+                  walkthroughs aren't available yet.
                 </p>
               </div>
             </div>
@@ -355,8 +394,12 @@ function CoursePlayer() {
                   className="px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center justify-center gap-2"
                 >
                   {currentIndex === totalLessons - 1
-                    ? (isDone ? "ALL DONE" : "FINISH COURSE")
-                    : (isDone ? "NEXT LESSON" : "COMPLETE & NEXT")}
+                    ? isDone
+                      ? "ALL DONE"
+                      : "FINISH COURSE"
+                    : isDone
+                      ? "NEXT LESSON"
+                      : "COMPLETE & NEXT"}
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -367,7 +410,8 @@ function CoursePlayer() {
                 <Trophy className="w-8 h-8 text-neon-cyan mx-auto mb-3" />
                 <h3 className="font-display font-bold text-lg mb-1">Course complete</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  You've worked through every lesson in {course.title}. Take what you learned into the arena.
+                  You've worked through every lesson in {course.title}. Take what you learned into
+                  the arena.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <Link

@@ -2,25 +2,52 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Search, Sparkles, ArrowRight, BookOpen, Loader2, Users, Star,
-  ShieldCheck, GraduationCap, X, Check, Lock, CircleDot, Circle,
+  Search,
+  Sparkles,
+  ArrowRight,
+  BookOpen,
+  Loader2,
+  Users,
+  Star,
+  ShieldCheck,
+  GraduationCap,
+  X,
+  Check,
+  Lock,
+  CircleDot,
+  Circle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EASING } from "@/config/motion";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  SUBJECTS, type Subject, type UnifiedCourse, type CommunityCourseRow,
-  certifiedToUnified, communityToUnified, searchScore,
+  SUBJECTS,
+  type Subject,
+  type UnifiedCourse,
+  type CommunityCourseRow,
+  certifiedToUnified,
+  communityToUnified,
+  searchScore,
 } from "@/lib/courses";
 import {
-  recommend, deriveMastery, buildPath, activeSubject,
-  type Recommendation, type PathStep, type LearnerState,
+  recommend,
+  deriveMastery,
+  buildPath,
+  activeSubject,
+  type Recommendation,
+  type PathStep,
+  type LearnerState,
 } from "@/lib/recommend";
 
 export const Route = createFileRoute("/courses")({
   head: () => ({
     meta: [
       { title: "Courses – Eclipta" },
-      { name: "description", content: "One library. Everything you're learning, and what to learn next — official and community courses, personalized to you." },
+      {
+        name: "description",
+        content:
+          "One library. Everything you're learning, and what to learn next — official and community courses, personalized to you.",
+      },
       { property: "og:title", content: "Courses – Eclipta" },
       { property: "og:description", content: "One unified learning library, personalized to you." },
     ],
@@ -28,9 +55,7 @@ export const Route = createFileRoute("/courses")({
   component: CoursesHub,
 });
 
-// `as const` pins this to the readonly 4-tuple framer-motion's
-// BezierDefinition wants; a bare array widens to number[] and is rejected.
-const EASE = [0.2, 0.7, 0.2, 1] as const;
+const EASE = EASING.soft;
 
 /* Progress (best-effort — course_progress may not exist yet; we fall back to
    enrollments). Keyed by course_slug. */
@@ -71,12 +96,17 @@ function CoursesHub() {
       setCommunity(communityToUnified((data as CommunityCourseRow[]) || []));
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!user) {
-      setEnrolledSlugs(new Set()); setProgress({}); setStrongAreas([]); setWeakAreas([]);
+      setEnrolledSlugs(new Set());
+      setProgress({});
+      setStrongAreas([]);
+      setWeakAreas([]);
       return;
     }
     let cancelled = false;
@@ -102,7 +132,8 @@ function CoursesHub() {
       // Best-effort: course_progress may not be migrated yet. Seed lastOpened
       // from enrollments so Continue Learning works either way.
       const base: Record<string, Progress> = {};
-      for (const r of en ?? []) base[r.course_slug] = { percent: 0, status: "enrolled", lastOpened: r.enrolled_at };
+      for (const r of en ?? [])
+        base[r.course_slug] = { percent: 0, status: "enrolled", lastOpened: r.enrolled_at };
       try {
         const { data: prog, error } = await supabase
           .from("course_progress")
@@ -110,13 +141,21 @@ function CoursesHub() {
           .eq("user_id", user.id);
         if (!error && prog) {
           for (const p of prog) {
-            base[p.course_slug] = { percent: p.percent ?? 0, status: p.status ?? "enrolled", lastOpened: p.last_opened_at };
+            base[p.course_slug] = {
+              percent: p.percent ?? 0,
+              status: p.status ?? "enrolled",
+              lastOpened: p.last_opened_at,
+            };
           }
         }
-      } catch { /* table absent — enrollments fallback already in place */ }
+      } catch {
+        /* table absent — enrollments fallback already in place */
+      }
       if (!cancelled) setProgress(base);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const allCourses = useMemo<UnifiedCourse[]>(
@@ -147,7 +186,12 @@ function CoursesHub() {
   const popular = useMemo<UnifiedCourse[]>(() => {
     const pool = allCourses.filter((c) => !enrolledSlugs.has(c.slug));
     return [...pool]
-      .sort((a, b) => (b.rating ?? 0) * 100 + (b.enrolledCount ?? 0) - ((a.rating ?? 0) * 100 + (a.enrolledCount ?? 0)))
+      .sort(
+        (a, b) =>
+          (b.rating ?? 0) * 100 +
+          (b.enrolledCount ?? 0) -
+          ((a.rating ?? 0) * 100 + (a.enrolledCount ?? 0)),
+      )
       .slice(0, 6);
   }, [allCourses, enrolledSlugs]);
 
@@ -168,7 +212,10 @@ function CoursesHub() {
     () => recommend(allCourses, learnerState),
     [allCourses, learnerState],
   );
-  const pathSubject = useMemo(() => activeSubject(learnerState, allCourses), [learnerState, allCourses]);
+  const pathSubject = useMemo(
+    () => activeSubject(learnerState, allCourses),
+    [learnerState, allCourses],
+  );
   const path = useMemo<PathStep[]>(
     () => buildPath(pathSubject, deriveMastery(learnerState), allCourses),
     [pathSubject, learnerState, allCourses],
@@ -189,14 +236,19 @@ function CoursesHub() {
       <div className="max-w-7xl mx-auto px-6 pt-24 pb-24">
         {/* ── Header ─────────────────────────────────────────────── */}
         <motion.header
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: EASE }}
           className="mb-12"
         >
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">Library</p>
+          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
+            Library
+          </p>
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
-              <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">Courses</h1>
+              <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+                Courses
+              </h1>
               <p className="text-sm text-muted-foreground mt-3 max-w-md">
                 One library. Everything you're learning, and what to learn next.
               </p>
@@ -212,14 +264,19 @@ function CoursesHub() {
                   aria-label="Search courses"
                 />
                 {query && (
-                  <button onClick={() => setQuery("")} aria-label="Clear search"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
-              <Link to="/build-course"
-                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors elev-1">
+              <Link
+                to="/build-course"
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors elev-1"
+              >
                 <Sparkles className="w-3.5 h-3.5" /> Build
               </Link>
             </div>
@@ -227,7 +284,9 @@ function CoursesHub() {
         </motion.header>
 
         {loading ? (
-          <div className="flex justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-24">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
         ) : (
           <div className="space-y-16">
             {/* Search results take over when the user is searching/filtering. */}
@@ -237,8 +296,10 @@ function CoursesHub() {
                 count={filtered.length}
                 action={
                   subject ? (
-                    <button onClick={() => setSubject(null)}
-                      className="inline-flex items-center gap-1 text-[11px] font-mono tracking-widest uppercase text-muted-foreground hover:text-foreground">
+                    <button
+                      onClick={() => setSubject(null)}
+                      className="inline-flex items-center gap-1 text-[11px] font-mono tracking-widest uppercase text-muted-foreground hover:text-foreground"
+                    >
                       <X className="w-3 h-3" /> Clear
                     </button>
                   ) : null
@@ -247,7 +308,11 @@ function CoursesHub() {
                 {filtered.length === 0 ? (
                   <EmptyResults query={query} />
                 ) : (
-                  <Grid>{filtered.map((c) => <CourseCard key={c.slug} c={c} />)}</Grid>
+                  <Grid>
+                    {filtered.map((c) => (
+                      <CourseCard key={c.slug} c={c} />
+                    ))}
+                  </Grid>
                 )}
               </Section>
             ) : (
@@ -256,29 +321,44 @@ function CoursesHub() {
                 {continueItems.length > 0 && (
                   <Section title="Continue learning">
                     <Rail>
-                      {continueItems.map((c) => <ContinueCard key={c.slug} c={c} />)}
+                      {continueItems.map((c) => (
+                        <ContinueCard key={c.slug} c={c} />
+                      ))}
                     </Rail>
                   </Section>
                 )}
 
                 {/* ── Recommended Next (personalized) or Popular (cold start) ── */}
                 {recommendations.length > 0 ? (
-                  <Section title="Recommended next" subtitle="Chosen from what you've learned — every pick has a reason">
+                  <Section
+                    title="Recommended next"
+                    subtitle="Chosen from what you've learned — every pick has a reason"
+                  >
                     <Rail>
-                      {recommendations.map((r) => <RecCard key={r.course.slug} rec={r} />)}
+                      {recommendations.map((r) => (
+                        <RecCard key={r.course.slug} rec={r} />
+                      ))}
                     </Rail>
                   </Section>
                 ) : popular.length > 0 ? (
-                  <Section title="Popular on Eclipta" subtitle="Get started with what learners are loving right now">
+                  <Section
+                    title="Popular on Eclipta"
+                    subtitle="Get started with what learners are loving right now"
+                  >
                     <Rail>
-                      {popular.map((c) => <CourseCard key={c.slug} c={c} wide />)}
+                      {popular.map((c) => (
+                        <CourseCard key={c.slug} c={c} wide />
+                      ))}
                     </Rail>
                   </Section>
                 ) : null}
 
                 {/* ── Your learning path (the progression spine) ──── */}
                 {isAuthenticated && path.length > 0 && (
-                  <Section title="Your learning path" subtitle={`${pathSubject} — where you are and what's next`}>
+                  <Section
+                    title="Your learning path"
+                    subtitle={`${pathSubject} — where you are and what's next`}
+                  >
                     <LearningPathView steps={path} />
                   </Section>
                 )}
@@ -296,7 +376,9 @@ function CoursesHub() {
                           className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-md glass-panel text-sm transition-colors hover:border-primary/50 disabled:opacity-40 disabled:cursor-default"
                         >
                           <span className="font-medium">{s}</span>
-                          <span className="font-mono text-[10px] text-muted-foreground tabular-nums">{n}</span>
+                          <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
+                            {n}
+                          </span>
                         </button>
                       );
                     })}
@@ -305,7 +387,11 @@ function CoursesHub() {
 
                 {/* ── Full library ────────────────────────────────── */}
                 <Section title="All courses" count={allCourses.length}>
-                  <Grid>{allCourses.map((c) => <CourseCard key={c.slug} c={c} />)}</Grid>
+                  <Grid>
+                    {allCourses.map((c) => (
+                      <CourseCard key={c.slug} c={c} />
+                    ))}
+                  </Grid>
                 </Section>
               </>
             )}
@@ -318,19 +404,35 @@ function CoursesHub() {
 
 /* ── Layout primitives ─────────────────────────────────────────────────── */
 
-function Section({ title, subtitle, count, action, children }: {
-  title: string; subtitle?: string; count?: number; action?: React.ReactNode; children: React.ReactNode;
+function Section({
+  title,
+  subtitle,
+  count,
+  action,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  count?: number;
+  action?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.6, ease: EASE }}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.6, ease: EASE }}
     >
       <div className="flex items-end justify-between mb-5">
         <div>
           <h2 className="font-display text-xl font-bold tracking-tight inline-flex items-baseline gap-2">
             {title}
-            {typeof count === "number" && <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{count}</span>}
+            {typeof count === "number" && (
+              <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                {count}
+              </span>
+            )}
           </h2>
           {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
         </div>
@@ -368,11 +470,23 @@ function SourceBadge({ source }: { source: UnifiedCourse["source"] }) {
 }
 
 /** A card links to the right detail route for its source. */
-function DetailLink({ c, className, children }: { c: UnifiedCourse; className?: string; children: React.ReactNode }) {
+function DetailLink({
+  c,
+  className,
+  children,
+}: {
+  c: UnifiedCourse;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return c.source === "official" ? (
-    <Link to="/certified/$slug" params={{ slug: c.slug }} className={className}>{children}</Link>
+    <Link to="/certified/$slug" params={{ slug: c.slug }} className={className}>
+      {children}
+    </Link>
   ) : (
-    <Link to="/courses/$slug" params={{ slug: c.slug }} className={className}>{children}</Link>
+    <Link to="/courses/$slug" params={{ slug: c.slug }} className={className}>
+      {children}
+    </Link>
   );
 }
 
@@ -383,19 +497,39 @@ function CourseCard({ c, wide }: { c: UnifiedCourse; wide?: boolean }) {
       className={`glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start ${wide ? "min-w-[280px] sm:min-w-[300px]" : ""}`}
     >
       {c.cover && (
-        <img src={c.cover} alt="" loading="lazy"
-          className="aspect-video w-full object-cover rounded-sm border border-border/50" />
+        <img
+          src={c.cover}
+          alt=""
+          loading="lazy"
+          className="aspect-video w-full object-cover rounded-sm border border-border/50"
+        />
       )}
       <div className="flex items-center justify-between gap-2">
         <SourceBadge source={c.source} />
-        <span className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground">{c.level}</span>
+        <span className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground">
+          {c.level}
+        </span>
       </div>
-      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">{c.title}</h3>
-      {c.summary && <p className="text-xs text-muted-foreground line-clamp-3 flex-1">{c.summary}</p>}
+      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">
+        {c.title}
+      </h3>
+      {c.summary && (
+        <p className="text-xs text-muted-foreground line-clamp-3 flex-1">{c.summary}</p>
+      )}
       <div className="flex items-center gap-3 pt-2 border-t border-border/40 text-[10px] text-muted-foreground tabular-nums">
-        <span className="inline-flex items-center gap-1"><BookOpen className="w-3 h-3" /> {c.subject}</span>
-        {typeof c.rating === "number" && <span className="inline-flex items-center gap-1 text-primary"><Star className="w-3 h-3 fill-primary" /> {c.rating}</span>}
-        {typeof c.enrolledCount === "number" && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> {c.enrolledCount}</span>}
+        <span className="inline-flex items-center gap-1">
+          <BookOpen className="w-3 h-3" /> {c.subject}
+        </span>
+        {typeof c.rating === "number" && (
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Star className="w-3 h-3 fill-primary" /> {c.rating}
+          </span>
+        )}
+        {typeof c.enrolledCount === "number" && (
+          <span className="inline-flex items-center gap-1">
+            <Users className="w-3 h-3" /> {c.enrolledCount}
+          </span>
+        )}
       </div>
     </DetailLink>
   );
@@ -410,10 +544,15 @@ function ContinueCard({ c }: { c: ContinueItem }) {
           {c.percent > 0 ? `${c.percent}%` : "Not started"}
         </span>
       </div>
-      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">{c.title}</h3>
+      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">
+        {c.title}
+      </h3>
       {/* progress bar */}
       <div className="h-1 rounded-full bg-border overflow-hidden">
-        <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${c.percent}%` }} />
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-500"
+          style={{ width: `${c.percent}%` }}
+        />
       </div>
       <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-primary mt-1">
         {c.percent > 0 ? "Continue" : "Start"} <ArrowRight className="w-3.5 h-3.5" />
@@ -423,13 +562,19 @@ function ContinueCard({ c }: { c: ContinueItem }) {
   // Continue routes to the player for official, the detail (which handles resume)
   // for community.
   return c.source === "official" ? (
-    <Link to="/certified/$slug/learn" params={{ slug: c.slug }}
-      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]">
+    <Link
+      to="/certified/$slug/learn"
+      params={{ slug: c.slug }}
+      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]"
+    >
       {inner}
     </Link>
   ) : (
-    <Link to="/courses/$slug" params={{ slug: c.slug }}
-      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]">
+    <Link
+      to="/courses/$slug"
+      params={{ slug: c.slug }}
+      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]"
+    >
       {inner}
     </Link>
   );
@@ -446,18 +591,27 @@ function RecCard({ rec }: { rec: Recommendation }) {
       <div className="flex items-center justify-between gap-2">
         <SourceBadge source={course.source} />
         {kind === "remediation" ? (
-          <span className="font-mono text-[9px] tracking-widest uppercase text-primary">Review first</span>
+          <span className="font-mono text-[9px] tracking-widest uppercase text-primary">
+            Review first
+          </span>
         ) : readiness < 1 ? (
-          <span className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground tabular-nums">{pct}% ready</span>
+          <span className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground tabular-nums">
+            {pct}% ready
+          </span>
         ) : null}
       </div>
-      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">{course.title}</h3>
+      <h3 className="font-display font-bold text-base leading-tight group-hover:text-primary transition-colors">
+        {course.title}
+      </h3>
       <p className="text-xs text-primary/90 leading-snug flex items-start gap-1.5 flex-1">
         <Sparkles className="w-3 h-3 mt-0.5 shrink-0" /> <span>{reason}</span>
       </p>
       {readiness > 0 && readiness < 1 && (
         <div className="h-1 rounded-full bg-border overflow-hidden">
-          <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${pct}%` }} />
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-500"
+            style={{ width: `${pct}%` }}
+          />
         </div>
       )}
       <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-primary">
@@ -474,7 +628,9 @@ function LearningPathView({ steps }: { steps: PathStep[] }) {
         <div key={s.concept.id} className="flex items-center shrink-0">
           <PathNode step={s} />
           {i < steps.length - 1 && (
-            <div className={`h-px w-8 sm:w-10 shrink-0 ${s.state === "done" ? "bg-primary" : "bg-border"}`} />
+            <div
+              className={`h-px w-8 sm:w-10 shrink-0 ${s.state === "done" ? "bg-primary" : "bg-border"}`}
+            />
           )}
         </div>
       ))}
@@ -485,23 +641,40 @@ function LearningPathView({ steps }: { steps: PathStep[] }) {
 function PathNode({ step }: { step: PathStep }) {
   const { concept, state, course } = step;
   const dot =
-    state === "done" ? <Check className="w-3.5 h-3.5 text-primary-foreground" />
-    : state === "current" ? <CircleDot className="w-3.5 h-3.5 text-primary" />
-    : state === "locked" ? <Lock className="w-3 h-3 text-muted-foreground" />
-    : <Circle className="w-3 h-3 text-muted-foreground" />;
+    state === "done" ? (
+      <Check className="w-3.5 h-3.5 text-primary-foreground" />
+    ) : state === "current" ? (
+      <CircleDot className="w-3.5 h-3.5 text-primary" />
+    ) : state === "locked" ? (
+      <Lock className="w-3 h-3 text-muted-foreground" />
+    ) : (
+      <Circle className="w-3 h-3 text-muted-foreground" />
+    );
   const ring =
-    state === "done" ? "bg-primary border-primary"
-    : state === "current" ? "border-primary ring-2 ring-primary/25"
-    : "border-border";
+    state === "done"
+      ? "bg-primary border-primary"
+      : state === "current"
+        ? "border-primary ring-2 ring-primary/25"
+        : "border-border";
   const body = (
     <div className="flex flex-col items-center gap-1.5 w-[72px] text-center">
-      <span className={`w-8 h-8 rounded-full border flex items-center justify-center ${ring}`}>{dot}</span>
-      <span className={`text-[10px] leading-tight ${state === "locked" ? "text-muted-foreground" : "text-foreground"}`}>{concept.label}</span>
+      <span className={`w-8 h-8 rounded-full border flex items-center justify-center ${ring}`}>
+        {dot}
+      </span>
+      <span
+        className={`text-[10px] leading-tight ${state === "locked" ? "text-muted-foreground" : "text-foreground"}`}
+      >
+        {concept.label}
+      </span>
     </div>
   );
   return course && state !== "locked" ? (
-    <DetailLink c={course} className="hover:opacity-80 transition-opacity">{body}</DetailLink>
-  ) : body;
+    <DetailLink c={course} className="hover:opacity-80 transition-opacity">
+      {body}
+    </DetailLink>
+  ) : (
+    body
+  );
 }
 
 function EmptyResults({ query }: { query: string }) {
@@ -511,8 +684,10 @@ function EmptyResults({ query }: { query: string }) {
       <p className="text-sm text-muted-foreground mb-4">
         No courses match {query ? `“${query}”` : "that filter"} yet.
       </p>
-      <Link to="/build-course"
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors">
+      <Link
+        to="/build-course"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors"
+      >
         <Sparkles className="w-3.5 h-3.5" /> Build this course
       </Link>
     </div>

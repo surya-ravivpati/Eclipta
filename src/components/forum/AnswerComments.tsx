@@ -6,10 +6,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { ReportDialog } from "./ReportDialog";
 import { containsProfanity } from "@/lib/profanity";
-import { moderateContent, moderateAfterInsert, REMOVED_PLACEHOLDER, isContentVisible } from "@/lib/moderation";
+import {
+  moderateContent,
+  moderateAfterInsert,
+  REMOVED_PLACEHOLDER,
+  isContentVisible,
+} from "@/lib/moderation";
 import { ForumMarkdown } from "@/components/ForumMarkdown";
 
-type Comment = {
+interface Comment {
   id: string;
   user_id: string;
   author_name: string;
@@ -17,7 +22,7 @@ type Comment = {
   created_at: string;
   moderation_status?: "visible" | "pending" | "hidden" | "removed" | null;
   moderation_reason?: string | null;
-};
+}
 
 function timeAgo(iso: string): string {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -32,13 +37,23 @@ function AuthorLink({ name }: { name: string }) {
   const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(name);
   if (!isUsername) return <span className="font-medium text-foreground">{name}</span>;
   return (
-    <Link to="/u/$username" params={{ username: name }} className="font-medium hover:text-neon-purple transition-colors">
+    <Link
+      to="/u/$username"
+      params={{ username: name }}
+      className="font-medium hover:text-neon-purple transition-colors"
+    >
       {name}
     </Link>
   );
 }
 
-export function AnswerComments({ answerId, isModerator }: { answerId: string; isModerator: boolean }) {
+export function AnswerComments({
+  answerId,
+  isModerator,
+}: {
+  answerId: string;
+  isModerator: boolean;
+}) {
   const { user, isAuthenticated } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,13 +71,16 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [answerId]);
+  useEffect(() => {
+    load();
+  }, [answerId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return toast.error("Sign in to comment");
     if (reply.trim().length < 2) return toast.error("Comment too short");
-    if (containsProfanity(reply)) return toast.error("Please rephrase — your comment contains language we don't allow.");
+    if (containsProfanity(reply))
+      return toast.error("Please rephrase — your comment contains language we don't allow.");
     setSubmitting(true);
 
     const body = reply.trim().slice(0, 1000);
@@ -72,15 +90,26 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
       return toast.error(`Comment rejected: ${verdict.reason || "content violates guidelines"}.`);
     }
 
-    const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
+    const { data: prof } = await supabase
+      .from("user_profiles")
+      .select("username")
+      .eq("user_id", user.id)
+      .maybeSingle();
     const author_name = prof?.username || user.email?.split("@")[0] || "Learner";
-    const { data: inserted, error } = await supabase.from("forum_comments").insert({
-      answer_id: answerId, user_id: user.id, author_name, body,
-      moderation_status: verdict.verdict === "hide" ? "hidden" : "visible",
-      moderation_category: verdict.category,
-      moderation_score: verdict.score,
-      moderation_reason: verdict.verdict === "hide" ? verdict.reason : null,
-    }).select("id").maybeSingle();
+    const { data: inserted, error } = await supabase
+      .from("forum_comments")
+      .insert({
+        answer_id: answerId,
+        user_id: user.id,
+        author_name,
+        body,
+        moderation_status: verdict.verdict === "hide" ? "hidden" : "visible",
+        moderation_category: verdict.category,
+        moderation_score: verdict.score,
+        moderation_reason: verdict.verdict === "hide" ? verdict.reason : null,
+      })
+      .select("id")
+      .maybeSingle();
     setSubmitting(false);
     if (error) {
       const msg = /check_violation|moderation/i.test(error.message)
@@ -108,7 +137,9 @@ export function AnswerComments({ answerId, isModerator }: { answerId: string; is
     <div className="mt-3 pl-4 border-l border-border/50">
       <div className="text-[11px] font-bold tracking-widest text-muted-foreground inline-flex items-center gap-1 mb-2">
         <MessageCircle className="w-3 h-3" />
-        {comments.length === 0 ? "COMMENTS" : `${comments.length} ${comments.length === 1 ? "COMMENT" : "COMMENTS"}`}
+        {comments.length === 0
+          ? "COMMENTS"
+          : `${comments.length} ${comments.length === 1 ? "COMMENT" : "COMMENTS"}`}
       </div>
 
       <div className="space-y-2">

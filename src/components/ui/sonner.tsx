@@ -1,13 +1,13 @@
-import { Toaster as Sonner } from "sonner"
-import { useTheme } from "@/hooks/use-theme"
+import { Toaster as Sonner } from "sonner";
+import { useTheme } from "@/hooks/use-theme";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
+type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme } = useTheme();
   return (
     <Sonner
-      theme={resolvedTheme as "light" | "dark"}
+      theme={resolvedTheme}
       className="toaster group"
       position="top-center"
       closeButton
@@ -29,13 +29,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:!bg-popover group-[.toast]:!text-popover-foreground group-[.toast]:!border-border hover:group-[.toast]:!bg-muted",
           actionButton:
             "group-[.toast]:bg-neon-purple group-[.toast]:text-primary-foreground group-[.toast]:font-bold group-[.toast]:tracking-widest group-[.toast]:text-[10px]",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

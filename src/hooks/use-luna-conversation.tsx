@@ -7,21 +7,28 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { streamLunaChat, parseLunaTag, parseLunaActions, type LunaAction } from "@/lib/luna-api";
-import { getLunaContext, getAccuracy, getSessionDuration, escalateHint, resetHintLevel, subscribeFatigue } from "@/lib/luna-context";
+import {
+  getLunaContext,
+  getAccuracy,
+  getSessionDuration,
+  escalateHint,
+  resetHintLevel,
+  subscribeFatigue,
+} from "@/lib/luna-context";
 import { captureScreenFrame } from "@/lib/luna-screen";
 import { supabase } from "@/integrations/supabase/client";
 import { useLunaProfile } from "@/hooks/use-luna-profile";
 import { extractPreference, mergePreference } from "@/lib/luna-preference-detector";
 import { recordDailyPractice } from "@/lib/record-practice";
 
-export type ConversationMessage = {
+export interface ConversationMessage {
   role: "assistant" | "user";
   content: string;
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   imageDataUrl?: string;
   id?: string;
   actions?: LunaAction[];
-};
+}
 
 type SetMessages = React.Dispatch<React.SetStateAction<ConversationMessage[]>>;
 
@@ -38,7 +45,14 @@ interface Options {
   active: boolean;
 }
 
-export function useLunaConversation({ messages, setMessages, sessionType, reasoning, breakMessage, active }: Options) {
+export function useLunaConversation({
+  messages,
+  setMessages,
+  sessionType,
+  reasoning,
+  breakMessage,
+  active,
+}: Options) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   // True from send() until the first delta lands. The "Luna is thinking..."
@@ -65,8 +79,8 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
     if (!active) return;
     const unsubscribe = subscribeFatigue((level) => {
       if (level !== "severe") return;
-      setMessages(prev => {
-        if (prev.some(m => m.tag === "break")) return prev;
+      setMessages((prev) => {
+        if (prev.some((m) => m.tag === "break")) return prev;
         return [...prev, { role: "assistant", content: breakMessage, tag: "break" }];
       });
     });
@@ -94,10 +108,11 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
 
     const userMsg: ConversationMessage = {
       role: "user",
-      content: text || (attachedImage ? "Here's my screen, can you help with what I'm looking at?" : ""),
+      content:
+        text || (attachedImage ? "Here's my screen, can you help with what I'm looking at?" : ""),
       ...(attachedImage ? { imageDataUrl: attachedImage } : {}),
     };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setIsStreaming(true);
     setAwaitingFirstToken(true);
 
@@ -114,27 +129,36 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
       if (pref) {
         (async () => {
           try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
             if (!user) return;
-            const currentNotes = ((profileRef.current as Record<string, unknown> | null)?.luna_auto_notes as string | null | undefined) ?? null;
+            const currentNotes =
+              (profileRef.current?.luna_auto_notes as string | null | undefined) ?? null;
             const merged = mergePreference(currentNotes, pref);
             if (merged === currentNotes) return;
-            const { error } = await supabase.from("user_profiles")
+            const { error } = await supabase
+              .from("user_profiles")
               .update({ luna_auto_notes: merged } as never)
               .eq("user_id", user.id);
             if (!error) toast.success(`Got it — I'll remember: "${pref}"`, { duration: 3000 });
-          } catch { /* non-critical */ }
+          } catch {
+            /* non-critical */
+          }
         })();
       }
     }
 
-    const askingForAnswer = /\b(just (tell|give) me|tell me the answer|give me the answer|what(?:'s| is) the answer|the solution|skip the hint|stop hinting)\b/i.test(text);
+    const askingForAnswer =
+      /\b(just (tell|give) me|tell me the answer|give me the answer|what(?:'s| is) the answer|the solution|skip the hint|stop hinting)\b/i.test(
+        text,
+      );
     if (askingForAnswer) escalateHint();
     else resetHintLevel();
 
     const ctx = getLunaContext();
-    const apiMessages = [...messages, userMsg].map(m => ({
-      role: m.role as "user" | "assistant",
+    const apiMessages = [...messages, userMsg].map((m) => ({
+      role: m.role,
       content: m.content,
       ...(m.imageDataUrl ? { imageDataUrl: m.imageDataUrl } : {}),
     }));
@@ -151,12 +175,17 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
       setAwaitingFirstToken(false);
       const { tag, text: cleanText } = parseLunaTag(assistantSoFar);
       const { text: textNoActions, actions } = parseLunaActions(cleanText);
-      setMessages(prev => {
-        const idx = prev.findIndex(m => m.id === streamId);
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === streamId);
         if (idx !== -1) {
-          return prev.map((m, i) => i === idx ? { ...m, content: textNoActions, tag, actions } : m);
+          return prev.map((m, i) =>
+            i === idx ? { ...m, content: textNoActions, tag, actions } : m,
+          );
         }
-        return [...prev, { role: "assistant" as const, content: textNoActions, tag, actions, id: streamId }];
+        return [
+          ...prev,
+          { role: "assistant" as const, content: textNoActions, tag, actions, id: streamId },
+        ];
       });
     };
 
@@ -186,7 +215,9 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
         setAwaitingFirstToken(false);
         (async () => {
           try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
             if (!user) return;
             const { tag } = parseLunaTag(assistantSoFar);
             // Strip LaTeX delimiters, code fences, and tag markers before
@@ -201,15 +232,17 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
               .replace(/\s+/g, " ")
               .trim();
             await supabase.rpc("log_learning_history", {
-              p_session_type:     sessionType,
-              p_topic:            ctx.lessonTitle || ctx.courseId || null,
-              p_question_text:    text.slice(0, 500),
-              p_was_correct:      null,
+              p_session_type: sessionType,
+              p_topic: ctx.lessonTitle || ctx.courseId || null,
+              p_question_text: text.slice(0, 500),
+              p_was_correct: null,
               p_response_time_ms: null,
               // No DEFAULT on this parameter, so an omitted key leaves
               // PostgREST unable to match the function signature at all.
-              p_hint_level_used:  ctx.hintLevel ?? 0,
-              p_luna_summary:     tag ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}` : cleanedSummary.slice(0, 200),
+              p_hint_level_used: ctx.hintLevel ?? 0,
+              p_luna_summary: tag
+                ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}`
+                : cleanedSummary.slice(0, 200),
             });
             // Background memory extraction — best effort, never blocks UI.
             try {
@@ -217,7 +250,10 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
               if (session?.access_token && text) {
                 fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-memory`, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                  },
                   body: JSON.stringify({
                     userTurn: text.slice(0, 600),
                     assistantTurn: cleanedSummary.slice(0, 600),
@@ -226,8 +262,12 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
                   }),
                 }).catch(() => {});
               }
-            } catch { /* ignore */ }
-          } catch { /* non-critical, don't break chat */ }
+            } catch {
+              /* ignore */
+            }
+          } catch {
+            /* non-critical, don't break chat */
+          }
         })();
         // Stream succeeded — clear the retry buffer entirely so we don't keep
         // the prior turn (and any base64 screen-share image) in memory.
@@ -237,12 +277,15 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
       },
       onError: (err) => {
         toast.error(err);
-        setMessages(prev => [...prev, {
-          role: "assistant",
-          content: `Hmm, ${err} 🌙`,
-          tag: null,
-          id: `err-${Date.now()}`,
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `Hmm, ${err} 🌙`,
+            tag: null,
+            id: `err-${Date.now()}`,
+          },
+        ]);
         setIsStreaming(false);
         setAwaitingFirstToken(false);
       },
@@ -253,9 +296,13 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
   const retryLast = () => {
     const last = lastSendRef.current;
     if (!last || isStreaming) return;
-    setMessages(prev => {
+    setMessages((prev) => {
       for (let i = prev.length - 1; i >= 0; i--) {
-        if (prev[i].role === "assistant" && typeof prev[i].id === "string" && prev[i].id!.startsWith("err-")) {
+        if (
+          prev[i].role === "assistant" &&
+          typeof prev[i].id === "string" &&
+          prev[i].id!.startsWith("err-")
+        ) {
           const trimmed = prev.slice(0, i);
           while (trimmed.length && trimmed[trimmed.length - 1].role === "user") trimmed.pop();
           return trimmed;
@@ -274,10 +321,12 @@ export function useLunaConversation({ messages, setMessages, sessionType, reason
   };
 
   return {
-    input, setInput,
+    input,
+    setInput,
     isStreaming,
     awaitingFirstToken,
-    pendingImage, setPendingImage,
+    pendingImage,
+    setPendingImage,
     capturing,
     handleScreenShare,
     send,

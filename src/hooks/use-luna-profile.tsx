@@ -25,30 +25,44 @@ export function useLunaProfile() {
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (cancelled || !user) return;
       const [profileRes, historyRes] = await Promise.all([
         supabase
           .from("user_profiles")
-          .select("username,xp,preferred_pace,preferred_style,weak_areas,strong_areas,luna_notes,luna_auto_notes,current_streak,best_streak,learner_profile")
+          .select(
+            "username,xp,preferred_pace,preferred_style,weak_areas,strong_areas,luna_notes,luna_auto_notes,current_streak,best_streak,learner_profile",
+          )
           .eq("user_id", user.id)
           .maybeSingle(),
-        supabase.from("learning_history").select("topic,was_correct,session_type,luna_summary,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
+        supabase
+          .from("learning_history")
+          .select("topic,was_correct,session_type,luna_summary,created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(15),
       ]);
       if (cancelled) return;
-      if (profileRes.data) setProfile(profileRes.data as ProfileRow);
-      if (historyRes.data) setHistory(historyRes.data as HistoryRow[]);
+      if (profileRes.data) setProfile(profileRes.data);
+      if (historyRes.data) setHistory(historyRes.data);
 
       // Subscribe to profile updates so XP / weak_areas / streak stay live.
       channel = supabase
         .channel(`luna-profile:${user.id}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${user.id}` },
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "user_profiles",
+            filter: `user_id=eq.${user.id}`,
+          },
           (payload) => {
             const next = payload.new as ProfileRow;
             if (next) setProfile(next);
-          }
+          },
         )
         .subscribe();
     })();

@@ -20,6 +20,18 @@ dist-ssr
 .vercel
 .dev.vars
 
+# Secrets. Never commit a real env file — .env.example is the tracked template.
+.env
+.env.*
+!.env.example
+
+# Test + tooling output
+coverage
+playwright-report
+test-results
+.turbo
+.eslintcache
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -45,14 +45,16 @@ export function Luna() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from("user_profiles")
         .select("username, weak_areas, current_streak, xp")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (data) setProfile(data as Record<string, unknown>);
+      if (data) setProfile(data);
     })();
   }, []);
 
@@ -73,7 +75,7 @@ export function Luna() {
     // (and we aren't mid-stream), so the badge isn't a one-way write.
     const unsubscribe = subscribeFatigue((level) => {
       if (level === "none") {
-        setIconState(prev => (prev === "alert" ? "idle" : prev));
+        setIconState((prev) => (prev === "alert" ? "idle" : prev));
       } else {
         setIconState("alert");
       }
@@ -82,7 +84,10 @@ export function Luna() {
   }, []);
 
   useEffect(() => {
-    if (isStreaming) { setIconState("thinking"); return; }
+    if (isStreaming) {
+      setIconState("thinking");
+      return;
+    }
     const last = messages[messages.length - 1];
     if (last?.role === "assistant" && messages.length > 1) {
       setIconState("happy");
@@ -106,11 +111,7 @@ export function Luna() {
 
   return (
     <>
-      <LunaIcon
-        state={iconState}
-        hasNudge={hasNudged && !open}
-        onClick={handleOpen}
-      />
+      <LunaIcon state={iconState} hasNudge={hasNudged && !open} onClick={handleOpen} />
       <LunaChatPanel
         open={open}
         onClose={handleClose}

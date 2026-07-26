@@ -14,33 +14,51 @@
 
 const TRIGGER_PATTERNS: { rx: RegExp; build: (m: RegExpMatchArray) => string }[] = [
   // Length / brevity
-  { rx: /\b(?:can you |could you |please )?(?:write|reply|answer|explain|respond) (?:in )?(?:much )?(shorter|longer|briefer|more concise|more detailed)(?: bursts?| messages?| responses?| replies?)?/i,
-    build: m => `${m[1].toLowerCase()} responses` },
-  { rx: /\b(?:keep it|be|stay) (short|brief|concise|detailed|thorough)\b/i,
-    build: m => `${m[1].toLowerCase()} responses` },
-  { rx: /\b(?:fewer|less|more) (words|sentences|paragraphs|hints|examples|analogies|steps|details)\b/i,
-    build: m => `${m[0].toLowerCase()}` },
+  {
+    rx: /\b(?:can you |could you |please )?(?:write|reply|answer|explain|respond) (?:in )?(?:much )?(shorter|longer|briefer|more concise|more detailed)(?: bursts?| messages?| responses?| replies?)?/i,
+    build: (m) => `${m[1].toLowerCase()} responses`,
+  },
+  {
+    rx: /\b(?:keep it|be|stay) (short|brief|concise|detailed|thorough)\b/i,
+    build: (m) => `${m[1].toLowerCase()} responses`,
+  },
+  {
+    rx: /\b(?:fewer|less|more) (words|sentences|paragraphs|hints|examples|analogies|steps|details)\b/i,
+    build: (m) => `${m[0].toLowerCase()}`,
+  },
   // Style / framing
-  { rx: /\buse (more |fewer |less )?(analogies|metaphors|examples|diagrams|code|equations|stories|real[- ]world examples)\b/i,
-    build: m => m[0].toLowerCase() },
-  { rx: /\b(?:no|stop using|skip|don't use|avoid) (analogies|metaphors|examples|emojis|jokes|sports analogies|code|equations)\b/i,
-    build: m => `avoid ${m[1].toLowerCase()}` },
-  { rx: /\b(?:explain|teach) (?:it )?(?:like|as if) (?:i'?m|i am) (a )?([\w\s-]{3,40})\b/i,
-    build: m => `explain like I'm ${m[2].trim().toLowerCase()}` },
+  {
+    rx: /\buse (more |fewer |less )?(analogies|metaphors|examples|diagrams|code|equations|stories|real[- ]world examples)\b/i,
+    build: (m) => m[0].toLowerCase(),
+  },
+  {
+    rx: /\b(?:no|stop using|skip|don't use|avoid) (analogies|metaphors|examples|emojis|jokes|sports analogies|code|equations)\b/i,
+    build: (m) => `avoid ${m[1].toLowerCase()}`,
+  },
+  {
+    rx: /\b(?:explain|teach) (?:it )?(?:like|as if) (?:i'?m|i am) (a )?([\w\s-]{3,40})\b/i,
+    build: (m) => `explain like I'm ${m[2].trim().toLowerCase()}`,
+  },
   // Language
-  { rx: /\b(?:answer|reply|respond|write|talk to me) (?:in|using) (english|spanish|french|german|portuguese|italian|chinese|japanese|korean|hindi|arabic|dutch|polish|swedish|norwegian|finnish|danish|turkish|russian|greek|hebrew)\b/i,
-    build: m => `respond in ${m[1].toLowerCase()}` },
+  {
+    rx: /\b(?:answer|reply|respond|write|talk to me) (?:in|using) (english|spanish|french|german|portuguese|italian|chinese|japanese|korean|hindi|arabic|dutch|polish|swedish|norwegian|finnish|danish|turkish|russian|greek|hebrew)\b/i,
+    build: (m) => `respond in ${m[1].toLowerCase()}`,
+  },
   // Hints
   // "just give me the answer" is transient frustration, not a durable
   // preference — never persist it as a standing instruction (that would defeat
   // Luna's core never-give-the-answer mechanic). Escalation is handled live by
   // hintLevel instead. Only the "fewer hints" intent persists, and it means
   // "get concrete faster", not "skip to the answer".
-  { rx: /\b(?:give me|just give|just tell|stop with|skip) (?:the )?(?:full )?(answer|hints|hint)s?\b/i,
-    build: m => /answer/i.test(m[0]) ? "" : "get to concrete, specific guidance faster" },
+  {
+    rx: /\b(?:give me|just give|just tell|stop with|skip) (?:the )?(?:full )?(answer|hints|hint)s?\b/i,
+    build: (m) => (/answer/i.test(m[0]) ? "" : "get to concrete, specific guidance faster"),
+  },
   // Tone
-  { rx: /\b(?:be more|sound more|talk more) (formal|casual|technical|friendly|serious|playful|encouraging)\b/i,
-    build: m => `${m[1].toLowerCase()} tone` },
+  {
+    rx: /\b(?:be more|sound more|talk more) (formal|casual|technical|friendly|serious|playful|encouraging)\b/i,
+    build: (m) => `${m[1].toLowerCase()} tone`,
+  },
 ];
 
 /**
@@ -73,12 +91,12 @@ export function preferenceCategory(line: string): string | null {
   if (/\b(short|long|brief|concise|detailed|thorough)\b.*responses?/.test(t)) return "length";
   if (/\b(short|brief|concise|detailed|thorough) responses?/.test(t)) return "length";
   if (/\b(fewer|less|more)\s+(words|sentences|paragraphs|details|steps)\b/.test(t)) return "length";
-  if (/analog/.test(t)) return "analogies";
-  if (/example/.test(t)) return "examples";
-  if (/\b(hint|hints)\b/.test(t) || /get to concrete/.test(t)) return "hints";
+  if (t.includes("analog")) return "analogies";
+  if (t.includes("example")) return "examples";
+  if (/\b(hint|hints)\b/.test(t) || t.includes("get to concrete")) return "hints";
   if (/\btone\b/.test(t)) return "tone";
   if (/^explain like i'?m/.test(t)) return "level";
-  if (/emoji/.test(t)) return "emoji";
+  if (t.includes("emoji")) return "emoji";
   if (/\b(code|equations?)\b/.test(t)) return "format";
   if (/diagram|story|real[- ]world/.test(t)) return "examples";
   return null;
@@ -95,11 +113,15 @@ export function preferenceCategory(line: string): string | null {
 export function mergePreference(existing: string | null, fresh: string): string {
   const lines = (existing || "")
     .split(/\r?\n/)
-    .map(l => l.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, "")
+      .trim();
   const freshCat = preferenceCategory(fresh);
-  const filtered = lines.filter(l => {
+  const filtered = lines.filter((l) => {
     if (norm(l) === norm(fresh)) return false;
     if (freshCat && preferenceCategory(l) === freshCat) return false;
     return true;

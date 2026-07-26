@@ -92,7 +92,6 @@ You may receive the learner's profile, preferences, recent history, learner mode
 4. Educational framing only for medicine, law, and finance: explain mechanisms and reasoning; never personal diagnosis, prescription, or advice — redirect to a professional for personal decisions.
 Never fabricate founder, company, funding, or roadmap facts; unknown → say so in one line. Never say "I remember" or "I noted that" — just comply from this turn forward.`;
 
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -107,7 +106,7 @@ serve(async (req) => {
       });
     }
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: userData } = await sb.auth.getUser(token);
     if (!userData?.user) {
@@ -125,11 +124,16 @@ serve(async (req) => {
     const AI_WINDOW_SECS = 300; // 5 minutes
     try {
       const { data: allowed } = await sb.rpc("check_ai_rate_limit", {
-        p_user: userData.user.id, p_max: AI_MAX_CALLS, p_window_secs: AI_WINDOW_SECS,
+        p_user: userData.user.id,
+        p_max: AI_MAX_CALLS,
+        p_window_secs: AI_WINDOW_SECS,
       });
       if (allowed === false) {
         return new Response(
-          JSON.stringify({ error: "You've hit the AI limit for now — try again in a few minutes.", code: "rate_limited" }),
+          JSON.stringify({
+            error: "You've hit the AI limit for now — try again in a few minutes.",
+            code: "rate_limited",
+          }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -144,33 +148,41 @@ serve(async (req) => {
     const rawBody = await req.text();
     if (rawBody.length > MAX_BODY_BYTES) {
       return new Response(JSON.stringify({ error: "Request too large" }), {
-        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     let parsed: any;
-    try { parsed = JSON.parse(rawBody); } catch {
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    let { messages, context, reasoning } = parsed ?? {};
-    if (!Array.isArray(messages)) {
+    const { messages: rawMessages, context, reasoning } = parsed ?? {};
+    if (!Array.isArray(rawMessages)) {
       return new Response(JSON.stringify({ error: "messages must be an array" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     // Hard caps: at most 30 turns, 4000 chars per text message, 1 MB per image data URL.
     const MAX_TURNS = 30;
     const MAX_TEXT = 4000;
     const MAX_IMAGE_BYTES = 1024 * 1024;
-    messages = messages.slice(-MAX_TURNS).map((m: any) => {
+    const messages = rawMessages.slice(-MAX_TURNS).map((m: any) => {
       const role = m?.role === "assistant" ? "assistant" : "user";
       const content = typeof m?.content === "string" ? m.content.slice(0, MAX_TEXT) : "";
-      const imageDataUrl = typeof m?.imageDataUrl === "string" && m.imageDataUrl.length <= MAX_IMAGE_BYTES
-        ? m.imageDataUrl : undefined;
+      const imageDataUrl =
+        typeof m?.imageDataUrl === "string" && m.imageDataUrl.length <= MAX_IMAGE_BYTES
+          ? m.imageDataUrl
+          : undefined;
       return { role, content, ...(imageDataUrl ? { imageDataUrl } : {}) };
     });
-    if (!AI_GATEWAY_API_KEY) throw new Error("AI gateway is not configured (set AI_GATEWAY_API_KEY)");
+    if (!AI_GATEWAY_API_KEY)
+      throw new Error("AI gateway is not configured (set AI_GATEWAY_API_KEY)");
 
     // Build context-aware system message
     let contextualPrompt = SYSTEM_PROMPT;
@@ -181,31 +193,40 @@ serve(async (req) => {
       // Only emit fields that carry signal. Empty arrays and zeros confuse the
       // model (e.g. it starts coaching against blank "weak areas").
       const lines: string[] = [];
-      if (p.preferred_pace && p.preferred_pace !== 'normal') lines.push(`Preferred Pace: ${p.preferred_pace}`);
-      if (p.preferred_style && p.preferred_style !== 'mixed') lines.push(`Preferred Style: ${p.preferred_style}`);
-      if (typeof p.avg_completion_time === 'number' && p.avg_completion_time > 0) lines.push(`Avg Completion Time: ${p.avg_completion_time}s`);
-      if (typeof p.total_sessions === 'number' && p.total_sessions > 0) lines.push(`Total Sessions: ${p.total_sessions}`);
-      if (typeof p.total_questions === 'number' && p.total_questions >= 5) {
+      if (p.preferred_pace && p.preferred_pace !== "normal")
+        lines.push(`Preferred Pace: ${p.preferred_pace}`);
+      if (p.preferred_style && p.preferred_style !== "mixed")
+        lines.push(`Preferred Style: ${p.preferred_style}`);
+      if (typeof p.avg_completion_time === "number" && p.avg_completion_time > 0)
+        lines.push(`Avg Completion Time: ${p.avg_completion_time}s`);
+      if (typeof p.total_sessions === "number" && p.total_sessions > 0)
+        lines.push(`Total Sessions: ${p.total_sessions}`);
+      if (typeof p.total_questions === "number" && p.total_questions >= 5) {
         const acc = Math.round(((p.total_correct || 0) / p.total_questions) * 100);
-        lines.push(`Lifetime Questions: ${p.total_questions} (${p.total_correct || 0} correct - ${acc}% accuracy)`);
+        lines.push(
+          `Lifetime Questions: ${p.total_questions} (${p.total_correct || 0} correct - ${acc}% accuracy)`,
+        );
       }
-      if (Array.isArray(p.weak_areas) && p.weak_areas.length) lines.push(`Known Weak Areas: ${p.weak_areas.join(', ')}`);
-      if (Array.isArray(p.strong_areas) && p.strong_areas.length) lines.push(`Strong Areas: ${p.strong_areas.join(', ')}`);
-      if (typeof p.current_streak === 'number' && p.current_streak > 0) lines.push(`Lifetime Streak: ${p.current_streak} (best: ${p.best_streak || 0})`);
-      if (typeof p.xp === 'number' && p.xp > 0) lines.push(`XP: ${p.xp}`);
+      if (Array.isArray(p.weak_areas) && p.weak_areas.length)
+        lines.push(`Known Weak Areas: ${p.weak_areas.join(", ")}`);
+      if (Array.isArray(p.strong_areas) && p.strong_areas.length)
+        lines.push(`Strong Areas: ${p.strong_areas.join(", ")}`);
+      if (typeof p.current_streak === "number" && p.current_streak > 0)
+        lines.push(`Lifetime Streak: ${p.current_streak} (best: ${p.best_streak || 0})`);
+      if (typeof p.xp === "number" && p.xp > 0) lines.push(`XP: ${p.xp}`);
       if (lines.length) {
-        contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PROFILE\n═══════════════════════════════════════\n${lines.join('\n')}`;
+        contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PROFILE\n═══════════════════════════════════════\n${lines.join("\n")}`;
       }
 
       // Notes the user typed themselves on /profile. Treat as preferences,
       // not topics — they steer HOW Luna replies, not WHAT she talks about.
-      if (typeof p.luna_notes === 'string' && p.luna_notes.trim()) {
+      if (typeof p.luna_notes === "string" && p.luna_notes.trim()) {
         contextualPrompt += `\n\n═══════════════════════════════════════\nUSER PREFERENCES (background — apply when relevant, never override the current question)\n═══════════════════════════════════════\nThe user typed these on their profile. They shape HOW you reply (length, tone, language, examples) when it's natural to apply them. Do not bring them up, do not narrate that you "remember", do not let them pull you off the question being asked, and never let them override §5.\n${p.luna_notes.trim()}`;
       }
 
       // Auto-detected preferences — inferred from chat. Weaker signal than
       // user-typed notes: useful as background, never authoritative.
-      if (typeof p.luna_auto_notes === 'string' && p.luna_auto_notes.trim()) {
+      if (typeof p.luna_auto_notes === "string" && p.luna_auto_notes.trim()) {
         contextualPrompt += `\n\n═══════════════════════════════════════\nAUTO-DETECTED PREFERENCES (soft hints — easily overridden)\n═══════════════════════════════════════\nThese were inferred from things the user said in chat. Use them only when they're a clear fit for the current reply. If they'd pull you off-topic, ignore them. Never reference them out loud.\n${p.luna_auto_notes.trim()}`;
       }
 
@@ -214,15 +235,32 @@ serve(async (req) => {
       // person learns — pace, cognitive load, scaffolding, and metacognition —
       // not just what they asked. Kept short and structured on purpose.
       const lp = p.learner_profile;
-      if (lp && typeof lp === 'object') {
+      if (lp && typeof lp === "object") {
         const lm: string[] = [];
-        lm.push(`Pace: ${lp.pace ?? 'standard'} · Chunk size: ${lp.chunk_size ?? 'medium'} · Struggle tolerance: ${lp.struggle_tolerance ?? 'medium'} (with low tolerance, break problems into smaller steps and check in sooner).`);
-        if (lp.scaffold) lm.push(`Scaffold: ${lp.scaffold === 'socratic_first' ? 'let them try to spot the pattern before you confirm it' : 'show one worked example before asking them to try'}.`);
-        if (lp.lean) lm.push(`Thinking lean: ${lp.lean}${lp.lean === 'procedural' ? " — they reach answers fast, so make the 'why' explicit, not just the steps" : ''}.`);
-        if (lp.metacognition === 'overconfident') lm.push(`Metacognition: overconfident — before you confirm an answer, ask for a confidence level and a one-line justification so they catch their own slips.`);
-        else if (lp.metacognition === 'underconfident') lm.push(`Metacognition: underconfident — when their reasoning is sound, say so plainly and explain why it generalizes.`);
-        if (typeof lp.ability === 'number') lm.push(`Suggested starting difficulty: ${lp.ability}/5 — calibrate up or down from there.`);
-        contextualPrompt += `\n\n═══════════════════════════════════════\nLEARNER MODEL (how this person learns — adapt to it)\n═══════════════════════════════════════\n${lm.join('\n')}`;
+        lm.push(
+          `Pace: ${lp.pace ?? "standard"} · Chunk size: ${lp.chunk_size ?? "medium"} · Struggle tolerance: ${lp.struggle_tolerance ?? "medium"} (with low tolerance, break problems into smaller steps and check in sooner).`,
+        );
+        if (lp.scaffold)
+          lm.push(
+            `Scaffold: ${lp.scaffold === "socratic_first" ? "let them try to spot the pattern before you confirm it" : "show one worked example before asking them to try"}.`,
+          );
+        if (lp.lean)
+          lm.push(
+            `Thinking lean: ${lp.lean}${lp.lean === "procedural" ? " — they reach answers fast, so make the 'why' explicit, not just the steps" : ""}.`,
+          );
+        if (lp.metacognition === "overconfident")
+          lm.push(
+            `Metacognition: overconfident — before you confirm an answer, ask for a confidence level and a one-line justification so they catch their own slips.`,
+          );
+        else if (lp.metacognition === "underconfident")
+          lm.push(
+            `Metacognition: underconfident — when their reasoning is sound, say so plainly and explain why it generalizes.`,
+          );
+        if (typeof lp.ability === "number")
+          lm.push(
+            `Suggested starting difficulty: ${lp.ability}/5 — calibrate up or down from there.`,
+          );
+        contextualPrompt += `\n\n═══════════════════════════════════════\nLEARNER MODEL (how this person learns — adapt to it)\n═══════════════════════════════════════\n${lm.join("\n")}`;
       }
     }
 
@@ -232,7 +270,7 @@ serve(async (req) => {
       for (const h of context.recentHistory) {
         let entry = `\n- [${h.session_type}]`;
         if (h.topic) entry += ` Topic: ${h.topic}`;
-        if (h.was_correct !== null) entry += ` | ${h.was_correct ? '✓ Correct' : '✗ Incorrect'}`;
+        if (h.was_correct !== null) entry += ` | ${h.was_correct ? "✓ Correct" : "✗ Incorrect"}`;
         if (h.hint_level_used > 0) entry += ` | Hints used: ${h.hint_level_used}`;
         if (h.luna_summary) entry += ` | Note: ${h.luna_summary}`;
         contextualPrompt += entry;
@@ -248,24 +286,34 @@ serve(async (req) => {
       if (context.lessonTitle) sLines.push(`Lesson: ${context.lessonTitle}`);
       if (context.currentQuestion) sLines.push(`Current Question: ${context.currentQuestion}`);
       if (context.difficulty) sLines.push(`Difficulty: ${context.difficulty}`);
-      if (Array.isArray(context.weakAreas) && context.weakAreas.length) sLines.push(`Weak Areas: ${context.weakAreas.join(", ")}`);
-      if (typeof context.streak === 'number' && context.streak > 0) sLines.push(`Current Streak: ${context.streak} correct in a row`);
-      if (typeof context.incorrectCount === 'number' && context.incorrectCount > 0) sLines.push(`Total Incorrect This Session: ${context.incorrectCount}`);
-      if (typeof context.consecutiveErrors === 'number' && context.consecutiveErrors > 0) sLines.push(`Consecutive Errors (current): ${context.consecutiveErrors}`);
-      if (typeof context.rapidGuessCount === 'number' && context.rapidGuessCount > 0) sLines.push(`Rapid Guesses (< 2s): ${context.rapidGuessCount}`);
-      if (typeof context.avgResponseTime === 'number' && context.avgResponseTime > 0) sLines.push(`Avg Response Time: ${context.avgResponseTime}s`);
-      if (typeof context.hintLevel === 'number' && context.hintLevel > 0) {
+      if (Array.isArray(context.weakAreas) && context.weakAreas.length)
+        sLines.push(`Weak Areas: ${context.weakAreas.join(", ")}`);
+      if (typeof context.streak === "number" && context.streak > 0)
+        sLines.push(`Current Streak: ${context.streak} correct in a row`);
+      if (typeof context.incorrectCount === "number" && context.incorrectCount > 0)
+        sLines.push(`Total Incorrect This Session: ${context.incorrectCount}`);
+      if (typeof context.consecutiveErrors === "number" && context.consecutiveErrors > 0)
+        sLines.push(`Consecutive Errors (current): ${context.consecutiveErrors}`);
+      if (typeof context.rapidGuessCount === "number" && context.rapidGuessCount > 0)
+        sLines.push(`Rapid Guesses (< 2s): ${context.rapidGuessCount}`);
+      if (typeof context.avgResponseTime === "number" && context.avgResponseTime > 0)
+        sLines.push(`Avg Response Time: ${context.avgResponseTime}s`);
+      if (typeof context.hintLevel === "number" && context.hintLevel > 0) {
         let line = `Hint Escalation Level: ${context.hintLevel}/3`;
-        if (context.hintLevel === 1) line += ` - Name the specific step they're stuck on and point at the first move.`;
-        else if (context.hintLevel >= 2) line += ` - They've asked repeatedly. Give maximum scaffolding (next single sub-step, or a parallel worked example) but DO NOT state the final answer to their problem.`;
+        if (context.hintLevel === 1)
+          line += ` - Name the specific step they're stuck on and point at the first move.`;
+        else if (context.hintLevel >= 2)
+          line += ` - They've asked repeatedly. Give maximum scaffolding (next single sub-step, or a parallel worked example) but DO NOT state the final answer to their problem.`;
         sLines.push(line);
       }
       // Only show session accuracy once we have enough samples for it to mean anything.
       const totalSession = (context.streak ?? 0) + (context.incorrectCount ?? 0);
-      if (typeof context.accuracy === 'number' && totalSession >= 3) sLines.push(`Session Accuracy: ${context.accuracy}%`);
-      if (typeof context.sessionMinutes === 'number' && context.sessionMinutes >= 2) sLines.push(`Session Duration: ${context.sessionMinutes} minutes`);
+      if (typeof context.accuracy === "number" && totalSession >= 3)
+        sLines.push(`Session Accuracy: ${context.accuracy}%`);
+      if (typeof context.sessionMinutes === "number" && context.sessionMinutes >= 2)
+        sLines.push(`Session Duration: ${context.sessionMinutes} minutes`);
       if (sLines.length) {
-        contextualPrompt += `\n\n═══════════════════════════════════════\nCURRENT SESSION CONTEXT\n═══════════════════════════════════════\n${sLines.join('\n')}`;
+        contextualPrompt += `\n\n═══════════════════════════════════════\nCURRENT SESSION CONTEXT\n═══════════════════════════════════════\n${sLines.join("\n")}`;
       }
     }
 
@@ -291,7 +339,11 @@ serve(async (req) => {
     // DB retrieval: when courseId is a real course uuid, pull its lesson text
     // and quiz blocks straight from the course the learner is sitting in.
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (sources.length === 0 && typeof context?.courseId === "string" && UUID_RE.test(context.courseId)) {
+    if (
+      sources.length === 0 &&
+      typeof context?.courseId === "string" &&
+      UUID_RE.test(context.courseId)
+    ) {
       try {
         const { data: mods } = await sb
           .from("course_modules")
@@ -315,7 +367,8 @@ serve(async (req) => {
             if (b.type === "text" && typeof d.text === "string") {
               text = d.text;
             } else if (b.type === "quiz" && typeof d.question === "string") {
-              text = d.question + (Array.isArray(d.options) ? `\nOptions: ${d.options.join("; ")}` : "");
+              text =
+                d.question + (Array.isArray(d.options) ? `\nOptions: ${d.options.join("; ")}` : "");
             }
             text = text.trim();
             if (text) sources.push({ title: modTitle[b.module_id], content: text.slice(0, 1500) });
@@ -375,19 +428,30 @@ serve(async (req) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited - please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Rate limited - please try again in a moment." }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in Settings → Workspace → Usage." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "AI credits exhausted. Add funds in Settings → Workspace → Usage.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -396,8 +460,12 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("luna-chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

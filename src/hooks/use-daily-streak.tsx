@@ -39,21 +39,31 @@ export function useDailyStreak() {
   const userIdRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     userIdRef.current = user?.id ?? null;
-    if (!user) { setState(EMPTY); setLoading(false); return; }
+    if (!user) {
+      setState(EMPTY);
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from("user_profiles")
-      .select("daily_streak, longest_daily_streak, streak_freezes, last_practice_date, practice_dates")
+      .select(
+        "daily_streak, longest_daily_streak, streak_freezes, last_practice_date, practice_dates",
+      )
       .eq("user_id", user.id)
       .maybeSingle();
-    setState(fromRow(data as Record<string, unknown> | null));
+    setState(fromRow(data));
     setLoading(false);
   }, []);
 
   /** Mark today as practiced. Safe to call repeatedly — server is idempotent per day. */
   const recordPractice = useCallback(async (): Promise<PracticeResult | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return null;
     const { data, error } = await supabase.rpc("record_daily_practice" as never);
     if (error) return null;
@@ -69,7 +79,11 @@ export function useDailyStreak() {
       }));
       // A newly-crossed milestone triggers the celebration overlay anywhere.
       if (!r.already && r.milestone) {
-        emitStreakMilestone({ milestone: r.milestone, reward: r.milestone_reward ?? 0, streak: r.daily_streak });
+        emitStreakMilestone({
+          milestone: r.milestone,
+          reward: r.milestone_reward ?? 0,
+          streak: r.daily_streak,
+        });
       }
     }
     return r;
@@ -85,13 +99,20 @@ export function useDailyStreak() {
         .channel(`streak:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${userIdRef.current}` },
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "user_profiles",
+            filter: `user_id=eq.${userIdRef.current}`,
+          },
           (payload) => setState(fromRow(payload.new as Record<string, unknown>)),
         )
         .subscribe();
     })();
 
-    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;

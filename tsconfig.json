@@ -1,5 +1,15 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "eslint.config.js"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "e2e/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "eslint.config.js"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -13,13 +23,17 @@
     "verbatimModuleSyntax": false,
     "noEmit": true,
 
-    /* Linting */
+    /* Linting.
+       These are the ENFORCED settings — `pnpm typecheck` must report zero
+       errors against this file, and the pre-push hook blocks on it.
+       tsconfig.strict.json holds the stricter flags we are still working
+       toward; `pnpm typecheck:ratchet` stops their error count from rising.
+       When a flag there reaches zero, move it up here. */
     "skipLibCheck": true,
     "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "noImplicitOverride": true,
     "paths": {
       "@/*": ["./src/*"]
     }

@@ -15,24 +15,36 @@ import { getMasteryRank, getMasteryStats } from "@/lib/archetype-mastery";
 function StatPill({ label, value, dim }: { label: string; value: string; dim?: boolean }) {
   return (
     <div className={cn("flex items-center gap-1", dim && "opacity-40")}>
-      <span className="text-[9px] font-bold tracking-widest text-muted-foreground w-8 shrink-0">{label}</span>
+      <span className="text-[9px] font-bold tracking-widest text-muted-foreground w-8 shrink-0">
+        {label}
+      </span>
       <span className="text-[10px] font-bold font-display text-foreground truncate">{value}</span>
     </div>
   );
 }
 
-function ArchStatGrid({ arch, isUnlocked }: { arch: import("./types").Archetype; isUnlocked: boolean }) {
+function ArchStatGrid({
+  arch,
+  isUnlocked,
+}: {
+  arch: import("./types").Archetype;
+  isUnlocked: boolean;
+}) {
   const rnd = arch.statsAreRandom;
   const dmgVal = rnd ? "???" : arch.multiplierScales ? "13→27" : String(arch.baseDamage);
-  const multVal = rnd ? "???" : arch.multiplierScales ? "+15→40%" : `+${Math.round(arch.multiplierStep * 100)}%`;
+  const multVal = rnd
+    ? "???"
+    : arch.multiplierScales
+      ? "+15→40%"
+      : `+${Math.round(arch.multiplierStep * 100)}%`;
   const healVal = rnd ? "???" : arch.healAmount === null ? "NONE" : String(arch.healAmount);
   const diffVal = rnd ? "???" : `${arch.diffMin}–${arch.diffMax}`;
   const timeVal = rnd ? "???" : `${arch.timeMultiplier}×`;
-  const hpVal   = rnd ? "???" : String(arch.maxHp);
+  const hpVal = rnd ? "???" : String(arch.maxHp);
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
-      <StatPill label="HP"   value={hpVal}   dim={!isUnlocked} />
-      <StatPill label="DMG"  value={dmgVal}  dim={!isUnlocked} />
+      <StatPill label="HP" value={hpVal} dim={!isUnlocked} />
+      <StatPill label="DMG" value={dmgVal} dim={!isUnlocked} />
       <StatPill label="MULT" value={multVal} dim={!isUnlocked} />
       <StatPill label="HEAL" value={healVal} dim={!isUnlocked} />
       <StatPill label="DIFF" value={diffVal} dim={!isUnlocked} />
@@ -57,7 +69,9 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from("user_profiles")
@@ -95,31 +109,41 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
           <arch.icon className={cn("w-10 h-10", arch.color)} />
           <div>
             <h3 className="text-xl font-bold font-display">{arch.name}</h3>
-            <p className={cn("text-xs font-bold tracking-widest", arch.color)}>CHOOSE YOUR ECLIPTAR</p>
+            <p className={cn("text-xs font-bold tracking-widest", arch.color)}>
+              CHOOSE YOUR ECLIPTAR
+            </p>
           </div>
         </div>
 
         {/* Ability identity — how this archetype wants to be played */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
-          {([["attack", Swords, "Attack"], ["heal", Heart, "Heal"], ["charge", Zap, "Charge"]] as const).map(
-            ([key, Icon, label]) => (
-              <div key={key} className="glass-panel rounded-md p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Icon className={cn("w-3.5 h-3.5", arch.color)} />
-                  <span className="text-[10px] font-bold tracking-widest text-foreground">{label}</span>
-                </div>
-                <p className="text-[11px] leading-snug text-muted-foreground">
-                  {ARCHETYPE_ABILITY_COPY[pickedArch][key]}
-                </p>
+          {(
+            [
+              ["attack", Swords, "Attack"],
+              ["heal", Heart, "Heal"],
+              ["charge", Zap, "Charge"],
+            ] as const
+          ).map(([key, Icon, label]) => (
+            <div key={key} className="glass-panel rounded-md p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Icon className={cn("w-3.5 h-3.5", arch.color)} />
+                <span className="text-[10px] font-bold tracking-widest text-foreground">
+                  {label}
+                </span>
               </div>
-            ),
-          )}
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                {ARCHETYPE_ABILITY_COPY[pickedArch][key]}
+              </p>
+            </div>
+          ))}
         </div>
 
         {ownedEcliptars.length === 0 ? (
           <div className="text-center py-10">
             <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground mb-2">No Ecliptars unlocked for this archetype yet.</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              No Ecliptars unlocked for this archetype yet.
+            </p>
             <p className="text-xs text-muted-foreground mb-4">
               Visit the Trophy Road and claim the {arch.name} reward to unlock its Ecliptars.
             </p>
@@ -143,7 +167,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
                     "glass-panel p-5 text-left border transition-colors relative overflow-hidden",
                     isOwned
                       ? `${arch.borderColor} hover:bg-secondary/20 cursor-pointer`
-                      : "border-border/30 opacity-50 cursor-not-allowed"
+                      : "border-border/30 opacity-50 cursor-not-allowed",
                   )}
                   whileHover={isOwned ? { scale: 1.03, y: -2 } : {}}
                   whileTap={isOwned ? { scale: 0.97 } : {}}
@@ -153,8 +177,15 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
                       <Lock className="w-5 h-5 text-muted-foreground" />
                     </div>
                   )}
-                  <e.icon className={cn("w-10 h-10 mb-2", isOwned ? arch.color : "text-muted-foreground")} />
-                  <h4 className={cn("font-bold font-display text-base", isOwned ? arch.color : "text-muted-foreground")}>
+                  <e.icon
+                    className={cn("w-10 h-10 mb-2", isOwned ? arch.color : "text-muted-foreground")}
+                  />
+                  <h4
+                    className={cn(
+                      "font-bold font-display text-base",
+                      isOwned ? arch.color : "text-muted-foreground",
+                    )}
+                  >
                     {e.name}
                   </h4>
                   <p className="text-[10px] text-muted-foreground tracking-widest mt-0.5">
@@ -178,40 +209,52 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
     >
       {equipped && equippedOwned && equippedArch && (
         <button
-          onClick={() => onSelect({ archetype: equipped!.archetype, ecliptar: equipped! })}
+          onClick={() => onSelect({ archetype: equipped.archetype, ecliptar: equipped })}
           className={cn(
             "w-full mb-5 px-4 py-3 border-2 text-left transition-colors flex items-center gap-3 group",
             equippedArch.borderColor,
-            "hover:bg-secondary/30"
+            "hover:bg-secondary/30",
           )}
         >
           <equipped.icon className={cn("w-8 h-8 shrink-0", equippedArch.color)} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold tracking-widest text-neon-purple">QUICK BATTLE</span>
+              <span className="text-[10px] font-bold tracking-widest text-neon-purple">
+                QUICK BATTLE
+              </span>
               <span className="text-[9px] text-muted-foreground">EQUIPPED</span>
             </div>
             <div className="font-display font-bold text-base">
-              {equipped.name} <span className={cn("text-xs font-normal", equippedArch.color)}>· {equippedArch.name}</span>
+              {equipped.name}{" "}
+              <span className={cn("text-xs font-normal", equippedArch.color)}>
+                · {equippedArch.name}
+              </span>
             </div>
           </div>
-          <Zap className={cn("w-5 h-5 group-hover:scale-110 transition-transform", equippedArch.color)} />
+          <Zap
+            className={cn("w-5 h-5 group-hover:scale-110 transition-transform", equippedArch.color)}
+          />
         </button>
       )}
 
       <h3 className="text-xl font-bold font-display text-center mb-1">Choose Your Archetype</h3>
       <p className="text-xs text-muted-foreground text-center mb-6">
         Unlock more archetypes by progressing on the Trophy Road.
-        <span className="text-neon-purple font-bold ml-1">{unlocked.length}/{allArchetypes.length}</span> unlocked
+        <span className="text-neon-purple font-bold ml-1">
+          {unlocked.length}/{allArchetypes.length}
+        </span>{" "}
+        unlocked
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {allArchetypes.map((arch) => {
           const isUnlocked = unlocked.includes(arch.id);
-          const monsterNode = ROAD_NODES.find(n => n.archetype === arch.id);
+          const monsterNode = ROAD_NODES.find((n) => n.archetype === arch.id);
           const xpNeeded = monsterNode ? monsterNode.xp : 0;
           const totalCount = getEcliptarsByArchetype(arch.id).length;
-          const ownedCount = getEcliptarsByArchetype(arch.id).filter(e => ownedSlugs.has(e.slug)).length;
+          const ownedCount = getEcliptarsByArchetype(arch.id).filter((e) =>
+            ownedSlugs.has(e.slug),
+          ).length;
 
           return (
             <motion.button
@@ -222,7 +265,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
                 "glass-panel p-5 text-left border transition-colors group relative overflow-hidden",
                 isUnlocked
                   ? `${arch.borderColor} hover:bg-secondary/20 cursor-pointer`
-                  : "border-border/30 opacity-50 cursor-not-allowed"
+                  : "border-border/30 opacity-50 cursor-not-allowed",
               )}
               whileHover={isUnlocked ? { scale: 1.02, y: -2 } : {}}
               whileTap={isUnlocked ? { scale: 0.98 } : {}}
@@ -243,32 +286,46 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
               )}
 
               <div className="flex items-center gap-3 mb-3">
-                <arch.icon className={cn("w-8 h-8", isUnlocked ? arch.color : "text-muted-foreground")} />
+                <arch.icon
+                  className={cn("w-8 h-8", isUnlocked ? arch.color : "text-muted-foreground")}
+                />
                 <div>
-                  <h4 className={cn("font-bold font-display text-sm", isUnlocked ? arch.color : "text-muted-foreground")}>{arch.name}</h4>
-                  <p className="text-[10px] text-muted-foreground tracking-widest font-bold">{arch.passive}</p>
+                  <h4
+                    className={cn(
+                      "font-bold font-display text-sm",
+                      isUnlocked ? arch.color : "text-muted-foreground",
+                    )}
+                  >
+                    {arch.name}
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground tracking-widest font-bold">
+                    {arch.passive}
+                  </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mb-3">{arch.description}</p>
               <ArchStatGrid arch={arch} isUnlocked={isUnlocked} />
 
               {/* Mastery rank — only for unlocked archetypes with at least one battle */}
-              {isUnlocked && (() => {
-                const m = mastery[arch.id];
-                if (!m || m.battles_played === 0) return null;
-                const rank = getMasteryRank(m, arch.id);
-                const { winRate } = getMasteryStats(m);
-                return (
-                  <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
-                    <span className={cn("text-[9px] font-bold tracking-widest", rank.color)}>
-                      {rank.level > 0 ? `${["", "I", "II", "III", "IV", "V"][rank.level]} · ${rank.label}` : "UNRANKED"}
-                    </span>
-                    <span className="text-[9px] text-muted-foreground tabular-nums">
-                      {m.battles_played}B · {winRate}%W
-                    </span>
-                  </div>
-                );
-              })()}
+              {isUnlocked &&
+                (() => {
+                  const m = mastery[arch.id];
+                  if (!m || m.battles_played === 0) return null;
+                  const rank = getMasteryRank(m, arch.id);
+                  const { winRate } = getMasteryStats(m);
+                  return (
+                    <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
+                      <span className={cn("text-[9px] font-bold tracking-widest", rank.color)}>
+                        {rank.level > 0
+                          ? `${["", "I", "II", "III", "IV", "V"][rank.level]} · ${rank.label}`
+                          : "UNRANKED"}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground tabular-nums">
+                        {m.battles_played}B · {winRate}%W
+                      </span>
+                    </div>
+                  );
+                })()}
             </motion.button>
           );
         })}

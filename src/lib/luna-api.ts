@@ -2,7 +2,11 @@
 import { Lightbulb, Eye, Sparkles, Coffee, BookOpen, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-type Msg = { role: "user" | "assistant"; content: string; imageDataUrl?: string };
+interface Msg {
+  role: "user" | "assistant";
+  content: string;
+  imageDataUrl?: string;
+}
 
 interface LunaContext {
   courseId?: string;
@@ -26,13 +30,15 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-chat`;
 const TRANSIENT_STATUSES = new Set([502, 503, 504]);
 const STREAM_RETRY_DELAYS_MS = [600, 1400];
 
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Response> {
   // luna-chat authenticates the caller (getUser on the bearer token), so we
   // must send the user's session JWT — NOT the publishable key, which carries
   // no user and gets rejected as "Unauthorized".
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   for (let attempt = 0; attempt <= STREAM_RETRY_DELAYS_MS.length; attempt++) {
@@ -47,7 +53,8 @@ async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Resp
       signal,
     });
 
-    if (!TRANSIENT_STATUSES.has(resp.status) || attempt === STREAM_RETRY_DELAYS_MS.length) return resp;
+    if (!TRANSIENT_STATUSES.has(resp.status) || attempt === STREAM_RETRY_DELAYS_MS.length)
+      return resp;
     await resp.body?.cancel().catch(() => undefined);
     await wait(STREAM_RETRY_DELAYS_MS[attempt]);
   }
@@ -57,13 +64,14 @@ async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Resp
 
 // Shared tag config so the mini panel and full session render the same way.
 export type LunaTag = "hint" | "nudge" | "explain" | "challenge" | "break";
-export const LUNA_TAG_CONFIG: Record<LunaTag, { icon: LucideIcon; color: string; label: string }> = {
-  hint: { icon: Lightbulb, color: "text-neon-cyan", label: "HINT" },
-  nudge: { icon: Sparkles, color: "text-neon-purple", label: "NUDGE" },
-  explain: { icon: BookOpen, color: "text-neon-cyan", label: "EXPLAIN" },
-  challenge: { icon: Eye, color: "text-neon-pink", label: "CHALLENGE" },
-  break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
-};
+export const LUNA_TAG_CONFIG: Record<LunaTag, { icon: LucideIcon; color: string; label: string }> =
+  {
+    hint: { icon: Lightbulb, color: "text-neon-cyan", label: "HINT" },
+    nudge: { icon: Sparkles, color: "text-neon-purple", label: "NUDGE" },
+    explain: { icon: BookOpen, color: "text-neon-cyan", label: "EXPLAIN" },
+    challenge: { icon: Eye, color: "text-neon-pink", label: "CHALLENGE" },
+    break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
+  };
 
 // Shared localStorage key — the mini panel and full session share memory
 // so dropping into the full session continues the same conversation.
@@ -97,9 +105,11 @@ export function trimMessagesForApi(msgs: Msg[]): Msg[] {
   if (stripped.length <= LUNA_MAX_TURNS) return stripped;
   const overflow = stripped.slice(0, stripped.length - LUNA_MAX_TURNS);
   const recent = stripped.slice(-LUNA_MAX_TURNS);
-  const summary = `[Earlier in this session: ${overflow.length} messages exchanged. Topics touched: ${
-    Array.from(new Set(overflow.map(m => m.content.split(/[.?!\n]/)[0].slice(0, 60)).filter(Boolean))).slice(0, 5).join("; ")
-  }]`;
+  const summary = `[Earlier in this session: ${overflow.length} messages exchanged. Topics touched: ${Array.from(
+    new Set(overflow.map((m) => m.content.split(/[.?!\n]/)[0].slice(0, 60)).filter(Boolean)),
+  )
+    .slice(0, 5)
+    .join("; ")}]`;
   return [{ role: "assistant", content: summary }, ...recent];
 }
 
@@ -123,7 +133,10 @@ export async function streamLunaChat({
   idleTimeoutMs?: number;
 }) {
   try {
-    const resp = await fetchLunaStream(JSON.stringify({ messages: trimMessagesForApi(messages), context, reasoning }), signal);
+    const resp = await fetchLunaStream(
+      JSON.stringify({ messages: trimMessagesForApi(messages), context, reasoning }),
+      signal,
+    );
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({ error: "Request failed" }));
@@ -133,12 +146,14 @@ export async function streamLunaChat({
       // A per-user rate limit (code "rate_limited") carries its own friendly,
       // non-punitive copy; a gateway-side 429 is the "everyone at once" case.
       if (resp.status === 429) {
-        msg = err.code === "rate_limited"
-          ? (err.error || "You've hit the AI limit for now — try again in a few minutes.")
-          : "Luna is getting a lot of questions right now. Try again in a moment.";
-      }
-      else if (resp.status === 402) msg = "Luna's AI credits ran out. Add more in Workspace → Usage.";
-      else if (TRANSIENT_STATUSES.has(resp.status)) msg = "Luna is temporarily unavailable. Try again in a moment.";
+        msg =
+          err.code === "rate_limited"
+            ? err.error || "You've hit the AI limit for now — try again in a few minutes."
+            : "Luna is getting a lot of questions right now. Try again in a moment.";
+      } else if (resp.status === 402)
+        msg = "Luna's AI credits ran out. Add more in Workspace → Usage.";
+      else if (TRANSIENT_STATUSES.has(resp.status))
+        msg = "Luna is temporarily unavailable. Try again in a moment.";
       onError?.(msg);
       onDone();
       return;
@@ -164,7 +179,11 @@ export async function streamLunaChat({
       if (idleTimer) clearTimeout(idleTimer);
       idleTimer = setTimeout(() => {
         idleAborted = true;
-        try { reader.cancel(); } catch { /* ignore */ }
+        try {
+          reader.cancel();
+        } catch {
+          /* ignore */
+        }
       }, timeoutMs);
     };
     armIdle();
@@ -220,7 +239,9 @@ export async function streamLunaChat({
           const parsed = JSON.parse(jsonStr);
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     }
 
@@ -243,11 +264,13 @@ export function parseLunaTag(content: string): {
   // Defensive: match the tag anywhere in the content. The model usually emits
   // it at the start, but occasionally drifts ("Let me think... [HINT] ...").
   // Allow whitespace inside the brackets so "[ HINT ]" still parses.
-  const match = content.match(/\[\s*(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\s*\]\s*/i);
+  const match = /\[\s*(HINT|NUDGE|EXPLAIN|CHALLENGE|BREAK)\s*\]\s*/i.exec(content);
   if (match) {
     return {
       tag: match[1].toLowerCase() as "hint" | "nudge" | "explain" | "challenge" | "break",
-      text: (content.slice(0, match.index ?? 0) + content.slice((match.index ?? 0) + match[0].length)).trimStart(),
+      text: (
+        content.slice(0, match.index ?? 0) + content.slice((match.index ?? 0) + match[0].length)
+      ).trimStart(),
     };
   }
   return { tag: null, text: content };
@@ -259,8 +282,15 @@ export type LunaAction =
   | { kind: "resource"; title: string; url: string };
 
 const ALLOWED_OPEN_ROUTES = new Set([
-  "/battles", "/groups", "/forum", "/certified", "/progress",
-  "/luna", "/build-course", "/collection", "/streak",
+  "/battles",
+  "/groups",
+  "/forum",
+  "/certified",
+  "/progress",
+  "/luna",
+  "/build-course",
+  "/collection",
+  "/streak",
 ]);
 
 /** Pull `[[ACTION:...]]` lines out of a Luna reply and return them parsed. */
@@ -270,7 +300,8 @@ export function parseLunaActions(content: string): { text: string; actions: Luna
   const rx = /\[{1,2}ACTION:(\w+)([^\]]*)\]{1,2}/gi;
   const cleaned = content.replace(rx, (_full, kind: string, attrs: string) => {
     const map: Record<string, string> = {};
-    for (const m of attrs.matchAll(/(\w+)=["“]([^"”]+)["”]/g)) map[m[1].toLowerCase()] = m[2].trim();
+    for (const m of attrs.matchAll(/(\w+)=["“]([^"”]+)["”]/g))
+      map[m[1].toLowerCase()] = m[2].trim();
     const k = kind.toLowerCase();
     if (k === "quiz" && map.topic) {
       const count = Math.min(Math.max(parseInt(map.count || "3", 10) || 3, 1), 5);

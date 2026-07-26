@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { LUNA_HISTORY_KEY } from "@/lib/luna-api";
 import type { LunaAction } from "@/lib/luna-api";
 
-export type StoredLunaMessage = {
+export interface StoredLunaMessage {
   role: "assistant" | "user";
   content: string;
   tag?: "hint" | "nudge" | "explain" | "challenge" | "break" | null;
   imageDataUrl?: string;
   id?: string;
   actions?: LunaAction[];
-};
+}
 
 const MAX_PERSISTED = 100;
 
@@ -42,7 +42,9 @@ export function useLunaHistory() {
       const serialized = JSON.stringify(messages.slice(-MAX_PERSISTED));
       lastWriteRef.current = serialized;
       localStorage.setItem(LUNA_HISTORY_KEY, serialized);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [messages]);
 
   // Sync across instances / tabs. When another mount writes the key, mirror
@@ -54,7 +56,9 @@ export function useLunaHistory() {
       try {
         const parsed = JSON.parse(e.newValue) as StoredLunaMessage[];
         if (Array.isArray(parsed)) setMessages(parsed);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -62,7 +66,11 @@ export function useLunaHistory() {
 
   const clear = () => {
     setMessages([]);
-    try { localStorage.removeItem(LUNA_HISTORY_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(LUNA_HISTORY_KEY);
+    } catch {
+      /* ignore */
+    }
     lastWriteRef.current = null;
   };
 

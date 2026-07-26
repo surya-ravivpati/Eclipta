@@ -1,0 +1,28 @@
+{
+  "warnings": 609,
+  "counts": {
+    "react-refresh/only-export-components": 11,
+    "@typescript-eslint/no-floating-promises": 94,
+    "no-restricted-syntax": 220,
+    "@typescript-eslint/no-unsafe-assignment": 34,
+    "@typescript-eslint/prefer-nullish-coalescing": 111,
+    "@typescript-eslint/no-unused-vars": 32,
+    "@typescript-eslint/no-empty-function": 7,
+    "@typescript-eslint/no-misused-promises": 10,
+    "@typescript-eslint/no-unsafe-member-access": 20,
+    "react-hooks/exhaustive-deps": 11,
+    "@typescript-eslint/no-explicit-any": 17,
+    "@typescript-eslint/no-unsafe-argument": 6,
+    "@typescript-eslint/no-unsafe-unary-minus": 1,
+    "@typescript-eslint/consistent-type-imports": 1,
+    "@typescript-eslint/no-base-to-string": 4,
+    "@typescript-eslint/restrict-template-expressions": 4,
+    "@typescript-eslint/no-unsafe-call": 1,
+    "@typescript-eslint/prefer-optional-chain": 4,
+    "@typescript-eslint/only-throw-error": 14,
+    "@typescript-eslint/no-unsafe-return": 5,
+    "@typescript-eslint/no-unsafe-enum-comparison": 1,
+    "@typescript-eslint/no-redundant-type-constituents": 1
+  },
+  "updated": "2026-07-26"
+}

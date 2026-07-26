@@ -19,11 +19,11 @@ export interface GhostSession {
   /** Original player's username, when available. */
   username: string | null;
   /** Ordered records — action chosen, outcome, and time taken per turn. */
-  questionRecords: Array<{
+  questionRecords: {
     action: string;
     correct: boolean;
     timeSpent: number;
-  }>;
+  }[];
 }
 
 /** Persist a completed battle so it becomes available as ghost replay data. */

@@ -10,19 +10,30 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // ── Host powers ─────────────────────────────────────────────────────────────
-export async function regenerateRoomCode(roomId: string): Promise<{ code?: string; error?: string }> {
-  const { data, error } = await supabase.rpc("regenerate_room_code" as never, { p_room: roomId } as never);
+export async function regenerateRoomCode(
+  roomId: string,
+): Promise<{ code?: string; error?: string }> {
+  const { data, error } = await supabase.rpc(
+    "regenerate_room_code" as never,
+    { p_room: roomId } as never,
+  );
   if (error) return { error: error.message };
   return { code: data as unknown as string };
 }
 
 export async function removeRoomMember(roomId: string, userId: string): Promise<string | null> {
-  const { error } = await supabase.rpc("remove_room_member" as never, { p_room: roomId, p_user: userId } as never);
+  const { error } = await supabase.rpc(
+    "remove_room_member" as never,
+    { p_room: roomId, p_user: userId } as never,
+  );
   return error ? error.message : null;
 }
 
 export async function allowRoomMember(roomId: string, userId: string): Promise<string | null> {
-  const { error } = await supabase.rpc("allow_room_member" as never, { p_room: roomId, p_user: userId } as never);
+  const { error } = await supabase.rpc(
+    "allow_room_member" as never,
+    { p_room: roomId, p_user: userId } as never,
+  );
   return error ? error.message : null;
 }
 
@@ -38,39 +49,53 @@ export async function reportRoomMessage(args: {
   snapshot: string;
   reason: string;
 }): Promise<string | null> {
-  const { error } = await supabase.rpc("report_room_message" as never, {
-    p_room: args.roomId,
-    p_reported_user: args.reportedUserId,
-    p_author_kind: args.authorKind,
-    p_snapshot: args.snapshot,
-    p_reason: args.reason,
-  } as never);
+  const { error } = await supabase.rpc(
+    "report_room_message" as never,
+    {
+      p_room: args.roomId,
+      p_reported_user: args.reportedUserId,
+      p_author_kind: args.authorKind,
+      p_snapshot: args.snapshot,
+      p_reason: args.reason,
+    } as never,
+  );
   return error ? error.message : null;
 }
 
 // ── Block (account-level) ────────────────────────────────────────────────────
 export async function fetchBlockedUserIds(): Promise<Set<string>> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return new Set();
   const { data, error } = await supabase
     .from("blocked_users" as never)
     .select("blocked_id")
     .eq("blocker_id", user.id);
-  if (error) { console.error("fetchBlockedUserIds", error); return new Set(); }
+  if (error) {
+    console.error("fetchBlockedUserIds", error);
+    return new Set();
+  }
   return new Set((data ?? []).map((r) => (r as { blocked_id: string }).blocked_id));
 }
 
 export async function blockUser(blockedId: string): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return "You need to be signed in.";
   const { error } = await supabase
     .from("blocked_users" as never)
-    .upsert({ blocker_id: user.id, blocked_id: blockedId } as never, { onConflict: "blocker_id,blocked_id" } as never);
+    .upsert({ blocker_id: user.id, blocked_id: blockedId } as never, {
+      onConflict: "blocker_id,blocked_id",
+    });
   return error ? error.message : null;
 }
 
 export async function unblockUser(blockedId: string): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return "You need to be signed in.";
   const { error } = await supabase
     .from("blocked_users" as never)

@@ -7,7 +7,7 @@ import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
 import { toast } from "sonner";
 
-type Challenge = {
+interface Challenge {
   id: string;
   challenger_id: string;
   challenged_id: string;
@@ -16,7 +16,7 @@ type Challenge = {
   created_at: string;
   expires_at: string;
   battle_id: string | null;
-};
+}
 
 function dispatchDirectBattle(detail: {
   battleId: string;
@@ -31,7 +31,9 @@ function dispatchDirectBattle(detail: {
 
 export function ChallengeInbox() {
   const { user } = useAuth();
-  const [incoming, setIncoming] = useState<(Challenge & { challenger_username: string | null })[]>([]);
+  const [incoming, setIncoming] = useState<(Challenge & { challenger_username: string | null })[]>(
+    [],
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [defaultArch, setDefaultArch] = useState<ArchetypeId>("speedster");
 
@@ -45,14 +47,19 @@ export function ChallengeInbox() {
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
     const rows = (data as Challenge[] | null) ?? [];
-    if (rows.length === 0) { setIncoming([]); return; }
-    const ids = Array.from(new Set(rows.map(r => r.challenger_id)));
+    if (rows.length === 0) {
+      setIncoming([]);
+      return;
+    }
+    const ids = Array.from(new Set(rows.map((r) => r.challenger_id)));
     const { data: profiles } = await supabase
       .from("user_profiles")
       .select("user_id, username")
       .in("user_id", ids);
-    const nameById = new Map((profiles as { user_id: string; username: string | null }[] | null ?? []).map(p => [p.user_id, p.username]));
-    setIncoming(rows.map(r => ({ ...r, challenger_username: nameById.get(r.challenger_id) ?? null })));
+    const nameById = new Map((profiles ?? []).map((p) => [p.user_id, p.username]));
+    setIncoming(
+      rows.map((r) => ({ ...r, challenger_username: nameById.get(r.challenger_id) ?? null })),
+    );
   }, [user]);
 
   // Load my equipped archetype to use as default response class
@@ -64,12 +71,12 @@ export function ChallengeInbox() {
         .select("equipped_ecliptar")
         .eq("user_id", user.id)
         .maybeSingle();
-      const slug = (data as { equipped_ecliptar: string | null } | null)?.equipped_ecliptar;
+      const slug = data?.equipped_ecliptar;
       // Use any unlocked default; user can play whatever via the regular flow.
       // Falls back to speedster.
       if (!slug) return;
       // Best-effort archetype guess from slug prefix
-      const id = (Object.keys(ARCHETYPES) as ArchetypeId[]).find(k => slug.includes(k));
+      const id = (Object.keys(ARCHETYPES) as ArchetypeId[]).find((k) => slug.includes(k));
       if (id) setDefaultArch(id);
     })();
   }, [user]);
@@ -80,12 +87,22 @@ export function ChallengeInbox() {
     void refresh();
     const chan = supabase
       .channel(`challenges-in:${user.id}`)
-      .on("postgres_changes", {
-        event: "*", schema: "public", table: "pvp_challenges",
-        filter: `challenged_id=eq.${user.id}`,
-      }, () => { void refresh(); })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "pvp_challenges",
+          filter: `challenged_id=eq.${user.id}`,
+        },
+        () => {
+          void refresh();
+        },
+      )
       .subscribe();
-    return () => { void supabase.removeChannel(chan); };
+    return () => {
+      void supabase.removeChannel(chan);
+    };
   }, [user, refresh]);
 
   // Challenger side: when one of MY outgoing challenges is accepted, jump
@@ -94,49 +111,66 @@ export function ChallengeInbox() {
     if (!user) return;
     const chan = supabase
       .channel(`challenges-out:${user.id}`)
-      .on("postgres_changes", {
-        event: "UPDATE", schema: "public", table: "pvp_challenges",
-        filter: `challenger_id=eq.${user.id}`,
-      }, async (payload) => {
-        const row = payload.new as Challenge;
-        if (row.status === "accepted" && row.battle_id) {
-          // Look up opponent username + their chosen archetype from pvp_battles
-          const { data: battle } = await supabase
-            .from("pvp_battles")
-            .select("opponent_archetype, opponent_id")
-            .eq("id", row.battle_id)
-            .maybeSingle();
-          // Written by this client on enqueue, so the `text` column holds an
-          // ArchetypeId by construction.
-          const oppArch = (battle?.opponent_archetype as ArchetypeId | undefined) ?? row.challenger_archetype;
-          const oppId = battle?.opponent_id;
-          let oppName = "Challenger";
-          if (oppId) {
-            const { data: prof } = await supabase
-              .from("user_profiles").select("username").eq("user_id", oppId).maybeSingle();
-            oppName = prof?.username ?? oppName;
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "pvp_challenges",
+          filter: `challenger_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const row = payload.new as Challenge;
+          if (row.status === "accepted" && row.battle_id) {
+            // Look up opponent username + their chosen archetype from pvp_battles
+            const { data: battle } = await supabase
+              .from("pvp_battles")
+              .select("opponent_archetype, opponent_id")
+              .eq("id", row.battle_id)
+              .maybeSingle();
+            // Written by this client on enqueue, so the `text` column holds an
+            // ArchetypeId by construction.
+            const oppArch =
+              (battle?.opponent_archetype as ArchetypeId | undefined) ?? row.challenger_archetype;
+            const oppId = battle?.opponent_id;
+            let oppName = "Challenger";
+            if (oppId) {
+              const { data: prof } = await supabase
+                .from("user_profiles")
+                .select("username")
+                .eq("user_id", oppId)
+                .maybeSingle();
+              oppName = prof?.username ?? oppName;
+            }
+            toast.success(`${oppName} accepted! Starting battle…`);
+            dispatchDirectBattle({
+              battleId: row.battle_id,
+              myArchetype: row.challenger_archetype,
+              opponentArchetype: oppArch,
+              opponentName: oppName,
+              iAmChallenger: true,
+            });
+          } else if (row.status === "rejected") {
+            toast.error("Challenge declined.");
           }
-          toast.success(`${oppName} accepted! Starting battle…`);
-          dispatchDirectBattle({
-            battleId: row.battle_id,
-            myArchetype: row.challenger_archetype,
-            opponentArchetype: oppArch,
-            opponentName: oppName,
-            iAmChallenger: true,
-          });
-        } else if (row.status === "rejected") {
-          toast.error("Challenge declined.");
-        }
-      })
+        },
+      )
       .subscribe();
-    return () => { void supabase.removeChannel(chan); };
+    return () => {
+      void supabase.removeChannel(chan);
+    };
   }, [user]);
 
-  const respond = async (c: Challenge & { challenger_username: string | null }, accept: boolean) => {
+  const respond = async (
+    c: Challenge & { challenger_username: string | null },
+    accept: boolean,
+  ) => {
     setBusy(c.id);
     try {
       const { data, error } = await supabase.rpc("respond_pvp_challenge", {
-        p_challenge_id: c.id, p_accept: accept, p_archetype: defaultArch,
+        p_challenge_id: c.id,
+        p_accept: accept,
+        p_archetype: defaultArch,
       });
       if (error) throw error;
       if (accept && data?.accepted) {
@@ -150,7 +184,7 @@ export function ChallengeInbox() {
       } else {
         toast.success("Challenge declined.");
       }
-      setIncoming(prev => prev.filter(x => x.id !== c.id));
+      setIncoming((prev) => prev.filter((x) => x.id !== c.id));
     } catch (e: unknown) {
       toast.error((e as Error)?.message ?? "Couldn't respond to challenge.");
     } finally {
@@ -164,20 +198,27 @@ export function ChallengeInbox() {
     <div className="glass-panel p-4 border-neon-pink/40">
       <div className="flex items-center gap-2 mb-3">
         <Swords className="w-4 h-4 text-neon-pink" />
-        <h3 className="text-xs font-bold font-display tracking-widest text-neon-pink">INCOMING CHALLENGES</h3>
+        <h3 className="text-xs font-bold font-display tracking-widest text-neon-pink">
+          INCOMING CHALLENGES
+        </h3>
       </div>
       <AnimatePresence>
         <div className="space-y-2">
-          {incoming.map(c => (
+          {incoming.map((c) => (
             <motion.div
               key={c.id}
-              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
               className="flex items-center gap-3 px-3 py-2 border border-neon-pink/30 bg-neon-pink/5"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">{c.challenger_username ?? "Challenger"}</p>
+                <p className="text-sm font-bold truncate">
+                  {c.challenger_username ?? "Challenger"}
+                </p>
                 <p className="text-[10px] text-muted-foreground tracking-widest uppercase">
-                  {ARCHETYPES[c.challenger_archetype]?.name ?? c.challenger_archetype} · expires soon
+                  {ARCHETYPES[c.challenger_archetype]?.name ?? c.challenger_archetype} · expires
+                  soon
                 </p>
               </div>
               <button
@@ -185,7 +226,12 @@ export function ChallengeInbox() {
                 disabled={busy === c.id}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-neon-cyan border border-neon-cyan/50 bg-neon-cyan/10 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50"
               >
-                {busy === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} ACCEPT
+                {busy === c.id ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Check className="w-3 h-3" />
+                )}{" "}
+                ACCEPT
               </button>
               <button
                 onClick={() => respond(c, false)}

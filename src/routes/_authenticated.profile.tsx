@@ -1,7 +1,35 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { User, Trophy, Flame, Target, Zap, BookOpen, Sparkles, Loader2, MessageSquare, LogOut, Sun, Moon, Monitor, Settings, Check, Lock, ExternalLink, AlertTriangle, Camera, ListChecks, Clock, Info, Pencil, XCircle, Users, UserCheck, Brain } from "lucide-react";
+import {
+  User,
+  Trophy,
+  Flame,
+  Target,
+  Zap,
+  BookOpen,
+  Sparkles,
+  Loader2,
+  MessageSquare,
+  LogOut,
+  Sun,
+  Moon,
+  Monitor,
+  Settings,
+  Check,
+  Lock,
+  ExternalLink,
+  AlertTriangle,
+  Camera,
+  ListChecks,
+  Clock,
+  Info,
+  Pencil,
+  XCircle,
+  Users,
+  UserCheck,
+  Brain,
+} from "lucide-react";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
 import { useOwnedEcliptars } from "@/hooks/use-player-xp";
@@ -27,24 +55,61 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
 
-type Profile = {
+interface Profile {
   username: string | null;
   bio: string | null;
-  xp: number; current_streak: number; best_streak: number;
-  total_correct: number; total_questions: number; total_sessions: number;
-  preferred_pace: string; preferred_style: string;
+  xp: number;
+  current_streak: number;
+  best_streak: number;
+  total_correct: number;
+  total_questions: number;
+  total_sessions: number;
+  preferred_pace: string;
+  preferred_style: string;
   equipped_ecliptar: string | null;
   avatar_url: string | null;
   luna_notes: string | null;
   luna_auto_notes: string | null;
   learner_profile: unknown | null;
-};
-type Ecliptar = { id: string; ecliptar_name: string; archetype: string; claimed_at: string };
-type Enrollment = { id: string; course_slug: string; course_title: string; enrolled_at: string };
-type ForumActivity = { id: string; title: string; created_at: string };
-type Proposal = { id: string; topic: string; status: string; created_at: string };
-type ProposalFull = { id: string; topic: string; status: string; created_at: string; denial_reason: string | null; course_id: string | null };
-type UserCourse = { id: string; slug: string; title: string; status: string; updated_at: string };
+}
+interface Ecliptar {
+  id: string;
+  ecliptar_name: string;
+  archetype: string;
+  claimed_at: string;
+}
+interface Enrollment {
+  id: string;
+  course_slug: string;
+  course_title: string;
+  enrolled_at: string;
+}
+interface ForumActivity {
+  id: string;
+  title: string;
+  created_at: string;
+}
+interface Proposal {
+  id: string;
+  topic: string;
+  status: string;
+  created_at: string;
+}
+interface ProposalFull {
+  id: string;
+  topic: string;
+  status: string;
+  created_at: string;
+  denial_reason: string | null;
+  course_id: string | null;
+}
+interface UserCourse {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  updated_at: string;
+}
 
 function ProfilePage() {
   const { user } = useAuth();
@@ -63,17 +128,54 @@ function ProfilePage() {
   const reload = async () => {
     if (!user) return;
     const [p, e, en, t, a, pr, uc, fc, fgc] = await Promise.all([
-      supabase.from("user_profiles").select("username,bio,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar,avatar_url,luna_notes,luna_auto_notes,learner_profile").eq("user_id", user.id).maybeSingle(),
-      supabase.from("user_ecliptars").select("id,ecliptar_name,archetype,claimed_at").eq("user_id", user.id).order("claimed_at", { ascending: false }),
-      supabase.from("enrollments").select("id,course_slug,course_title,enrolled_at").eq("user_id", user.id).order("enrolled_at", { ascending: false }),
-      supabase.from("forum_threads").select("id,title,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-      supabase.from("forum_answers").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("course_proposals").select("id,topic,status,created_at,denial_reason,course_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("user_courses").select("id,slug,title,status,updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
-      supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", user.id),
-      supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", user.id),
+      supabase
+        .from("user_profiles")
+        .select(
+          "username,bio,xp,current_streak,best_streak,total_correct,total_questions,total_sessions,preferred_pace,preferred_style,equipped_ecliptar,avatar_url,luna_notes,luna_auto_notes,learner_profile",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_ecliptars")
+        .select("id,ecliptar_name,archetype,claimed_at")
+        .eq("user_id", user.id)
+        .order("claimed_at", { ascending: false }),
+      supabase
+        .from("enrollments")
+        .select("id,course_slug,course_title,enrolled_at")
+        .eq("user_id", user.id)
+        .order("enrolled_at", { ascending: false }),
+      supabase
+        .from("forum_threads")
+        .select("id,title,created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("forum_answers")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+      supabase
+        .from("course_proposals")
+        .select("id,topic,status,created_at,denial_reason,course_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("user_courses")
+        .select("id,slug,title,status,updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("user_follows")
+        .select("id", { count: "exact", head: true })
+        .eq("following_id", user.id),
+      supabase
+        .from("user_follows")
+        .select("id", { count: "exact", head: true })
+        .eq("follower_id", user.id),
     ]);
-    setProfile((p.data as Profile) || null);
+    setProfile(p.data || null);
     setEcliptars((e.data as Ecliptar[]) || []);
     setEnrollments((en.data as Enrollment[]) || []);
     setThreads((t.data as ForumActivity[]) || []);
@@ -87,7 +189,9 @@ function ProfilePage() {
     setLoading(false);
   };
 
-  useEffect(() => { reload(); }, [user]);
+  useEffect(() => {
+    reload();
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -97,9 +201,10 @@ function ProfilePage() {
   if (!user) return null;
 
   const displayName = profile?.username || user.email?.split("@")[0] || "Learner";
-  const accuracy = profile && profile.total_questions > 0
-    ? Math.round((profile.total_correct / profile.total_questions) * 100)
-    : 0;
+  const accuracy =
+    profile && profile.total_questions > 0
+      ? Math.round((profile.total_correct / profile.total_questions) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
@@ -108,7 +213,8 @@ function ProfilePage() {
           {/* Header */}
           <motion.div
             className="glass-panel p-8 mb-6 flex flex-col md:flex-row items-center md:items-start gap-6"
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
           >
             <AvatarUploader
               userId={user.id}
@@ -132,14 +238,16 @@ function ProfilePage() {
                     params={{ username: profile.username }}
                     className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-neon-purple inline-flex items-center gap-1 border border-border px-2 py-0.5 transition-colors"
                   >
-                    <ExternalLink className="w-2.5 h-2.5" />/u/{profile.username}
+                    <ExternalLink className="w-2.5 h-2.5" />
+                    /u/{profile.username}
                   </Link>
                 )}
                 <Link
                   to="/calibration"
                   className="text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink inline-flex items-center gap-1 border border-neon-purple/30 hover:border-neon-pink/40 px-2 py-0.5 transition-colors"
                 >
-                  <Brain className="w-2.5 h-2.5" />{profile?.learner_profile ? "RECALIBRATE LUNA" : "CALIBRATE LUNA"}
+                  <Brain className="w-2.5 h-2.5" />
+                  {profile?.learner_profile ? "RECALIBRATE LUNA" : "CALIBRATE LUNA"}
                 </Link>
               </div>
             </div>
@@ -147,12 +255,15 @@ function ProfilePage() {
               onClick={handleLogout}
               className="px-4 py-2 text-xs font-bold tracking-widest border border-border hover:border-neon-pink text-muted-foreground hover:text-neon-pink transition-colors inline-flex items-center gap-2"
             >
-              <LogOut className="w-3.5 h-3.5" />SIGN OUT
+              <LogOut className="w-3.5 h-3.5" />
+              SIGN OUT
             </button>
           </motion.div>
 
           {loading ? (
-            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-neon-purple" /></div>
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-6 h-6 animate-spin text-neon-purple" />
+            </div>
           ) : (
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 h-auto">
@@ -165,65 +276,142 @@ function ProfilePage() {
               <TabsContent value="overview" className="space-y-6 mt-0">
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <StatCard icon={<Zap className="w-4 h-4" />} label="XP" value={profile?.xp ?? 0} color="text-neon-purple" />
-                  <StatCard icon={<Flame className="w-4 h-4" />} label="Streak" value={profile?.current_streak ?? 0} color="text-neon-pink" />
-                  <StatCard icon={<Trophy className="w-4 h-4" />} label="Best" value={profile?.best_streak ?? 0} color="text-neon-cyan" />
-                  <StatCard icon={<Target className="w-4 h-4" />} label="Accuracy" value={`${accuracy}%`} color="text-foreground" />
-                  <StatCard icon={<Users className="w-4 h-4" />} label="Followers" value={followerCount} color="text-foreground" />
-                  <StatCard icon={<UserCheck className="w-4 h-4" />} label="Following" value={followingCount} color="text-foreground" />
+                  <StatCard
+                    icon={<Zap className="w-4 h-4" />}
+                    label="XP"
+                    value={profile?.xp ?? 0}
+                    color="text-neon-purple"
+                  />
+                  <StatCard
+                    icon={<Flame className="w-4 h-4" />}
+                    label="Streak"
+                    value={profile?.current_streak ?? 0}
+                    color="text-neon-pink"
+                  />
+                  <StatCard
+                    icon={<Trophy className="w-4 h-4" />}
+                    label="Best"
+                    value={profile?.best_streak ?? 0}
+                    color="text-neon-cyan"
+                  />
+                  <StatCard
+                    icon={<Target className="w-4 h-4" />}
+                    label="Accuracy"
+                    value={`${accuracy}%`}
+                    color="text-foreground"
+                  />
+                  <StatCard
+                    icon={<Users className="w-4 h-4" />}
+                    label="Followers"
+                    value={followerCount}
+                    color="text-foreground"
+                  />
+                  <StatCard
+                    icon={<UserCheck className="w-4 h-4" />}
+                    label="Following"
+                    value={followingCount}
+                    color="text-foreground"
+                  />
                 </div>
 
                 {/* Activity cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card title="Enrolled Courses" icon={<BookOpen className="w-4 h-4 text-neon-cyan" />} count={enrollments.length}>
-                  {enrollments.length === 0 ? (
-                    <EmptyState text="No courses enrolled." cta={<Link to="/courses" className="text-neon-cyan hover:underline">Browse courses →</Link>} />
-                  ) : (
-                    <ul className="space-y-2">
-                      {enrollments.slice(0, 6).map((en) => (
-                        <li key={en.id} className="text-xs border-b border-border/50 pb-2">
-                          <Link to="/certified/$slug" params={{ slug: en.course_slug }} className="font-medium hover:text-neon-cyan transition-colors">
-                            {en.course_title}
+                  <Card
+                    title="Enrolled Courses"
+                    icon={<BookOpen className="w-4 h-4 text-neon-cyan" />}
+                    count={enrollments.length}
+                  >
+                    {enrollments.length === 0 ? (
+                      <EmptyState
+                        text="No courses enrolled."
+                        cta={
+                          <Link to="/courses" className="text-neon-cyan hover:underline">
+                            Browse courses →
                           </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Card>
+                        }
+                      />
+                    ) : (
+                      <ul className="space-y-2">
+                        {enrollments.slice(0, 6).map((en) => (
+                          <li key={en.id} className="text-xs border-b border-border/50 pb-2">
+                            <Link
+                              to="/certified/$slug"
+                              params={{ slug: en.course_slug }}
+                              className="font-medium hover:text-neon-cyan transition-colors"
+                            >
+                              {en.course_title}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Card>
 
-                <Card title="Forum Threads" icon={<MessageSquare className="w-4 h-4 text-neon-pink" />} count={threads.length}>
-                  {threads.length === 0 ? (
-                    <EmptyState text="No threads posted." cta={<Link to="/forum" className="text-neon-pink hover:underline">Start a discussion →</Link>} />
-                  ) : (
-                    <ul className="space-y-2">
-                      {threads.slice(0, 5).map((t) => (
-                        <li key={t.id} className="text-xs border-b border-border/50 pb-2">
-                          <Link to="/forum/$threadId" params={{ threadId: t.id }} className="font-medium hover:text-neon-pink transition-colors line-clamp-1">
-                            {t.title}
+                  <Card
+                    title="Forum Threads"
+                    icon={<MessageSquare className="w-4 h-4 text-neon-pink" />}
+                    count={threads.length}
+                  >
+                    {threads.length === 0 ? (
+                      <EmptyState
+                        text="No threads posted."
+                        cta={
+                          <Link to="/forum" className="text-neon-pink hover:underline">
+                            Start a discussion →
                           </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Card>
+                        }
+                      />
+                    ) : (
+                      <ul className="space-y-2">
+                        {threads.slice(0, 5).map((t) => (
+                          <li key={t.id} className="text-xs border-b border-border/50 pb-2">
+                            <Link
+                              to="/forum/$threadId"
+                              params={{ threadId: t.id }}
+                              className="font-medium hover:text-neon-pink transition-colors line-clamp-1"
+                            >
+                              {t.title}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Card>
 
-                <Card title="Lifetime Activity" icon={<Target className="w-4 h-4 text-foreground" />} count={null}>
-                  <div className="space-y-2 text-xs">
-                    <Row label="Sessions" value={profile?.total_sessions ?? 0} />
-                    <Row label="Questions answered" value={profile?.total_questions ?? 0} />
-                    <Row label="Correct" value={profile?.total_correct ?? 0} />
-                    <Row label="Forum answers" value={answersCount} />
-                  </div>
-                </Card>
+                  <Card
+                    title="Lifetime Activity"
+                    icon={<Target className="w-4 h-4 text-foreground" />}
+                    count={null}
+                  >
+                    <div className="space-y-2 text-xs">
+                      <Row label="Sessions" value={profile?.total_sessions ?? 0} />
+                      <Row label="Questions answered" value={profile?.total_questions ?? 0} />
+                      <Row label="Correct" value={profile?.total_correct ?? 0} />
+                      <Row label="Forum answers" value={answersCount} />
+                    </div>
+                  </Card>
 
-                <Card title="Ecliptars Claimed" icon={<Sparkles className="w-4 h-4 text-neon-purple" />} count={ecliptars.length}>
-                  {ecliptars.length === 0 ? (
-                    <EmptyState text="No Ecliptars yet." cta={<Link to="/progress" className="text-neon-purple hover:underline">Begin your expedition →</Link>} />
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Open the Ecliptars tab to equip one ↑</p>
-                  )}
-                </Card>
-                <FollowingFeedCard userId={user.id} />
+                  <Card
+                    title="Ecliptars Claimed"
+                    icon={<Sparkles className="w-4 h-4 text-neon-purple" />}
+                    count={ecliptars.length}
+                  >
+                    {ecliptars.length === 0 ? (
+                      <EmptyState
+                        text="No Ecliptars yet."
+                        cta={
+                          <Link to="/progress" className="text-neon-purple hover:underline">
+                            Begin your expedition →
+                          </Link>
+                        }
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Open the Ecliptars tab to equip one ↑
+                      </p>
+                    )}
+                  </Card>
+                  <FollowingFeedCard userId={user.id} />
                 </div>
               </TabsContent>
 
@@ -236,13 +424,27 @@ function ProfilePage() {
               </TabsContent>
 
               <TabsContent value="creator" className="mt-0 space-y-4">
-                <Card title="Your Courses" icon={<ListChecks className="w-4 h-4 text-neon-purple" />} count={myCourses.length}>
+                <Card
+                  title="Your Courses"
+                  icon={<ListChecks className="w-4 h-4 text-neon-purple" />}
+                  count={myCourses.length}
+                >
                   {myCourses.length === 0 && pendingProposals.length === 0 ? (
-                    <EmptyState text="No courses yet." cta={<Link to="/build-course" className="text-neon-purple hover:underline">Build a course →</Link>} />
+                    <EmptyState
+                      text="No courses yet."
+                      cta={
+                        <Link to="/build-course" className="text-neon-purple hover:underline">
+                          Build a course →
+                        </Link>
+                      }
+                    />
                   ) : (
                     <ul className="space-y-2">
                       {myCourses.map((c) => (
-                        <li key={c.id} className="text-xs border-b border-border/50 pb-2 flex items-center justify-between gap-2">
+                        <li
+                          key={c.id}
+                          className="text-xs border-b border-border/50 pb-2 flex items-center justify-between gap-2"
+                        >
                           <Link
                             to="/courses/$courseId/edit"
                             params={{ courseId: c.id }}
@@ -250,19 +452,26 @@ function ProfilePage() {
                           >
                             {c.title}
                           </Link>
-                          <span className={cn(
-                            "text-[9px] font-bold tracking-widest uppercase inline-flex items-center gap-1 shrink-0",
-                            c.status === "published" ? "text-primary" : "text-neon-purple/80"
-                          )}>
-                            <Pencil className="w-2.5 h-2.5" />{c.status}
+                          <span
+                            className={cn(
+                              "text-[9px] font-bold tracking-widest uppercase inline-flex items-center gap-1 shrink-0",
+                              c.status === "published" ? "text-primary" : "text-neon-purple/80",
+                            )}
+                          >
+                            <Pencil className="w-2.5 h-2.5" />
+                            {c.status}
                           </span>
                         </li>
                       ))}
                       {pendingProposals.map((p) => (
-                        <li key={p.id} className="text-xs border-b border-border/50 pb-2 flex items-center justify-between gap-2">
+                        <li
+                          key={p.id}
+                          className="text-xs border-b border-border/50 pb-2 flex items-center justify-between gap-2"
+                        >
                           <span className="font-medium truncate flex-1">{p.topic}</span>
                           <span className="text-[9px] font-bold tracking-widest uppercase text-muted-foreground inline-flex items-center gap-1 shrink-0">
-                            <Clock className="w-2.5 h-2.5" />reviewing
+                            <Clock className="w-2.5 h-2.5" />
+                            reviewing
                           </span>
                         </li>
                       ))}
@@ -271,15 +480,24 @@ function ProfilePage() {
                 </Card>
 
                 {deniedProposals.length > 0 && (
-                  <Card title="Denied Proposals" icon={<XCircle className="w-4 h-4 text-destructive" />} count={deniedProposals.length}>
+                  <Card
+                    title="Denied Proposals"
+                    icon={<XCircle className="w-4 h-4 text-destructive" />}
+                    count={deniedProposals.length}
+                  >
                     <ul className="space-y-3">
                       {deniedProposals.map((p) => (
                         <li key={p.id} className="text-xs border-b border-border/50 pb-2">
                           <p className="font-medium truncate">{p.topic}</p>
                           {p.denial_reason && (
-                            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{p.denial_reason}</p>
+                            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                              {p.denial_reason}
+                            </p>
                           )}
-                          <Link to="/build-course" className="text-[10px] font-bold tracking-widest text-neon-purple hover:underline mt-1 inline-block">
+                          <Link
+                            to="/build-course"
+                            className="text-[10px] font-bold tracking-widest text-neon-purple hover:underline mt-1 inline-block"
+                          >
                             REVISE & RESUBMIT →
                           </Link>
                         </li>
@@ -290,11 +508,7 @@ function ProfilePage() {
               </TabsContent>
 
               <TabsContent value="settings" className="mt-0">
-                <SettingsPanel
-                  profile={profile}
-                  userId={user.id}
-                  onSaved={reload}
-                />
+                <SettingsPanel profile={profile} userId={user.id} onSaved={reload} />
               </TabsContent>
             </Tabs>
           )}
@@ -306,8 +520,14 @@ function ProfilePage() {
 
 /* =================== Settings Panel =================== */
 
-function SettingsPanel({ profile, userId, onSaved }: {
-  profile: Profile | null; userId: string; onSaved: () => void;
+function SettingsPanel({
+  profile,
+  userId,
+  onSaved,
+}: {
+  profile: Profile | null;
+  userId: string;
+  onSaved: () => void;
 }) {
   const { theme, setTheme } = useTheme();
   const [username, setUsername] = useState(profile?.username || "");
@@ -320,7 +540,9 @@ function SettingsPanel({ profile, userId, onSaved }: {
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [clearingAuto, setClearingAuto] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [availability, setAvailability] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "current">("idle");
+  const [availability, setAvailability] = useState<
+    "idle" | "checking" | "available" | "taken" | "invalid" | "current"
+  >("idle");
 
   useEffect(() => {
     setUsername(profile?.username || "");
@@ -328,17 +550,31 @@ function SettingsPanel({ profile, userId, onSaved }: {
     setPace(profile?.preferred_pace || "normal");
     setStyle(profile?.preferred_style || "mixed");
     setLunaNotes(profile?.luna_notes || "");
-  }, [profile?.username, profile?.bio, profile?.preferred_pace, profile?.preferred_style, profile?.luna_notes]);
+  }, [
+    profile?.username,
+    profile?.bio,
+    profile?.preferred_pace,
+    profile?.preferred_style,
+    profile?.luna_notes,
+  ]);
 
-  const validateUsername = (v: string) =>
-    /^[a-zA-Z0-9_]{3,20}$/.test(v) && !containsProfanity(v);
+  const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v) && !containsProfanity(v);
 
   // Debounced availability check
   useEffect(() => {
     const trimmed = username.trim();
-    if (!trimmed) { setAvailability("idle"); return; }
-    if (trimmed === profile?.username) { setAvailability("current"); return; }
-    if (!validateUsername(trimmed)) { setAvailability("invalid"); return; }
+    if (!trimmed) {
+      setAvailability("idle");
+      return;
+    }
+    if (trimmed === profile?.username) {
+      setAvailability("current");
+      return;
+    }
+    if (!validateUsername(trimmed)) {
+      setAvailability("invalid");
+      return;
+    }
     setAvailability("checking");
     const handle = setTimeout(async () => {
       const { count } = await supabase
@@ -367,7 +603,10 @@ function SettingsPanel({ profile, userId, onSaved }: {
       setSaving(false);
       return toast.error(calmBlockMessage(modVerdict.category));
     }
-    const { error } = await supabase.from("user_profiles").update({ username: trimmed }).eq("user_id", userId);
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({ username: trimmed })
+      .eq("user_id", userId);
     setSaving(false);
     if (error) {
       if (error.code === "23505") return toast.error("That username is already taken");
@@ -379,8 +618,13 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
   const savePrefs = async () => {
     setSavingPrefs(true);
-    const { error } = await supabase.from("user_profiles")
-      .update({ preferred_pace: pace, preferred_style: style, luna_notes: lunaNotes.trim() || null })
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({
+        preferred_pace: pace,
+        preferred_style: style,
+        luna_notes: lunaNotes.trim() || null,
+      })
       .eq("user_id", userId);
     setSavingPrefs(false);
     if (error) return toast.error(error.message);
@@ -389,11 +633,16 @@ function SettingsPanel({ profile, userId, onSaved }: {
   };
 
   const autoNotes = (profile?.luna_auto_notes || "")
-    .split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 
   const clearAutoNotes = async () => {
     setClearingAuto(true);
-    const { error } = await supabase.from("user_profiles").update({ luna_auto_notes: null }).eq("user_id", userId);
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({ luna_auto_notes: null })
+      .eq("user_id", userId);
     setClearingAuto(false);
     if (error) return toast.error(error.message);
     toast.success("Cleared what Luna picked up from chat");
@@ -402,9 +651,11 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
   const saveBio = async () => {
     const trimmed = bio.trim();
-    if (containsProfanity(trimmed)) return toast.error("Please rephrase — your bio contains language we don't allow.");
+    if (containsProfanity(trimmed))
+      return toast.error("Please rephrase — your bio contains language we don't allow.");
     setSavingBio(true);
-    const { error } = await supabase.from("user_profiles")
+    const { error } = await supabase
+      .from("user_profiles")
       .update({ bio: trimmed || null })
       .eq("user_id", userId);
     setSavingBio(false);
@@ -422,15 +673,23 @@ function SettingsPanel({ profile, userId, onSaved }: {
     }
     // We don't have admin API to hard-delete an auth user from the client.
     // Best-effort: clear profile data, sign out.
-    await supabase.from("user_profiles").update({
-      username: null, equipped_ecliptar: null,
-    }).eq("user_id", userId);
+    await supabase
+      .from("user_profiles")
+      .update({
+        username: null,
+        equipped_ecliptar: null,
+      })
+      .eq("user_id", userId);
     await supabase.auth.signOut();
     toast.success("Account data cleared. Contact support to fully delete the account.");
   };
 
   return (
-    <motion.div className="glass-panel p-6 mb-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div
+      className="glass-panel p-6 mb-6"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
       <div className="flex items-center gap-2 mb-5">
         <Settings className="w-4 h-4 text-neon-purple" />
         <h2 className="font-display font-bold text-sm tracking-widest uppercase">Settings</h2>
@@ -439,8 +698,12 @@ function SettingsPanel({ profile, userId, onSaved }: {
       <div className="grid md:grid-cols-2 gap-6">
         {/* Username */}
         <div>
-          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Public Username</label>
-          <p className="text-[11px] text-muted-foreground mt-1 mb-2">Shown on your forum threads, answers, and public profile.</p>
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+            Public Username
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-2">
+            Shown on your forum threads, answers, and public profile.
+          </p>
           <div className="flex gap-2">
             <input
               value={username}
@@ -451,38 +714,60 @@ function SettingsPanel({ profile, userId, onSaved }: {
             />
             <button
               onClick={saveUsername}
-              disabled={saving || username.trim() === (profile?.username || "") || availability === "taken" || availability === "invalid" || availability === "checking"}
+              disabled={
+                saving ||
+                username.trim() === (profile?.username || "") ||
+                availability === "taken" ||
+                availability === "invalid" ||
+                availability === "checking"
+              }
               className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
             >
-              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              {saving ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Check className="w-3 h-3" />
+              )}
               SAVE
             </button>
           </div>
-          <p className={cn(
-            "text-[10px] mt-1 font-bold tracking-widest",
-            availability === "available" && "text-primary",
-            availability === "taken" && "text-destructive",
-            availability === "invalid" && "text-neon-pink",
-            (availability === "idle" || availability === "current" || availability === "checking") && "text-muted-foreground",
-          )}>
+          <p
+            className={cn(
+              "text-[10px] mt-1 font-bold tracking-widest",
+              availability === "available" && "text-primary",
+              availability === "taken" && "text-destructive",
+              availability === "invalid" && "text-neon-pink",
+              (availability === "idle" ||
+                availability === "current" ||
+                availability === "checking") &&
+                "text-muted-foreground",
+            )}
+          >
             {availability === "checking" && "CHECKING…"}
             {availability === "available" && "✓ AVAILABLE"}
             {availability === "taken" && "✗ ALREADY TAKEN"}
             {availability === "invalid" && "INVALID — 3–20 chars, letters/numbers/underscore"}
-            {(availability === "idle" || availability === "current") && "3–20 chars. Letters, numbers, underscores only."}
+            {(availability === "idle" || availability === "current") &&
+              "3–20 chars. Letters, numbers, underscores only."}
           </p>
         </div>
 
         {/* Theme */}
         <div>
-          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Appearance</label>
-          <p className="text-[11px] text-muted-foreground mt-1 mb-2">Choose dark, light, or follow your system setting.</p>
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+            Appearance
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-2">
+            Choose dark, light, or follow your system setting.
+          </p>
           <div className="flex gap-2">
-            {([
-              { id: "dark", label: "DARK", Icon: Moon },
-              { id: "light", label: "LIGHT", Icon: Sun },
-              { id: "system", label: "SYSTEM", Icon: Monitor },
-            ] as const).map(({ id, label, Icon }) => (
+            {(
+              [
+                { id: "dark", label: "DARK", Icon: Moon },
+                { id: "light", label: "LIGHT", Icon: Sun },
+                { id: "system", label: "SYSTEM", Icon: Monitor },
+              ] as const
+            ).map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setTheme(id)}
@@ -490,10 +775,11 @@ function SettingsPanel({ profile, userId, onSaved }: {
                   "flex-1 px-3 py-2 text-xs font-bold tracking-widest border transition-colors inline-flex items-center justify-center gap-2",
                   theme === id
                     ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
-                    : "border-border text-muted-foreground hover:border-neon-purple/40"
+                    : "border-border text-muted-foreground hover:border-neon-purple/40",
                 )}
               >
-                <Icon className="w-3.5 h-3.5" />{label}
+                <Icon className="w-3.5 h-3.5" />
+                {label}
               </button>
             ))}
           </div>
@@ -501,8 +787,13 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
         {/* Bio */}
         <div className="md:col-span-2 border-t border-border pt-5">
-          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Bio</label>
-          <p className="text-[11px] text-muted-foreground mt-1 mb-2">A short blurb shown on your public profile. Tell people what you're learning, where you're from, what you build.</p>
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+            Bio
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-2">
+            A short blurb shown on your public profile. Tell people what you're learning, where
+            you're from, what you build.
+          </p>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value.slice(0, 280))}
@@ -517,7 +808,11 @@ function SettingsPanel({ profile, userId, onSaved }: {
               disabled={savingBio || bio.trim() === (profile?.bio || "").trim()}
               className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
             >
-              {savingBio ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              {savingBio ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Check className="w-3 h-3" />
+              )}
               SAVE BIO
             </button>
           </div>
@@ -525,8 +820,13 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
         {/* Learning preferences */}
         <div className="md:col-span-2 border-t border-border pt-5">
-          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Learning Preferences</label>
-          <p className="text-[11px] text-muted-foreground mt-1 mb-3">Tunes how Luna paces hints, picks examples, and writes responses. You can also tell Luna in chat ("write shorter", "use more analogies") and she'll remember.</p>
+          <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+            Learning Preferences
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-1 mb-3">
+            Tunes how Luna paces hints, picks examples, and writes responses. You can also tell Luna
+            in chat ("write shorter", "use more analogies") and she'll remember.
+          </p>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5 flex items-center gap-1.5">
@@ -534,18 +834,35 @@ function SettingsPanel({ profile, userId, onSaved }: {
                 <PrefInfo
                   title="Pace"
                   options={[
-                    { name: "Slow", desc: "More worked examples, smaller steps, extra check-ins. Best when a topic is brand new or you want time to digest." },
-                    { name: "Normal", desc: "Balanced — Luna explains, then asks. Default for most learners." },
-                    { name: "Fast", desc: "Tighter responses, fewer recap sentences, harder follow-ups. Use when you already have the basics." },
+                    {
+                      name: "Slow",
+                      desc: "More worked examples, smaller steps, extra check-ins. Best when a topic is brand new or you want time to digest.",
+                    },
+                    {
+                      name: "Normal",
+                      desc: "Balanced — Luna explains, then asks. Default for most learners.",
+                    },
+                    {
+                      name: "Fast",
+                      desc: "Tighter responses, fewer recap sentences, harder follow-ups. Use when you already have the basics.",
+                    },
                   ]}
                 />
               </p>
               <div className="flex gap-1">
                 {(["slow", "normal", "fast"] as const).map((opt) => (
-                  <button key={opt} onClick={() => setPace(opt)} className={cn(
-                    "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
-                    pace === opt ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan" : "border-border text-muted-foreground hover:border-neon-cyan/40"
-                  )}>{opt.toUpperCase()}</button>
+                  <button
+                    key={opt}
+                    onClick={() => setPace(opt)}
+                    className={cn(
+                      "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
+                      pace === opt
+                        ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan"
+                        : "border-border text-muted-foreground hover:border-neon-cyan/40",
+                    )}
+                  >
+                    {opt.toUpperCase()}
+                  </button>
                 ))}
               </div>
             </div>
@@ -555,19 +872,39 @@ function SettingsPanel({ profile, userId, onSaved }: {
                 <PrefInfo
                   title="Style"
                   options={[
-                    { name: "Visual", desc: "Leans on diagrams, spatial analogies, and 'picture this' framing." },
-                    { name: "Verbal", desc: "Definitions, words, and step-by-step prose. Light on imagery." },
-                    { name: "Mixed", desc: "Alternates verbal explanations with concrete examples. Default." },
-                    { name: "Applied", desc: "Leads with real-world problems and code/use cases first, theory after." },
+                    {
+                      name: "Visual",
+                      desc: "Leans on diagrams, spatial analogies, and 'picture this' framing.",
+                    },
+                    {
+                      name: "Verbal",
+                      desc: "Definitions, words, and step-by-step prose. Light on imagery.",
+                    },
+                    {
+                      name: "Mixed",
+                      desc: "Alternates verbal explanations with concrete examples. Default.",
+                    },
+                    {
+                      name: "Applied",
+                      desc: "Leads with real-world problems and code/use cases first, theory after.",
+                    },
                   ]}
                 />
               </p>
               <div className="flex gap-1">
                 {(["visual", "verbal", "mixed", "applied"] as const).map((opt) => (
-                  <button key={opt} onClick={() => setStyle(opt)} className={cn(
-                    "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
-                    style === opt ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-border text-muted-foreground hover:border-neon-pink/40"
-                  )}>{opt.toUpperCase()}</button>
+                  <button
+                    key={opt}
+                    onClick={() => setStyle(opt)}
+                    className={cn(
+                      "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
+                      style === opt
+                        ? "border-neon-pink bg-neon-pink/10 text-neon-pink"
+                        : "border-border text-muted-foreground hover:border-neon-pink/40",
+                    )}
+                  >
+                    {opt.toUpperCase()}
+                  </button>
                 ))}
               </div>
             </div>
@@ -578,8 +915,14 @@ function SettingsPanel({ profile, userId, onSaved }: {
               <PrefInfo
                 title="Notes for Luna"
                 options={[
-                  { name: "What this is", desc: "Your own free-form notes that Luna reads on every reply. Use it for things the dropdowns don't cover — 'answer in Spanish', 'avoid sports analogies', 'I'm prepping for the SAT'." },
-                  { name: "Auto-learning is separate", desc: "Preferences Luna picks up from chat ('write shorter', 'use more analogies') are stored separately and never clutter this box. When you contradict an old one, Luna replaces it automatically." },
+                  {
+                    name: "What this is",
+                    desc: "Your own free-form notes that Luna reads on every reply. Use it for things the dropdowns don't cover — 'answer in Spanish', 'avoid sports analogies', 'I'm prepping for the SAT'.",
+                  },
+                  {
+                    name: "Auto-learning is separate",
+                    desc: "Preferences Luna picks up from chat ('write shorter', 'use more analogies') are stored separately and never clutter this box. When you contradict an old one, Luna replaces it automatically.",
+                  },
                 ]}
               />
             </p>
@@ -590,7 +933,9 @@ function SettingsPanel({ profile, userId, onSaved }: {
               rows={3}
               className="w-full px-3 py-2 text-xs bg-background border border-border focus:border-neon-purple/60 focus:outline-none rounded resize-none"
             />
-            <p className="text-[10px] text-muted-foreground mt-1">{lunaNotes.length}/600 characters</p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {lunaNotes.length}/600 characters
+            </p>
           </div>
 
           {autoNotes.length > 0 && (
@@ -604,16 +949,24 @@ function SettingsPanel({ profile, userId, onSaved }: {
                   disabled={clearingAuto}
                   className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-neon-pink disabled:opacity-40 transition-colors inline-flex items-center gap-1.5"
                 >
-                  {clearingAuto ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                  {clearingAuto ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <XCircle className="w-3 h-3" />
+                  )}
                   CLEAR
                 </button>
               </div>
               <p className="text-[10px] text-muted-foreground mb-2">
-                Preferences Luna inferred from your chats. She applies these silently; clear them if any are off.
+                Preferences Luna inferred from your chats. She applies these silently; clear them if
+                any are off.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {autoNotes.map((n, i) => (
-                  <span key={i} className="px-2 py-1 text-[10px] bg-secondary/40 border border-border rounded text-muted-foreground">
+                  <span
+                    key={i}
+                    className="px-2 py-1 text-[10px] bg-secondary/40 border border-border rounded text-muted-foreground"
+                  >
                     {n}
                   </span>
                 ))}
@@ -624,10 +977,19 @@ function SettingsPanel({ profile, userId, onSaved }: {
           <div className="flex justify-end mt-3">
             <button
               onClick={savePrefs}
-              disabled={savingPrefs || (pace === profile?.preferred_pace && style === profile?.preferred_style && lunaNotes.trim() === (profile?.luna_notes || "").trim())}
+              disabled={
+                savingPrefs ||
+                (pace === profile?.preferred_pace &&
+                  style === profile?.preferred_style &&
+                  lunaNotes.trim() === (profile?.luna_notes || "").trim())
+              }
               className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
             >
-              {savingPrefs ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              {savingPrefs ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Check className="w-3 h-3" />
+              )}
               SAVE PREFERENCES
             </button>
           </div>
@@ -636,10 +998,12 @@ function SettingsPanel({ profile, userId, onSaved }: {
         {/* Danger zone */}
         <div className="md:col-span-2 border-t border-destructive/30 pt-5">
           <label className="text-[10px] font-bold tracking-widest text-destructive uppercase flex items-center gap-2">
-            <AlertTriangle className="w-3 h-3" />Danger Zone
+            <AlertTriangle className="w-3 h-3" />
+            Danger Zone
           </label>
           <p className="text-[11px] text-muted-foreground mt-1 mb-3">
-            Clears your username and signs you out. Full deletion of historical battle/forum data requires emailing support.
+            Clears your username and signs you out. Full deletion of historical battle/forum data
+            requires emailing support.
           </p>
           <button
             onClick={deleteAccount}
@@ -647,7 +1011,7 @@ function SettingsPanel({ profile, userId, onSaved }: {
               "px-4 py-2 text-xs font-bold tracking-widest border transition-colors",
               confirmDelete
                 ? "border-destructive bg-destructive text-destructive-foreground"
-                : "border-destructive/40 text-destructive hover:bg-destructive/10"
+                : "border-destructive/40 text-destructive hover:bg-destructive/10",
             )}
           >
             {confirmDelete ? "CONFIRM — CLEAR & SIGN OUT" : "CLEAR ACCOUNT DATA"}
@@ -660,12 +1024,20 @@ function SettingsPanel({ profile, userId, onSaved }: {
 
 /* =================== Avatar Uploader =================== */
 
-function AvatarUploader({ userId, avatarUrl, equippedSlug, onUploaded }: {
-  userId: string; avatarUrl: string | null; equippedSlug: string | null; onUploaded: () => void;
+function AvatarUploader({
+  userId,
+  avatarUrl,
+  equippedSlug,
+  onUploaded,
+}: {
+  userId: string;
+  avatarUrl: string | null;
+  equippedSlug: string | null;
+  onUploaded: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const equipped = equippedSlug ? ECLIPTARS.find((e) => e.slug === equippedSlug) : null;
-  const equippedArch = equipped ? ARCHETYPES[equipped.archetype as MonsterArchetypeKey] : null;
+  const equippedArch = equipped ? ARCHETYPES[equipped.archetype] : null;
   const FallbackIcon = equipped?.icon ?? User;
 
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -677,12 +1049,19 @@ function AvatarUploader({ userId, avatarUrl, equippedSlug, onUploaded }: {
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
     const path = `${userId}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
-      cacheControl: "3600", upsert: true, contentType: file.type,
+      cacheControl: "3600",
+      upsert: true,
+      contentType: file.type,
     });
-    if (upErr) { setUploading(false); return toast.error(upErr.message); }
+    if (upErr) {
+      setUploading(false);
+      return toast.error(upErr.message);
+    }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error: dbErr } = await supabase.from("user_profiles")
-      .update({ avatar_url: pub.publicUrl }).eq("user_id", userId);
+    const { error: dbErr } = await supabase
+      .from("user_profiles")
+      .update({ avatar_url: pub.publicUrl })
+      .eq("user_id", userId);
     setUploading(false);
     if (dbErr) return toast.error(dbErr.message);
     toast.success("Profile picture updated");
@@ -691,19 +1070,34 @@ function AvatarUploader({ userId, avatarUrl, equippedSlug, onUploaded }: {
 
   return (
     <div className="relative shrink-0">
-      <div className={cn(
-        "w-20 h-20 rounded-full border-2 flex items-center justify-center overflow-hidden bg-secondary/30",
-        equippedArch ? equippedArch.borderColor : "border-neon-purple/40"
-      )}>
+      <div
+        className={cn(
+          "w-20 h-20 rounded-full border-2 flex items-center justify-center overflow-hidden bg-secondary/30",
+          equippedArch ? equippedArch.borderColor : "border-neon-purple/40",
+        )}
+      >
         {avatarUrl ? (
           <img src={avatarUrl} alt="Your avatar" className="w-full h-full object-cover" />
         ) : (
           <FallbackIcon className={cn("w-10 h-10", equippedArch?.color ?? "text-neon-purple")} />
         )}
       </div>
-      <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-neon-purple text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity shadow-lg" title="Change profile picture">
-        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-        <input type="file" accept="image/*" className="sr-only" onChange={onPick} disabled={uploading} />
+      <label
+        className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-neon-purple text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity shadow-lg"
+        title="Change profile picture"
+      >
+        {uploading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Camera className="w-3.5 h-3.5" />
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={onPick}
+          disabled={uploading}
+        />
       </label>
     </div>
   );
@@ -711,8 +1105,14 @@ function AvatarUploader({ userId, avatarUrl, equippedSlug, onUploaded }: {
 
 /* =================== Embedded Collection (click-to-equip) =================== */
 
-function CollectionSection({ equippedSlug, userId, onEquipped }: {
-  equippedSlug: string | null; userId: string; onEquipped: () => void;
+function CollectionSection({
+  equippedSlug,
+  userId,
+  onEquipped,
+}: {
+  equippedSlug: string | null;
+  userId: string;
+  onEquipped: () => void;
 }) {
   const { slugs, loading } = useOwnedEcliptars();
   const total = ECLIPTARS.length;
@@ -722,7 +1122,8 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
   const equip = async (slug: string) => {
     if (!slugs.has(slug)) return;
     const next = equippedSlug === slug ? null : slug;
-    const { error } = await supabase.from("user_profiles")
+    const { error } = await supabase
+      .from("user_profiles")
       .update({ equipped_ecliptar: next })
       .eq("user_id", userId);
     if (error) return toast.error(error.message);
@@ -735,12 +1136,17 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
       <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 border border-neon-purple/30 bg-neon-purple/10 text-neon-purple text-[10px] font-bold tracking-widest mb-2">
-            <Sparkles className="w-3 h-3" />ECLIPTAR COLLECTION
+            <Sparkles className="w-3 h-3" />
+            ECLIPTAR COLLECTION
           </div>
           <h2 className="text-3xl font-bold font-display tracking-tight">My Ecliptars</h2>
-          <p className="text-xs text-muted-foreground mt-1">Click any owned ecliptar to equip it as your public avatar.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Click any owned ecliptar to equip it as your public avatar.
+          </p>
         </div>
-        <p className="text-sm font-bold tracking-widest text-neon-purple">{owned} / {total} COLLECTED</p>
+        <p className="text-sm font-bold tracking-widest text-neon-purple">
+          {owned} / {total} COLLECTED
+        </p>
       </div>
 
       {loading ? (
@@ -758,14 +1164,22 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                   <div className="flex items-center gap-3">
                     <arch.icon className={cn("w-6 h-6", arch.color)} />
                     <div>
-                      <h3 className={cn("text-base font-bold font-display", arch.color)}>{arch.name}</h3>
-                      <p className="text-[10px] font-bold tracking-widest text-muted-foreground">{arch.passive}</p>
+                      <h3 className={cn("text-base font-bold font-display", arch.color)}>
+                        {arch.name}
+                      </h3>
+                      <p className="text-[10px] font-bold tracking-widest text-muted-foreground">
+                        {arch.passive}
+                      </p>
                     </div>
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-bold tracking-widest px-2 py-1 rounded-full border",
-                    ownedCount === eclips.length ? "border-primary/50 text-primary" : "border-border text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold tracking-widest px-2 py-1 rounded-full border",
+                      ownedCount === eclips.length
+                        ? "border-primary/50 text-primary"
+                        : "border-border text-muted-foreground",
+                    )}
+                  >
                     {ownedCount}/{eclips.length}
                   </span>
                 </div>
@@ -779,11 +1193,20 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                         type="button"
                         onClick={() => equip(e.slug)}
                         disabled={!isOwned}
-                        title={!isOwned ? "Locked — claim on the Expedition" : isEquipped ? "Click to unequip" : "Click to equip as avatar"}
+                        title={
+                          !isOwned
+                            ? "Locked — claim on the Expedition"
+                            : isEquipped
+                              ? "Click to unequip"
+                              : "Click to equip as avatar"
+                        }
                         className={cn(
                           "glass-panel p-4 border text-center relative overflow-hidden transition-all",
-                          isOwned ? `${arch.borderColor} hover:scale-[1.03] cursor-pointer` : "border-border/30 opacity-60 cursor-not-allowed",
-                          isEquipped && "ring-2 ring-neon-purple ring-offset-2 ring-offset-background shadow-[0_0_24px_rgba(168,85,247,0.55)] bg-neon-purple/15 scale-[1.02]"
+                          isOwned
+                            ? `${arch.borderColor} hover:scale-[1.03] cursor-pointer`
+                            : "border-border/30 opacity-60 cursor-not-allowed",
+                          isEquipped &&
+                            "ring-2 ring-neon-purple ring-offset-2 ring-offset-background shadow-[0_0_24px_rgba(168,85,247,0.55)] bg-neon-purple/15 scale-[1.02]",
                         )}
                       >
                         {!isOwned && (
@@ -793,12 +1216,28 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
                         )}
                         {isEquipped && (
                           <div className="absolute top-1 right-1 z-10 bg-neon-purple text-primary-foreground text-[9px] font-bold tracking-widest px-2 py-0.5 inline-flex items-center gap-1 shadow-md">
-                            <Check className="w-2.5 h-2.5" />EQUIPPED
+                            <Check className="w-2.5 h-2.5" />
+                            EQUIPPED
                           </div>
                         )}
-                        <e.icon className={cn("w-10 h-10 mx-auto mb-2", isOwned ? arch.color : "text-muted-foreground", isEquipped && "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]")} />
-                        <div className={cn("text-sm font-bold font-display", isOwned ? arch.color : "text-muted-foreground")}>{e.name}</div>
-                        <div className="text-[9px] tracking-widest text-muted-foreground mt-1">{arch.name.toUpperCase()}</div>
+                        <e.icon
+                          className={cn(
+                            "w-10 h-10 mx-auto mb-2",
+                            isOwned ? arch.color : "text-muted-foreground",
+                            isEquipped && "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]",
+                          )}
+                        />
+                        <div
+                          className={cn(
+                            "text-sm font-bold font-display",
+                            isOwned ? arch.color : "text-muted-foreground",
+                          )}
+                        >
+                          {e.name}
+                        </div>
+                        <div className="text-[9px] tracking-widest text-muted-foreground mt-1">
+                          {arch.name.toUpperCase()}
+                        </div>
                       </button>
                     );
                   })}
@@ -810,7 +1249,10 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
       )}
 
       <div className="text-center mt-10">
-        <Link to="/progress" className="inline-block px-6 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity">
+        <Link
+          to="/progress"
+          className="inline-block px-6 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity"
+        >
           UNLOCK MORE ON THE TROPHY ROAD
         </Link>
       </div>
@@ -820,21 +1262,51 @@ function CollectionSection({ equippedSlug, userId, onEquipped }: {
 
 /* =================== Small UI helpers =================== */
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  color: string;
+}) {
   return (
     <div className="glass-panel p-4">
-      <div className={`flex items-center gap-2 mb-2 ${color}`}>{icon}<span className="text-[10px] font-bold tracking-widest uppercase">{label}</span></div>
+      <div className={`flex items-center gap-2 mb-2 ${color}`}>
+        {icon}
+        <span className="text-[10px] font-bold tracking-widest uppercase">{label}</span>
+      </div>
       <p className={`text-2xl font-bold font-display tabular-nums ${color}`}>{value}</p>
     </div>
   );
 }
 
-function Card({ title, icon, count, children }: { title: string; icon: React.ReactNode; count: number | null; children: React.ReactNode }) {
+function Card({
+  title,
+  icon,
+  count,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  count: number | null;
+  children: React.ReactNode;
+}) {
   return (
     <div className="glass-panel p-5">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">{icon}<h3 className="font-display font-bold text-sm tracking-tight uppercase">{title}</h3></div>
-        {count !== null && <span className="text-[10px] font-bold tracking-widest text-muted-foreground">{count}</span>}
+        <div className="flex items-center gap-2">
+          {icon}
+          <h3 className="font-display font-bold text-sm tracking-tight uppercase">{title}</h3>
+        </div>
+        {count !== null && (
+          <span className="text-[10px] font-bold tracking-widest text-muted-foreground">
+            {count}
+          </span>
+        )}
       </div>
       {children}
     </div>
@@ -859,7 +1331,13 @@ function Row({ label, value }: { label: string; value: number }) {
   );
 }
 
-function PrefInfo({ title, options }: { title: string; options: { name: string; desc: string }[] }) {
+function PrefInfo({
+  title,
+  options,
+}: {
+  title: string;
+  options: { name: string; desc: string }[];
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -872,7 +1350,9 @@ function PrefInfo({ title, options }: { title: string; options: { name: string; 
         </button>
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-72 text-xs space-y-2">
-        <p className="text-[10px] font-bold tracking-widest text-neon-purple">{title.toUpperCase()}</p>
+        <p className="text-[10px] font-bold tracking-widest text-neon-purple">
+          {title.toUpperCase()}
+        </p>
         <ul className="space-y-2">
           {options.map((o) => (
             <li key={o.name}>

@@ -1,7 +1,23 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, GripVertical, Trash2, Type, Youtube, Image as ImageIcon, ListChecks, Loader2, Eye, Globe, EyeOff, Save, AlertTriangle, Check } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  GripVertical,
+  Trash2,
+  Type,
+  Youtube,
+  Image as ImageIcon,
+  ListChecks,
+  Loader2,
+  Eye,
+  Globe,
+  EyeOff,
+  Save,
+  AlertTriangle,
+  Check,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -15,17 +31,31 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId/edit")({
   head: () => ({
     meta: [
       { title: "Course Editor – Eclipta" },
-      { name: "description", content: "Build out your course modules — lessons, videos, images, and quizzes." },
+      {
+        name: "description",
+        content: "Build out your course modules — lessons, videos, images, and quizzes.",
+      },
     ],
   }),
   component: CourseEditor,
 });
 
-type Course = {
-  id: string; user_id: string; slug: string; title: string; summary: string | null;
-  level: string; status: string; cover_image_url: string | null;
-};
-type Module = { id: string; course_id: string; title: string; position: number };
+interface Course {
+  id: string;
+  user_id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  level: string;
+  status: string;
+  cover_image_url: string | null;
+}
+interface Module {
+  id: string;
+  course_id: string;
+  title: string;
+  position: number;
+}
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -67,7 +97,7 @@ function CourseEditor() {
       navigate({ to: "/profile" });
       return;
     }
-    setCourse(c as Course);
+    setCourse(c);
 
     const { data: m } = await supabase
       .from("course_modules")
@@ -82,10 +112,13 @@ function CourseEditor() {
       const { data: b } = await supabase
         .from("course_blocks")
         .select("id,module_id,type,data,position")
-        .in("module_id", mods.map(x => x.id))
+        .in(
+          "module_id",
+          mods.map((x) => x.id),
+        )
         .order("position");
       const grouped: Record<string, CourseBlock[]> = {};
-      (b ?? []).flatMap(toCourseBlock).forEach(blk => {
+      (b ?? []).flatMap(toCourseBlock).forEach((blk) => {
         (grouped[blk.module_id] ||= []).push(blk);
       });
       setBlocks(grouped);
@@ -93,12 +126,16 @@ function CourseEditor() {
     setLoading(false);
   }, [courseId, user, navigate, activeModuleId]);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   if (!user || loading || !course) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="pt-32 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-neon-purple" /></div>
+        <div className="pt-32 flex justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-neon-purple" />
+        </div>
       </div>
     );
   }
@@ -120,7 +157,9 @@ function CourseEditor() {
     }
     const next = course.status === "published" ? "draft" : "published";
     await updateCourseField({ status: next });
-    toast.success(next === "published" ? "Course published — visible to everyone" : "Course unpublished");
+    toast.success(
+      next === "published" ? "Course published — visible to everyone" : "Course unpublished",
+    );
   };
 
   const addModule = async () => {
@@ -131,21 +170,21 @@ function CourseEditor() {
       .select("id,course_id,title,position")
       .single();
     if (error) return toast.error(error.message);
-    const newMod = data as Module;
+    const newMod = data;
     setModules([...modules, newMod]);
     setActiveModuleId(newMod.id);
   };
 
   const renameModule = async (id: string, title: string) => {
-    setModules(prev => prev.map(m => m.id === id ? { ...m, title } : m));
+    setModules((prev) => prev.map((m) => (m.id === id ? { ...m, title } : m)));
     await supabase.from("course_modules").update({ title }).eq("id", id);
   };
 
   const deleteModule = async (id: string) => {
     if (!confirm("Delete this module and all its content?")) return;
     await supabase.from("course_modules").delete().eq("id", id);
-    setModules(prev => prev.filter(m => m.id !== id));
-    if (activeModuleId === id) setActiveModuleId(modules.find(m => m.id !== id)?.id || null);
+    setModules((prev) => prev.filter((m) => m.id !== id));
+    if (activeModuleId === id) setActiveModuleId(modules.find((m) => m.id !== id)?.id || null);
     toast.success("Module deleted");
   };
 
@@ -159,20 +198,20 @@ function CourseEditor() {
       .select("id,module_id,type,data,position")
       .single();
     if (error) return toast.error(error.message);
-    setBlocks(prev => ({
+    setBlocks((prev) => ({
       ...prev,
       [activeModuleId]: [...(prev[activeModuleId] || []), ...toCourseBlock(data)],
     }));
   };
 
   const updateBlock = async (id: string, data: CourseBlockData) => {
-    setBlocks(prev => {
+    setBlocks((prev) => {
       const copy = { ...prev };
       for (const mid of Object.keys(copy)) {
         // Each editor only ever emits the payload matching its own block's
         // type, so the discriminant and the payload stay in step. The
         // compiler can't see that across the callback boundary.
-        copy[mid] = copy[mid].map(b => b.id === id ? { ...b, data } as CourseBlock : b);
+        copy[mid] = copy[mid].map((b) => (b.id === id ? ({ ...b, data } as CourseBlock) : b));
       }
       return copy;
     });
@@ -181,7 +220,7 @@ function CourseEditor() {
 
   const deleteBlock = async (id: string, moduleId: string) => {
     await supabase.from("course_blocks").delete().eq("id", id);
-    setBlocks(prev => ({ ...prev, [moduleId]: prev[moduleId].filter(b => b.id !== id) }));
+    setBlocks((prev) => ({ ...prev, [moduleId]: prev[moduleId].filter((b) => b.id !== id) }));
   };
 
   const activeBlocks = activeModuleId ? blocks[activeModuleId] || [] : [];
@@ -190,22 +229,28 @@ function CourseEditor() {
     <div className="min-h-screen bg-background text-foreground antialiased">
       <div className="pt-24 pb-16 px-6">
         <div className="max-w-6xl mx-auto">
-          <Link to="/profile" className="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground hover:text-neon-purple mb-6">
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground hover:text-neon-purple mb-6"
+          >
             <ArrowLeft className="w-3 h-3" /> MY COURSES
           </Link>
 
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
             className="glass-panel p-6 mb-6 flex flex-col md:flex-row md:items-center gap-4 justify-between"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 border ${
-                  course.status === "published"
-                    ? "border-primary/40 text-primary bg-primary/10"
-                    : "border-neon-cyan/40 text-neon-cyan bg-neon-cyan/10"
-                }`}>
+                <span
+                  className={`text-[10px] font-bold tracking-widest px-2 py-0.5 border ${
+                    course.status === "published"
+                      ? "border-primary/40 text-primary bg-primary/10"
+                      : "border-neon-cyan/40 text-neon-cyan bg-neon-cyan/10"
+                  }`}
+                >
                   {course.status.toUpperCase()}
                 </span>
                 <span className="text-[10px] font-bold tracking-widest text-muted-foreground border border-border px-2 py-0.5">
@@ -214,14 +259,14 @@ function CourseEditor() {
               </div>
               <input
                 value={course.title}
-                onChange={e => setCourse({ ...course, title: e.target.value })}
-                onBlur={e => updateCourseField({ title: e.target.value })}
+                onChange={(e) => setCourse({ ...course, title: e.target.value })}
+                onBlur={(e) => updateCourseField({ title: e.target.value })}
                 className="w-full bg-transparent text-2xl md:text-3xl font-display font-bold tracking-tight focus:outline-none focus:bg-secondary/30 px-1 -mx-1"
               />
               <textarea
                 value={course.summary || ""}
-                onChange={e => setCourse({ ...course, summary: e.target.value })}
-                onBlur={e => updateCourseField({ summary: e.target.value })}
+                onChange={(e) => setCourse({ ...course, summary: e.target.value })}
+                onBlur={(e) => updateCourseField({ summary: e.target.value })}
                 placeholder="Short summary that learners see on the course card…"
                 rows={2}
                 className="w-full mt-2 bg-transparent text-sm text-muted-foreground focus:outline-none focus:bg-secondary/30 px-1 -mx-1 resize-none"
@@ -230,7 +275,8 @@ function CourseEditor() {
             <div className="flex gap-2 shrink-0">
               {course.status === "published" && (
                 <Link
-                  to="/courses/$slug" params={{ slug: course.slug }}
+                  to="/courses/$slug"
+                  params={{ slug: course.slug }}
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5" /> VIEW
@@ -244,7 +290,15 @@ function CourseEditor() {
                     : "bg-neon-purple text-primary-foreground hover:opacity-90 neon-glow-purple"
                 }`}
               >
-                {course.status === "published" ? <><EyeOff className="w-3.5 h-3.5" /> UNPUBLISH</> : <><Globe className="w-3.5 h-3.5" /> PUBLISH</>}
+                {course.status === "published" ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5" /> UNPUBLISH
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-3.5 h-3.5" /> PUBLISH
+                  </>
+                )}
               </button>
             </div>
           </motion.div>
@@ -253,8 +307,14 @@ function CourseEditor() {
             {/* Module sidebar */}
             <div className="glass-panel p-4 h-fit md:sticky md:top-24">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display font-bold text-xs tracking-widest text-muted-foreground">MODULES</h3>
-                <button onClick={addModule} className="text-neon-purple hover:text-neon-pink transition-colors" title="Add module">
+                <h3 className="font-display font-bold text-xs tracking-widest text-muted-foreground">
+                  MODULES
+                </h3>
+                <button
+                  onClick={addModule}
+                  className="text-neon-purple hover:text-neon-pink transition-colors"
+                  title="Add module"
+                >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -269,72 +329,116 @@ function CourseEditor() {
                         : "text-muted-foreground hover:bg-secondary/40 border-l-2 border-transparent"
                     }`}
                   >
-                    <span className="font-mono text-[10px] mt-0.5">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="font-mono text-[10px] mt-0.5">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
                     <span className="flex-1 line-clamp-2 font-medium">{m.title}</span>
                   </button>
                 ))}
               </div>
               {modules.length === 0 && (
-                <p className="text-xs text-muted-foreground italic">No modules yet. Click + to add one.</p>
+                <p className="text-xs text-muted-foreground italic">
+                  No modules yet. Click + to add one.
+                </p>
               )}
             </div>
 
             {/* Module editor */}
             <div className="space-y-4">
-              {activeModuleId && (() => {
-                const mod = modules.find(m => m.id === activeModuleId);
-                if (!mod) return null;
-                return (
-                  <>
-                    <div className="glass-panel p-5">
-                      <label className="block text-[10px] font-bold tracking-widest text-muted-foreground mb-2">MODULE TITLE</label>
-                      <div className="flex gap-2">
-                        <input
-                          value={mod.title}
-                          onChange={e => setModules(prev => prev.map(x => x.id === mod.id ? { ...x, title: e.target.value } : x))}
-                          onBlur={e => renameModule(mod.id, e.target.value)}
-                          className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus:outline-none focus:ring-1 focus:ring-neon-purple"
-                        />
-                        <button
-                          onClick={() => deleteModule(mod.id)}
-                          className="px-3 py-2 border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
-                          title="Delete module"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Block list */}
-                    <div className="space-y-3">
-                      {activeBlocks.map((b) => (
-                        <BlockEditor key={b.id} block={b} onChange={(data) => updateBlock(b.id, data)} onDelete={() => deleteBlock(b.id, mod.id)} userId={user.id} />
-                      ))}
-                      {activeBlocks.length === 0 && (
-                        <div className="glass-panel p-8 text-center text-sm text-muted-foreground">
-                          No content yet. Add a block below.
+              {activeModuleId &&
+                (() => {
+                  const mod = modules.find((m) => m.id === activeModuleId);
+                  if (!mod) return null;
+                  return (
+                    <>
+                      <div className="glass-panel p-5">
+                        <label className="block text-[10px] font-bold tracking-widest text-muted-foreground mb-2">
+                          MODULE TITLE
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            value={mod.title}
+                            onChange={(e) =>
+                              setModules((prev) =>
+                                prev.map((x) =>
+                                  x.id === mod.id ? { ...x, title: e.target.value } : x,
+                                ),
+                              )
+                            }
+                            onBlur={(e) => renameModule(mod.id, e.target.value)}
+                            className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                          />
+                          <button
+                            onClick={() => deleteModule(mod.id)}
+                            className="px-3 py-2 border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
+                            title="Delete module"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Add block toolbar */}
-                    <div className="glass-panel p-4">
-                      <p className="text-[10px] font-bold tracking-widest text-muted-foreground mb-3">ADD CONTENT BLOCK</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <BlockButton icon={<Type className="w-4 h-4" />} label="TEXT" onClick={() => addBlock("text")} />
-                        <BlockButton icon={<Youtube className="w-4 h-4" />} label="VIDEO" onClick={() => addBlock("youtube")} />
-                        <BlockButton icon={<ImageIcon className="w-4 h-4" />} label="IMAGE" onClick={() => addBlock("image")} />
-                        <BlockButton icon={<ListChecks className="w-4 h-4" />} label="QUIZ" onClick={() => addBlock("quiz")} />
                       </div>
-                    </div>
-                  </>
-                );
-              })()}
+
+                      {/* Block list */}
+                      <div className="space-y-3">
+                        {activeBlocks.map((b) => (
+                          <BlockEditor
+                            key={b.id}
+                            block={b}
+                            onChange={(data) => updateBlock(b.id, data)}
+                            onDelete={() => deleteBlock(b.id, mod.id)}
+                            userId={user.id}
+                          />
+                        ))}
+                        {activeBlocks.length === 0 && (
+                          <div className="glass-panel p-8 text-center text-sm text-muted-foreground">
+                            No content yet. Add a block below.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add block toolbar */}
+                      <div className="glass-panel p-4">
+                        <p className="text-[10px] font-bold tracking-widest text-muted-foreground mb-3">
+                          ADD CONTENT BLOCK
+                        </p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <BlockButton
+                            icon={<Type className="w-4 h-4" />}
+                            label="TEXT"
+                            onClick={() => addBlock("text")}
+                          />
+                          <BlockButton
+                            icon={<Youtube className="w-4 h-4" />}
+                            label="VIDEO"
+                            onClick={() => addBlock("youtube")}
+                          />
+                          <BlockButton
+                            icon={<ImageIcon className="w-4 h-4" />}
+                            label="IMAGE"
+                            onClick={() => addBlock("image")}
+                          />
+                          <BlockButton
+                            icon={<ListChecks className="w-4 h-4" />}
+                            label="QUIZ"
+                            onClick={() => addBlock("quiz")}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               {!activeModuleId && modules.length === 0 && (
                 <div className="glass-panel p-10 text-center">
-                  <h3 className="font-display font-bold text-lg mb-2">Start with your first module</h3>
-                  <p className="text-sm text-muted-foreground mb-4">A module is one chapter or section of your course.</p>
-                  <button onClick={addModule} className="px-4 py-2 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                  <h3 className="font-display font-bold text-lg mb-2">
+                    Start with your first module
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    A module is one chapter or section of your course.
+                  </p>
+                  <button
+                    onClick={addModule}
+                    className="px-4 py-2 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity inline-flex items-center gap-2"
+                  >
                     <Plus className="w-3.5 h-3.5" /> ADD MODULE
                   </button>
                 </div>
@@ -347,19 +451,36 @@ function CourseEditor() {
   );
 }
 
-function BlockButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+function BlockButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
       className="flex items-center justify-center gap-2 py-3 border border-border hover:border-neon-purple/60 hover:text-neon-purple text-muted-foreground transition-colors text-xs font-bold tracking-widest"
     >
-      {icon}{label}
+      {icon}
+      {label}
     </button>
   );
 }
 
-function BlockEditor({ block, onChange, onDelete, userId }: {
-  block: CourseBlock; onChange: (data: CourseBlockData) => void; onDelete: () => void; userId: string;
+function BlockEditor({
+  block,
+  onChange,
+  onDelete,
+  userId,
+}: {
+  block: CourseBlock;
+  onChange: (data: CourseBlockData) => void;
+  onDelete: () => void;
+  userId: string;
 }) {
   return (
     <div className="glass-panel p-4 group relative">
@@ -371,13 +492,19 @@ function BlockEditor({ block, onChange, onDelete, userId }: {
           {block.type === "image" && "IMAGE"}
           {block.type === "quiz" && "QUIZ"}
         </span>
-        <button onClick={onDelete} className="opacity-40 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-1 transition-all" title="Delete block">
+        <button
+          onClick={onDelete}
+          className="opacity-40 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-1 transition-all"
+          title="Delete block"
+        >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
       {block.type === "text" && <TextBlockEditor data={block.data} onChange={onChange} />}
       {block.type === "youtube" && <YouTubeBlockEditor data={block.data} onChange={onChange} />}
-      {block.type === "image" && <ImageBlockEditor data={block.data} onChange={onChange} userId={userId} />}
+      {block.type === "image" && (
+        <ImageBlockEditor data={block.data} onChange={onChange} userId={userId} />
+      )}
       {block.type === "quiz" && <QuizBlockEditor data={block.data} onChange={onChange} />}
     </div>
   );
@@ -388,7 +515,7 @@ function TextBlockEditor({ data, onChange }: { data: TextBlockData; onChange: (d
   return (
     <textarea
       value={text}
-      onChange={e => setText(e.target.value)}
+      onChange={(e) => setText(e.target.value)}
       onBlur={() => text !== data.text && onChange({ ...data, text })}
       placeholder="Write your lesson… Markdown-friendly. Use **bold**, _italic_, and line breaks for emphasis."
       rows={6}
@@ -405,7 +532,7 @@ function YouTubeBlockEditor({ data, onChange }: { data: MediaBlockData; onChange
     <div className="space-y-2">
       <input
         value={url}
-        onChange={e => setUrl(e.target.value)}
+        onChange={(e) => setUrl(e.target.value)}
         onBlur={() => url !== data.url && onChange({ ...data, url })}
         placeholder="Paste YouTube URL or video ID…"
         className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
@@ -421,11 +548,13 @@ function YouTubeBlockEditor({ data, onChange }: { data: MediaBlockData; onChange
           />
         </div>
       ) : url ? (
-        <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" /> Couldn't detect a YouTube video ID.</p>
+        <p className="text-xs text-destructive flex items-center gap-1.5">
+          <AlertTriangle className="w-3 h-3" /> Couldn't detect a YouTube video ID.
+        </p>
       ) : null}
       <input
         value={caption}
-        onChange={e => setCaption(e.target.value)}
+        onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== data.caption && onChange({ ...data, caption })}
         placeholder="Optional caption…"
         className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
@@ -434,7 +563,15 @@ function YouTubeBlockEditor({ data, onChange }: { data: MediaBlockData; onChange
   );
 }
 
-function ImageBlockEditor({ data, onChange, userId }: { data: MediaBlockData; onChange: (d: MediaBlockData) => void; userId: string }) {
+function ImageBlockEditor({
+  data,
+  onChange,
+  userId,
+}: {
+  data: MediaBlockData;
+  onChange: (d: MediaBlockData) => void;
+  userId: string;
+}) {
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState(data.caption || "");
 
@@ -445,7 +582,9 @@ function ImageBlockEditor({ data, onChange, userId }: { data: MediaBlockData; on
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
     const path = `${userId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("course-images").upload(path, file, {
-      cacheControl: "3600", upsert: false, contentType: file.type,
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
     });
     setUploading(false);
     if (error) return toast.error(error.message);
@@ -458,7 +597,11 @@ function ImageBlockEditor({ data, onChange, userId }: { data: MediaBlockData; on
     <div className="space-y-2">
       {data.url ? (
         <div className="relative">
-          <img src={data.url} alt={caption || "Course image"} className="w-full max-h-96 object-contain bg-black/20 border border-border" />
+          <img
+            src={data.url}
+            alt={caption || "Course image"}
+            className="w-full max-h-96 object-contain bg-black/20 border border-border"
+          />
           <button
             onClick={() => onChange({ ...data, url: "" })}
             className="absolute top-2 right-2 px-2 py-1 text-[10px] font-bold tracking-widest bg-background/80 border border-border hover:border-destructive hover:text-destructive transition-colors"
@@ -468,19 +611,27 @@ function ImageBlockEditor({ data, onChange, userId }: { data: MediaBlockData; on
         </div>
       ) : (
         <label className="flex flex-col items-center justify-center gap-2 py-10 border-2 border-dashed border-border hover:border-neon-purple/60 cursor-pointer transition-colors">
-          {uploading ? <Loader2 className="w-5 h-5 animate-spin text-neon-purple" /> : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
-          <span className="text-xs font-bold tracking-widest text-muted-foreground">{uploading ? "UPLOADING…" : "CLICK TO UPLOAD IMAGE"}</span>
+          {uploading ? (
+            <Loader2 className="w-5 h-5 animate-spin text-neon-purple" />
+          ) : (
+            <ImageIcon className="w-6 h-6 text-muted-foreground" />
+          )}
+          <span className="text-xs font-bold tracking-widest text-muted-foreground">
+            {uploading ? "UPLOADING…" : "CLICK TO UPLOAD IMAGE"}
+          </span>
           <span className="text-[10px] text-muted-foreground">PNG, JPG, WEBP up to 4 MB</span>
           <input
-            type="file" accept="image/*" className="sr-only"
-            onChange={e => e.target.files?.[0] && upload(e.target.files[0])}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
             disabled={uploading}
           />
         </label>
       )}
       <input
         value={caption}
-        onChange={e => setCaption(e.target.value)}
+        onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== data.caption && onChange({ ...data, caption })}
         placeholder="Optional caption…"
         className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
@@ -492,7 +643,9 @@ function ImageBlockEditor({ data, onChange, userId }: { data: MediaBlockData; on
 function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d: QuizBlockData) => void }) {
   const [question, setQuestion] = useState(data.question || "");
   const [options, setOptions] = useState<string[]>(data.options || ["", "", "", ""]);
-  const [correctIndex, setCorrectIndex] = useState<number>(typeof data.correctIndex === "number" ? data.correctIndex : 0);
+  const [correctIndex, setCorrectIndex] = useState<number>(
+    typeof data.correctIndex === "number" ? data.correctIndex : 0,
+  );
 
   const commit = (next: Partial<{ question: string; options: string[]; correctIndex: number }>) => {
     const merged = {
@@ -507,7 +660,7 @@ function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d
     <div className="space-y-3">
       <input
         value={question}
-        onChange={e => setQuestion(e.target.value)}
+        onChange={(e) => setQuestion(e.target.value)}
         onBlur={() => question !== data.question && commit({ question })}
         placeholder="Question…"
         className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus:outline-none focus:ring-1 focus:ring-neon-purple"
@@ -516,9 +669,14 @@ function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d
         {options.map((opt, i) => (
           <div key={i} className="flex items-center gap-2">
             <button
-              onClick={() => { setCorrectIndex(i); commit({ correctIndex: i }); }}
+              onClick={() => {
+                setCorrectIndex(i);
+                commit({ correctIndex: i });
+              }}
               className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                correctIndex === i ? "border-neon-cyan bg-neon-cyan/20" : "border-border hover:border-neon-cyan/40"
+                correctIndex === i
+                  ? "border-neon-cyan bg-neon-cyan/20"
+                  : "border-border hover:border-neon-cyan/40"
               }`}
               title={correctIndex === i ? "Correct answer" : "Mark as correct"}
             >
@@ -526,8 +684,10 @@ function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d
             </button>
             <input
               value={opt}
-              onChange={e => {
-                const next = [...options]; next[i] = e.target.value; setOptions(next);
+              onChange={(e) => {
+                const next = [...options];
+                next[i] = e.target.value;
+                setOptions(next);
               }}
               onBlur={() => commit({ options })}
               placeholder={`Option ${i + 1}`}
@@ -536,7 +696,9 @@ function QuizBlockEditor({ data, onChange }: { data: QuizBlockData; onChange: (d
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground tracking-widest">CLICK A CIRCLE TO MARK THE CORRECT ANSWER</p>
+      <p className="text-[10px] text-muted-foreground tracking-widest">
+        CLICK A CIRCLE TO MARK THE CORRECT ANSWER
+      </p>
     </div>
   );
 }

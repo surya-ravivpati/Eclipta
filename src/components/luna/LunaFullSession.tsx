@@ -1,10 +1,28 @@
 import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Send, Coffee, ArrowLeft, RotateCcw, Zap, Monitor, Loader2, X, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
+import {
+  Send,
+  Coffee,
+  ArrowLeft,
+  RotateCcw,
+  Zap,
+  Monitor,
+  Loader2,
+  X,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  ImagePlus,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { LunaMark } from "./LunaMark";
 import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
-import { getAccuracy, detectFatigue, resetSession as resetLunaSessionContext } from "@/lib/luna-context";
+import {
+  getAccuracy,
+  detectFatigue,
+  resetSession as resetLunaSessionContext,
+} from "@/lib/luna-context";
 import { useLunaSessionTimer } from "@/hooks/use-luna-session-timer";
 import { LunaMarkdown } from "./LunaMarkdown";
 import { useXpMilestones } from "@/hooks/use-xp-milestones";
@@ -18,27 +36,30 @@ import "./LunaSession.css";
 
 type LunaMessage = ConversationMessage;
 
-const INTRO_CONTENT = "Welcome to a deep learning session. 🌙 I'm Luna, your Socratic tutor. Tell me what you're working on, or pick a topic, and I'll guide you through it step by step. No shortcuts, just real understanding.";
-const BREAK_MESSAGE = "You've been pushing through tough spots. 🌙 Take 5 minutes, grab some water, then come back fresh. I'll be here.";
+const INTRO_CONTENT =
+  "Welcome to a deep learning session. 🌙 I'm Luna, your Socratic tutor. Tell me what you're working on, or pick a topic, and I'll guide you through it step by step. No shortcuts, just real understanding.";
+const BREAK_MESSAGE =
+  "You've been pushing through tough spots. 🌙 Take 5 minutes, grab some water, then come back fresh. I'll be here.";
 
 export function LunaFullSession() {
-  const { messages, setMessages, clear: clearHistory } = useLunaHistory() as {
-    messages: LunaMessage[];
-    setMessages: React.Dispatch<React.SetStateAction<LunaMessage[]>>;
-    clear: () => void;
-  };
+  const { messages, setMessages, clear: clearHistory } = useLunaHistory();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const {
-    input, setInput,
+    input,
+    setInput,
     isStreaming,
-    pendingImage, setPendingImage,
+    pendingImage,
+    setPendingImage,
     capturing,
     handleScreenShare,
-    send, retryLast, abort,
+    send,
+    retryLast,
+    abort,
   } = useLunaConversation({
-    messages, setMessages,
+    messages,
+    setMessages,
     sessionType: "luna-session",
     reasoning: { effort: "low" },
     breakMessage: BREAK_MESSAGE,
@@ -46,7 +67,9 @@ export function LunaFullSession() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const voice = useLunaVoice({ onTranscript: (t: string) => setInput((prev: string) => (prev ? prev + " " : "") + t) });
+  const voice = useLunaVoice({
+    onTranscript: (t: string) => setInput((prev: string) => (prev ? prev + " " : "") + t),
+  });
   const lastSpokenRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -68,9 +91,9 @@ export function LunaFullSession() {
 
   useXpMilestones({
     onLunaMessages: (msgs) => {
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
-        ...msgs.map(content => ({ role: "assistant" as const, content, tag: "nudge" as const })),
+        ...msgs.map((content) => ({ role: "assistant" as const, content, tag: "nudge" as const })),
       ]);
     },
   });
@@ -79,7 +102,9 @@ export function LunaFullSession() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   // Reset clears chat history AND the timer/streak/accuracy context. Before,
   // the old session's startTime would persist into the new one, so a fresh
@@ -95,11 +120,10 @@ export function LunaFullSession() {
   // and stays paused during streaming so partial assistant replies don't
   // inflate the user's effective study time.
   const { label: durationLabel } = useLunaSessionTimer();
-  const fatigue  = detectFatigue();
+  const fatigue = detectFatigue();
 
   return (
     <div className="luna-shell">
-
       {/* ── Top bar ──────────────────────────────────────────────── */}
       <div className="luna-topbar">
         <div className="luna-topbar-left">
@@ -107,7 +131,9 @@ export function LunaFullSession() {
             <ArrowLeft size={16} />
           </Link>
           <div className="luna-brand-row">
-            <span className="luna-moon-glyph" aria-hidden="true"><LunaMark size={20} /></span>
+            <span className="luna-moon-glyph" aria-hidden="true">
+              <LunaMark size={20} />
+            </span>
             <div>
               <div className="luna-name">Luna</div>
               <div className="luna-sub">Deep tutoring session</div>
@@ -136,7 +162,6 @@ export function LunaFullSession() {
       {/* ── Chat area ────────────────────────────────────────────── */}
       <div ref={scrollRef} className="luna-body">
         <div className="luna-body-inner">
-
           {/* Intro placeholder */}
           {messages.length === 0 && (
             <div className="luna-intro-row">
@@ -156,7 +181,6 @@ export function LunaFullSession() {
               className={`luna-row luna-row--${msg.role === "user" ? "user" : "ai"}`}
             >
               <div className={`luna-bubble luna-bubble--${msg.role === "user" ? "user" : "ai"}`}>
-
                 {/* Tag header */}
                 {msg.role === "assistant" && msg.tag && LUNA_TAG_CONFIG[msg.tag] && (
                   <div className="luna-tag-row">
@@ -172,31 +196,32 @@ export function LunaFullSession() {
 
                 {/* Shared screen */}
                 {msg.imageDataUrl && (
-                  <img
-                    src={msg.imageDataUrl}
-                    alt="Shared screen"
-                    className="luna-shared-img"
-                  />
+                  <img src={msg.imageDataUrl} alt="Shared screen" className="luna-shared-img" />
                 )}
 
                 <LunaMarkdown className="[&>ul]:mt-1 [&>ol]:mt-1">{msg.content}</LunaMarkdown>
 
                 {/* Actions */}
                 {msg.role === "assistant" && msg.actions && msg.actions.length > 0 && (
-                  <LunaActions actions={msg.actions} onSendBack={(t) => send({ text: t, image: null })} />
+                  <LunaActions
+                    actions={msg.actions}
+                    onSendBack={(t) => send({ text: t, image: null })}
+                  />
                 )}
 
                 {/* Retry on error */}
-                {msg.role === "assistant" && typeof msg.id === "string" && msg.id.startsWith("err-") && (
-                  <button
-                    type="button"
-                    onClick={retryLast}
-                    disabled={isStreaming}
-                    className="luna-retry-btn"
-                  >
-                    <RotateCcw size={11} /> Retry
-                  </button>
-                )}
+                {msg.role === "assistant" &&
+                  typeof msg.id === "string" &&
+                  msg.id.startsWith("err-") && (
+                    <button
+                      type="button"
+                      onClick={retryLast}
+                      disabled={isStreaming}
+                      className="luna-retry-btn"
+                    >
+                      <RotateCcw size={11} /> Retry
+                    </button>
+                  )}
               </div>
             </motion.div>
           ))}
@@ -215,12 +240,17 @@ export function LunaFullSession() {
       {/* ── Input bar ────────────────────────────────────────────── */}
       <div className="luna-inputbar">
         <div className="luna-inputbar-inner">
-
           {/* Voice error */}
           {voice.voiceError && (
             <div className="luna-voice-error">
               <span>{voice.voiceError}</span>
-              <button type="button" onClick={voice.clearVoiceError} className="luna-voice-error-close">✕</button>
+              <button
+                type="button"
+                onClick={voice.clearVoiceError}
+                className="luna-voice-error-close"
+              >
+                ✕
+              </button>
             </div>
           )}
 
@@ -229,14 +259,24 @@ export function LunaFullSession() {
             <div className="luna-screen-preview">
               <img src={pendingImage} alt="Screen preview" className="luna-screen-thumb" />
               <span className="luna-screen-label">Screen attached</span>
-              <button type="button" onClick={() => setPendingImage(null)} className="luna-screen-remove" aria-label="Remove">
+              <button
+                type="button"
+                onClick={() => setPendingImage(null)}
+                className="luna-screen-remove"
+                aria-label="Remove"
+              >
                 <X size={13} />
               </button>
             </div>
           )}
 
-          <form onSubmit={e => { e.preventDefault(); send(); }} className="luna-input-row">
-
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              send();
+            }}
+            className="luna-input-row"
+          >
             <button
               type="button"
               onClick={handleScreenShare}
@@ -269,7 +309,7 @@ export function LunaFullSession() {
               <>
                 <button
                   type="button"
-                  onClick={() => voice.listening ? voice.stopListening() : voice.startListening()}
+                  onClick={() => (voice.listening ? voice.stopListening() : voice.startListening())}
                   disabled={isStreaming}
                   title={voice.listening ? "Stop listening" : "Speak to Luna"}
                   className={`luna-act-btn${voice.listening ? " luna-act-btn--listening" : ""}`}
@@ -290,8 +330,12 @@ export function LunaFullSession() {
             <input
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={pendingImage ? "Ask Luna about your screen…" : "Ask a question, describe what you're stuck on, or tell Luna what you're learning…"}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                pendingImage
+                  ? "Ask Luna about your screen…"
+                  : "Ask a question, describe what you're stuck on, or tell Luna what you're learning…"
+              }
               className="luna-input"
             />
 
@@ -302,11 +346,9 @@ export function LunaFullSession() {
             >
               <Send size={16} />
             </button>
-
           </form>
         </div>
       </div>
-
     </div>
   );
 }

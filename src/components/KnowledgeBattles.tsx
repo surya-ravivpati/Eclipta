@@ -1,20 +1,76 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Swords, Zap, Trophy, Shield, Flame, Timer, Sparkles,
-  Target, Heart, Skull, Dices, User, Bot, HelpCircle, Info, FastForward,
-  Users, Ghost, Radio, TrendingUp, TrendingDown, MessageSquare, VolumeX, Volume2,
-  Crown, Medal, X,
+  Swords,
+  Zap,
+  Trophy,
+  Shield,
+  Flame,
+  Timer,
+  Sparkles,
+  Target,
+  Heart,
+  Skull,
+  Dices,
+  User,
+  Bot,
+  HelpCircle,
+  Info,
+  FastForward,
+  Users,
+  Ghost,
+  Radio,
+  TrendingUp,
+  TrendingDown,
+  MessageSquare,
+  VolumeX,
+  Volume2,
+  Crown,
+  Medal,
+  X,
 } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-import type { Phase, Action, ArchetypeId, Archetype, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig, GamblerRoll, LogEntry, LogActionType } from "./battles/types";
+import type {
+  Phase,
+  Action,
+  ArchetypeId,
+  Archetype,
+  Fighter,
+  MathQuestion,
+  QuestionRecord,
+  BattleStats,
+  ActionConfig,
+  GamblerRoll,
+  LogEntry,
+  LogActionType,
+} from "./battles/types";
 import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
-import { levelToCategory, getActionDifficultyLevel, getEffectiveDamage, getEffectiveMultiplierStep, streakToMultiplier, hpToSelfDmgMult } from "./battles/stat-mechanics";
-import { createBattleMemory, updateBattleMemoryPlayerTurn, updateBattleMemoryAiTurn, AI_PERSONALITIES, pickAiAction, computeAiAccuracy, getPressureLogLine, type BattleMemory } from "./battles/ai-brain";
+import {
+  levelToCategory,
+  getActionDifficultyLevel,
+  getEffectiveDamage,
+  getEffectiveMultiplierStep,
+  streakToMultiplier,
+  hpToSelfDmgMult,
+} from "./battles/stat-mechanics";
+import {
+  createBattleMemory,
+  updateBattleMemoryPlayerTurn,
+  updateBattleMemoryAiTurn,
+  AI_PERSONALITIES,
+  pickAiAction,
+  computeAiAccuracy,
+  getPressureLogLine,
+  type BattleMemory,
+} from "./battles/ai-brain";
 import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
 import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
 import { BattleReport } from "./battles/BattleReport";
@@ -54,10 +110,10 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
 const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, wild: 0 };
 
 const ACTIONS: Record<Action, ActionConfig> = {
-  attack: { label: "Attack", icon: Swords, focusCost: 0,  desc: "Your base DMG · +15 Focus" },
-  defend: { label: "Heal",   icon: Heart,  focusCost: 0,  desc: "Restore HP · +10 Focus" },
-  charge: { label: "Charge", icon: Zap,    focusCost: 25, desc: "1.8× your DMG · −25 Focus" },
-  wild:   { label: "Wild",   icon: Dices,  focusCost: 15, desc: "Chaos effect · −15 Focus" },
+  attack: { label: "Attack", icon: Swords, focusCost: 0, desc: "Your base DMG · +15 Focus" },
+  defend: { label: "Heal", icon: Heart, focusCost: 0, desc: "Restore HP · +10 Focus" },
+  charge: { label: "Charge", icon: Zap, focusCost: 25, desc: "1.8× your DMG · −25 Focus" },
+  wild: { label: "Wild", icon: Dices, focusCost: 15, desc: "Chaos effect · −15 Focus" },
 };
 
 /**
@@ -66,18 +122,34 @@ const ACTIONS: Record<Action, ActionConfig> = {
  * class. The ± Focus is shown as a badge, so the text carries flavor instead.
  */
 const ATTACK_TAG: Record<string, string> = {
-  speedster: "fast = harder", tank: "low, relentless", chud: "glass cannon",
-  gambler: "rolled stats", healer: "soft hits", fulcrum: "combo every 2",
-  accelerator: "ramps each turn", god: "all maxed",
+  speedster: "fast = harder",
+  tank: "low, relentless",
+  chud: "glass cannon",
+  gambler: "rolled stats",
+  healer: "soft hits",
+  fulcrum: "combo every 2",
+  accelerator: "ramps each turn",
+  god: "all maxed",
 };
 const HEAL_TAG: Record<string, string> = {
-  speedster: "quick patch", tank: "", chud: "risky pause", gambler: "rolled",
-  healer: "regen on hits too", fulcrum: "steady", accelerator: "scales up", god: "topped up",
+  speedster: "quick patch",
+  tank: "",
+  chud: "risky pause",
+  gambler: "rolled",
+  healer: "regen on hits too",
+  fulcrum: "steady",
+  accelerator: "scales up",
+  god: "topped up",
 };
 const CHARGE_TAG: Record<string, string> = {
-  speedster: "fast = harder", tank: "rare big hit", chud: "devastating",
-  gambler: "rolled", healer: "burst heal-tank", fulcrum: "highest mult",
-  accelerator: "ramps", god: "finisher",
+  speedster: "fast = harder",
+  tank: "rare big hit",
+  chud: "devastating",
+  gambler: "rolled",
+  healer: "burst heal-tank",
+  fulcrum: "highest mult",
+  accelerator: "ramps",
+  god: "finisher",
 };
 
 function getActionDesc(action: Action, arch: Archetype, recordCount: number): string {
@@ -85,8 +157,10 @@ function getActionDesc(action: Action, arch: Archetype, recordCount: number): st
   switch (action) {
     case "attack": {
       let dmg: string;
-      if (arch.damageIsTimeScaled) dmg = `${arch.baseDamage}–${arch.baseDamage * 2} DMG`; // Speedster range
-      else if (arch.multiplierScales) dmg = `${Math.round(13 + Math.min(recordCount / 10, 1) * 14)} DMG ↑`; // Accelerator
+      if (arch.damageIsTimeScaled)
+        dmg = `${arch.baseDamage}–${arch.baseDamage * 2} DMG`; // Speedster range
+      else if (arch.multiplierScales)
+        dmg = `${Math.round(13 + Math.min(recordCount / 10, 1) * 14)} DMG ↑`; // Accelerator
       else dmg = `${arch.baseDamage} DMG`;
       return `${dmg}${tag(ATTACK_TAG)}`;
     }
@@ -96,9 +170,13 @@ function getActionDesc(action: Action, arch: Archetype, recordCount: number): st
     }
     case "charge": {
       let dmg: string;
-      if (arch.damageIsTimeScaled) { const b = Math.floor(arch.baseDamage * 1.8); dmg = `${b}–${b * 2} DMG`; }
-      else if (arch.multiplierScales) { const b = Math.round(13 + Math.min(recordCount / 10, 1) * 14); dmg = `${Math.floor(b * 1.8)} DMG ↑`; }
-      else dmg = `${Math.floor(arch.baseDamage * 1.8)} DMG`;
+      if (arch.damageIsTimeScaled) {
+        const b = Math.floor(arch.baseDamage * 1.8);
+        dmg = `${b}–${b * 2} DMG`;
+      } else if (arch.multiplierScales) {
+        const b = Math.round(13 + Math.min(recordCount / 10, 1) * 14);
+        dmg = `${Math.floor(b * 1.8)} DMG ↑`;
+      } else dmg = `${Math.floor(arch.baseDamage * 1.8)} DMG`;
       return `${dmg}${tag(CHARGE_TAG)}`;
     }
     case "wild":
@@ -110,17 +188,24 @@ function getActionDesc(action: Action, arch: Archetype, recordCount: number): st
 // Preset-only, sportsmanship-first: a fixed set of positive/neutral worded
 // phrases. No free text (toxicity), no emoji (brand: docs/brand-system.md).
 // Insults are impossible by construction; communication stays warm, not loud.
-const CHAT_PHRASES = ["Good luck", "Nice!", "Close one", "Well played", "Tough question", "GG"] as const;
+const CHAT_PHRASES = [
+  "Good luck",
+  "Nice!",
+  "Close one",
+  "Well played",
+  "Tough question",
+  "GG",
+] as const;
 
 interface ChatItem {
   id: number;
   text: string;
-  fromPlayer: boolean;  // true = local player sent it
+  fromPlayer: boolean; // true = local player sent it
   senderName: string;
-  ts: number;           // Date.now() at creation for TTL removal
+  ts: number; // Date.now() at creation for TTL removal
 }
 
-type LiveTurnActionRow = {
+interface LiveTurnActionRow {
   actor_id: string;
   action: Action;
   correct: boolean;
@@ -131,7 +216,7 @@ type LiveTurnActionRow = {
   momentum: number;
   time_spent: number;
   question?: unknown;
-};
+}
 
 // Aligned with Trophy Road tier thresholds in src/lib/trophy-road-data.ts
 // XP leaderboard shows the player's Expedition realm (the discovery loop),
@@ -140,10 +225,10 @@ function xpToTier(xp: number): string {
   if (xp >= 460000) return "Eclipse";
   if (xp >= 265000) return "Totality";
   if (xp >= 145000) return "Nightfall";
-  if (xp >= 78000)  return "Umbra";
-  if (xp >= 43000)  return "Penumbra";
-  if (xp >= 20000)  return "Meridian";
-  if (xp >= 7500)   return "Moonrise";
+  if (xp >= 78000) return "Umbra";
+  if (xp >= 43000) return "Penumbra";
+  if (xp >= 20000) return "Meridian";
+  if (xp >= 7500) return "Moonrise";
   return "Dawn";
 }
 
@@ -174,36 +259,79 @@ const tierColors: Record<string, string> = {
 let _audioCtx: AudioContext | null = null;
 function getAudioCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
-  if (!_audioCtx) { try { _audioCtx = new AudioContext(); } catch { return null; } }
+  if (!_audioCtx) {
+    try {
+      _audioCtx = new AudioContext();
+    } catch {
+      return null;
+    }
+  }
   if (_audioCtx.state === "suspended") void _audioCtx.resume();
   return _audioCtx;
 }
-function playTone(freq: number, dur: number, type: OscillatorType = "sine", vol = 0.10) {
-  const ctx = getAudioCtx(); if (!ctx) return;
-  const osc = ctx.createOscillator(); const gain = ctx.createGain();
-  osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+function playTone(freq: number, dur: number, type: OscillatorType = "sine", vol = 0.1) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
   gain.gain.setValueAtTime(vol, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-  osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + dur);
 }
 // Pitch rises with streak (220 Hz base + 22 Hz per streak hit, capped at 880 Hz)
-function sfxStreak(streak: number) { playTone(Math.min(220 + streak * 22, 880), 0.11, "sine", 0.09); }
-function sfxBreak()   { playTone(160, 0.22, "triangle", 0.11); setTimeout(() => playTone(110, 0.28, "triangle", 0.07), 90); }
-function sfxCombo()   { playTone(660, 0.08, "sine", 0.13); setTimeout(() => playTone(880, 0.14, "sine", 0.10), 80); }
-function sfxWild()    { [0, 55, 110].forEach((ms, i) => setTimeout(() => playTone(300 + i * 130, 0.18, "sawtooth", 0.07), ms)); }
+function sfxStreak(streak: number) {
+  playTone(Math.min(220 + streak * 22, 880), 0.11, "sine", 0.09);
+}
+function sfxBreak() {
+  playTone(160, 0.22, "triangle", 0.11);
+  setTimeout(() => playTone(110, 0.28, "triangle", 0.07), 90);
+}
+function sfxCombo() {
+  playTone(660, 0.08, "sine", 0.13);
+  setTimeout(() => playTone(880, 0.14, "sine", 0.1), 80);
+}
+function sfxWild() {
+  [0, 55, 110].forEach((ms, i) =>
+    setTimeout(() => playTone(300 + i * 130, 0.18, "sawtooth", 0.07), ms),
+  );
+}
 // Rising major arpeggio for the win, falling minor slide for the loss
-function sfxVictory() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.22, "sine", 0.10), i * 110)); }
-function sfxDefeat()  { [330, 262, 196].forEach((f, i) => setTimeout(() => playTone(f, 0.30, "triangle", 0.10), i * 170)); }
+function sfxVictory() {
+  [523, 659, 784, 1047].forEach((f, i) =>
+    setTimeout(() => playTone(f, 0.22, "sine", 0.1), i * 110),
+  );
+}
+function sfxDefeat() {
+  [330, 262, 196].forEach((f, i) => setTimeout(() => playTone(f, 0.3, "triangle", 0.1), i * 170));
+}
 
 // ─── Sub-components ──────────────────────────────────────────────────
-function HpBar({ current, max, color, label }: { current: number; max: number; color: string; label: string }) {
+function HpBar({
+  current,
+  max,
+  color,
+  label,
+}: {
+  current: number;
+  max: number;
+  color: string;
+  label: string;
+}) {
   const pct = Math.max(0, (current / max) * 100);
-  const isCritical = max > 0 && current / max < 0.20;
+  const isCritical = max > 0 && current / max < 0.2;
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-1">
-        <span className={`text-[10px] font-bold tracking-widest transition-colors ${isCritical ? "text-neon-pink" : "text-muted-foreground"}`}>{label}</span>
+        <span
+          className={`text-[10px] font-bold tracking-widest transition-colors ${isCritical ? "text-neon-pink" : "text-muted-foreground"}`}
+        >
+          {label}
+        </span>
         <div className="flex items-center gap-1">
           <motion.span
             animate={isCritical ? { scale: [1, 1.25, 1] } : {}}
@@ -211,7 +339,11 @@ function HpBar({ current, max, color, label }: { current: number; max: number; c
           >
             <Heart className={`w-3 h-3 ${isCritical ? "text-neon-pink" : "text-neon-pink/70"}`} />
           </motion.span>
-          <span className={`text-xs font-bold font-display transition-colors ${isCritical ? "text-neon-pink" : ""}`}>{current}/{max}</span>
+          <span
+            className={`text-xs font-bold font-display transition-colors ${isCritical ? "text-neon-pink" : ""}`}
+          >
+            {current}/{max}
+          </span>
         </div>
       </div>
       <div className="btt-hp-track">
@@ -225,7 +357,17 @@ function HpBar({ current, max, color, label }: { current: number; max: number; c
   );
 }
 
-function FocusBar({ current, max, isPlayer = false, canCharge = false }: { current: number; max: number; isPlayer?: boolean; canCharge?: boolean }) {
+function FocusBar({
+  current,
+  max,
+  isPlayer = false,
+  canCharge = false,
+}: {
+  current: number;
+  max: number;
+  isPlayer?: boolean;
+  canCharge?: boolean;
+}) {
   const chargeCost = ACTIONS.charge.focusCost;
   // Charged means: enough focus, AND if we're showing this on the local player
   // side, the player can actually use Charge right now (phase allows it, no
@@ -233,7 +375,7 @@ function FocusBar({ current, max, isPlayer = false, canCharge = false }: { curre
   // pink "CHARGE READY" ticker would stay on screen forever after the first
   // time focus crossed 25, regardless of whether spending it was possible.
   const isCharged = current >= chargeCost && (!isPlayer || canCharge);
-  const isWarm    = current >= chargeCost - 10 && !isCharged;
+  const isWarm = current >= chargeCost - 10 && !isCharged;
   const fillRatio = max > 0 ? current / max : 0;
   const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
@@ -287,8 +429,22 @@ function FocusBar({ current, max, isPlayer = false, canCharge = false }: { curre
   );
 }
 
-function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, canCharge = false }: {
-  fighter: Fighter; side: "left" | "right"; momentum: number; archetype?: ArchetypeId; showHit: boolean; showHeal: boolean; canCharge?: boolean;
+function FighterCard({
+  fighter,
+  side,
+  momentum,
+  archetype,
+  showHit,
+  showHeal,
+  canCharge = false,
+}: {
+  fighter: Fighter;
+  side: "left" | "right";
+  momentum: number;
+  archetype?: ArchetypeId;
+  showHit: boolean;
+  showHeal: boolean;
+  canCharge?: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
@@ -309,10 +465,10 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
     prevHpRef.current = fighter.hp;
     if (delta === 0) return;
     const id = ++floatIdRef.current;
-    setFloats(f => [...f, { id, delta }]);
+    setFloats((f) => [...f, { id, delta }]);
     // No cleanup: each float owns its timer, so rapid back-to-back hits
     // don't cancel the previous number's removal.
-    setTimeout(() => setFloats(f => f.filter(x => x.id !== id)), 1200);
+    setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), 1200);
   }, [fighter.hp]);
 
   return (
@@ -322,12 +478,28 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
       transition={{ duration: 0.4 }}
     >
       <AnimatePresence>
-        {showHit && <motion.div className="absolute inset-0 bg-neon-pink/10 z-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}
-        {showHeal && <motion.div className="absolute inset-0 bg-neon-cyan/10 z-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}
+        {showHit && (
+          <motion.div
+            className="absolute inset-0 bg-neon-pink/10 z-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          />
+        )}
+        {showHeal && (
+          <motion.div
+            className="absolute inset-0 bg-neon-cyan/10 z-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          />
+        )}
       </AnimatePresence>
       <div className="btt-float-layer" aria-hidden>
         <AnimatePresence>
-          {floats.map(f => (
+          {floats.map((f) => (
             <motion.span
               key={f.id}
               className={`btt-float absolute ${f.delta < 0 ? "btt-float--dmg" : "btt-float--heal"} ${Math.abs(f.delta) >= 25 ? "btt-float--big" : ""}`}
@@ -356,6 +528,7 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
               onError={() => setSpriteFailed(true)}
               className="relative h-32 sm:h-44 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)]"
             />
+
           </div>
         )}
         <div className="flex items-center gap-3 mb-4">
@@ -367,32 +540,49 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
           <div className="flex-1 min-w-0">
             <h4 className="btt-shout text-xl truncate">{fighter.name}</h4>
             {arch && (
-              <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-widest ${arch.color}`}>
+              <span
+                className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-widest ${arch.color}`}
+              >
                 <arch.icon className="w-3 h-3" /> {arch.name.toUpperCase()}
               </span>
             )}
-            {momentum > 0 && (() => {
-              const combos = Math.floor(momentum / comboThreshold);
-              const isHot  = combos >= 2;
-              const isWarm = combos >= 1;
-              return (
-                <motion.div
-                  className={`flex items-center gap-1 ${isHot ? "text-neon-pink" : isWarm ? "text-neon-pink/75" : "text-neon-pink/50"}`}
-                  key={momentum}
-                  initial={{ scale: 1.35, opacity: 0.7 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                >
-                  <Flame className={isHot ? "w-4 h-4" : "w-3 h-3"} />
-                  <span className={`font-bold tracking-widest ${isHot ? "text-[11px]" : "text-[10px]"}`}>
-                    {momentum}× STREAK
-                  </span>
-                </motion.div>
-              );
-            })()}
+            {momentum > 0 &&
+              (() => {
+                const combos = Math.floor(momentum / comboThreshold);
+                const isHot = combos >= 2;
+                const isWarm = combos >= 1;
+                return (
+                  <motion.div
+                    className={`flex items-center gap-1 ${isHot ? "text-neon-pink" : isWarm ? "text-neon-pink/75" : "text-neon-pink/50"}`}
+                    key={momentum}
+                    initial={{ scale: 1.35, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                  >
+                    <Flame className={isHot ? "w-4 h-4" : "w-3 h-3"} />
+                    <span
+                      className={`font-bold tracking-widest ${isHot ? "text-[11px]" : "text-[10px]"}`}
+                    >
+                      {momentum}× STREAK
+                    </span>
+                  </motion.div>
+                );
+              })()}
           </div>
         </div>
-        <HpBar current={fighter.hp} max={fighter.maxHp} color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"} label="HP" />
-        <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} canCharge={canCharge && side === "left"} /></div>
+        <HpBar
+          current={fighter.hp}
+          max={fighter.maxHp}
+          color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"}
+          label="HP"
+        />
+        <div className="mt-2">
+          <FocusBar
+            current={fighter.focus}
+            max={fighter.maxFocus}
+            isPlayer={side === "left"}
+            canCharge={canCharge && side === "left"}
+          />
+        </div>
       </div>
       <AnimatePresence>
         {momentum > 0 && momentum % comboThreshold === 0 && (
@@ -412,8 +602,16 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
   );
 }
 
-function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
-  question: MathQuestion; timeLeft: number; maxTime: number; onAnswer: (correct: boolean, timeSpent: number) => void;
+function QuestionOverlay({
+  question,
+  timeLeft,
+  maxTime,
+  onAnswer,
+}: {
+  question: MathQuestion;
+  timeLeft: number;
+  maxTime: number;
+  onAnswer: (correct: boolean, timeSpent: number) => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showReveal, setShowReveal] = useState(false);
@@ -435,36 +633,68 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
   };
 
   return (
-    <motion.div className="btt-q-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <motion.div className={`btt-q-card ${timeLeft <= 3 ? "btt-q-card--danger" : ""}`} initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}>
+    <motion.div
+      className="btt-q-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className={`btt-q-card ${timeLeft <= 3 ? "btt-q-card--danger" : ""}`}
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+      >
         <div className="mb-5">
           <div className="flex items-center justify-between mb-1.5">
-            <span className={`text-[10px] font-bold tracking-widest ${question.difficulty === "hard" ? "text-neon-pink" : question.difficulty === "medium" ? "text-neon-purple" : "text-neon-cyan"}`}>
+            <span
+              className={`text-[10px] font-bold tracking-widest ${question.difficulty === "hard" ? "text-neon-pink" : question.difficulty === "medium" ? "text-neon-purple" : "text-neon-cyan"}`}
+            >
               {question.difficulty.toUpperCase()} · {question.topic.toUpperCase()}
             </span>
             <div className="flex items-center gap-1">
-              <Timer className={`w-3.5 h-3.5 ${timeLeft <= 3 ? "text-neon-pink" : "text-muted-foreground"}`} />
-              <span className={`text-sm font-bold font-display ${timeLeft <= 3 ? "text-neon-pink" : "text-foreground"}`}>{timeLeft}s</span>
+              <Timer
+                className={`w-3.5 h-3.5 ${timeLeft <= 3 ? "text-neon-pink" : "text-muted-foreground"}`}
+              />
+              <span
+                className={`text-sm font-bold font-display ${timeLeft <= 3 ? "text-neon-pink" : "text-foreground"}`}
+              >
+                {timeLeft}s
+              </span>
             </div>
           </div>
           <div className="btt-hp-track">
-            <motion.div className={`btt-hp-fill ${timeLeft <= 3 ? "btt-hp-fill--critical" : "btt-hp-fill--purple"}`} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
+            <motion.div
+              className={`btt-hp-fill ${timeLeft <= 3 ? "btt-hp-fill--critical" : "btt-hp-fill--purple"}`}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.3 }}
+            />
           </div>
         </div>
-        <h3 className="btt-shout text-5xl text-center mb-8 text-foreground">{question.q.trimEnd().endsWith("?") ? question.q : `${question.q} = ?`}</h3>
+        <h3 className="btt-shout text-5xl text-center mb-8 text-foreground">
+          {question.q.trimEnd().endsWith("?") ? question.q : `${question.q} = ?`}
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           {question.options.map((opt, i) => {
             let style = "border-white/[0.08] hover:border-white/[0.18] hover:bg-white/[0.03]";
             if (selected !== null) {
-              if (opt === question.answer) style = "border-neon-cyan/60 bg-neon-cyan/8 text-neon-cyan";
-              else if (opt === selected) style = "border-neon-pink/60 bg-neon-pink/8 text-neon-pink";
+              if (opt === question.answer)
+                style = "border-neon-cyan/60 bg-neon-cyan/8 text-neon-cyan";
+              else if (opt === selected)
+                style = "border-neon-pink/60 bg-neon-pink/8 text-neon-pink";
               else style = "border-white/[0.05] opacity-30";
             }
             return (
-              <motion.button key={i} onClick={() => handleSelect(opt)} disabled={selected !== null}
+              <motion.button
+                key={i}
+                onClick={() => handleSelect(opt)}
+                disabled={selected !== null}
                 className={`p-5 border btt-shout text-2xl transition-colors ${style}`}
-                whileHover={selected === null ? { scale: 1.03 } : {}} whileTap={selected === null ? { scale: 0.97 } : {}}
-              >{opt}</motion.button>
+                whileHover={selected === null ? { scale: 1.03 } : {}}
+                whileTap={selected === null ? { scale: 0.97 } : {}}
+              >
+                {opt}
+              </motion.button>
             );
           })}
         </div>
@@ -479,8 +709,12 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <span className="text-[10px] font-bold tracking-widest text-muted-foreground">{question.topic.toUpperCase()} · CORRECT ANSWER</span>
-              <span className="text-xl font-bold font-display text-neon-cyan">{question.answer}</span>
+              <span className="text-[10px] font-bold tracking-widest text-muted-foreground">
+                {question.topic.toUpperCase()} · CORRECT ANSWER
+              </span>
+              <span className="text-xl font-bold font-display text-neon-cyan">
+                {question.answer}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -498,35 +732,41 @@ function QuestionOverlay({ question, timeLeft, maxTime, onAnswer }: {
  */
 function BattleLog({ logs }: { logs: LogEntry[] }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [logs]);
+  useEffect(() => {
+    ref.current?.scrollTo(0, ref.current.scrollHeight);
+  }, [logs]);
 
   function colorFor(e: LogEntry): string {
     if (e.actor === "system") {
-      if (e.actionType === "combo")     return "text-neon-pink";
+      if (e.actionType === "combo") return "text-neon-pink";
       if (e.actionType === "separator") return "text-muted-foreground";
-      if (e.actionType === "info")      return "text-tier-gold";
+      if (e.actionType === "info") return "text-tier-gold";
       return "text-muted-foreground";
     }
     if (e.actor === "player") {
-      if (e.actionType === "miss")      return "text-neon-pink/80";
-      if (e.actionType === "heal")      return "text-neon-cyan";
-      if (e.actionType === "wild")      return "text-neon-purple";
+      if (e.actionType === "miss") return "text-neon-pink/80";
+      if (e.actionType === "heal") return "text-neon-cyan";
+      if (e.actionType === "wild") return "text-neon-purple";
       return "text-foreground";
     }
     // opponent
-    if (e.actionType === "miss")        return "text-muted-foreground";
-    if (e.actionType === "heal")        return "text-neon-cyan";
-    if (e.actionType === "ghost")       return "text-neon-purple/70";
+    if (e.actionType === "miss") return "text-muted-foreground";
+    if (e.actionType === "heal") return "text-neon-cyan";
+    if (e.actionType === "ghost") return "text-neon-purple/70";
     return "text-neon-pink";
   }
 
-  const turn = logs.filter(e => e.actionType === "separator").length || 1;
+  const turn = logs.filter((e) => e.actionType === "separator").length || 1;
 
   return (
     <div className="btt-log overflow-hidden">
       <div className="btt-log-head">
-        <span className="btt-mono-text text-[10px] tracking-widest text-muted-foreground">BATTLE LOG</span>
-        <span className="btt-mono-text text-[10px] tabular-nums text-muted-foreground">T-{String(turn).padStart(2,"0")}</span>
+        <span className="btt-mono-text text-[10px] tracking-widest text-muted-foreground">
+          BATTLE LOG
+        </span>
+        <span className="btt-mono-text text-[10px] tabular-nums text-muted-foreground">
+          T-{String(turn).padStart(2, "0")}
+        </span>
       </div>
       <div ref={ref} className="p-3 h-48 overflow-y-auto space-y-1">
         {logs.length === 0 && (
@@ -559,10 +799,28 @@ function BattleLog({ logs }: { logs: LogEntry[] }) {
 // Each Wild outcome has a distinct visual identity so the event reads as a
 // force of nature, not a plain attack. Three event types, three color lanes.
 type WildEventType = "chaos" | "mend" | "surge";
-const WILD_CONFIGS: Record<WildEventType, { headline: string; color: string; border: string; bg: string }> = {
-  chaos: { headline: "CHAOS STRIKE",  color: "text-tier-gold",    border: "border-tier-gold/50",    bg: "bg-tier-gold/10"    },
-  mend:  { headline: "WILD MEND",     color: "text-neon-cyan",    border: "border-neon-cyan/50",    bg: "bg-neon-cyan/10"    },
-  surge: { headline: "ARCANE SURGE",  color: "text-neon-purple",  border: "border-neon-purple/50",  bg: "bg-neon-purple/10"  },
+const WILD_CONFIGS: Record<
+  WildEventType,
+  { headline: string; color: string; border: string; bg: string }
+> = {
+  chaos: {
+    headline: "CHAOS STRIKE",
+    color: "text-tier-gold",
+    border: "border-tier-gold/50",
+    bg: "bg-tier-gold/10",
+  },
+  mend: {
+    headline: "WILD MEND",
+    color: "text-neon-cyan",
+    border: "border-neon-cyan/50",
+    bg: "bg-neon-cyan/10",
+  },
+  surge: {
+    headline: "ARCANE SURGE",
+    color: "text-neon-purple",
+    border: "border-neon-purple/50",
+    bg: "bg-neon-purple/10",
+  },
 };
 
 function WildEventOverlay({ event }: { event: { type: WildEventType; sub: string } }) {
@@ -580,7 +838,9 @@ function WildEventOverlay({ event }: { event: { type: WildEventType; sub: string
         animate={{ scale: [0.55, 1.12, 1], y: [24, -4, 0] }}
         transition={{ duration: 0.38, ease: "easeOut" }}
       >
-        <p className={`text-2xl font-bold font-display tracking-widest ${cfg.color}`}>{cfg.headline}</p>
+        <p className={`text-2xl font-bold font-display tracking-widest ${cfg.color}`}>
+          {cfg.headline}
+        </p>
         <p className={`text-sm font-bold mt-1.5 ${cfg.color} opacity-75`}>{event.sub}</p>
       </motion.div>
     </motion.div>
@@ -609,11 +869,11 @@ function BattleChat({
   phase: Phase;
   incomingItems: ChatItem[];
 }) {
-  const [sentItems, setSentItems]         = useState<ChatItem[]>([]);
+  const [sentItems, setSentItems] = useState<ChatItem[]>([]);
   const [cooldownUntil, setCooldownUntil] = useState(0);
-  const [muted, setMuted]                 = useState(false);
-  const [showPanel, setShowPanel]         = useState(false);
-  const [tick, setTick]                   = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [tick, setTick] = useState(0);
 
   // Drive cooldown countdown without excessive re-renders
   useEffect(() => {
@@ -623,16 +883,12 @@ function BattleChat({
   }, [tick]);
 
   // Auto-expire displayed items after 4 s
-  const allItems = [
-    ...sentItems,
-    ...(muted ? [] : incomingItems),
-  ].sort((a, b) => a.ts - b.ts);
+  const allItems = [...sentItems, ...(muted ? [] : incomingItems)].sort((a, b) => a.ts - b.ts);
 
   const visibleItems = allItems.filter((item) => Date.now() - item.ts < 4000);
 
   // Only visible during active battle phases — zero footprint otherwise
-  const isActive =
-    phase === "select" || phase === "question" || phase === "animate";
+  const isActive = phase === "select" || phase === "question" || phase === "animate";
   if (!isActive) return null;
 
   const now = Date.now();
@@ -757,7 +1013,7 @@ function BattleChat({
 
 // ─── Gambler Reveal ───────────────────────────────────────────────────
 // Stat definitions for the slot-machine reveal sequence.
-type RevealDef = {
+interface RevealDef {
   key: keyof GamblerRoll;
   label: string;
   /** Formatted value shown once locked */
@@ -767,15 +1023,57 @@ type RevealDef = {
   /** Returns a 0–1 score for quality colouring (higher = better) */
   qualityScore: (s: GamblerRoll) => number;
   hasQuality: boolean;
-};
+}
 
 const REVEAL_DEFS: RevealDef[] = [
-  { key: "maxHp",          label: "HP",    lockText: s => String(s.maxHp),                          cycleRange: [80, 180],  qualityScore: s => (s.maxHp - 80) / 100,                  hasQuality: true  },
-  { key: "baseDamage",     label: "DMG",   lockText: s => String(s.baseDamage),                     cycleRange: [8,  28],   qualityScore: s => (s.baseDamage - 8) / 20,               hasQuality: true  },
-  { key: "multiplierStep", label: "MULTI", lockText: s => `+${Math.round(s.multiplierStep * 100)}%`, cycleRange: [5,  30],   qualityScore: s => (s.multiplierStep - 0.05) / 0.25,      hasQuality: true  },
-  { key: "healAmount",     label: "HEAL",  lockText: s => `+${s.healAmount}`,                       cycleRange: [5,  25],   qualityScore: s => (s.healAmount - 5) / 20,               hasQuality: true  },
-  { key: "timeMultiplier", label: "TIME",  lockText: s => `${s.timeMultiplier}×`,                   cycleRange: [75, 125],  qualityScore: s => 1 - (s.timeMultiplier - 0.75) / 0.5,   hasQuality: true  },
-  { key: "diffMin",        label: "DIFF",  lockText: s => `${s.diffMin}–${s.diffMax}`,              cycleRange: [2,  9],    qualityScore: () => 0.5,                                  hasQuality: false },
+  {
+    key: "maxHp",
+    label: "HP",
+    lockText: (s) => String(s.maxHp),
+    cycleRange: [80, 180],
+    qualityScore: (s) => (s.maxHp - 80) / 100,
+    hasQuality: true,
+  },
+  {
+    key: "baseDamage",
+    label: "DMG",
+    lockText: (s) => String(s.baseDamage),
+    cycleRange: [8, 28],
+    qualityScore: (s) => (s.baseDamage - 8) / 20,
+    hasQuality: true,
+  },
+  {
+    key: "multiplierStep",
+    label: "MULTI",
+    lockText: (s) => `+${Math.round(s.multiplierStep * 100)}%`,
+    cycleRange: [5, 30],
+    qualityScore: (s) => (s.multiplierStep - 0.05) / 0.25,
+    hasQuality: true,
+  },
+  {
+    key: "healAmount",
+    label: "HEAL",
+    lockText: (s) => `+${s.healAmount}`,
+    cycleRange: [5, 25],
+    qualityScore: (s) => (s.healAmount - 5) / 20,
+    hasQuality: true,
+  },
+  {
+    key: "timeMultiplier",
+    label: "TIME",
+    lockText: (s) => `${s.timeMultiplier}×`,
+    cycleRange: [75, 125],
+    qualityScore: (s) => 1 - (s.timeMultiplier - 0.75) / 0.5,
+    hasQuality: true,
+  },
+  {
+    key: "diffMin",
+    label: "DIFF",
+    lockText: (s) => `${s.diffMin}–${s.diffMax}`,
+    cycleRange: [2, 9],
+    qualityScore: () => 0.5,
+    hasQuality: false,
+  },
 ];
 
 type StatQuality = "poor" | "standard" | "good" | "legendary";
@@ -787,15 +1085,32 @@ function scoreToQuality(score: number): StatQuality {
   return "legendary";
 }
 
-const QUALITY_STYLE: Record<StatQuality, { label: string; value: string; border: string; bg: string }> = {
-  poor:      { label: "LOW",       value: "text-muted-foreground/70", border: "border-border/50",      bg: ""                },
-  standard:  { label: "BASE",      value: "text-foreground",          border: "border-border/70",      bg: ""                },
-  good:      { label: "HIGH",      value: "text-neon-cyan",           border: "border-neon-cyan/50",   bg: "bg-neon-cyan/5"  },
-  legendary: { label: "MAX",       value: "text-neon-pink",           border: "border-neon-pink/60",   bg: "bg-neon-pink/5"  },
+const QUALITY_STYLE: Record<
+  StatQuality,
+  { label: string; value: string; border: string; bg: string }
+> = {
+  poor: { label: "LOW", value: "text-muted-foreground/70", border: "border-border/50", bg: "" },
+  standard: { label: "BASE", value: "text-foreground", border: "border-border/70", bg: "" },
+  good: {
+    label: "HIGH",
+    value: "text-neon-cyan",
+    border: "border-neon-cyan/50",
+    bg: "bg-neon-cyan/5",
+  },
+  legendary: {
+    label: "MAX",
+    value: "text-neon-pink",
+    border: "border-neon-pink/60",
+    bg: "bg-neon-pink/5",
+  },
 };
 
 /** Pre-battle slot-machine reveal for the Gambler archetype. */
-function GamblerRevealScreen({ stats, opponentName, onComplete }: {
+function GamblerRevealScreen({
+  stats,
+  opponentName,
+  onComplete,
+}: {
   stats: GamblerRoll;
   opponentName: string;
   onComplete: () => void;
@@ -807,7 +1122,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
   lockedRef.current = lockedCount;
 
   const [cycleNums, setCycleNums] = useState<number[]>(() =>
-    REVEAL_DEFS.map(d => d.cycleRange[0])
+    REVEAL_DEFS.map((d) => d.cycleRange[0]),
   );
   const [allDone, setAllDone] = useState(false);
 
@@ -818,24 +1133,30 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
         REVEAL_DEFS.map((d, i) =>
           i < lockedRef.current
             ? 0
-            : d.cycleRange[0] + Math.floor(Math.random() * (d.cycleRange[1] - d.cycleRange[0] + 1))
-        )
+            : d.cycleRange[0] + Math.floor(Math.random() * (d.cycleRange[1] - d.cycleRange[0] + 1)),
+        ),
       );
     }, 80);
 
     // Lock one stat at a time with a staggered sequence
     const lockTimers = REVEAL_DEFS.map((_, i) =>
-      setTimeout(() => {
-        lockedRef.current = i + 1;
-        setLockedCount(i + 1);
-      }, STAGGER * (i + 1))
+      setTimeout(
+        () => {
+          lockedRef.current = i + 1;
+          setLockedCount(i + 1);
+        },
+        STAGGER * (i + 1),
+      ),
     );
 
     // Show the CTA once all stats are locked
-    const doneTimer = setTimeout(() => {
-      clearInterval(interval);
-      setAllDone(true);
-    }, STAGGER * REVEAL_DEFS.length + 700);
+    const doneTimer = setTimeout(
+      () => {
+        clearInterval(interval);
+        setAllDone(true);
+      },
+      STAGGER * REVEAL_DEFS.length + 700,
+    );
 
     return () => {
       clearInterval(interval);
@@ -845,21 +1166,29 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
   }, []);
 
   // Overall build rating — average quality score across stats that have one
-  const qualityStats = REVEAL_DEFS.filter(d => d.hasQuality);
-  const avgQuality = qualityStats.reduce((s, d) => s + d.qualityScore(stats), 0) / qualityStats.length;
+  const qualityStats = REVEAL_DEFS.filter((d) => d.hasQuality);
+  const avgQuality =
+    qualityStats.reduce((s, d) => s + d.qualityScore(stats), 0) / qualityStats.length;
 
   const runLabel =
-    avgQuality >= 0.78 ? "GOD ROLL"
-    : avgQuality >= 0.60 ? "BLESSED RUN"
-    : avgQuality >= 0.42 ? "SOLID BUILD"
-    : avgQuality >= 0.25 ? "BALANCED ODDS"
-    : "GLASS CANNON";
+    avgQuality >= 0.78
+      ? "GOD ROLL"
+      : avgQuality >= 0.6
+        ? "BLESSED RUN"
+        : avgQuality >= 0.42
+          ? "SOLID BUILD"
+          : avgQuality >= 0.25
+            ? "BALANCED ODDS"
+            : "GLASS CANNON";
 
   const runColor =
-    avgQuality >= 0.78 ? "text-neon-pink"
-    : avgQuality >= 0.60 ? "text-tier-gold"
-    : avgQuality >= 0.42 ? "text-neon-cyan"
-    : "text-foreground";
+    avgQuality >= 0.78
+      ? "text-neon-pink"
+      : avgQuality >= 0.6
+        ? "text-tier-gold"
+        : avgQuality >= 0.42
+          ? "text-neon-cyan"
+          : "text-foreground";
 
   return (
     <motion.div
@@ -871,10 +1200,18 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
       <div className="mb-5">
         <motion.div
           className="w-14 h-14 mx-auto mb-3 border-2 border-tier-gold/50 bg-tier-gold/10 flex items-center justify-center"
-          animate={!allDone ? {
-            rotate: [0, 12, -12, 0],
-            borderColor: ["oklch(0.8 0.15 80 / 0.5)", "oklch(0.75 0.18 50 / 0.8)", "oklch(0.8 0.15 80 / 0.5)"],
-          } : {}}
+          animate={
+            !allDone
+              ? {
+                  rotate: [0, 12, -12, 0],
+                  borderColor: [
+                    "oklch(0.8 0.15 80 / 0.5)",
+                    "oklch(0.75 0.18 50 / 0.8)",
+                    "oklch(0.8 0.15 80 / 0.5)",
+                  ],
+                }
+              : {}
+          }
           transition={{ duration: 1.2, repeat: Infinity }}
         >
           <Dices className="w-7 h-7 text-tier-gold" />
@@ -892,9 +1229,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
         {REVEAL_DEFS.map((def, i) => {
           const isLocked = i < lockedCount;
           const justLocked = i === lockedCount - 1;
-          const quality = def.hasQuality
-            ? scoreToQuality(def.qualityScore(stats))
-            : "standard";
+          const quality = def.hasQuality ? scoreToQuality(def.qualityScore(stats)) : "standard";
           const qs = QUALITY_STYLE[quality];
 
           return (
@@ -907,7 +1242,9 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
               transition={{ duration: 0.35 }}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[9px] font-bold tracking-widest text-muted-foreground">{def.label}</span>
+                <span className="text-[9px] font-bold tracking-widest text-muted-foreground">
+                  {def.label}
+                </span>
                 {isLocked && def.hasQuality && (
                   <motion.span
                     className={`text-[8px] font-bold tracking-widest ${qs.value}`}
@@ -919,9 +1256,11 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
                 )}
               </div>
               {/* Value: cycling integers when unlocked, formatted text when locked */}
-              <div className={`btt-shout text-3xl tabular-nums ${
-                isLocked ? qs.value : "text-foreground/50"
-              }`}>
+              <div
+                className={`btt-shout text-3xl tabular-nums ${
+                  isLocked ? qs.value : "text-foreground/50"
+                }`}
+              >
                 {isLocked ? def.lockText(stats) : cycleNums[i]}
               </div>
             </motion.div>
@@ -965,8 +1304,22 @@ function BattleArena() {
   const [showPractice, setShowPractice] = useState(false);
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
-  const [player, setPlayer] = useState<Fighter>({ name: "You", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: User });
-  const [opponent, setOpponent] = useState<Fighter>({ name: "AI Nemesis", hp: 100, maxHp: 100, focus: 20, maxFocus: 100, icon: Bot });
+  const [player, setPlayer] = useState<Fighter>({
+    name: "You",
+    hp: 100,
+    maxHp: 100,
+    focus: 20,
+    maxFocus: 100,
+    icon: User,
+  });
+  const [opponent, setOpponent] = useState<Fighter>({
+    name: "AI Nemesis",
+    hp: 100,
+    maxHp: 100,
+    focus: 20,
+    maxFocus: 100,
+    icon: Bot,
+  });
   const [momentum, setMomentum] = useState(0);
   const [opponentMomentum, setOpponentMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
@@ -985,7 +1338,9 @@ function BattleArena() {
   const [gamblerStats, setGamblerStats] = useState<GamblerRoll | null>(null);
   const [wildEvent, setWildEvent] = useState<{ type: WildEventType; sub: string } | null>(null);
   // Impact/event layer: combo bursts, battle-start stinger, KO banner
-  const [comboBurst, setComboBurst] = useState<{ id: number; combo: number; mult: number } | null>(null);
+  const [comboBurst, setComboBurst] = useState<{ id: number; combo: number; mult: number } | null>(
+    null,
+  );
   const comboBurstIdRef = useRef(0);
   const [koBanner, setKoBanner] = useState<"victory" | "defeat" | null>(null);
   const [showFight, setShowFight] = useState(false);
@@ -996,12 +1351,12 @@ function BattleArena() {
 
   // Issue 1: ref-based log pipeline — prevents React batching from swallowing
   // multiple synchronous addLog calls and eliminates nested-setState side-effects.
-  const logCounterRef  = useRef(0);
+  const logCounterRef = useRef(0);
   const pendingLogsRef = useRef<LogEntry[]>([]);
 
   // Issue 1: snapshot refs so aiTurn/ghostTurn can read current HP without
   // calling setState inside another setState's updater function.
-  const playerRef   = useRef(player);
+  const playerRef = useRef(player);
   const opponentRef = useRef(opponent);
   const recordsRef = useRef<QuestionRecord[]>([]);
   const longestStreakRef = useRef(0);
@@ -1009,20 +1364,20 @@ function BattleArena() {
   const totalScoreRef = useRef(0);
 
   // Issue 2: incoming chat items populated by the PvP channel subscription.
-  const [incomingChats, setIncomingChats]   = useState<ChatItem[]>([]);
-  const chatCounterRef                       = useRef(0);
-  const chatMutedRef                         = useRef(false);
+  const [incomingChats, setIncomingChats] = useState<ChatItem[]>([]);
+  const chatCounterRef = useRef(0);
+  const chatMutedRef = useRef(false);
 
   // PvP / matchmaking state
-  const [opponentType, setOpponentType]     = useState<OpponentType>("bot");
-  const [confirmExit, setConfirmExit]       = useState(false);
-  const [matchStatus, setMatchStatus]       = useState("Finding opponent…");
-  const [matchTier, setMatchTier]           = useState<OpponentType>("live");
-  const [pvpBattleId, setPvpBattleId]       = useState<string | null>(null);
-  const [playerRating, setPlayerRating]     = useState(1000);
+  const [opponentType, setOpponentType] = useState<OpponentType>("bot");
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [matchStatus, setMatchStatus] = useState("Finding opponent…");
+  const [matchTier, setMatchTier] = useState<OpponentType>("live");
+  const [pvpBattleId, setPvpBattleId] = useState<string | null>(null);
+  const [playerRating, setPlayerRating] = useState(1000);
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
   const [opponentRating, setOpponentRating] = useState(1000);
-  const [ratingChange, setRatingChange]     = useState<number | null>(null);
+  const [ratingChange, setRatingChange] = useState<number | null>(null);
   const [liveTurnNumber, setLiveTurnNumber] = useState(1);
   const [liveActionLocked, setLiveActionLocked] = useState(false);
   const [liveOpponentLocked, setLiveOpponentLocked] = useState(false);
@@ -1030,12 +1385,12 @@ function BattleArena() {
   const [liveRematchState, setLiveRematchState] = useState<"idle" | "waiting" | "starting">("idle");
 
   // Refs for async-safe access inside callbacks
-  const pvpChannelRef     = useRef<RealtimeChannel | null>(null);
-  const ghostSessionRef   = useRef<GhostSession | null>(null);
+  const pvpChannelRef = useRef<RealtimeChannel | null>(null);
+  const ghostSessionRef = useRef<GhostSession | null>(null);
   const ghostTurnIndexRef = useRef(0);
-  const playerRatingRef   = useRef(1000);
+  const playerRatingRef = useRef(1000);
   const opponentRatingRef = useRef(1000);
-  const opponentTypeRef   = useRef<OpponentType>("bot");
+  const opponentTypeRef = useRef<OpponentType>("bot");
   const pvpBattleIdRef = useRef<string | null>(null);
   const liveTurnNumberRef = useRef(1);
   const liveActionLockedRef = useRef(false);
@@ -1043,7 +1398,9 @@ function BattleArena() {
   const liveResolvingRef = useRef(false);
   const liveResolvedTurnsRef = useRef<Set<number>>(new Set());
   const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
-  const liveResolutionRef = useRef<(actions: LiveTurnActionRow[], turnNumber: number) => void>(() => {});
+  const liveResolutionRef = useRef<(actions: LiveTurnActionRow[], turnNumber: number) => void>(
+    () => {},
+  );
   const rematchStartedRef = useRef(false);
   const liveRematchStateRef = useRef<"idle" | "waiting" | "starting">("idle");
   const rematchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1058,7 +1415,9 @@ function BattleArena() {
   // Fetch player profile (XP + rating + username)
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       myUserIdRef.current = user.id;
       const [profileRes, ratingData] = await Promise.all([
@@ -1081,62 +1440,77 @@ function BattleArena() {
     });
 
     channel
-      .on("postgres_changes", {
-        event: "INSERT", schema: "public", table: "pvp_turn_actions",
-        filter: `battle_id=eq.${pvpBattleId}`,
-      }, async (payload) => {
-        const row = payload.new as { turn_number: number; actor_id: string };
-        if (row.turn_number !== liveTurnNumberRef.current) return;
-        if (row.actor_id !== myUserIdRef.current) {
-          liveOpponentLockedRef.current = true;
-          setLiveOpponentLocked(true);
-        }
-        if (liveActionLockedRef.current) {
-          const { data } = await supabase.rpc("get_pvp_turn_resolution", {
-            p_battle_id: pvpBattleId,
-            p_turn_number: row.turn_number,
-          });
-          if (data?.ready) liveResolutionRef.current(data.actions ?? [], row.turn_number);
-        }
-      })
-      .on("postgres_changes", {
-        event: "UPDATE", schema: "public", table: "pvp_battles",
-        filter: `id=eq.${pvpBattleId}`,
-      }, async (payload) => {
-        const row = payload.new as TableRow<"pvp_battles">;
-        if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
-          finishBattle(row.winner_id === myUserIdRef.current);
-        }
-        if (row.rematch_battle_id && !rematchStartedRef.current) {
-          rematchStartedRef.current = true;
-          setLiveRematchState("starting");
-          await startLiveBattleFromId(row.rematch_battle_id as string);
-        } else if (
-          Array.isArray(row.rematch_requested_by)
-          && row.rematch_requested_by.length === 1
-          && row.rematch_requested_by[0] !== myUserIdRef.current
-          && liveRematchStateRef.current === "idle"
-        ) {
-          // Opponent asked for a rematch first — surface it so the player
-          // knows clicking QUICK REMATCH will jump straight into another match.
-          toast(`${opponentRef.current.name} wants a rematch.`, {
-            description: "Click QUICK REMATCH on the result screen to accept.",
-          });
-        }
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "pvp_turn_actions",
+          filter: `battle_id=eq.${pvpBattleId}`,
+        },
+        async (payload) => {
+          const row = payload.new as { turn_number: number; actor_id: string };
+          if (row.turn_number !== liveTurnNumberRef.current) return;
+          if (row.actor_id !== myUserIdRef.current) {
+            liveOpponentLockedRef.current = true;
+            setLiveOpponentLocked(true);
+          }
+          if (liveActionLockedRef.current) {
+            const { data } = await supabase.rpc("get_pvp_turn_resolution", {
+              p_battle_id: pvpBattleId,
+              p_turn_number: row.turn_number,
+            });
+            if (data?.ready) liveResolutionRef.current(data.actions ?? [], row.turn_number);
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "pvp_battles",
+          filter: `id=eq.${pvpBattleId}`,
+        },
+        async (payload) => {
+          const row = payload.new as TableRow<"pvp_battles">;
+          if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
+            finishBattle(row.winner_id === myUserIdRef.current);
+          }
+          if (row.rematch_battle_id && !rematchStartedRef.current) {
+            rematchStartedRef.current = true;
+            setLiveRematchState("starting");
+            await startLiveBattleFromId(row.rematch_battle_id);
+          } else if (
+            Array.isArray(row.rematch_requested_by) &&
+            row.rematch_requested_by.length === 1 &&
+            row.rematch_requested_by[0] !== myUserIdRef.current &&
+            liveRematchStateRef.current === "idle"
+          ) {
+            // Opponent asked for a rematch first — surface it so the player
+            // knows clicking QUICK REMATCH will jump straight into another match.
+            toast(`${opponentRef.current.name} wants a rematch.`, {
+              description: "Click QUICK REMATCH on the result screen to accept.",
+            });
+          }
+        },
+      )
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
         if (payload.winner_id) finishBattle(payload.winner_id === myUserIdRef.current);
       })
       // Issue 2: receive opponent chat / emoji reactions
       .on("broadcast", { event: "chat" }, ({ payload }) => {
         if (chatMutedRef.current) return;
-        setIncomingChats(prev => [...prev, {
-          id: ++chatCounterRef.current,
-          text:        payload.text as string,
-          fromPlayer:  false,
-          senderName:  opponentRef.current.name,
-          ts:          Date.now(),
-        }]);
+        setIncomingChats((prev) => [
+          ...prev,
+          {
+            id: ++chatCounterRef.current,
+            text: payload.text as string,
+            fromPlayer: false,
+            senderName: opponentRef.current.name,
+            ts: Date.now(),
+          },
+        ]);
       })
       .subscribe();
 
@@ -1145,19 +1519,35 @@ function BattleArena() {
       void supabase.removeChannel(channel);
       pvpChannelRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pvpBattleId, opponentType]);
 
   // Keep snapshot refs in sync after every render so async callbacks always
   // read the latest HP without nesting setState inside another updater.
-  useEffect(() => { playerRef.current   = player;   }, [player]);
-  useEffect(() => { opponentRef.current = opponent; }, [opponent]);
-  useEffect(() => { recordsRef.current = records; }, [records]);
-  useEffect(() => { longestStreakRef.current = longestStreak; }, [longestStreak]);
-  useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
-  useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
-  useEffect(() => { pvpBattleIdRef.current = pvpBattleId; }, [pvpBattleId]);
-  useEffect(() => { liveRematchStateRef.current = liveRematchState; }, [liveRematchState]);
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+  useEffect(() => {
+    opponentRef.current = opponent;
+  }, [opponent]);
+  useEffect(() => {
+    recordsRef.current = records;
+  }, [records]);
+  useEffect(() => {
+    longestStreakRef.current = longestStreak;
+  }, [longestStreak]);
+  useEffect(() => {
+    fastestAnswerRef.current = fastestAnswer;
+  }, [fastestAnswer]);
+  useEffect(() => {
+    totalScoreRef.current = totalScore;
+  }, [totalScore]);
+  useEffect(() => {
+    pvpBattleIdRef.current = pvpBattleId;
+  }, [pvpBattleId]);
+  useEffect(() => {
+    liveRematchStateRef.current = liveRematchState;
+  }, [liveRematchState]);
 
   const resetLiveTurnLocks = useCallback((nextTurn: number) => {
     liveTurnNumberRef.current = nextTurn;
@@ -1171,12 +1561,14 @@ function BattleArena() {
     setLiveResolvingTurn(false);
   }, []);
 
-
-  const getArch = useCallback((id: ArchetypeId): Archetype => {
-    const base = ARCHETYPES[id];
-    if (id === "gambler" && gamblerStats) return { ...base, ...gamblerStats };
-    return base;
-  }, [gamblerStats]);
+  const getArch = useCallback(
+    (id: ArchetypeId): Archetype => {
+      const base = ARCHETYPES[id];
+      if (id === "gambler" && gamblerStats) return { ...base, ...gamblerStats };
+      return base;
+    },
+    [gamblerStats],
+  );
 
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
 
@@ -1197,9 +1589,9 @@ function BattleArena() {
     queueMicrotask(() => {
       if (pendingLogsRef.current.length === 0) return;
       const batch = pendingLogsRef.current.splice(0); // drain atomically
-      setLogs(prev => {
-        const existingIds = new Set(prev.map(e => e.id));
-        return [...prev, ...batch.filter(e => !existingIds.has(e.id))];
+      setLogs((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id));
+        return [...prev, ...batch.filter((e) => !existingIds.has(e.id))];
       });
     });
   }, []);
@@ -1207,7 +1599,7 @@ function BattleArena() {
   const fireComboBurst = useCallback((combo: number, mult: number) => {
     const id = ++comboBurstIdRef.current;
     setComboBurst({ id, combo, mult });
-    setTimeout(() => setComboBurst(prev => (prev?.id === id ? null : prev)), 1200);
+    setTimeout(() => setComboBurst((prev) => (prev?.id === id ? null : prev)), 1200);
   }, []);
 
   // "FIGHT" stinger — fires once per battle, the first time we hit select.
@@ -1220,53 +1612,129 @@ function BattleArena() {
       const t = setTimeout(() => setShowFight(false), 1200);
       return () => clearTimeout(t);
     }
-    if (phase === "idle" || phase === "classSelect" || phase === "searching" || phase === "result") {
+    if (
+      phase === "idle" ||
+      phase === "classSelect" ||
+      phase === "searching" ||
+      phase === "result"
+    ) {
       fightShownRef.current = false;
     }
   }, [phase]);
 
-  const resolveLiveTurn = useCallback((actions: LiveTurnActionRow[], turnNumber: number) => {
-    if (liveResolvedTurnsRef.current.has(turnNumber) || liveResolvingRef.current) return;
-    const myId = myUserIdRef.current;
-    if (!myId) return;
-    const mine = actions.find(a => a.actor_id === myId);
-    const theirs = actions.find(a => a.actor_id !== myId);
-    if (!mine || !theirs) return;
+  const resolveLiveTurn = useCallback(
+    (actions: LiveTurnActionRow[], turnNumber: number) => {
+      if (liveResolvedTurnsRef.current.has(turnNumber) || liveResolvingRef.current) return;
+      const myId = myUserIdRef.current;
+      if (!myId) return;
+      const mine = actions.find((a) => a.actor_id === myId);
+      const theirs = actions.find((a) => a.actor_id !== myId);
+      if (!mine || !theirs) return;
 
-    liveResolvedTurnsRef.current.add(turnNumber);
-    liveResolvingRef.current = true;
-    setLiveResolvingTurn(true);
-    setPhase("animate");
+      liveResolvedTurnsRef.current.add(turnNumber);
+      liveResolvingRef.current = true;
+      setLiveResolvingTurn(true);
+      setPhase("animate");
 
-    const curPlayer = playerRef.current;
-    const curOpp = opponentRef.current;
-    const nextPlayerHp = Math.max(0, Math.min(curPlayer.maxHp, curPlayer.hp - theirs.damage - mine.self_damage + mine.heal));
-    const nextOppHp = Math.max(0, Math.min(curOpp.maxHp, curOpp.hp - mine.damage - theirs.self_damage + theirs.heal));
+      const curPlayer = playerRef.current;
+      const curOpp = opponentRef.current;
+      const nextPlayerHp = Math.max(
+        0,
+        Math.min(curPlayer.maxHp, curPlayer.hp - theirs.damage - mine.self_damage + mine.heal),
+      );
+      const nextOppHp = Math.max(
+        0,
+        Math.min(curOpp.maxHp, curOpp.hp - mine.damage - theirs.self_damage + theirs.heal),
+      );
 
-    if (mine.damage > 0) { setShowOpponentHit(true); addLog({ actor: "player", actionType: mine.action as LogActionType, result: `${ACTIONS[mine.action].label}: ${mine.damage} DMG.`, value: mine.damage }); }
-    if (mine.heal > 0) { setShowPlayerHeal(true); addLog({ actor: "player", actionType: "heal", result: `Heal resolves: +${mine.heal} HP.`, value: mine.heal }); }
-    if (mine.self_damage > 0) { setShowPlayerHit(true); addLog({ actor: "player", actionType: "miss", result: `Your miss resolves: -${mine.self_damage} HP.`, value: mine.self_damage }); }
-    if (theirs.damage > 0) { setShowPlayerHit(true); addLog({ actor: "opponent", actionType: theirs.action as LogActionType, result: `${opponentRef.current.name}: ${theirs.damage} DMG.`, value: theirs.damage }); }
-    if (theirs.heal > 0) addLog({ actor: "opponent", actionType: "heal", result: `${opponentRef.current.name} heals +${theirs.heal} HP.`, value: theirs.heal });
-    if (theirs.self_damage > 0) addLog({ actor: "opponent", actionType: "miss", result: `${opponentRef.current.name} misses: -${theirs.self_damage} HP.`, value: theirs.self_damage });
+      if (mine.damage > 0) {
+        setShowOpponentHit(true);
+        addLog({
+          actor: "player",
+          actionType: mine.action as LogActionType,
+          result: `${ACTIONS[mine.action].label}: ${mine.damage} DMG.`,
+          value: mine.damage,
+        });
+      }
+      if (mine.heal > 0) {
+        setShowPlayerHeal(true);
+        addLog({
+          actor: "player",
+          actionType: "heal",
+          result: `Heal resolves: +${mine.heal} HP.`,
+          value: mine.heal,
+        });
+      }
+      if (mine.self_damage > 0) {
+        setShowPlayerHit(true);
+        addLog({
+          actor: "player",
+          actionType: "miss",
+          result: `Your miss resolves: -${mine.self_damage} HP.`,
+          value: mine.self_damage,
+        });
+      }
+      if (theirs.damage > 0) {
+        setShowPlayerHit(true);
+        addLog({
+          actor: "opponent",
+          actionType: theirs.action as LogActionType,
+          result: `${opponentRef.current.name}: ${theirs.damage} DMG.`,
+          value: theirs.damage,
+        });
+      }
+      if (theirs.heal > 0)
+        addLog({
+          actor: "opponent",
+          actionType: "heal",
+          result: `${opponentRef.current.name} heals +${theirs.heal} HP.`,
+          value: theirs.heal,
+        });
+      if (theirs.self_damage > 0)
+        addLog({
+          actor: "opponent",
+          actionType: "miss",
+          result: `${opponentRef.current.name} misses: -${theirs.self_damage} HP.`,
+          value: theirs.self_damage,
+        });
 
-    setMomentum(mine.momentum);
-    setOpponentMomentum(theirs.momentum);
-    setPlayer(p => ({ ...p, hp: nextPlayerHp, focus: Math.max(0, Math.min(p.maxFocus, p.focus + mine.focus_delta)) }));
-    setOpponent(o => ({ ...o, hp: nextOppHp, focus: Math.max(0, Math.min(o.maxFocus, o.focus + theirs.focus_delta)) }));
+      setMomentum(mine.momentum);
+      setOpponentMomentum(theirs.momentum);
+      setPlayer((p) => ({
+        ...p,
+        hp: nextPlayerHp,
+        focus: Math.max(0, Math.min(p.maxFocus, p.focus + mine.focus_delta)),
+      }));
+      setOpponent((o) => ({
+        ...o,
+        hp: nextOppHp,
+        focus: Math.max(0, Math.min(o.maxFocus, o.focus + theirs.focus_delta)),
+      }));
 
-    setTimeout(() => {
-      setShowPlayerHit(false); setShowOpponentHit(false); setShowPlayerHeal(false);
-      if (nextOppHp <= 0 || nextPlayerHp <= 0) finishBattle(nextOppHp <= 0 && nextPlayerHp > 0 ? true : nextOppHp <= nextPlayerHp);
-      else { resetLiveTurnLocks(turnNumber + 1); setPhase("select"); }
-    }, 900);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addLog, resetLiveTurnLocks]);
+      setTimeout(() => {
+        setShowPlayerHit(false);
+        setShowOpponentHit(false);
+        setShowPlayerHeal(false);
+        if (nextOppHp <= 0 || nextPlayerHp <= 0)
+          finishBattle(nextOppHp <= 0 && nextPlayerHp > 0 ? true : nextOppHp <= nextPlayerHp);
+        else {
+          resetLiveTurnLocks(turnNumber + 1);
+          setPhase("select");
+        }
+      }, 900);
+       
+    },
+    [addLog, resetLiveTurnLocks],
+  );
 
-  useEffect(() => { liveResolutionRef.current = resolveLiveTurn; }, [resolveLiveTurn]);
+  useEffect(() => {
+    liveResolutionRef.current = resolveLiveTurn;
+  }, [resolveLiveTurn]);
 
   async function startLiveBattleFromId(battleId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
     myUserIdRef.current = user.id;
     const { data: battle } = await supabase
@@ -1277,14 +1745,26 @@ function BattleArena() {
     if (!battle) return;
     const iAmChallenger = battle.challenger_id === user.id;
     const oppId = iAmChallenger ? battle.opponent_id : battle.challenger_id;
-    const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", oppId).maybeSingle();
-    const { data: rating } = await supabase.from("player_ratings").select("rating").eq("user_id", oppId).maybeSingle();
+    const { data: prof } = await supabase
+      .from("user_profiles")
+      .select("username")
+      .eq("user_id", oppId)
+      .maybeSingle();
+    const { data: rating } = await supabase
+      .from("player_ratings")
+      .select("rating")
+      .eq("user_id", oppId)
+      .maybeSingle();
     startDirectBattle({
       battleId,
       // Archetypes are written by this client on enqueue, so the `text`
       // columns hold ArchetypeId values by construction.
-      myArchetype: (iAmChallenger ? battle.challenger_archetype : battle.opponent_archetype) as ArchetypeId,
-      opponentArchetype: (iAmChallenger ? battle.opponent_archetype : battle.challenger_archetype) as ArchetypeId,
+      myArchetype: (iAmChallenger
+        ? battle.challenger_archetype
+        : battle.opponent_archetype) as ArchetypeId,
+      opponentArchetype: (iAmChallenger
+        ? battle.opponent_archetype
+        : battle.challenger_archetype) as ArchetypeId,
       opponentName: prof?.username ?? `Player_${oppId.slice(0, 6)}`,
       opponentRating: rating?.rating ?? 1000,
       iAmChallenger,
@@ -1295,387 +1775,492 @@ function BattleArena() {
   useEffect(() => {
     if (phase === "question" && timeLeft > 0) {
       timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) { handleAnswer(false, maxTime); return 0; }
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            handleAnswer(false, maxTime);
+            return 0;
+          }
           return prev - 1;
         });
       }, 1000);
-      return () => { if (timerRef.current) clearInterval(timerRef.current); };
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
     }
   }, [phase, question]);
 
-  const handleAnswer = useCallback((correct: boolean, timeSpent: number) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (!currentAction || !question) return;
+  const handleAnswer = useCallback(
+    (correct: boolean, timeSpent: number) => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (!currentAction || !question) return;
 
-    if (battleMemoryRef.current) {
-      updateBattleMemoryPlayerTurn(battleMemoryRef.current, currentAction, correct);
-    }
-
-    const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
-    const nextRecords = [...recordsRef.current, record];
-    recordsRef.current = nextRecords;
-    setRecords(nextRecords);
-    // Feed Luna's adaptive context (timeSpent is in seconds, recordAnswer expects ms).
-    void import("@/lib/luna-context").then(({ recordAnswer, updateLunaContext }) => {
-      recordAnswer(correct, timeSpent * 1000);
-      updateLunaContext({ lessonTitle: question.topic, difficulty: question.difficulty });
-    });
-
-    if (correct && timeSpent < fastestAnswerRef.current) {
-      fastestAnswerRef.current = timeSpent;
-      setFastestAnswer(timeSpent);
-    }
-
-    const arch = getArch(archetype);
-    const step = getEffectiveMultiplierStep(arch, nextRecords.length - 1);
-    const currentStreakMult = streakToMultiplier(momentum, step);
-
-    if (opponentTypeRef.current === "live") {
-      const nextMom = correct ? momentum + 1 : 0;
-      if (correct && nextMom > longestStreakRef.current) {
-        longestStreakRef.current = nextMom;
-        setLongestStreak(nextMom);
+      if (battleMemoryRef.current) {
+        updateBattleMemoryPlayerTurn(battleMemoryRef.current, currentAction, correct);
       }
 
-      let damage = 0;
-      let selfDamage = 0;
-      let heal = 0;
-      let focusDelta = correct ? FOCUS_GAIN[currentAction] : 0;
+      const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
+      const nextRecords = [...recordsRef.current, record];
+      recordsRef.current = nextRecords;
+      setRecords(nextRecords);
+      // Feed Luna's adaptive context (timeSpent is in seconds, recordAnswer expects ms).
+      void import("@/lib/luna-context").then(({ recordAnswer, updateLunaContext }) => {
+        recordAnswer(correct, timeSpent * 1000);
+        updateLunaContext({ lessonTitle: question.topic, difficulty: question.difficulty });
+      });
+
+      if (correct && timeSpent < fastestAnswerRef.current) {
+        fastestAnswerRef.current = timeSpent;
+        setFastestAnswer(timeSpent);
+      }
+
+      const arch = getArch(archetype);
+      const step = getEffectiveMultiplierStep(arch, nextRecords.length - 1);
+      const currentStreakMult = streakToMultiplier(momentum, step);
+
+      if (opponentTypeRef.current === "live") {
+        const nextMom = correct ? momentum + 1 : 0;
+        if (correct && nextMom > longestStreakRef.current) {
+          longestStreakRef.current = nextMom;
+          setLongestStreak(nextMom);
+        }
+
+        let damage = 0;
+        let selfDamage = 0;
+        let heal = 0;
+        let focusDelta = correct ? FOCUS_GAIN[currentAction] : 0;
+
+        if (correct) {
+          sfxStreak(nextMom);
+          if (nextMom > 0 && nextMom % comboThreshold === 0) {
+            const newMult = streakToMultiplier(nextMom, step);
+            addLog({
+              actor: "system",
+              actionType: "combo",
+              result: `COMBO x${Math.floor(nextMom / comboThreshold)} — ${newMult.toFixed(2)}× damage locked!`,
+            });
+            fireComboBurst(Math.floor(nextMom / comboThreshold), newMult);
+            sfxCombo();
+          }
+
+          if (currentAction === "defend") {
+            heal =
+              arch.healAmount === null
+                ? 0
+                : Math.min(arch.healAmount, playerRef.current.maxHp - playerRef.current.hp);
+          } else if (currentAction === "wild") {
+            sfxWild();
+            const roll = Math.random();
+            if (roll < 0.333) damage = Math.floor(Math.random() * 30) + 10;
+            else if (roll < 0.667)
+              heal = Math.min(20, playerRef.current.maxHp - playerRef.current.hp);
+            else {
+              damage = 20;
+              focusDelta += 20;
+            }
+          } else {
+            damage = Math.floor(
+              getEffectiveDamage(arch, {
+                action: currentAction,
+                timeSpent,
+                maxTime,
+                recordCount: nextRecords.length - 1,
+              }) * currentStreakMult,
+            );
+          }
+        } else {
+          sfxBreak();
+          selfDamage = Math.floor(
+            (Math.floor(Math.random() * 10) + 8) * hpToSelfDmgMult(arch.maxHp),
+          );
+        }
+
+        liveActionLockedRef.current = true;
+        livePendingActionRef.current = {
+          actor_id: myUserIdRef.current ?? "",
+          action: currentAction,
+          correct,
+          damage,
+          self_damage: selfDamage,
+          heal,
+          focus_delta: focusDelta,
+          momentum: nextMom,
+          time_spent: timeSpent,
+          question,
+        };
+        setLiveActionLocked(true);
+        setPhase("select");
+        addLog({
+          actor: "system",
+          actionType: "info",
+          result: `Action locked for turn ${liveTurnNumberRef.current}. ${liveOpponentLockedRef.current ? "Resolving…" : `Waiting for ${opponentRef.current.name}.`}`,
+        });
+
+        void (async () => {
+          const battleId = pvpBattleIdRef.current;
+          if (!battleId) return;
+          const { data, error } = await supabase.rpc("submit_pvp_turn_action" as any, {
+            p_battle_id: battleId,
+            p_turn_number: liveTurnNumberRef.current,
+            p_action: currentAction,
+            p_correct: correct,
+            p_damage: damage,
+            p_self_damage: selfDamage,
+            p_heal: heal,
+            p_focus_delta: focusDelta,
+            p_momentum: nextMom,
+            p_time_spent: timeSpent,
+            p_question: { q: question.q, difficulty: question.difficulty, topic: question.topic },
+          });
+          if (error) {
+            liveActionLockedRef.current = false;
+            setLiveActionLocked(false);
+            toast.error("Couldn't lock PvP action — try again.");
+            return;
+          }
+          if (data?.ready) {
+            liveResolutionRef.current(data.actions ?? [], liveTurnNumberRef.current);
+          } else {
+            // Polling fallback: realtime INSERT events on pvp_turn_actions are
+            // the primary path that wakes the resolver, but if the websocket
+            // hiccups (mobile background tab, transient disconnect, replication
+            // lag) the turn would stall forever with both clients showing
+            // "Waiting for opponent". Poll get_pvp_turn_resolution every 1.5s
+            // until both actions are recorded or the turn moves on.
+            const turnAtSubmit = liveTurnNumberRef.current;
+            const battleIdAtSubmit = pvpBattleIdRef.current;
+            const poll = setInterval(async () => {
+              if (
+                !battleIdAtSubmit ||
+                liveTurnNumberRef.current !== turnAtSubmit ||
+                liveResolvedTurnsRef.current.has(turnAtSubmit) ||
+                liveResolvingRef.current ||
+                battleFinishedRef.current
+              ) {
+                clearInterval(poll);
+                return;
+              }
+              const { data: res } = await supabase.rpc("get_pvp_turn_resolution" as any, {
+                p_battle_id: battleIdAtSubmit,
+                p_turn_number: turnAtSubmit,
+              });
+              if (res?.ready) {
+                clearInterval(poll);
+                liveResolutionRef.current(res.actions ?? [], turnAtSubmit);
+              }
+            }, 1500);
+          }
+        })();
+        return;
+      }
+
+      setPhase("animate");
 
       if (correct) {
-        sfxStreak(nextMom);
-        if (nextMom > 0 && nextMom % comboThreshold === 0) {
-          const newMult = streakToMultiplier(nextMom, step);
-          addLog({ actor: "system", actionType: "combo", result: `COMBO x${Math.floor(nextMom / comboThreshold)} — ${newMult.toFixed(2)}× damage locked!` });
-          fireComboBurst(Math.floor(nextMom / comboThreshold), newMult);
+        const newMom = momentum + 1;
+        setMomentum(newMom);
+        if (newMom > longestStreak) setLongestStreak(newMom);
+        sfxStreak(newMom);
+
+        // Announce combo activations in the log with the actual live multiplier
+        if (newMom > 0 && newMom % comboThreshold === 0) {
+          const newMult = streakToMultiplier(newMom, step);
+          addLog({
+            actor: "system",
+            actionType: "combo",
+            result: `COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!`,
+          });
+          fireComboBurst(Math.floor(newMom / comboThreshold), newMult);
           sfxCombo();
         }
 
         if (currentAction === "defend") {
-          heal = arch.healAmount === null ? 0 : Math.min(arch.healAmount, playerRef.current.maxHp - playerRef.current.hp);
+          const gain = FOCUS_GAIN.defend;
+          if (arch.healAmount !== null) {
+            const heal = Math.min(arch.healAmount, player.maxHp - player.hp);
+            setPlayer((prev) => ({
+              ...prev,
+              hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!),
+              focus: Math.min(prev.maxFocus, prev.focus + gain),
+            }));
+            setShowPlayerHeal(true);
+            addLog({
+              actor: "player",
+              actionType: "heal",
+              result: `Defend: +${heal} HP, +${gain} Focus.`,
+              value: heal,
+            });
+          } else {
+            setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
+            addLog({
+              actor: "player",
+              actionType: "heal",
+              result: `Defend: +${gain} Focus (this class cannot heal).`,
+              value: gain,
+            });
+          }
         } else if (currentAction === "wild") {
+          // Three distinct event types — each with unique visual/audio identity
           sfxWild();
           const roll = Math.random();
-          if (roll < 0.333) damage = Math.floor(Math.random() * 30) + 10;
-          else if (roll < 0.667) heal = Math.min(20, playerRef.current.maxHp - playerRef.current.hp);
-          else { damage = 20; focusDelta += 20; }
-        } else {
-          damage = Math.floor(getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: nextRecords.length - 1 }) * currentStreakMult);
-        }
-      } else {
-        sfxBreak();
-        selfDamage = Math.floor((Math.floor(Math.random() * 10) + 8) * hpToSelfDmgMult(arch.maxHp));
-      }
-
-      liveActionLockedRef.current = true;
-      livePendingActionRef.current = {
-        actor_id: myUserIdRef.current ?? "",
-        action: currentAction,
-        correct,
-        damage,
-        self_damage: selfDamage,
-        heal,
-        focus_delta: focusDelta,
-        momentum: nextMom,
-        time_spent: timeSpent,
-        question,
-      };
-      setLiveActionLocked(true);
-      setPhase("select");
-      addLog({
-        actor: "system",
-        actionType: "info",
-        result: `Action locked for turn ${liveTurnNumberRef.current}. ${liveOpponentLockedRef.current ? "Resolving…" : `Waiting for ${opponentRef.current.name}.`}`,
-      });
-
-      void (async () => {
-        const battleId = pvpBattleIdRef.current;
-        if (!battleId) return;
-        const { data, error } = await supabase.rpc("submit_pvp_turn_action", {
-          p_battle_id: battleId,
-          p_turn_number: liveTurnNumberRef.current,
-          p_action: currentAction,
-          p_correct: correct,
-          p_damage: damage,
-          p_self_damage: selfDamage,
-          p_heal: heal,
-          p_focus_delta: focusDelta,
-          p_momentum: nextMom,
-          p_time_spent: timeSpent,
-          p_question: { q: question.q, difficulty: question.difficulty, topic: question.topic },
-        });
-        if (error) {
-          liveActionLockedRef.current = false;
-          setLiveActionLocked(false);
-          toast.error("Couldn't lock PvP action — try again.");
-          return;
-        }
-        if (data?.ready) {
-          liveResolutionRef.current(data.actions ?? [], liveTurnNumberRef.current);
-        } else {
-          // Polling fallback: realtime INSERT events on pvp_turn_actions are
-          // the primary path that wakes the resolver, but if the websocket
-          // hiccups (mobile background tab, transient disconnect, replication
-          // lag) the turn would stall forever with both clients showing
-          // "Waiting for opponent". Poll get_pvp_turn_resolution every 1.5s
-          // until both actions are recorded or the turn moves on.
-          const turnAtSubmit = liveTurnNumberRef.current;
-          const battleIdAtSubmit = pvpBattleIdRef.current;
-          const poll = setInterval(async () => {
-            if (
-              !battleIdAtSubmit
-              || liveTurnNumberRef.current !== turnAtSubmit
-              || liveResolvedTurnsRef.current.has(turnAtSubmit)
-              || liveResolvingRef.current
-              || battleFinishedRef.current
-            ) {
-              clearInterval(poll);
-              return;
-            }
-            const { data: res } = await supabase.rpc("get_pvp_turn_resolution", {
-              p_battle_id: battleIdAtSubmit,
-              p_turn_number: turnAtSubmit,
+          if (roll < 0.333) {
+            const d = Math.floor(Math.random() * 30) + 10;
+            setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
+            setShowOpponentHit(true);
+            setWildEvent({ type: "chaos", sub: `${d} DMG` });
+            addLog({
+              actor: "player",
+              actionType: "wild",
+              result: `CHAOS STRIKE: ${d} DMG!`,
+              value: d,
             });
-            if (res?.ready) {
-              clearInterval(poll);
-              liveResolutionRef.current(res.actions ?? [], turnAtSubmit);
-            }
-          }, 1500);
-        }
-      })();
-      return;
-    }
-
-    setPhase("animate");
-
-    if (correct) {
-      const newMom = momentum + 1;
-      setMomentum(newMom);
-      if (newMom > longestStreak) setLongestStreak(newMom);
-      sfxStreak(newMom);
-
-      // Announce combo activations in the log with the actual live multiplier
-      if (newMom > 0 && newMom % comboThreshold === 0) {
-        const newMult = streakToMultiplier(newMom, step);
-        addLog({ actor: "system", actionType: "combo", result: `COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!` });
-        fireComboBurst(Math.floor(newMom / comboThreshold), newMult);
-        sfxCombo();
-      }
-
-      if (currentAction === "defend") {
-        const gain = FOCUS_GAIN.defend;
-        if (arch.healAmount !== null) {
-          const heal = Math.min(arch.healAmount, player.maxHp - player.hp);
-          setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
-          setShowPlayerHeal(true);
-          addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
+          } else if (roll < 0.667) {
+            setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 20) }));
+            setShowPlayerHeal(true);
+            setWildEvent({ type: "mend", sub: "+20 HP" });
+            addLog({
+              actor: "player",
+              actionType: "wild",
+              result: `WILD MEND: +20 HP!`,
+              value: 20,
+            });
+          } else {
+            const d = 20;
+            setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
+            setShowOpponentHit(true);
+            setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + 20) }));
+            setWildEvent({ type: "surge", sub: `${d} DMG + Focus` });
+            addLog({
+              actor: "player",
+              actionType: "wild",
+              result: `ARCANE SURGE: ${d} DMG + Focus!`,
+              value: d,
+            });
+          }
+          setTimeout(() => setWildEvent(null), 1400);
         } else {
-          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
-          addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (this class cannot heal).`, value: gain });
-        }
-      } else if (currentAction === "wild") {
-        // Three distinct event types — each with unique visual/audio identity
-        sfxWild();
-        const roll = Math.random();
-        if (roll < 0.333) {
-          const d = Math.floor(Math.random() * 30) + 10;
-          setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
+          const dmg = Math.floor(
+            getEffectiveDamage(arch, {
+              action: currentAction,
+              timeSpent,
+              maxTime,
+              recordCount: records.length,
+            }) * currentStreakMult,
+          );
+          setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
+          const focusGain = FOCUS_GAIN[currentAction];
+          if (focusGain > 0) {
+            setPlayer((prev) => ({
+              ...prev,
+              focus: Math.min(prev.maxFocus, prev.focus + focusGain),
+            }));
+          }
           setShowOpponentHit(true);
-          setWildEvent({ type: "chaos", sub: `${d} DMG` });
-          addLog({ actor: "player", actionType: "wild", result: `CHAOS STRIKE: ${d} DMG!`, value: d });
-        } else if (roll < 0.667) {
-          setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 20) }));
-          setShowPlayerHeal(true);
-          setWildEvent({ type: "mend", sub: "+20 HP" });
-          addLog({ actor: "player", actionType: "wild", result: `WILD MEND: +20 HP!`, value: 20 });
-        } else {
-          const d = 20;
-          setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
-          setShowOpponentHit(true);
-          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + 20) }));
-          setWildEvent({ type: "surge", sub: `${d} DMG + Focus` });
-          addLog({ actor: "player", actionType: "wild", result: `ARCANE SURGE: ${d} DMG + Focus!`, value: d });
+          const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
+          addLog({
+            actor: "player",
+            actionType: currentAction,
+            result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`,
+            value: dmg,
+          });
         }
-        setTimeout(() => setWildEvent(null), 1400);
-      } else {
-        const dmg = Math.floor(
-          getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: records.length })
-          * currentStreakMult
+        setTotalScore(
+          (prev) =>
+            prev +
+            (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) *
+              currentStreakMult,
         );
-        setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
-        const focusGain = FOCUS_GAIN[currentAction];
-        if (focusGain > 0) {
-          setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + focusGain) }));
-        }
-        setShowOpponentHit(true);
-        const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
-        addLog({ actor: "player", actionType: currentAction as LogActionType, result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`, value: dmg });
-      }
-      setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
-    } else {
-      setMomentum(0);
-      sfxBreak();
-      let counterDmg = Math.floor(Math.random() * 10) + 8;
-      counterDmg = Math.floor(counterDmg * hpToSelfDmgMult(arch.maxHp));
-      // Healer passive: recover some HP on getting hit
-      if (archetype === "healer") {
-        const healAmt = Math.floor(counterDmg * 0.3);
-        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }));
-      }
-      setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
-      setShowPlayerHit(true);
-      addLog({ actor: "player", actionType: "miss", result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.maxHp >= 160 ? " Shield reduced!" : ""}`, value: counterDmg });
-    }
-
-    setTimeout(() => {
-      setShowPlayerHit(false);
-      setShowOpponentHit(false);
-      setShowPlayerHeal(false);
-
-      const curOpp    = opponentRef.current;
-      const curPlayer = playerRef.current;
-
-      if (curOpp.hp <= 0) {
-        finishBattle(true);
-      } else if (curPlayer.hp <= 0) {
-        finishBattle(false);
-      } else if (opponentTypeRef.current === "ghost") {
-        ghostTurn();
       } else {
-        aiTurn();
+        setMomentum(0);
+        sfxBreak();
+        let counterDmg = Math.floor(Math.random() * 10) + 8;
+        counterDmg = Math.floor(counterDmg * hpToSelfDmgMult(arch.maxHp));
+        // Healer passive: recover some HP on getting hit
+        if (archetype === "healer") {
+          const healAmt = Math.floor(counterDmg * 0.3);
+          setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }));
+        }
+        setPlayer((prev) => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
+        setShowPlayerHit(true);
+        addLog({
+          actor: "player",
+          actionType: "miss",
+          result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.maxHp >= 160 ? " Shield reduced!" : ""}`,
+          value: counterDmg,
+        });
       }
-    }, 800);
-  }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
 
-  const finishBattle = useCallback((won: boolean) => {
-    if (battleFinishedRef.current) return;
-    battleFinishedRef.current = true;
-    const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
-    if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
-      pvpChannelRef.current.send({
-        type: "broadcast", event: "battle_end",
-        payload: { winner_id: winnerId },
-      });
-    }
+      setTimeout(() => {
+        setShowPlayerHit(false);
+        setShowOpponentHit(false);
+        setShowPlayerHeal(false);
 
-    // Mirror the server-side formula in award_battle_xp so the number we
-    // animate up to in the report matches what actually lands on the profile:
-    //   xp = min(1000, correct*15 + (won ? 50 : 0))
-    const finalRecords = recordsRef.current;
-    const finalStreak = longestStreakRef.current;
-    const finalFastest = fastestAnswerRef.current;
-    const finalScore = totalScoreRef.current;
-    const totalQuestions = finalRecords.length;
-    const correctAnswers = finalRecords.filter(r => r.correct).length;
-    const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
-    setBattleStats({
-      totalQuestions,
-      correctAnswers,
-      longestStreak: finalStreak,
-      fastestAnswer: finalFastest,
-      records: [...finalRecords],
+        const curOpp = opponentRef.current;
+        const curPlayer = playerRef.current;
+
+        if (curOpp.hp <= 0) {
+          finishBattle(true);
+        } else if (curPlayer.hp <= 0) {
+          finishBattle(false);
+        } else if (opponentTypeRef.current === "ghost") {
+          ghostTurn();
+        } else {
+          aiTurn();
+        }
+      }, 800);
+    },
+    [
+      currentAction,
+      momentum,
+      player,
+      totalScore,
+      timeLeft,
+      maxTime,
+      question,
       archetype,
-      won,
-      score: Math.floor(finalScore),
-      xp,
-      opponentType: opponentTypeRef.current,
-    });
-    // Cinematic KO beat: hold on a VICTORY / DEFEAT banner before the report.
-    // Guard the delayed phase change so a battle that restarts in the gap
-    // (live rematch auto-start) can't get yanked back to the result screen.
-    setKoBanner(won ? "victory" : "defeat");
-    if (won) sfxVictory(); else sfxDefeat();
-    setTimeout(() => {
-      setKoBanner(null);
-      if (battleFinishedRef.current) setPhase("result");
-    }, 1700);
+      longestStreak,
+      fastestAnswer,
+    ],
+  );
 
-    // Persist battle to learning_history + increment daily challenge on win
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Feed every answered question into the shared concept-mastery store so
-      // Practice Weak Spots (and the Courses readiness engine) can use it.
-      // Best-effort — a missing table never affects the battle result.
-      void recordOutcomes(
-        user.id,
-        finalRecords.map((r) => ({
-          concept: r.question.topic,
-          subject: "Mathematics",
-          difficulty: r.question.difficulty,
-          correct: r.correct,
-          timeSpent: r.timeSpent,
-        })),
-      );
-
-      // Award XP here — at the guaranteed battle-end hook — rather than relying
-      // on the result screen mounting (which a live rematch or an early exit can
-      // skip). Server computes the amount from correct/total/won.
-      await awardBattleXp(correctAnswers, totalQuestions, won);
-
-      // Count today toward the daily-practice streak (server-authoritative,
-      // idempotent per day). Fires the milestone celebration when crossed.
-      await recordDailyPractice();
-
-      await supabase.rpc("log_learning_history", {
-        p_session_type:     "battle",
-        p_topic:            ARCHETYPES[archetype].name,
-        p_question_text:    null,
-        p_was_correct:      won,
-        p_response_time_ms: null,
-        p_hint_level_used:  0,
-        p_luna_summary:     `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(finalScore)} · streak ${finalStreak}`,
-      });
-      if (won) {
-        // Server-side atomic increment; clients can no longer set wins directly.
-        await supabase.rpc("increment_daily_challenge_win");
-        window.dispatchEvent(new Event("daily-challenge-updated"));
+  const finishBattle = useCallback(
+    (won: boolean) => {
+      if (battleFinishedRef.current) return;
+      battleFinishedRef.current = true;
+      const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
+      if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
+        pvpChannelRef.current.send({
+          type: "broadcast",
+          event: "battle_end",
+          payload: { winner_id: winnerId },
+        });
       }
 
-      // Record session as ghost replay data for future opponents
-      const sessionId = await recordBattleSession({
+      // Mirror the server-side formula in award_battle_xp so the number we
+      // animate up to in the report matches what actually lands on the profile:
+      //   xp = min(1000, correct*15 + (won ? 50 : 0))
+      const finalRecords = recordsRef.current;
+      const finalStreak = longestStreakRef.current;
+      const finalFastest = fastestAnswerRef.current;
+      const finalScore = totalScoreRef.current;
+      const totalQuestions = finalRecords.length;
+      const correctAnswers = finalRecords.filter((r) => r.correct).length;
+      const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
+      setBattleStats({
+        totalQuestions,
+        correctAnswers,
+        longestStreak: finalStreak,
+        fastestAnswer: finalFastest,
+        records: [...finalRecords],
         archetype,
         won,
-        rating: playerRatingRef.current,
-        records: finalRecords,
-        bestStreak: finalStreak,
+        score: Math.floor(finalScore),
+        xp,
         opponentType: opponentTypeRef.current,
       });
+      // Cinematic KO beat: hold on a VICTORY / DEFEAT banner before the report.
+      // Guard the delayed phase change so a battle that restarts in the gap
+      // (live rematch auto-start) can't get yanked back to the result screen.
+      setKoBanner(won ? "victory" : "defeat");
+      if (won) sfxVictory();
+      else sfxDefeat();
+      setTimeout(() => {
+        setKoBanner(null);
+        if (battleFinishedRef.current) setPhase("result");
+      }, 1700);
 
-      // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
-      if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
-        const { data } = await supabase.rpc("complete_pvp_battle", {
-          p_battle_id: pvpBattleIdRef.current,
-          p_winner_id: winnerId,
+      // Persist battle to learning_history + increment daily challenge on win
+      (async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Feed every answered question into the shared concept-mastery store so
+        // Practice Weak Spots (and the Courses readiness engine) can use it.
+        // Best-effort — a missing table never affects the battle result.
+        void recordOutcomes(
+          user.id,
+          finalRecords.map((r) => ({
+            concept: r.question.topic,
+            subject: "Mathematics",
+            difficulty: r.question.difficulty,
+            correct: r.correct,
+            timeSpent: r.timeSpent,
+          })),
+        );
+
+        // Award XP here — at the guaranteed battle-end hook — rather than relying
+        // on the result screen mounting (which a live rematch or an early exit can
+        // skip). Server computes the amount from correct/total/won.
+        await awardBattleXp(correctAnswers, totalQuestions, won);
+
+        // Count today toward the daily-practice streak (server-authoritative,
+        // idempotent per day). Fires the milestone celebration when crossed.
+        await recordDailyPractice();
+
+        await supabase.rpc("log_learning_history", {
+          p_session_type: "battle",
+          p_topic: ARCHETYPES[archetype].name,
+          p_question_text: null,
+          p_was_correct: won,
+          p_response_time_ms: null,
+          p_hint_level_used: 0,
+          p_luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(finalScore)} · streak ${finalStreak}`,
         });
-        const nextRating = iAmChallengerRef.current ? data?.challenger_rating_after : data?.opponent_rating_after;
-        if (typeof nextRating === "number") {
-          setRatingChange(nextRating - playerRatingRef.current);
-          setPlayerRating(nextRating);
-          playerRatingRef.current = nextRating;
-          window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+        if (won) {
+          // Server-side atomic increment; clients can no longer set wins directly.
+          await supabase.rpc("increment_daily_challenge_win");
+          window.dispatchEvent(new Event("daily-challenge-updated"));
         }
-      } else if (opponentTypeRef.current === "ghost" && sessionId) {
-        const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
-        setRatingChange(result.ratingDelta);
-        setPlayerRating(result.ratingAfter);
-        playerRatingRef.current = result.ratingAfter;
-        window.dispatchEvent(new Event("pvp-leaderboard-updated"));
-      } else if (opponentTypeRef.current === "bot" && sessionId) {
-        // Bot battles count too, at a reduced rating change (server-enforced),
-        // and update the W/L record via the same applied-session truth model.
-        const { data } = await supabase.rpc("complete_bot_battle", { p_session_id: sessionId });
-        if (typeof data?.rating_after === "number") {
-          setRatingChange(data.rating_delta ?? 0);
-          setPlayerRating(data.rating_after);
-          playerRatingRef.current = data.rating_after;
+
+        // Record session as ghost replay data for future opponents
+        const sessionId = await recordBattleSession({
+          archetype,
+          won,
+          rating: playerRatingRef.current,
+          records: finalRecords,
+          bestStreak: finalStreak,
+          opponentType: opponentTypeRef.current,
+        });
+
+        // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
+        if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
+          const { data } = await supabase.rpc("complete_pvp_battle", {
+            p_battle_id: pvpBattleIdRef.current,
+            p_winner_id: winnerId,
+          });
+          const nextRating = iAmChallengerRef.current
+            ? data?.challenger_rating_after
+            : data?.opponent_rating_after;
+          if (typeof nextRating === "number") {
+            setRatingChange(nextRating - playerRatingRef.current);
+            setPlayerRating(nextRating);
+            playerRatingRef.current = nextRating;
+            window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+          }
+        } else if (opponentTypeRef.current === "ghost" && sessionId) {
+          const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
+          setRatingChange(result.ratingDelta);
+          setPlayerRating(result.ratingAfter);
+          playerRatingRef.current = result.ratingAfter;
           window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+        } else if (opponentTypeRef.current === "bot" && sessionId) {
+          // Bot battles count too, at a reduced rating change (server-enforced),
+          // and update the W/L record via the same applied-session truth model.
+          const { data } = await supabase.rpc("complete_bot_battle", {
+            p_session_id: sessionId,
+          });
+          if (typeof data?.rating_after === "number") {
+            setRatingChange(data.rating_delta ?? 0);
+            setPlayerRating(data.rating_after);
+            playerRatingRef.current = data.rating_after;
+            window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+          }
         }
-      }
-    })();
-  }, [archetype]);
+      })();
+    },
+    [archetype],
+  );
 
   const handleLiveRematch = useCallback(async () => {
     const battleId = pvpBattleIdRef.current;
@@ -1711,54 +2296,77 @@ function BattleArena() {
       toast.error("Couldn't queue rematch — try again.");
       setLiveRematchState("idle");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [archetype]);
 
   const aiTurn = useCallback(() => {
-    const oppArch    = getArch(opponentArchetype);
+    const oppArch = getArch(opponentArchetype);
     const personality = AI_PERSONALITIES[opponentArchetype];
-    const memory     = battleMemoryRef.current;
+    const memory = battleMemoryRef.current;
 
     setTimeout(() => {
-      const prevOpp    = opponentRef.current;
+      const prevOpp = opponentRef.current;
       const prevPlayer = playerRef.current;
-      const oppHpPct    = prevOpp.hp    / prevOpp.maxHp;
+      const oppHpPct = prevOpp.hp / prevOpp.maxHp;
       const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
-      const mem         = memory ?? createBattleMemory();
+      const mem = memory ?? createBattleMemory();
 
       const choice = pickAiAction(
         mem,
         personality,
-        { hp: prevOpp.hp, maxHp: prevOpp.maxHp, focus: prevOpp.focus, maxFocus: prevOpp.maxFocus, canHeal: oppArch.healAmount !== null },
+        {
+          hp: prevOpp.hp,
+          maxHp: prevOpp.maxHp,
+          focus: prevOpp.focus,
+          maxFocus: prevOpp.maxFocus,
+          canHeal: oppArch.healAmount !== null,
+        },
         { hp: prevPlayer.hp, maxHp: prevPlayer.maxHp, momentum: opponentMomentum },
       );
 
-      const success = Math.random() < computeAiAccuracy(oppArch, personality, mem, oppHpPct, playerHpPct);
+      const success =
+        Math.random() < computeAiAccuracy(oppArch, personality, mem, oppHpPct, playerHpPct);
 
       // Narrative pressure line — appears at meaningful moments only
-      const hasData       = mem.playerTurnCount >= 4;
+      const hasData = mem.playerTurnCount >= 4;
       const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
-      const pressureLine  = getPressureLogLine(mem, personality, prevOpp.name, oppHpPct, hasData && strongPattern);
+      const pressureLine = getPressureLogLine(
+        mem,
+        personality,
+        prevOpp.name,
+        oppHpPct,
+        hasData && strongPattern,
+      );
       if (pressureLine) addLog({ actor: "system", actionType: "info", result: pressureLine });
 
       let newPlayerHp = prevPlayer.hp;
-      let newOppHp    = prevOpp.hp;
+      let newOppHp = prevOpp.hp;
       let newOppFocus = prevOpp.focus;
-      let nextOppMom  = opponentMomentum;
+      let nextOppMom = opponentMomentum;
 
       if (success) {
         nextOppMom = opponentMomentum + 1;
         // Fix: pass turnNumber so Accelerator's multiplier step actually ramps
         const oppStep = getEffectiveMultiplierStep(oppArch, mem.turnNumber);
-        const sMult   = streakToMultiplier(nextOppMom, oppStep);
+        const sMult = streakToMultiplier(nextOppMom, oppStep);
 
         if (choice === "defend") {
           newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
           if (oppArch.healAmount !== null) {
             newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + oppArch.healAmount);
-            addLog({ actor: "opponent", actionType: "heal", result: `${prevOpp.name} heals: +${oppArch.healAmount} HP, +${FOCUS_GAIN.defend} Focus.`, value: oppArch.healAmount });
+            addLog({
+              actor: "opponent",
+              actionType: "heal",
+              result: `${prevOpp.name} heals: +${oppArch.healAmount} HP, +${FOCUS_GAIN.defend} Focus.`,
+              value: oppArch.healAmount,
+            });
           } else {
-            addLog({ actor: "opponent", actionType: "heal", result: `${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`, value: FOCUS_GAIN.defend });
+            addLog({
+              actor: "opponent",
+              actionType: "heal",
+              result: `${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`,
+              value: FOCUS_GAIN.defend,
+            });
           }
         } else if (choice === "wild") {
           newOppFocus = Math.max(0, prevOpp.focus - 15);
@@ -1767,18 +2375,35 @@ function BattleArena() {
             const d = Math.floor(Math.random() * 30) + 10;
             newPlayerHp = Math.max(0, prevPlayer.hp - d);
             setShowPlayerHit(true);
-            addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: ${d} chaos DMG!`, value: d });
+            addLog({
+              actor: "opponent",
+              actionType: "wild",
+              result: `${prevOpp.name} Wild: ${d} chaos DMG!`,
+              value: d,
+            });
           } else if (roll < 0.67) {
             newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + 20);
-            addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: +20 HP!`, value: 20 });
+            addLog({
+              actor: "opponent",
+              actionType: "wild",
+              result: `${prevOpp.name} Wild: +20 HP!`,
+              value: 20,
+            });
           } else {
             const d = 20;
             newPlayerHp = Math.max(0, prevPlayer.hp - d);
             setShowPlayerHit(true);
-            addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: ${d} DMG.`, value: d });
+            addLog({
+              actor: "opponent",
+              actionType: "wild",
+              result: `${prevOpp.name} Wild: ${d} DMG.`,
+              value: d,
+            });
           }
         } else {
-          const dmg = Math.floor(getEffectiveDamage(oppArch, { action: choice, recordCount: 0 }) * sMult);
+          const dmg = Math.floor(
+            getEffectiveDamage(oppArch, { action: choice, recordCount: 0 }) * sMult,
+          );
           newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
           const cost = ACTIONS[choice].focusCost;
           if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
@@ -1786,25 +2411,41 @@ function BattleArena() {
           if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
           setShowPlayerHit(true);
           const streakNote = sMult > 1.1 ? ` ${sMult.toFixed(2)}x STREAK` : "";
-          addLog({ actor: "opponent", actionType: choice as LogActionType, result: `${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${streakNote}`, value: dmg });
+          addLog({
+            actor: "opponent",
+            actionType: choice,
+            result: `${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${streakNote}`,
+            value: dmg,
+          });
         }
       } else {
         nextOppMom = 0;
-        const flub = Math.floor((Math.floor(Math.random() * 6) + 4) * hpToSelfDmgMult(oppArch.maxHp));
+        const flub = Math.floor(
+          (Math.floor(Math.random() * 6) + 4) * hpToSelfDmgMult(oppArch.maxHp),
+        );
         newOppHp = Math.max(0, prevOpp.hp - flub);
-        addLog({ actor: "opponent", actionType: "miss", result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`, value: flub });
+        addLog({
+          actor: "opponent",
+          actionType: "miss",
+          result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`,
+          value: flub,
+        });
       }
 
       if (memory) updateBattleMemoryAiTurn(memory, success);
       setOpponentMomentum(nextOppMom);
-      setPlayer(p => ({ ...p, hp: newPlayerHp }));
-      setOpponent(o => ({ ...o, hp: newOppHp, focus: newOppFocus }));
+      setPlayer((p) => ({ ...p, hp: newPlayerHp }));
+      setOpponent((o) => ({ ...o, hp: newOppHp, focus: newOppFocus }));
 
       setTimeout(() => {
         setShowPlayerHit(false);
-        if (newPlayerHp <= 0) { finishBattle(false); }
-        else if (newOppHp <= 0) { finishBattle(true); }
-        else { setPhase("select"); }
+        if (newPlayerHp <= 0) {
+          finishBattle(false);
+        } else if (newOppHp <= 0) {
+          finishBattle(true);
+        } else {
+          setPhase("select");
+        }
       }, 600);
     }, 400);
   }, [addLog, finishBattle, opponentArchetype, opponentMomentum, getArch]);
@@ -1821,37 +2462,47 @@ function BattleArena() {
       return;
     }
 
-    const idx    = ghostTurnIndexRef.current % ghost.questionRecords.length;
+    const idx = ghostTurnIndexRef.current % ghost.questionRecords.length;
     const record = ghost.questionRecords[idx];
     ghostTurnIndexRef.current += 1;
 
     const oppArch = getArch(opponentArchetype);
-    const delay   = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
+    const delay = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
 
     setTimeout(() => {
-      const prevOpp    = opponentRef.current;
+      const prevOpp = opponentRef.current;
       const prevPlayer = playerRef.current;
       let newPlayerHp = prevPlayer.hp;
-      let newOppHp    = prevOpp.hp;
+      let newOppHp = prevOpp.hp;
 
       if (record.correct) {
         const dmg = Math.floor(
           getEffectiveDamage(oppArch, {
             action: record.action as Action,
             recordCount: ghostTurnIndexRef.current,
-          })
+          }),
         );
         newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
         setShowPlayerHit(true);
-        addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name}: ${dmg} DMG (ghost replay)`, value: dmg });
+        addLog({
+          actor: "opponent",
+          actionType: "ghost",
+          result: `${prevOpp.name}: ${dmg} DMG (ghost replay)`,
+          value: dmg,
+        });
       } else {
         const flub = Math.floor(Math.random() * 6) + 3;
         newOppHp = Math.max(0, prevOpp.hp - flub);
-        addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name} missed (-${flub} self)`, value: flub });
+        addLog({
+          actor: "opponent",
+          actionType: "ghost",
+          result: `${prevOpp.name} missed (-${flub} self)`,
+          value: flub,
+        });
       }
 
-      setPlayer(p => ({ ...p, hp: newPlayerHp }));
-      setOpponent(o => ({ ...o, hp: newOppHp }));
+      setPlayer((p) => ({ ...p, hp: newPlayerHp }));
+      setOpponent((o) => ({ ...o, hp: newOppHp }));
 
       setTimeout(() => {
         setShowPlayerHit(false);
@@ -1864,14 +2515,25 @@ function BattleArena() {
 
   const selectAction = (action: Action) => {
     if (opponentTypeRef.current === "live" && liveActionLockedRef.current) {
-      addLog({ actor: "system", actionType: "info", result: `Action already locked for this turn.` });
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `Action already locked for this turn.`,
+      });
       return;
     }
     const cost = ACTIONS[action].focusCost;
-    if (cost > 0 && player.focus < cost) { addLog({ actor: "system", actionType: "info", result: `Need ${cost} Focus!` }); return; }
+    if (cost > 0 && player.focus < cost) {
+      addLog({ actor: "system", actionType: "info", result: `Need ${cost} Focus!` });
+      return;
+    }
     setCurrentAction(action);
-    if (cost > 0) setPlayer(prev => ({ ...prev, focus: Math.max(0, prev.focus - cost) }));
-    addLog({ actor: "player", actionType: "info", result: `You ${ACTIONS[action].label.toLowerCase()}…` });
+    if (cost > 0) setPlayer((prev) => ({ ...prev, focus: Math.max(0, prev.focus - cost) }));
+    addLog({
+      actor: "player",
+      actionType: "info",
+      result: `You ${ACTIONS[action].label.toLowerCase()}…`,
+    });
 
     const arch = getArch(archetype);
     const level = getActionDifficultyLevel(arch, action);
@@ -1887,7 +2549,7 @@ function BattleArena() {
   const [ecliptar, setEcliptar] = useState<Ecliptar | null>(null);
 
   const startBattle = (selection?: ClassSelection) => {
-    const cls  = selection?.archetype || archetype;
+    const cls = selection?.archetype || archetype;
     const eclip = selection?.ecliptar ?? ecliptar;
     if (selection?.archetype) setArchetype(selection.archetype);
     if (selection?.ecliptar) setEcliptar(selection.ecliptar);
@@ -1899,9 +2561,9 @@ function BattleArena() {
     setPhase("searching");
 
     // Reset ghost state
-    ghostSessionRef.current   = null;
+    ghostSessionRef.current = null;
     ghostTurnIndexRef.current = 0;
-    pvpChannelRef.current     = null;
+    pvpChannelRef.current = null;
     setPvpBattleId(null);
     battleFinishedRef.current = false;
     rematchStartedRef.current = false;
@@ -1913,7 +2575,10 @@ function BattleArena() {
         cls,
         playerRatingRef.current,
         playerUsername,
-        (msg, tier) => { setMatchStatus(msg); setMatchTier(tier); },
+        (msg, tier) => {
+          setMatchStatus(msg);
+          setMatchTier(tier);
+        },
       );
 
       // Resolve opponent from match result
@@ -1929,8 +2594,8 @@ function BattleArena() {
         // its creature, name, and sprite all match.
         const oppEclip = pickOpponent(cls);
         oppArchetype = oppEclip.archetype;
-        oppName      = oppEclip.name;
-        oppSlug      = oppEclip.slug;
+        oppName = oppEclip.name;
+        oppSlug = oppEclip.slug;
       }
       // Always use the archetype's icon so ghost / bot / live opponents
       // visually reflect their build instead of a generic robot.
@@ -1938,7 +2603,7 @@ function BattleArena() {
 
       // Ghost: prime the replay buffer
       if (match.type === "ghost" && match.ghostSession) {
-        ghostSessionRef.current   = match.ghostSession;
+        ghostSessionRef.current = match.ghostSession;
         ghostTurnIndexRef.current = 0;
       }
 
@@ -1956,38 +2621,55 @@ function BattleArena() {
 
       // Sync refs for async-safe use inside callbacks
       setOpponentType(match.type);
-      opponentTypeRef.current    = match.type;
+      opponentTypeRef.current = match.type;
       setOpponentRating(match.opponentRating);
-      opponentRatingRef.current  = match.opponentRating;
+      opponentRatingRef.current = match.opponentRating;
 
-      const baseArch      = ARCHETYPES[cls];
+      const baseArch = ARCHETYPES[cls];
       const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
-      const playerName    = eclip?.name ?? "You";
-      const playerIcon    = eclip?.icon ?? User;
-      const oppArch       = ARCHETYPES[oppArchetype];
+      const playerName = eclip?.name ?? "You";
+      const playerIcon = eclip?.icon ?? User;
+      const oppArch = ARCHETYPES[oppArchetype];
 
       setPlayer({
-        name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
-        focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
+        name: playerName,
+        hp: effectiveArch.maxHp,
+        maxHp: effectiveArch.maxHp,
+        focus: baseArch.startFocus,
+        maxFocus: baseArch.focusPool,
+        icon: playerIcon,
         sprite: eclip ? ecliptarSpriteUrl(eclip.slug) : undefined,
       });
       setOpponent({
-        name: oppName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
-        focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppIcon,
+        name: oppName,
+        hp: oppArch.maxHp,
+        maxHp: oppArch.maxHp,
+        focus: oppArch.startFocus,
+        maxFocus: oppArch.focusPool,
+        icon: oppIcon,
         sprite: oppSlug ? ecliptarSpriteUrl(oppSlug) : undefined,
       });
       setOpponentArchetype(oppArchetype);
       battleMemoryRef.current = createBattleMemory();
-      setMomentum(0); setOpponentMomentum(0); setLogs([]);
-      setTotalScore(0); setRecords([]); setLongestStreak(0);
-      setFastestAnswer(Infinity); setBattleStats(null);
+      setMomentum(0);
+      setOpponentMomentum(0);
+      setLogs([]);
+      setTotalScore(0);
+      setRecords([]);
+      setLongestStreak(0);
+      setFastestAnswer(Infinity);
+      setBattleStats(null);
 
       if (rolledGambler) {
         setPhase("gamblerReveal");
       } else {
         setPhase("select");
         const typeTag = match.type === "live" ? "LIVE" : match.type === "ghost" ? "GHOST" : "BOT";
-        addLog({ actor: "system", actionType: "info", result: `${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}` });
+        addLog({
+          actor: "system",
+          actionType: "info",
+          result: `${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}`,
+        });
       }
     })();
   };
@@ -1999,8 +2681,8 @@ function BattleArena() {
     setPvpBattleId(null);
     setOpponentType("bot");
     setRatingChange(null);
-    ghostSessionRef.current   = null;
-    pvpChannelRef.current     = null;
+    ghostSessionRef.current = null;
+    pvpChannelRef.current = null;
     battleFinishedRef.current = false;
     rematchStartedRef.current = false;
     setLiveRematchState("idle");
@@ -2010,82 +2692,101 @@ function BattleArena() {
   // Direct PvP challenge: bypass matchmaking and drop straight into a live
   // battle using a pre-created pvp_battles row. Triggered by ChallengeInbox
   // and the challenger-side realtime "accepted" listener.
-  const startDirectBattle = useCallback((opts: {
-    battleId: string;
-    myArchetype: ArchetypeId;
-    opponentArchetype: ArchetypeId;
-    opponentName: string;
-    opponentRating?: number;
-    iAmChallenger?: boolean;
-    opponentUserId?: string;
-  }) => {
-    setArchetype(opts.myArchetype);
-    setRatingChange(null);
-    setKoBanner(null);
-    battleFinishedRef.current = false;
-    rematchStartedRef.current = false;
-    setLiveRematchState("idle");
-    ghostSessionRef.current   = null;
-    ghostTurnIndexRef.current = 0;
-    pvpChannelRef.current     = null;
-    const rolledGambler = opts.myArchetype === "gambler" ? rollGamblerStats() : null;
-    setGamblerStats(rolledGambler);
+  const startDirectBattle = useCallback(
+    (opts: {
+      battleId: string;
+      myArchetype: ArchetypeId;
+      opponentArchetype: ArchetypeId;
+      opponentName: string;
+      opponentRating?: number;
+      iAmChallenger?: boolean;
+      opponentUserId?: string;
+    }) => {
+      setArchetype(opts.myArchetype);
+      setRatingChange(null);
+      setKoBanner(null);
+      battleFinishedRef.current = false;
+      rematchStartedRef.current = false;
+      setLiveRematchState("idle");
+      ghostSessionRef.current = null;
+      ghostTurnIndexRef.current = 0;
+      pvpChannelRef.current = null;
+      const rolledGambler = opts.myArchetype === "gambler" ? rollGamblerStats() : null;
+      setGamblerStats(rolledGambler);
 
-    setOpponentType("live");
-    opponentTypeRef.current   = "live";
-    setOpponentRating(opts.opponentRating ?? 1000);
-    opponentRatingRef.current = opts.opponentRating ?? 1000;
-    setPvpBattleId(opts.battleId);
+      setOpponentType("live");
+      opponentTypeRef.current = "live";
+      setOpponentRating(opts.opponentRating ?? 1000);
+      opponentRatingRef.current = opts.opponentRating ?? 1000;
+      setPvpBattleId(opts.battleId);
 
-    iAmChallengerRef.current = opts.iAmChallenger === true;
-    opponentUserIdRef.current = opts.opponentUserId ?? null;
-    liveResolvedTurnsRef.current = new Set();
-    resetLiveTurnLocks(1);
+      iAmChallengerRef.current = opts.iAmChallenger === true;
+      opponentUserIdRef.current = opts.opponentUserId ?? null;
+      liveResolvedTurnsRef.current = new Set();
+      resetLiveTurnLocks(1);
 
-    const baseArch = ARCHETYPES[opts.myArchetype];
-    const oppArch  = ARCHETYPES[opts.opponentArchetype];
-    const playerName = ecliptar?.name ?? "You";
-    const playerIcon = ecliptar?.icon ?? User;
-    const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
+      const baseArch = ARCHETYPES[opts.myArchetype];
+      const oppArch = ARCHETYPES[opts.opponentArchetype];
+      const playerName = ecliptar?.name ?? "You";
+      const playerIcon = ecliptar?.icon ?? User;
+      const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
 
-    setPlayer({
-      name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
-      focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
-      sprite: ecliptar ? ecliptarSpriteUrl(ecliptar.slug) : undefined,
-    });
-    setOpponent({
-      name: opts.opponentName, hp: oppArch.maxHp, maxHp: oppArch.maxHp,
-      focus: oppArch.startFocus, maxFocus: oppArch.focusPool, icon: oppArch.icon,
-    });
-    setOpponentArchetype(opts.opponentArchetype);
-    battleMemoryRef.current = createBattleMemory();
-    setMomentum(0); setOpponentMomentum(0); setLogs([]);
-    setTotalScore(0); setRecords([]); setLongestStreak(0);
-    setFastestAnswer(Infinity); setBattleStats(null);
-    if (rolledGambler) {
-      setPhase("gamblerReveal");
-    } else {
-      setPhase("select");
-      addLog({
-        actor: "system", actionType: "info",
-        result: `Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · LIVE`,
+      setPlayer({
+        name: playerName,
+        hp: effectiveArch.maxHp,
+        maxHp: effectiveArch.maxHp,
+        focus: baseArch.startFocus,
+        maxFocus: baseArch.focusPool,
+        icon: playerIcon,
+        sprite: ecliptar ? ecliptarSpriteUrl(ecliptar.slug) : undefined,
       });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ecliptar]);
+      setOpponent({
+        name: opts.opponentName,
+        hp: oppArch.maxHp,
+        maxHp: oppArch.maxHp,
+        focus: oppArch.startFocus,
+        maxFocus: oppArch.focusPool,
+        icon: oppArch.icon,
+      });
+      setOpponentArchetype(opts.opponentArchetype);
+      battleMemoryRef.current = createBattleMemory();
+      setMomentum(0);
+      setOpponentMomentum(0);
+      setLogs([]);
+      setTotalScore(0);
+      setRecords([]);
+      setLongestStreak(0);
+      setFastestAnswer(Infinity);
+      setBattleStats(null);
+      if (rolledGambler) {
+        setPhase("gamblerReveal");
+      } else {
+        setPhase("select");
+        addLog({
+          actor: "system",
+          actionType: "info",
+          result: `Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · LIVE`,
+        });
+      }
+       
+    },
+    [ecliptar],
+  );
 
   // Listen for direct-challenge events fired by ChallengeInbox / accepted
   // notifications elsewhere on the page.
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as {
-        battleId: string;
-        myArchetype: ArchetypeId;
-        opponentArchetype: ArchetypeId;
-        opponentName: string;
-        opponentRating?: number;
-        iAmChallenger?: boolean;
-      } | undefined;
+      const detail = (e as CustomEvent).detail as
+        | {
+            battleId: string;
+            myArchetype: ArchetypeId;
+            opponentArchetype: ArchetypeId;
+            opponentName: string;
+            opponentRating?: number;
+            iAmChallenger?: boolean;
+          }
+        | undefined;
       if (!detail) return;
       startDirectBattle(detail);
     };
@@ -2099,12 +2800,19 @@ function BattleArena() {
       return (
         <WeakSpotPractice
           onClose={() => setShowPractice(false)}
-          onBattle={() => { setShowPractice(false); setPhase("classSelect"); }}
+          onBattle={() => {
+            setShowPractice(false);
+            setPhase("classSelect");
+          }}
         />
       );
     }
     return (
-      <motion.div className="btt-card text-center py-16 px-10 relative overflow-hidden" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+      <motion.div
+        className="btt-card text-center py-16 px-10 relative overflow-hidden"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
         <div className="btt-idle-glow" aria-hidden />
         <motion.div
           className="btt-idle-emblem w-24 h-24 mx-auto mb-8 flex items-center justify-center"
@@ -2115,13 +2823,16 @@ function BattleArena() {
         </motion.div>
         <h3 className="btt-shout text-5xl mb-3">Enter the Arena</h3>
         <p className="btt-mono-text text-[12px] text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
-          Choose your archetype. Solve equations under pressure.<br />Build combos. Destroy your opponent.
+          Choose your archetype. Solve equations under pressure.
+          <br />
+          Build combos. Destroy your opponent.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <motion.button
             onClick={() => setPhase("classSelect")}
             className="btt-idle-cta btt-mono-text inline-flex items-center gap-3 px-10 py-4 font-bold text-[12px] tracking-widest"
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
           >
             <Zap className="w-4 h-4" />
             CHOOSE CLASS
@@ -2159,7 +2870,11 @@ function BattleArena() {
         opponentName={opponent.name}
         onComplete={() => {
           setPhase("select");
-          addLog({ actor: "system", actionType: "info", result: `${player.name} (${baseArch.name}) vs ${opponent.name} (${ARCHETYPES[opponentArchetype].name})!` });
+          addLog({
+            actor: "system",
+            actionType: "info",
+            result: `${player.name} (${baseArch.name}) vs ${opponent.name} (${ARCHETYPES[opponentArchetype].name})!`,
+          });
         }}
       />
     );
@@ -2189,17 +2904,23 @@ function BattleArena() {
       <AnimatePresence>
         {showPlayerHit && (
           <motion.div
-            key="impact-left" aria-hidden
+            key="impact-left"
+            aria-hidden
             className="btt-impact-flash btt-impact-flash--left"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           />
         )}
         {showOpponentHit && (
           <motion.div
-            key="impact-right" aria-hidden
+            key="impact-right"
+            aria-hidden
             className="btt-impact-flash btt-impact-flash--right"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           />
         )}
@@ -2212,13 +2933,20 @@ function BattleArena() {
       <AnimatePresence>
         {showFight && (
           <motion.div
-            key="fight" className="btt-stinger" aria-hidden
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            key="fight"
+            className="btt-stinger"
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
             <motion.p
               className="btt-stinger-word text-7xl sm:text-8xl md:text-9xl text-foreground"
-              style={{ textShadow: "0 0 70px oklch(0.60 0.17 255 / 0.55), 0 0 160px oklch(0.58 0.17 252 / 0.35)" }}
+              style={{
+                textShadow:
+                  "0 0 70px oklch(0.60 0.17 255 / 0.55), 0 0 160px oklch(0.58 0.17 252 / 0.35)",
+              }}
               initial={{ scale: 2.3, opacity: 0, letterSpacing: "0.45em" }}
               animate={{ scale: 1, opacity: 1, letterSpacing: "0.06em" }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -2233,17 +2961,21 @@ function BattleArena() {
       <AnimatePresence>
         {koBanner && (
           <motion.div
-            key="ko" className="btt-stinger btt-stinger--ko"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            key="ko"
+            className="btt-stinger btt-stinger--ko"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
             <div className="text-center px-6">
               <motion.p
                 className={`btt-stinger-word text-7xl sm:text-8xl md:text-9xl ${koBanner === "victory" ? "text-primary" : "text-neon-pink"}`}
                 style={{
-                  textShadow: koBanner === "victory"
-                    ? "0 0 80px oklch(0.78 0.13 88 / 0.6), 0 0 200px oklch(0.78 0.13 88 / 0.3)"
-                    : "0 0 80px oklch(0.60 0.17 255 / 0.6), 0 0 200px oklch(0.60 0.17 255 / 0.3)",
+                  textShadow:
+                    koBanner === "victory"
+                      ? "0 0 80px oklch(0.78 0.13 88 / 0.6), 0 0 200px oklch(0.78 0.13 88 / 0.3)"
+                      : "0 0 80px oklch(0.60 0.17 255 / 0.6), 0 0 200px oklch(0.60 0.17 255 / 0.3)",
                 }}
                 initial={{ scale: 0.55, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -2253,10 +2985,13 @@ function BattleArena() {
               </motion.p>
               <motion.p
                 className="btt-mono-text text-[11px] tracking-[0.4em] text-muted-foreground mt-5"
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.4 }}
               >
-                {koBanner === "victory" ? "OPPONENT ELIMINATED" : `${opponent.name.toUpperCase()} TAKES THE ROUND`}
+                {koBanner === "victory"
+                  ? "OPPONENT ELIMINATED"
+                  : `${opponent.name.toUpperCase()} TAKES THE ROUND`}
               </motion.p>
             </div>
           </motion.div>
@@ -2267,7 +3002,8 @@ function BattleArena() {
       <AnimatePresence>
         {comboBurst && (
           <motion.div
-            key={comboBurst.id} aria-hidden
+            key={comboBurst.id}
+            aria-hidden
             className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 1, 1, 0] }}
@@ -2282,7 +3018,10 @@ function BattleArena() {
             >
               <p
                 className="btt-shout text-6xl sm:text-7xl md:text-8xl text-neon-pink px-4"
-                style={{ textShadow: "0 0 44px oklch(0.60 0.17 255 / 0.8), 0 0 120px oklch(0.60 0.17 255 / 0.4)" }}
+                style={{
+                  textShadow:
+                    "0 0 44px oklch(0.60 0.17 255 / 0.8), 0 0 120px oklch(0.60 0.17 255 / 0.4)",
+                }}
               >
                 COMBO ×{comboBurst.combo}
               </p>
@@ -2295,9 +3034,7 @@ function BattleArena() {
       </AnimatePresence>
 
       {/* Wild event overlay — appears on the battle field, not inside the question panel */}
-      <AnimatePresence>
-        {wildEvent && <WildEventOverlay event={wildEvent} />}
-      </AnimatePresence>
+      <AnimatePresence>{wildEvent && <WildEventOverlay event={wildEvent} />}</AnimatePresence>
 
       {/* Forfeit / leave control — confirms, then counts as a loss by abandonment */}
       {(phase === "select" || phase === "question" || phase === "animate") && !koBanner && (
@@ -2314,15 +3051,24 @@ function BattleArena() {
 
       <div className="flex gap-3 mb-4">
         <FighterCard
-          fighter={player} side="left" momentum={momentum} archetype={archetype}
-          showHit={showPlayerHit} showHeal={showPlayerHeal}
+          fighter={player}
+          side="left"
+          momentum={momentum}
+          archetype={archetype}
+          showHit={showPlayerHit}
+          showHeal={showPlayerHeal}
           // Charge is only genuinely "ready" when the player can actually click
           // it this very moment: in select phase, no action locked, and enough
           // focus. Mirrors the disabled logic on the Charge action button.
-          canCharge={phase === "select" && !liveActionLocked && player.focus >= ACTIONS.charge.focusCost}
+          canCharge={
+            phase === "select" && !liveActionLocked && player.focus >= ACTIONS.charge.focusCost
+          }
         />
         <div className="flex flex-col items-center justify-center px-2 gap-1">
-          <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
             <Swords className="w-6 h-6 text-neon-pink" />
           </motion.div>
           <span className="text-[10px] font-bold tracking-widest text-muted-foreground">VS</span>
@@ -2350,7 +3096,14 @@ function BattleArena() {
             </div>
           )}
         </div>
-        <FighterCard fighter={opponent} side="right" momentum={opponentMomentum} archetype={opponentArchetype} showHit={showOpponentHit} showHeal={false} />
+        <FighterCard
+          fighter={opponent}
+          side="right"
+          momentum={opponentMomentum}
+          archetype={opponentArchetype}
+          showHit={showOpponentHit}
+          showHeal={false}
+        />
       </div>
 
       <div className="space-y-3">
@@ -2358,9 +3111,10 @@ function BattleArena() {
         {(() => {
           // How far into the current combo cycle are we?
           // At threshold multiples (3, 6, 9…) show the bar fully filled.
-          const comboProgress = momentum > 0 && momentum % comboThreshold === 0
-            ? comboThreshold
-            : momentum % comboThreshold;
+          const comboProgress =
+            momentum > 0 && momentum % comboThreshold === 0
+              ? comboThreshold
+              : momentum % comboThreshold;
           // One pip away from next combo activation
           const isNearMiss = momentum > 0 && momentum % comboThreshold === comboThreshold - 1;
           const comboActive = momentum >= comboThreshold;
@@ -2374,13 +3128,25 @@ function BattleArena() {
               <div className="flex items-center gap-2 mb-2">
                 <motion.div
                   animate={isNearMiss ? { scale: [1, 1.25, 1] } : {}}
-                  transition={{ duration: 0.55, repeat: isNearMiss ? Infinity : 0, repeatDelay: 0.35 }}
+                  transition={{
+                    duration: 0.55,
+                    repeat: isNearMiss ? Infinity : 0,
+                    repeatDelay: 0.35,
+                  }}
                 >
-                  <Flame className={`w-4 h-4 transition-colors ${
-                    comboActive ? "text-neon-pink" : momentum > 0 ? "text-neon-pink/60" : "text-muted-foreground"
-                  }`} />
+                  <Flame
+                    className={`w-4 h-4 transition-colors ${
+                      comboActive
+                        ? "text-neon-pink"
+                        : momentum > 0
+                          ? "text-neon-pink/60"
+                          : "text-muted-foreground"
+                    }`}
+                  />
                 </motion.div>
-                <span className="text-[10px] font-bold tracking-widest text-muted-foreground">MOMENTUM</span>
+                <span className="text-[10px] font-bold tracking-widest text-muted-foreground">
+                  MOMENTUM
+                </span>
                 <div className="flex-1" />
                 {momentum > 0 && (
                   <motion.span
@@ -2409,26 +3175,32 @@ function BattleArena() {
               {/* Pip bar — next empty pip pulses when one away from activation */}
               <div className="flex gap-1">
                 {Array.from({ length: comboThreshold }).map((_, i) => {
-                  const isFilled  = i < comboProgress;
+                  const isFilled = i < comboProgress;
                   // The first empty pip when one away from combo
-                  const isPulse   = isNearMiss && i === comboProgress;
+                  const isPulse = isNearMiss && i === comboProgress;
                   return (
                     <motion.div
                       key={i}
                       className={`h-2 flex-1 ${isFilled ? "bg-neon-pink" : "bg-secondary/40"}`}
-                      animate={isPulse ? {
-                        backgroundColor: [
-                          "oklch(0.60 0.17 255 / 0.15)",
-                          "oklch(0.60 0.17 255 / 0.60)",
-                          "oklch(0.60 0.17 255 / 0.15)",
-                        ],
-                        boxShadow: [
-                          "0 0 0px oklch(0.60 0.17 255 / 0)",
-                          "0 0 7px oklch(0.60 0.17 255 / 0.55)",
-                          "0 0 0px oklch(0.60 0.17 255 / 0)",
-                        ],
-                      } : {}}
-                      transition={isPulse ? { duration: 0.75, repeat: Infinity, ease: "easeInOut" } : {}}
+                      animate={
+                        isPulse
+                          ? {
+                              backgroundColor: [
+                                "oklch(0.60 0.17 255 / 0.15)",
+                                "oklch(0.60 0.17 255 / 0.60)",
+                                "oklch(0.60 0.17 255 / 0.15)",
+                              ],
+                              boxShadow: [
+                                "0 0 0px oklch(0.60 0.17 255 / 0)",
+                                "0 0 7px oklch(0.60 0.17 255 / 0.55)",
+                                "0 0 0px oklch(0.60 0.17 255 / 0)",
+                              ],
+                            }
+                          : {}
+                      }
+                      transition={
+                        isPulse ? { duration: 0.75, repeat: Infinity, ease: "easeInOut" } : {}
+                      }
                     />
                   );
                 })}
@@ -2456,86 +3228,97 @@ function BattleArena() {
             Only visible when playing as Accelerator. Communicates the
             core USP: sustained correct answers directly compound combat
             power. Every question answered is ammunition for the future. */}
-        {archetype === "accelerator" && (() => {
-          const scalePct    = Math.min(records.length / 10, 1);           // 0 → 1 over 10 questions
-          const effectiveDmg  = Math.round(13 + scalePct * 14);           // 13 → 27
-          const effectiveMult = Math.round((0.15 + scalePct * 0.25) * 100); // 15% → 40%
+        {archetype === "accelerator" &&
+          (() => {
+            const scalePct = Math.min(records.length / 10, 1); // 0 → 1 over 10 questions
+            const effectiveDmg = Math.round(13 + scalePct * 14); // 13 → 27
+            const effectiveMult = Math.round((0.15 + scalePct * 0.25) * 100); // 15% → 40%
 
-          // Stage labels communicate qualitative feel, not just a number
-          const stage =
-            scalePct >= 0.90 ? { label: "MAXIMUM POWER", color: "text-neon-pink",     bar: "bg-neon-pink" }
-            : scalePct >= 0.60 ? { label: "SURGING",      color: "text-tier-platinum", bar: "bg-tier-platinum" }
-            : scalePct >= 0.30 ? { label: "ASCENDING",    color: "text-tier-gold",     bar: "bg-tier-gold" }
-            : scalePct > 0    ? { label: "AWAKENING",    color: "text-neon-cyan",     bar: "bg-neon-cyan" }
-            :                   { label: "DORMANT",       color: "text-muted-foreground", bar: "bg-neon-cyan" };
+            // Stage labels communicate qualitative feel, not just a number
+            const stage =
+              scalePct >= 0.9
+                ? { label: "MAXIMUM POWER", color: "text-neon-pink", bar: "bg-neon-pink" }
+                : scalePct >= 0.6
+                  ? { label: "SURGING", color: "text-tier-platinum", bar: "bg-tier-platinum" }
+                  : scalePct >= 0.3
+                    ? { label: "ASCENDING", color: "text-tier-gold", bar: "bg-tier-gold" }
+                    : scalePct > 0
+                      ? { label: "AWAKENING", color: "text-neon-cyan", bar: "bg-neon-cyan" }
+                      : { label: "DORMANT", color: "text-muted-foreground", bar: "bg-neon-cyan" };
 
-          return (
-            <div className="btt-card p-3 border-l-2 border-tier-platinum/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <FastForward className="w-3.5 h-3.5 text-tier-platinum" />
-                  <span className="text-[10px] font-bold tracking-widest text-tier-platinum">POWER SCALING</span>
+            return (
+              <div className="btt-card p-3 border-l-2 border-tier-platinum/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <FastForward className="w-3.5 h-3.5 text-tier-platinum" />
+                    <span className="text-[10px] font-bold tracking-widest text-tier-platinum">
+                      POWER SCALING
+                    </span>
+                  </div>
+                  <motion.span
+                    key={stage.label}
+                    className={`text-[9px] font-bold tracking-widest ${stage.color}`}
+                    initial={{ opacity: 0.6, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    {stage.label}
+                  </motion.span>
                 </div>
-                <motion.span
-                  key={stage.label}
-                  className={`text-[9px] font-bold tracking-widest ${stage.color}`}
-                  initial={{ opacity: 0.6, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  {stage.label}
-                </motion.span>
-              </div>
 
-              {/* Scaling progress bar */}
-              <div className="h-2 bg-secondary/40 overflow-hidden rounded-sm mb-2">
-                <motion.div
-                  className={`h-full rounded-sm ${stage.bar}`}
-                  animate={{
-                    width: `${scalePct * 100}%`,
-                    // Pulse at maximum to signal explosive potential
-                    opacity: scalePct >= 0.90 ? [1, 0.65, 1] : 1,
-                  }}
-                  transition={{
-                    width:   { duration: 0.7, ease: "easeOut" },
-                    opacity: scalePct >= 0.90 ? { duration: 0.9, repeat: Infinity } : {},
-                  }}
-                />
-              </div>
+                {/* Scaling progress bar */}
+                <div className="h-2 bg-secondary/40 overflow-hidden rounded-sm mb-2">
+                  <motion.div
+                    className={`h-full rounded-sm ${stage.bar}`}
+                    animate={{
+                      width: `${scalePct * 100}%`,
+                      // Pulse at maximum to signal explosive potential
+                      opacity: scalePct >= 0.9 ? [1, 0.65, 1] : 1,
+                    }}
+                    transition={{
+                      width: { duration: 0.7, ease: "easeOut" },
+                      opacity: scalePct >= 0.9 ? { duration: 0.9, repeat: Infinity } : {},
+                    }}
+                  />
+                </div>
 
-              {/* Live stat readout — the educational feedback loop made visible */}
-              <div className="flex items-center justify-between text-[9px] font-bold tabular-nums">
-                <span className="text-muted-foreground">
-                  DMG{" "}
-                  <span className={scalePct >= 0.60 ? "text-neon-pink" : "text-foreground"}>
-                    {effectiveDmg}
+                {/* Live stat readout — the educational feedback loop made visible */}
+                <div className="flex items-center justify-between text-[9px] font-bold tabular-nums">
+                  <span className="text-muted-foreground">
+                    DMG{" "}
+                    <span className={scalePct >= 0.6 ? "text-neon-pink" : "text-foreground"}>
+                      {effectiveDmg}
+                    </span>
                   </span>
-                </span>
-                <span className="text-muted-foreground">
-                  MULTI{" "}
-                  <span className={scalePct >= 0.60 ? "text-neon-pink" : "text-foreground"}>
-                    +{effectiveMult}%
+                  <span className="text-muted-foreground">
+                    MULTI{" "}
+                    <span className={scalePct >= 0.6 ? "text-neon-pink" : "text-foreground"}>
+                      +{effectiveMult}%
+                    </span>
                   </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Q{" "}
-                  <span className="text-foreground">{Math.min(records.length, 10)}/10</span>
-                </span>
+                  <span className="text-muted-foreground">
+                    Q <span className="text-foreground">{Math.min(records.length, 10)}/10</span>
+                  </span>
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
         {liveActionLocked && phase === "select" && (
           <motion.div
             className="glass-panel p-3 border border-neon-cyan/40 bg-neon-cyan/5 text-center"
-            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
           >
             <motion.span
               className="text-[11px] font-bold tracking-widest text-neon-cyan"
               animate={{ opacity: [0.55, 1, 0.55] }}
               transition={{ duration: 1.4, repeat: Infinity }}
             >
-              {liveResolvingTurn ? "RESOLVING TURN…" : liveOpponentLocked ? "BOTH ACTIONS LOCKED…" : `ACTION LOCKED · WAITING FOR ${opponent.name.toUpperCase()}`}
+              {liveResolvingTurn
+                ? "RESOLVING TURN…"
+                : liveOpponentLocked
+                  ? "BOTH ACTIONS LOCKED…"
+                  : `ACTION LOCKED · WAITING FOR ${opponent.name.toUpperCase()}`}
             </motion.span>
           </motion.div>
         )}
@@ -2544,13 +3327,23 @@ function BattleArena() {
             const Icon = act.icon;
             const cost = act.focusCost;
             const cannotHeal = key === "defend" && getArch(archetype).healAmount === null;
-            const disabled = phase !== "select" || (cost > 0 && player.focus < cost) || cannotHeal || liveActionLocked;
+            const disabled =
+              phase !== "select" ||
+              (cost > 0 && player.focus < cost) ||
+              cannotHeal ||
+              liveActionLocked;
             return (
-              <motion.button key={key} onClick={() => selectAction(key)} disabled={disabled}
+              <motion.button
+                key={key}
+                onClick={() => selectAction(key)}
+                disabled={disabled}
                 className={`btt-action btt-action--${key}`}
-                whileHover={!disabled ? { scale: 1.02, y: -2 } : {}} whileTap={!disabled ? { scale: 0.97 } : {}}
+                whileHover={!disabled ? { scale: 1.02, y: -2 } : {}}
+                whileTap={!disabled ? { scale: 0.97 } : {}}
               >
-                <Icon className={`w-8 h-8 mx-auto mb-2 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground/80"}`} />
+                <Icon
+                  className={`w-8 h-8 mx-auto mb-2 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground/80"}`}
+                />
                 <div className="btt-shout text-lg tracking-wider">{act.label.toUpperCase()}</div>
                 <div className="btt-mono-text text-[9px] text-muted-foreground mt-1 leading-tight">
                   {/* getActionDesc returns "Can't heal · builds Focus" for any no-heal
@@ -2558,10 +3351,14 @@ function BattleArena() {
                   {getActionDesc(key, getArch(archetype), records.length)}
                 </div>
                 {cost > 0 && (
-                  <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-purple border border-neon-purple/30 px-1">−{cost}</div>
+                  <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-purple border border-neon-purple/30 px-1">
+                    −{cost}
+                  </div>
                 )}
                 {FOCUS_GAIN[key] > 0 && (
-                  <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-cyan border border-neon-cyan/30 px-1">+{FOCUS_GAIN[key]}</div>
+                  <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-cyan border border-neon-cyan/30 px-1">
+                    +{FOCUS_GAIN[key]}
+                  </div>
                 )}
               </motion.button>
             );
@@ -2582,7 +3379,12 @@ function BattleArena() {
 
       <AnimatePresence>
         {phase === "question" && question && (
-          <QuestionOverlay question={question} timeLeft={timeLeft} maxTime={maxTime} onAnswer={handleAnswer} />
+          <QuestionOverlay
+            question={question}
+            timeLeft={timeLeft}
+            maxTime={maxTime}
+            onAnswer={handleAnswer}
+          />
         )}
       </AnimatePresence>
 
@@ -2594,8 +3396,9 @@ function BattleArena() {
               <X className="w-5 h-5 text-destructive" /> Leave this battle?
             </DialogTitle>
             <DialogDescription>
-              Leaving now counts as a <span className="text-foreground font-bold">loss by abandonment</span>.
-              You'll forfeit the match{opponentType !== "bot" ? " and lose rating, just like a defeat" : ""}.
+              Leaving now counts as a{" "}
+              <span className="text-foreground font-bold">loss by abandonment</span>. You'll forfeit
+              the match{opponentType !== "bot" ? " and lose rating, just like a defeat" : ""}.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end mt-2">
@@ -2606,7 +3409,10 @@ function BattleArena() {
               KEEP FIGHTING
             </button>
             <button
-              onClick={() => { setConfirmExit(false); finishBattle(false); }}
+              onClick={() => {
+                setConfirmExit(false);
+                finishBattle(false);
+              }}
               className="px-4 py-2 text-xs font-bold tracking-widest rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
             >
               FORFEIT (LOSS)
@@ -2624,7 +3430,7 @@ function BattleArena() {
 // the podium + list render identically. The signed-in player is detected by
 // user_id and highlighted — and pinned to the foot of the board if they rank
 // outside the visible top 10, so "where do I stand" is always answerable.
-type LbRow = {
+interface LbRow {
   rank: number;
   userId: string;
   name: string;
@@ -2633,12 +3439,12 @@ type LbRow = {
   score: number;
   wins?: number;
   losses?: number;
-};
+}
 
 const MEDAL: Record<1 | 2 | 3, { color: string; label: string; Icon: typeof Crown }> = {
   1: { color: "#e9c558", label: "Champion", Icon: Crown },
   2: { color: "#c4c9d4", label: "Runner-up", Icon: Medal },
-  3: { color: "#cc8a4e", label: "Third",     Icon: Medal },
+  3: { color: "#cc8a4e", label: "Third", Icon: Medal },
 };
 
 const winRate = (w?: number, l?: number) => {
@@ -2650,21 +3456,27 @@ const isUsername = (name: string) => /^[a-zA-Z0-9_]{3,20}$/.test(name);
 
 function LbName({ row, className }: { row: LbRow; className?: string }) {
   if (isUsername(row.name)) {
-    return <a href={`/u/${row.name}`} className={className}>{row.name}</a>;
+    return (
+      <a href={`/u/${row.name}`} className={className}>
+        {row.name}
+      </a>
+    );
   }
   return <span className={className}>{row.name}</span>;
 }
 
 function LeaderboardCard() {
-  const [tab, setTab]               = useState<"rating" | "xp">("rating");
-  const [xpEntries, setXpEntries]   = useState<LbRow[]>([]);
+  const [tab, setTab] = useState<"rating" | "xp">("rating");
+  const [xpEntries, setXpEntries] = useState<LbRow[]>([]);
   const [pvpEntries, setPvpEntries] = useState<LbRow[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const myId = user?.id ?? null;
       const [xpRes, pvpRes] = await Promise.all([
         supabase.rpc("get_leaderboard", { p_limit: 10 }),
@@ -2672,26 +3484,36 @@ function LeaderboardCard() {
       ]);
       if (cancelled) return;
       setXpEntries(
-        ((xpRes.data ?? []) as { user_id: string; username?: string | null; xp: number | null }[]).map((r, i) => ({
+        (
+          (xpRes.data ?? []) as { user_id: string; username?: string | null; xp: number | null }[]
+        ).map((r, i) => ({
           rank: i + 1,
           userId: r.user_id,
           name: r.username || `learner_${r.user_id.slice(0, 6)}`,
           isUser: r.user_id === myId,
           tier: xpToTier(r.xp ?? 0),
           score: r.xp ?? 0,
-        }))
+        })),
       );
       setPvpEntries(
-        ((pvpRes.data ?? []) as { user_id: string; username?: string | null; rating: number; wins: number; losses: number }[]).map((r, i) => ({
-          rank:   i + 1,
+        (
+          (pvpRes.data ?? []) as {
+            user_id: string;
+            username?: string | null;
+            rating: number;
+            wins: number;
+            losses: number;
+          }[]
+        ).map((r, i) => ({
+          rank: i + 1,
           userId: r.user_id,
-          name:   r.username || `player_${r.user_id.slice(0, 6)}`,
+          name: r.username || `player_${r.user_id.slice(0, 6)}`,
           isUser: r.user_id === myId,
-          tier:   ratingToTier(r.rating),
-          score:  r.rating,
-          wins:   r.wins,
+          tier: ratingToTier(r.rating),
+          score: r.rating,
+          wins: r.wins,
           losses: r.losses,
-        }))
+        })),
       );
       setLoading(false);
     };
@@ -2702,19 +3524,32 @@ function LeaderboardCard() {
     let pending: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefresh = () => {
       if (pending) return;
-      pending = setTimeout(() => { pending = null; void load(); }, 500);
+      pending = setTimeout(() => {
+        pending = null;
+        void load();
+      }, 500);
     };
 
     const xpChan = supabase
       .channel(`leaderboard-xp:${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "user_profiles" }, scheduleRefresh)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "user_profiles" },
+        scheduleRefresh,
+      )
       .subscribe();
     const pvpChan = supabase
       .channel(`leaderboard-pvp:${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "player_ratings" }, scheduleRefresh)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_ratings" },
+        scheduleRefresh,
+      )
       .subscribe();
 
-    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("pvp-leaderboard-updated", scheduleRefresh);
 
@@ -2728,12 +3563,12 @@ function LeaderboardCard() {
     };
   }, []);
 
-  const entries  = tab === "rating" ? pvpEntries : xpEntries;
-  const unit     = tab === "rating" ? "RATING" : "XP";
-  const podium   = entries.slice(0, 3);
-  const rest     = entries.slice(3);
+  const entries = tab === "rating" ? pvpEntries : xpEntries;
+  const unit = tab === "rating" ? "RATING" : "XP";
+  const podium = entries.slice(0, 3);
+  const rest = entries.slice(3);
   // The signed-in player, if they fall outside the visible top 10.
-  const meInList = entries.some(e => e.isUser);
+  const meInList = entries.some((e) => e.isUser);
 
   const fmtScore = (n: number) => (tab === "xp" ? n.toLocaleString() : String(n));
 
@@ -2756,7 +3591,7 @@ function LeaderboardCard() {
           </div>
         </div>
         <div className="btt-lb-tabs">
-          {(["rating", "xp"] as const).map(t => (
+          {(["rating", "xp"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -2770,7 +3605,9 @@ function LeaderboardCard() {
 
       {loading ? (
         <div className="btt-lb-skeleton">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="btt-lb-skel-row" />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="btt-lb-skel-row" />
+          ))}
         </div>
       ) : entries.length === 0 ? (
         <div className="btt-lb-empty">
@@ -2788,7 +3625,8 @@ function LeaderboardCard() {
           {podium.length >= 1 && (
             <div className="btt-lb-podium">
               {[podium[1], podium[0], podium[2]].map((row) => {
-                if (!row) return <div key={Math.random()} className="btt-lb-pod-empty" aria-hidden />;
+                if (!row)
+                  return <div key={Math.random()} className="btt-lb-pod-empty" aria-hidden />;
                 const m = MEDAL[row.rank as 1 | 2 | 3];
                 const wr = winRate(row.wins, row.losses);
                 return (
@@ -2803,11 +3641,15 @@ function LeaderboardCard() {
                     </div>
                     <div className="btt-lb-ava">{initialOf(row.name)}</div>
                     <LbName row={row} className="btt-lb-pod-name" />
-                    <div className={`btt-lb-pod-tier ${tierColors[row.tier] ?? ""}`}>{row.tier}</div>
+                    <div className={`btt-lb-pod-tier ${tierColors[row.tier] ?? ""}`}>
+                      {row.tier}
+                    </div>
                     <div className="btt-lb-pod-score">{fmtScore(row.score)}</div>
                     <div className="btt-lb-pod-sub">
                       {tab === "rating"
-                        ? (wr !== null ? `${row.wins}W ${row.losses}L · ${wr}%` : `${row.wins ?? 0}W ${row.losses ?? 0}L`)
+                        ? wr !== null
+                          ? `${row.wins}W ${row.losses}L · ${wr}%`
+                          : `${row.wins ?? 0}W ${row.losses ?? 0}L`
                         : unit}
                     </div>
                     {row.isUser && <div className="btt-lb-you">YOU</div>}
@@ -2820,21 +3662,30 @@ function LeaderboardCard() {
           {/* ── Ranked list (4+) ── */}
           {rest.length > 0 && (
             <div className="btt-lb-rows">
-              {rest.map(row => {
+              {rest.map((row) => {
                 const wr = winRate(row.wins, row.losses);
                 return (
-                  <div key={row.userId} className={`btt-lb-row${row.isUser ? " btt-lb-row--me" : ""}`}>
+                  <div
+                    key={row.userId}
+                    className={`btt-lb-row${row.isUser ? " btt-lb-row--me" : ""}`}
+                  >
                     <span className="btt-lb-rank">{row.rank}</span>
                     <span className="btt-lb-row-ava">{initialOf(row.name)}</span>
                     <div className="min-w-0">
                       <LbName row={row} className="btt-lb-row-name" />
-                      <span className={`btt-lb-row-tier ${tierColors[row.tier] ?? "text-muted-foreground"}`}>{row.tier}</span>
+                      <span
+                        className={`btt-lb-row-tier ${tierColors[row.tier] ?? "text-muted-foreground"}`}
+                      >
+                        {row.tier}
+                      </span>
                     </div>
                     <div className="btt-lb-row-score">
                       <div className="btt-lb-row-num">{fmtScore(row.score)}</div>
                       <div className="btt-lb-row-sub">
                         {tab === "rating"
-                          ? (wr !== null ? `${row.wins}W ${row.losses}L · ${wr}%` : `${row.wins ?? 0}W ${row.losses ?? 0}L`)
+                          ? wr !== null
+                            ? `${row.wins}W ${row.losses}L · ${wr}%`
+                            : `${row.wins ?? 0}W ${row.losses ?? 0}L`
                           : unit}
                       </div>
                     </div>
@@ -2846,9 +3697,7 @@ function LeaderboardCard() {
           )}
 
           {!meInList && (
-            <p className="btt-lb-foot">
-              Not on the board yet — win ranked battles to climb in.
-            </p>
+            <p className="btt-lb-foot">Not on the board yet — win ranked battles to climb in.</p>
           )}
         </>
       )}
@@ -2866,8 +3715,13 @@ function DailyChallengeCard() {
   const challenge = getTodayChallenge();
 
   const refresh = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setAuthed(false); return; }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setAuthed(false);
+      return;
+    }
     setAuthed(true);
     const today = new Date().toISOString().slice(0, 10);
     const { data } = await supabase
@@ -2891,9 +3745,9 @@ function DailyChallengeCard() {
   useEffect(() => {
     const tick = () => {
       const now = new Date();
-      const next = new Date(Date.UTC(
-        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
-      ));
+      const next = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0),
+      );
       const diff = next.getTime() - now.getTime();
       const h = Math.floor(diff / 3_600_000);
       const m = Math.floor((diff % 3_600_000) / 60_000);
@@ -2913,13 +3767,23 @@ function DailyChallengeCard() {
     if (claiming || claimed || !complete) return;
     setClaiming(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Sign in to claim your reward"); return; }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Sign in to claim your reward");
+        return;
+      }
       // Server-side atomic claim: validates wins>=target and bonus_claimed=false
       // in a single UPDATE so concurrent clicks can't double-claim.
-      const { data: claimedOk, error: claimErr } = await supabase
-        .rpc("claim_daily_challenge_bonus", { p_required_wins: target });
-      if (claimErr || !claimedOk) { toast.error("Couldn't claim — try again"); return; }
+      const { data: claimedOk, error: claimErr } = await supabase.rpc(
+        "claim_daily_challenge_bonus",
+        { p_required_wins: target },
+      );
+      if (claimErr || !claimedOk) {
+        toast.error("Couldn't claim — try again");
+        return;
+      }
       // Award the XP via the rate-limited server RPC. The amount (100) is
       // enforced server-side; the client cannot inflate it.
       await awardXp("daily_challenge", 100);
@@ -2933,7 +3797,12 @@ function DailyChallengeCard() {
   }, [claiming, claimed, complete, target]);
 
   return (
-    <motion.div className="btt-card btt-card--purple p-5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+    <motion.div
+      className="btt-card btt-card--purple p-5"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.4 }}
+    >
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-neon-purple/10 border border-neon-purple/30 flex items-center justify-center">
           <Sparkles className="w-5 h-5 text-neon-purple" />
@@ -2950,7 +3819,9 @@ function DailyChallengeCard() {
                   : `${challenge.goal} → +100 XP`}
           </p>
         </div>
-        <div className={`text-lg font-bold font-display ${complete ? "text-neon-cyan" : "text-neon-purple"}`}>
+        <div
+          className={`text-lg font-bold font-display ${complete ? "text-neon-cyan" : "text-neon-purple"}`}
+        >
           {display}/{target}
         </div>
       </div>
@@ -2997,17 +3868,21 @@ export function KnowledgeBattles() {
         <div className="btt-noise" />
       </div>
       <div className="max-w-7xl mx-auto px-6">
-        <motion.div className="mb-14" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          className="mb-14"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div className="btt-arena-label mb-6">
             <Swords className="w-3 h-3 text-neon-pink" />
             CYBER-MATH ARENA
           </div>
           <h1 className="btt-title btt-shout text-7xl md:text-9xl mb-4">
-            Knowledge{" "}
-            <span className="text-neon-pink">Battles</span>
+            Knowledge <span className="text-neon-pink">Battles</span>
           </h1>
           <p className="btt-mono-text text-[13px] text-muted-foreground max-w-xl leading-relaxed">
-            Choose your archetype. Solve equations under pressure.<br className="hidden md:block" />
+            Choose your archetype. Solve equations under pressure.
+            <br className="hidden md:block" />
             Build devastating combos. Review and learn from every fight.
           </p>
         </motion.div>
@@ -3073,10 +3948,27 @@ export function KnowledgeBattles() {
                 <Target className="w-3.5 h-3.5" /> OPPONENTS
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li><span className="text-neon-cyan font-bold">LIVE PvP</span> — the system first scans for a real player currently in queue. If one is found, you battle head-to-head in real time via a live channel. Rating is at stake.</li>
-                <li><span className="text-neon-purple font-bold">GHOST PvP</span> — if no live opponent is found in 8 seconds, you face a replay of a real player's past session. Their actions, timing, and accuracy are replayed authentically. Rating still applies.</li>
-                <li><span className="text-muted-foreground font-bold">AI Bot</span> — last resort only, when no real player data exists at your rating range. Bot battles still count: full XP, your W/L record, and a smaller rating change than ranked play.</li>
-                <li>Priority is always <span className="text-foreground font-bold">Live → Ghost → Bot</span>. You will never be matched with a bot when real player data is available.</li>
+                <li>
+                  <span className="text-neon-cyan font-bold">LIVE PvP</span> — the system first
+                  scans for a real player currently in queue. If one is found, you battle
+                  head-to-head in real time via a live channel. Rating is at stake.
+                </li>
+                <li>
+                  <span className="text-neon-purple font-bold">GHOST PvP</span> — if no live
+                  opponent is found in 8 seconds, you face a replay of a real player's past session.
+                  Their actions, timing, and accuracy are replayed authentically. Rating still
+                  applies.
+                </li>
+                <li>
+                  <span className="text-muted-foreground font-bold">AI Bot</span> — last resort
+                  only, when no real player data exists at your rating range. Bot battles still
+                  count: full XP, your W/L record, and a smaller rating change than ranked play.
+                </li>
+                <li>
+                  Priority is always{" "}
+                  <span className="text-foreground font-bold">Live → Ghost → Bot</span>. You will
+                  never be matched with a bot when real player data is available.
+                </li>
               </ul>
             </section>
 
@@ -3085,15 +3977,57 @@ export function KnowledgeBattles() {
                 <Swords className="w-3.5 h-3.5" /> COMBAT
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li>Each turn you answer a question, then pick an action. <span className="text-foreground font-bold">The action sets the question's difficulty</span> — Heal draws an easy one, Attack a medium one, Charge a hard one. Bigger payoff, harder question.</li>
-                <li><span className="text-foreground font-bold">Attack</span> — your class's base damage; builds <span className="text-neon-cyan">+15 Focus</span>. Your bread-and-butter.</li>
-                <li><span className="text-foreground font-bold">Heal</span> — restores HP; builds <span className="text-neon-cyan">+10 Focus</span>. <span className="text-foreground">The Tank and the God can't Heal — they build Focus instead.</span></li>
-                <li><span className="text-foreground font-bold">Charge</span> — 1.8× your damage, but spends <span className="text-neon-purple">25 Focus</span>. Your finisher.</li>
-                <li><span className="text-foreground font-bold">Wild</span> — a chaotic effect for <span className="text-neon-purple">15 Focus</span>.</li>
-                <li><span className="text-foreground font-bold">Every number on the action buttons is YOUR archetype's</span> — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows each turn, an Apex's is brutal but fragile. Read them before you commit.</li>
-                <li><span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp; Wild — build it with Attack/Heal. Pool size differs by class (Speedster small, Apex huge).</li>
-                <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> → bigger damage multipliers. A wrong answer or timeout breaks Momentum and lets your opponent counter.</li>
-                <li><span className="text-foreground font-bold">Leaving a battle counts as a loss by abandonment</span> — finish what you start.</li>
+                <li>
+                  Each turn you answer a question, then pick an action.{" "}
+                  <span className="text-foreground font-bold">
+                    The action sets the question's difficulty
+                  </span>{" "}
+                  — Heal draws an easy one, Attack a medium one, Charge a hard one. Bigger payoff,
+                  harder question.
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">Attack</span> — your class's base
+                  damage; builds <span className="text-neon-cyan">+15 Focus</span>. Your
+                  bread-and-butter.
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">Heal</span> — restores HP; builds{" "}
+                  <span className="text-neon-cyan">+10 Focus</span>.{" "}
+                  <span className="text-foreground">
+                    The Tank and the God can't Heal — they build Focus instead.
+                  </span>
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">Charge</span> — 1.8× your damage, but
+                  spends <span className="text-neon-purple">25 Focus</span>. Your finisher.
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">Wild</span> — a chaotic effect for{" "}
+                  <span className="text-neon-purple">15 Focus</span>.
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">
+                    Every number on the action buttons is YOUR archetype's
+                  </span>{" "}
+                  — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows
+                  each turn, an Apex's is brutal but fragile. Read them before you commit.
+                </li>
+                <li>
+                  <span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp;
+                  Wild — build it with Attack/Heal. Pool size differs by class (Speedster small,
+                  Apex huge).
+                </li>
+                <li>
+                  Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> →
+                  bigger damage multipliers. A wrong answer or timeout breaks Momentum and lets your
+                  opponent counter.
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">
+                    Leaving a battle counts as a loss by abandonment
+                  </span>{" "}
+                  — finish what you start.
+                </li>
               </ul>
             </section>
 
@@ -3102,15 +4036,24 @@ export function KnowledgeBattles() {
                 <Sparkles className="w-3.5 h-3.5" /> ARCHETYPES &amp; REWARDS
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li>Each archetype tweaks HP, time, damage, multiplier, and question difficulty — pick the one that fits your style.</li>
-                <li>Every battle counts toward your <span className="text-foreground font-bold">daily practice streak</span>; streak milestones grant bonus XP.</li>
+                <li>
+                  Each archetype tweaks HP, time, damage, multiplier, and question difficulty — pick
+                  the one that fits your style.
+                </li>
+                <li>
+                  Every battle counts toward your{" "}
+                  <span className="text-foreground font-bold">daily practice streak</span>; streak
+                  milestones grant bonus XP.
+                </li>
                 <li>XP earned advances your Trophy Road and unlocks new Ecliptars to claim.</li>
               </ul>
             </section>
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button onClick={() => setHowOpen(false)} variant="default">Got it</Button>
+            <Button onClick={() => setHowOpen(false)} variant="default">
+              Got it
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

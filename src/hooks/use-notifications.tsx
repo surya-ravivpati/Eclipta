@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { notificationMeta } from "@/lib/notifications";
 
-export type Notification = {
+export interface Notification {
   id: string;
   user_id: string;
   actor_id: string | null;
@@ -13,7 +13,7 @@ export type Notification = {
   meta: Record<string, unknown>;
   read: boolean;
   created_at: string;
-};
+}
 
 /**
  * Notification feed.
@@ -38,7 +38,11 @@ export function useNotifications() {
   const hasHydrated = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!user) { setItems([]); hasHydrated.current = false; return; }
+    if (!user) {
+      setItems([]);
+      hasHydrated.current = false;
+      return;
+    }
     setLoading(true);
     const { data } = await supabase
       .from("notifications")
@@ -49,10 +53,7 @@ export function useNotifications() {
     const rows = (data as Notification[] | null) ?? [];
     setItems(rows);
     if (rows.length > 0) {
-      mostRecentSeenAt.current = Math.max(
-        mostRecentSeenAt.current,
-        +new Date(rows[0].created_at),
-      );
+      mostRecentSeenAt.current = Math.max(mostRecentSeenAt.current, +new Date(rows[0].created_at));
     }
     hasHydrated.current = true;
     setLoading(false);
@@ -63,7 +64,9 @@ export function useNotifications() {
     void refresh();
     if (!user) return;
     // 5 minutes — realtime is primary, this is just a safety net.
-    const id = setInterval(() => { void refresh(); }, 5 * 60_000);
+    const id = setInterval(() => {
+      void refresh();
+    }, 5 * 60_000);
     return () => clearInterval(id);
   }, [user, refresh]);
 
@@ -74,7 +77,12 @@ export function useNotifications() {
       .channel(`notifications:${user.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
         (payload) => {
           const row = payload.new as Notification;
           // Merge by id. Newest at top.
@@ -97,7 +105,12 @@ export function useNotifications() {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
         (payload) => {
           const row = payload.new as Notification;
           setItems((prev) => prev.map((p) => (p.id === row.id ? row : p)));
@@ -105,14 +118,21 @@ export function useNotifications() {
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
         (payload) => {
           const row = payload.old as { id: string };
           setItems((prev) => prev.filter((p) => p.id !== row.id));
         },
       )
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const unread = items.filter((n) => !n.read).length;

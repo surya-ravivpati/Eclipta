@@ -4,7 +4,7 @@
  * a common experience all players reference on the same day.
  */
 
-export type DailyChallenge = {
+export interface DailyChallenge {
   id: string;
   title: string;
   goal: string;
@@ -13,7 +13,7 @@ export type DailyChallenge = {
   unit: string;
   /** Optional flavour modifier shown in the challenge card */
   modifier?: string;
-};
+}
 
 /**
  * NOTE: Every daily-challenge reward is "+100 XP" so the number we advertise

@@ -57,7 +57,7 @@ export async function moderateContent(
     }
     const result = data as Partial<ModerationResult> & { selfHarm?: boolean };
     return {
-      verdict: (result.verdict as ModerationVerdict) ?? "pending",
+      verdict: (result.verdict!) ?? "pending",
       category: result.category ?? "unknown",
       score: typeof result.score === "number" ? result.score : 0,
       reason: result.reason ?? "",

@@ -1,17 +1,33 @@
 import { useState } from "react";
-import { GraduationCap, SkipForward, Loader2, Sparkles, ThumbsUp, Meh, HelpCircle } from "lucide-react";
+import {
+  GraduationCap,
+  SkipForward,
+  Loader2,
+  Sparkles,
+  ThumbsUp,
+  Meh,
+  HelpCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import type { RoomMember, StudyRoom } from "@/lib/study-rooms";
 import {
-  setTeachBack, reactTeachBack, skipTeachBack,
-  nextUpId, type TeachBackRound, type TbReaction,
+  setTeachBack,
+  reactTeachBack,
+  skipTeachBack,
+  nextUpId,
+  type TeachBackRound,
+  type TbReaction,
 } from "@/lib/study-teachback";
 
 function Ava({ slug, on }: { slug: string | null; on: boolean }) {
   const ec = slug ? getEcliptarBySlug(slug) : undefined;
   const Icon = ec?.icon ?? Sparkles;
-  return <span className={`sr-tb-ava ${on ? "is-next" : ""}`}><Icon size={13} /></span>;
+  return (
+    <span className={`sr-tb-ava ${on ? "is-next" : ""}`}>
+      <Icon size={13} />
+    </span>
+  );
 }
 
 /**
@@ -19,13 +35,11 @@ function Ava({ slug, on }: { slug: string | null; on: boolean }) {
  * Lives directly under the clock; no menu to dig into. Handles the 1-person
  * (auto-disabled, reason shown) and 2-person ("just the two of you") framings.
  */
-export function TeachBackBar({ room, members }: {
-  room: StudyRoom; members: RoomMember[];
-}) {
+export function TeachBackBar({ room, members }: { room: StudyRoom; members: RoomMember[] }) {
   const [busy, setBusy] = useState(false);
   const count = members.length;
   const enabled = room.teach_back_enabled;
-  const tooFew = count < 2;                       // 1-person → can't run
+  const tooFew = count < 2; // 1-person → can't run
 
   const toggle = async (on: boolean) => {
     setBusy(true);
@@ -37,7 +51,9 @@ export function TeachBackBar({ room, members }: {
   // Queue order = tb_queue filtered to current members (joiners already at back);
   // before the first toggle-on the queue is empty, so preview join order.
   const memberById = new Map(members.map((m) => [m.user_id, m]));
-  const ordered: RoomMember[] = (room.tb_queue?.length ? room.tb_queue : members.map((m) => m.user_id))
+  const ordered: RoomMember[] = (
+    room.tb_queue?.length ? room.tb_queue : members.map((m) => m.user_id)
+  )
     .map((id) => memberById.get(id))
     .filter((m): m is RoomMember => !!m);
   const nextId = nextUpId(
@@ -49,7 +65,9 @@ export function TeachBackBar({ room, members }: {
   return (
     <div className="sr-tb-bar">
       <div className="sr-tb-bar-row">
-        <span className="sr-tb-label"><GraduationCap size={13} /> Teach-back</span>
+        <span className="sr-tb-label">
+          <GraduationCap size={13} /> Teach-back
+        </span>
 
         {tooFew ? (
           <span className="sr-tb-off-note">Needs 2+ people in the room to run</span>
@@ -93,8 +111,14 @@ export function TeachBackBar({ room, members }: {
  * countdown, no AI fallback. The explainer answers in chat; everyone else taps
  * one of three lightweight reactions once the answer lands.
  */
-export function TeachBackCard({ round, meId, mySkipUsed }: {
-  round: TeachBackRound; meId: string | null; mySkipUsed: boolean;
+export function TeachBackCard({
+  round,
+  meId,
+  mySkipUsed,
+}: {
+  round: TeachBackRound;
+  meId: string | null;
+  mySkipUsed: boolean;
 }) {
   const [mine, setMine] = useState<TbReaction | null>(null);
   const [skipping, setSkipping] = useState(false);
@@ -104,7 +128,7 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
   const closed = round.status === "skipped" || round.status === "expired";
 
   const react = (r: TbReaction) => {
-    setMine(r);                                   // optimistic highlight
+    setMine(r); // optimistic highlight
     void reactTeachBack(round.id, r);
   };
 
@@ -115,15 +139,23 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
     if (err) toast(err);
   };
 
-  const REACTIONS: ReadonlyArray<{ key: TbReaction; Icon: typeof ThumbsUp; label: string; count: number }> = [
-    { key: "up",    Icon: ThumbsUp,   label: "got it",  count: round.up_count },
-    { key: "kinda", Icon: Meh,        label: "kinda",   count: round.kinda_count },
-    { key: "lost",  Icon: HelpCircle, label: "lost me", count: round.lost_count },
+  const REACTIONS: readonly {
+    key: TbReaction;
+    Icon: typeof ThumbsUp;
+    label: string;
+    count: number;
+  }[] = [
+    { key: "up", Icon: ThumbsUp, label: "got it", count: round.up_count },
+    { key: "kinda", Icon: Meh, label: "kinda", count: round.kinda_count },
+    { key: "lost", Icon: HelpCircle, label: "lost me", count: round.lost_count },
   ];
 
   return (
-    <div className={`sr-tb-card ${closed ? "sr-tb-card--closed" : ""}`} role="group"
-      aria-label={`Teach-back prompt for ${who}: explain ${concept}`}>
+    <div
+      className={`sr-tb-card ${closed ? "sr-tb-card--closed" : ""}`}
+      role="group"
+      aria-label={`Teach-back prompt for ${who}: explain ${concept}`}
+    >
       <div className="sr-tb-card-head">
         <GraduationCap size={14} className="sr-tb-card-ico" aria-hidden="true" />
         <span className="sr-tb-card-tag">Teach-back</span>
@@ -132,9 +164,15 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
       </div>
 
       <div className="sr-tb-card-prompt">
-        {isExplainer && !closed
-          ? <>Your turn — explain <b>{concept}</b> in your own words.</>
-          : <><b>{who}</b>, can you explain <b>{concept}</b> in your own words?</>}
+        {isExplainer && !closed ? (
+          <>
+            Your turn — explain <b>{concept}</b> in your own words.
+          </>
+        ) : (
+          <>
+            <b>{who}</b>, can you explain <b>{concept}</b> in your own words?
+          </>
+        )}
       </div>
 
       {!closed && (
@@ -159,22 +197,28 @@ export function TeachBackCard({ round, meId, mySkipUsed }: {
           )}
 
           {/* The explainer gets exactly one skip per session. */}
-          {isExplainer && (
-            mySkipUsed ? (
+          {isExplainer &&
+            (mySkipUsed ? (
               <span className="sr-tb-skip-spent">skip used</span>
             ) : (
               <button className="sr-tb-skip" onClick={skip} disabled={skipping}>
-                {skipping ? <Loader2 size={11} className="animate-spin" /> : <SkipForward size={11} />} Skip my turn
+                {skipping ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <SkipForward size={11} />
+                )}{" "}
+                Skip my turn
               </button>
-            )
-          )}
+            ))}
         </div>
       )}
 
       {round.status === "answered" && (isExplainer || REACTIONS.some((r) => r.count > 0)) && (
         <div className="sr-tb-tally">
           {REACTIONS.map((r) => (
-            <span key={r.key} className="sr-tb-tally-item"><r.Icon size={12} aria-hidden="true" /> {r.count}</span>
+            <span key={r.key} className="sr-tb-tally-item">
+              <r.Icon size={12} aria-hidden="true" /> {r.count}
+            </span>
           ))}
         </div>
       )}

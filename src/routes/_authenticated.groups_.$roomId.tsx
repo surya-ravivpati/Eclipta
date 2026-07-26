@@ -11,16 +11,33 @@ import { TeachBackBar, TeachBackCard } from "@/components/study/TeachBack";
 import { supabase } from "@/integrations/supabase/client";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import {
-  getRoom, getRoomMembers, getRoomMessages, sendRoomMessage, leaveStudyRoom,
-  joinStudyRoom, getMyRoomIdentity, postIdleNudge, refetchRoom,
-  setRoomGoal, setRoomLinks,
-  type StudyRoom, type RoomMember, type RoomMessage,
+  getRoom,
+  getRoomMembers,
+  getRoomMessages,
+  sendRoomMessage,
+  leaveStudyRoom,
+  joinStudyRoom,
+  getMyRoomIdentity,
+  postIdleNudge,
+  refetchRoom,
+  setRoomGoal,
+  setRoomLinks,
+  type StudyRoom,
+  type RoomMember,
+  type RoomMessage,
 } from "@/lib/study-rooms";
 import { fetchStuckRequests, triggerStuckAi, type StuckRequest } from "@/lib/study-luna";
 import {
-  fetchTeachBackRounds, openTeachBackRound, passTeachBack, type TeachBackRound,
+  fetchTeachBackRounds,
+  openTeachBackRound,
+  passTeachBack,
+  type TeachBackRound,
 } from "@/lib/study-teachback";
-import { RegenerateCodeButton, RemoveMemberButton, MessageMenu } from "@/components/study/RoomSafety";
+import {
+  RegenerateCodeButton,
+  RemoveMemberButton,
+  MessageMenu,
+} from "@/components/study/RoomSafety";
 import { useBlockedUsers } from "@/hooks/use-blocked-users";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
 import { CrisisSupport } from "@/components/moderation/CrisisSupport";
@@ -37,7 +54,11 @@ function clock(iso: string): string {
 function EcliptarAvatar({ slug, className }: { slug: string | null; className: string }) {
   const ec = slug ? getEcliptarBySlug(slug) : undefined;
   const Icon = ec?.icon ?? Sparkles;
-  return <span className={className}><Icon size={16} /></span>;
+  return (
+    <span className={className}>
+      <Icon size={16} />
+    </span>
+  );
 }
 
 function StudyRoomView() {
@@ -58,7 +79,7 @@ function StudyRoomView() {
   const [sending, setSending] = useState(false);
 
   const { isBlocked, block } = useBlockedUsers();
-  const leftRef = useRef(false);   // true once I deliberately leave (vs. removed)
+  const leftRef = useRef(false); // true once I deliberately leave (vs. removed)
   const [crisisOpen, setCrisisOpen] = useState(false);
 
   const stuckRef = useRef<StuckRequest[]>([]);
@@ -68,7 +89,9 @@ function StudyRoomView() {
     setStuck((prev) => {
       const i = prev.findIndex((s) => s.id === row.id);
       if (i === -1) return [...prev, row];
-      const next = [...prev]; next[i] = row; return next;
+      const next = [...prev];
+      next[i] = row;
+      return next;
     });
   }, []);
 
@@ -80,17 +103,23 @@ function StudyRoomView() {
     setRounds((prev) => {
       const i = prev.findIndex((r) => r.id === row.id);
       if (i === -1) return [...prev, row];
-      const next = [...prev]; next[i] = row; return next;
+      const next = [...prev];
+      next[i] = row;
+      return next;
     });
   }, []);
 
-  const meRef = useRef<{ userId: string | null; displayName: string; equippedSlug: string | null }>({
-    userId: null, displayName: "Learner", equippedSlug: null,
-  });
+  const meRef = useRef<{ userId: string | null; displayName: string; equippedSlug: string | null }>(
+    {
+      userId: null,
+      displayName: "Learner",
+      equippedSlug: null,
+    },
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const roomRef = useRef<StudyRoom | null>(null);
   roomRef.current = room;
-  const subscribedOnceRef = useRef(false);   // first realtime connect vs. reconnects
+  const subscribedOnceRef = useRef(false); // first realtime connect vs. reconnects
 
   const refreshMembers = useCallback(async () => {
     const list = await getRoomMembers(roomId);
@@ -109,13 +138,16 @@ function StudyRoomView() {
    *  reconnected client correct (no per-feature resync). */
   const loadSnapshots = useCallback(async () => {
     const [r, mem, msgs, st, rd] = await Promise.all([
-      refetchRoom(roomId), getRoomMembers(roomId), getRoomMessages(roomId),
-      fetchStuckRequests(roomId), fetchTeachBackRounds(roomId),
+      refetchRoom(roomId),
+      getRoomMembers(roomId),
+      getRoomMessages(roomId),
+      fetchStuckRequests(roomId),
+      fetchTeachBackRounds(roomId),
     ]);
     if (r) setRoom(r);
     setMembers(mem);
     setMessages(msgs);
-    setPending([]);   // authoritative refetch supersedes the local quiet-chat buffer
+    setPending([]); // authoritative refetch supersedes the local quiet-chat buffer
     setStuck(st);
     setRounds(rd);
   }, [roomId]);
@@ -132,7 +164,11 @@ function StudyRoomView() {
         r = await getRoom(roomId);
       }
       if (cancelled) return;
-      if (!r || !r.am_member) { setDenied(true); setLoading(false); return; }
+      if (!r?.am_member) {
+        setDenied(true);
+        setLoading(false);
+        return;
+      }
       setRoom(r);
       setMembers(await getRoomMembers(roomId));
       setMessages(await getRoomMessages(roomId));
@@ -140,7 +176,9 @@ function StudyRoomView() {
       setRounds(await fetchTeachBackRounds(roomId));
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [roomId]);
 
   // Realtime: new messages + member changes.
@@ -148,8 +186,14 @@ function StudyRoomView() {
     if (denied) return;
     const channel = supabase
       .channel(`study:${roomId}:${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "study_room_messages", filter: `room_id=eq.${roomId}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "study_room_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
         (payload) => {
           const m = payload.new as RoomMessage;
           // Quiet-chat collapse: during work phases, buffer incoming *chat*
@@ -157,30 +201,52 @@ function StudyRoomView() {
           // and our own messages always go straight through.
           const r = roomRef.current;
           const isMine = m.user_id === meRef.current.userId;
-          const shouldBuffer =
-            r?.phase === "work" && m.kind === "chat" && !isMine;
+          const shouldBuffer = r?.phase === "work" && m.kind === "chat" && !isMine;
           if (shouldBuffer) {
             setPending((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
           } else {
             setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
           }
-        })
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "study_room_members", filter: `room_id=eq.${roomId}` },
-        () => { void refreshMembers(); })
-      .on("postgres_changes",
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "study_room_members",
+          filter: `room_id=eq.${roomId}`,
+        },
+        () => {
+          void refreshMembers();
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "study_rooms", filter: `id=eq.${roomId}` },
         async () => {
           // Pattern change, phase flip, or activity-clock bump — re-fetch
           // the full room (RPC returns clock columns + member flags).
           const fresh = await refetchRoom(roomId);
           if (fresh) setRoom(fresh);
-        })
-      .on("postgres_changes",
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "*", schema: "public", table: "stuck_requests", filter: `room_id=eq.${roomId}` },
-        (payload) => { if (payload.new && (payload.new as StuckRequest).id) upsertStuck(payload.new as StuckRequest); })
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "teach_back_rounds", filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          if (payload.new && (payload.new as StuckRequest).id)
+            upsertStuck(payload.new as StuckRequest);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "teach_back_rounds",
+          filter: `room_id=eq.${roomId}`,
+        },
         (payload) => {
           if (payload.eventType === "DELETE") {
             const id = (payload.old as TeachBackRound)?.id;
@@ -188,7 +254,8 @@ function StudyRoomView() {
           } else if (payload.new && (payload.new as TeachBackRound).id) {
             upsertRound(payload.new as TeachBackRound);
           }
-        })
+        },
+      )
       .subscribe((status) => {
         // First SUBSCRIBED is the initial connect (already loaded on mount).
         // Every SUBSCRIBED after that is a RE-connect: realtime drops events
@@ -198,13 +265,17 @@ function StudyRoomView() {
           else subscribedOnceRef.current = true;
         }
       });
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [roomId, denied, refreshMembers, upsertStuck, upsertRound, loadSnapshots]);
 
   // Tab return / network back online → resync (same single path as reconnect).
   useEffect(() => {
     if (denied || removed) return;
-    const resync = () => { if (document.visibilityState === "visible") void loadSnapshots(); };
+    const resync = () => {
+      if (document.visibilityState === "visible") void loadSnapshots();
+    };
     document.addEventListener("visibilitychange", resync);
     window.addEventListener("online", resync);
     return () => {
@@ -259,23 +330,26 @@ function StudyRoomView() {
   /** When phase flips, flush any buffered messages so break-time is normal, and
    *  — if Teach-Back is on — open a round for the next person. Every client
    *  fires this; the server gates so exactly one round is created per flip. */
-  const onPhaseFlip = useCallback((next: "work" | "break") => {
-    if (next === "break") {
-      setPending((buf) => {
-        if (buf.length === 0) return buf;
-        setMessages((prev) => {
-          const seen = new Set(prev.map((m) => m.id));
-          return [...prev, ...buf.filter((m) => !seen.has(m.id))];
+  const onPhaseFlip = useCallback(
+    (next: "work" | "break") => {
+      if (next === "break") {
+        setPending((buf) => {
+          if (buf.length === 0) return buf;
+          setMessages((prev) => {
+            const seen = new Set(prev.map((m) => m.id));
+            return [...prev, ...buf.filter((m) => !seen.has(m.id))];
+          });
+          return [];
         });
-        return [];
-      });
-      const r = roomRef.current;
-      if (r?.teach_back_enabled) {
-        // trigger_key = the break phase's start time → unique per transition.
-        void openTeachBackRound(roomId, r.phase_started_at);
+        const r = roomRef.current;
+        if (r?.teach_back_enabled) {
+          // trigger_key = the break phase's start time → unique per transition.
+          void openTeachBackRound(roomId, r.phase_started_at);
+        }
       }
-    }
-  }, [roomId]);
+    },
+    [roomId],
+  );
 
   // Leaver mid-turn → auto-pass to the next person (no skip charged). Any
   // remaining client may call it; the server collapses concurrent calls.
@@ -326,7 +400,8 @@ function StudyRoomView() {
 
     const myMember = members.find((m) => m.user_id === meRef.current.userId);
     const err = await sendRoomMessage({
-      roomId, body,
+      roomId,
+      body,
       authorName: meRef.current.displayName,
       ecliptarSlug: myMember?.ecliptar_slug ?? meRef.current.equippedSlug,
     });
@@ -334,14 +409,15 @@ function StudyRoomView() {
     if (err) {
       // The DB trigger is the bypass-proof floor; surface its calm rejection.
       const msg = /check_violation|moderation|rejected/i.test(err)
-        ? "That message couldn't be sent." : err;
+        ? "That message couldn't be sent."
+        : err;
       toast.error(msg, { description: undefined });
       setDraft(body);
     }
   };
 
   const leave = async () => {
-    leftRef.current = true;   // so the member-list change reads as "I left", not "removed"
+    leftRef.current = true; // so the member-list change reads as "I left", not "removed"
     await leaveStudyRoom(roomId);
     toast("You left the room");
     navigate({ to: "/groups" });
@@ -360,22 +436,42 @@ function StudyRoomView() {
   };
 
   if (loading) {
-    return <div className="sr"><div className="sr-wrap sr-empty"><Loader2 className="animate-spin" size={18} style={{ display: "inline" }} /> Entering room…</div></div>;
+    return (
+      <div className="sr">
+        <div className="sr-wrap sr-empty">
+          <Loader2 className="animate-spin" size={18} style={{ display: "inline" }} /> Entering
+          room…
+        </div>
+      </div>
+    );
   }
   if (removed) {
     return (
-      <div className="sr"><div className="sr-wrap">
-        <button className="sr-back" onClick={() => navigate({ to: "/groups" })}><ArrowLeft size={13} /> Study Rooms</button>
-        <div className="sr-empty">You were removed from this room by the host. You'll need a fresh code from them to return.</div>
-      </div></div>
+      <div className="sr">
+        <div className="sr-wrap">
+          <button className="sr-back" onClick={() => navigate({ to: "/groups" })}>
+            <ArrowLeft size={13} /> Study Rooms
+          </button>
+          <div className="sr-empty">
+            You were removed from this room by the host. You'll need a fresh code from them to
+            return.
+          </div>
+        </div>
+      </div>
     );
   }
   if (denied || !room) {
     return (
-      <div className="sr"><div className="sr-wrap">
-        <button className="sr-back" onClick={() => navigate({ to: "/groups" })}><ArrowLeft size={13} /> Study Rooms</button>
-        <div className="sr-empty">This room is private or no longer exists. Ask a member for the join code.</div>
-      </div></div>
+      <div className="sr">
+        <div className="sr-wrap">
+          <button className="sr-back" onClick={() => navigate({ to: "/groups" })}>
+            <ArrowLeft size={13} /> Study Rooms
+          </button>
+          <div className="sr-empty">
+            This room is private or no longer exists. Ask a member for the join code.
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -386,9 +482,10 @@ function StudyRoomView() {
   // means the block takes effect immediately, here and in any other room.
   const myId = meRef.current.userId;
   const visibleMessages = messages.filter((m) => {
-    if (m.kind === "chat" && isBlocked(m.user_id)) return false;            // personal block
+    if (m.kind === "chat" && isBlocked(m.user_id)) return false; // personal block
     // Moderator-hidden/removed chat is hidden from everyone but its author.
-    if (m.moderation_status && m.moderation_status !== "visible" && m.user_id !== myId) return false;
+    if (m.moderation_status && m.moderation_status !== "visible" && m.user_id !== myId)
+      return false;
     return true;
   });
   const visiblePending = pending.filter((m) => !isBlocked(m.user_id));
@@ -396,16 +493,29 @@ function StudyRoomView() {
   return (
     <div className="sr">
       <div className="sr-wrap">
-        <button className="sr-back" onClick={() => navigate({ to: "/groups" })}><ArrowLeft size={13} /> Study Rooms</button>
+        <button className="sr-back" onClick={() => navigate({ to: "/groups" })}>
+          <ArrowLeft size={13} /> Study Rooms
+        </button>
 
-        <div className="sr-roomhead" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div
+          className="sr-roomhead"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
           <div>
             <h1>{room.name}</h1>
             {room.topic && <p className="sr-roomtopic">{room.topic}</p>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LofiPlayer />
-            <button className="sr-btn" onClick={leave}><LogOut size={14} /> Leave</button>
+            <button className="sr-btn" onClick={leave}>
+              <LogOut size={14} /> Leave
+            </button>
           </div>
         </div>
 
@@ -418,7 +528,10 @@ function StudyRoomView() {
 
         <div className="sr-room">
           <aside className="sr-side">
-            <h4><Users size={11} style={{ display: "inline", marginRight: 5 }} />Members · {members.length}</h4>
+            <h4>
+              <Users size={11} style={{ display: "inline", marginRight: 5 }} />
+              Members · {members.length}
+            </h4>
             {members.map((m) => {
               const isMe = m.user_id === meRef.current.userId;
               const ec = m.ecliptar_slug ? getEcliptarBySlug(m.ecliptar_slug) : undefined;
@@ -428,15 +541,24 @@ function StudyRoomView() {
                   <EcliptarAvatar slug={m.ecliptar_slug} className="sr-member-ava" />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="sr-member-name">
-                      {m.display_name || "Learner"} {isMe && <span className="sr-member-you">YOU</span>}
-                      {isMemberHost && <span className="sr-member-host" title="Room host">HOST</span>}
+                      {m.display_name || "Learner"}{" "}
+                      {isMe && <span className="sr-member-you">YOU</span>}
+                      {isMemberHost && (
+                        <span className="sr-member-host" title="Room host">
+                          HOST
+                        </span>
+                      )}
                     </div>
                     <div className="sr-member-ec">{ec?.name ?? "No Ecliptar"}</div>
                   </div>
                   {/* Host-only remove — rendered only for the host, never shown
                       disabled to others. Can't remove yourself. */}
                   {isHost && !isMe && (
-                    <RemoveMemberButton roomId={roomId} userId={m.user_id} name={m.display_name || "this member"} />
+                    <RemoveMemberButton
+                      roomId={roomId}
+                      userId={m.user_id}
+                      name={m.display_name || "this member"}
+                    />
                   )}
                 </div>
               );
@@ -444,10 +566,19 @@ function StudyRoomView() {
 
             {!room.is_public && room.join_code && (
               <div className="sr-code">
-                <h4><Lock size={11} style={{ display: "inline", marginRight: 5 }} />Invite code</h4>
-                <span className="sr-code-val" onClick={copyCode} title="Click to copy">{room.join_code}</span>
+                <h4>
+                  <Lock size={11} style={{ display: "inline", marginRight: 5 }} />
+                  Invite code
+                </h4>
+                <span className="sr-code-val" onClick={copyCode} title="Click to copy">
+                  {room.join_code}
+                </span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <button className="sr-btn" style={{ marginTop: 10, fontSize: 11, padding: "6px 12px" }} onClick={copyCode}>
+                  <button
+                    className="sr-btn"
+                    style={{ marginTop: 10, fontSize: 11, padding: "6px 12px" }}
+                    onClick={copyCode}
+                  >
                     <Copy size={12} /> Copy code
                   </button>
                   {/* Host-only: regenerate. Old code stops working for new joins. */}
@@ -462,7 +593,9 @@ function StudyRoomView() {
             <TeachBackBar room={room} members={members} />
             <div className="sr-chat-scroll" ref={scrollRef}>
               {visibleMessages.length === 0 && stuck.length === 0 && rounds.length === 0 ? (
-                <div className="sr-chat-empty">It's quiet in here. Say hello and get the session going. ☕</div>
+                <div className="sr-chat-empty">
+                  It's quiet in here. Say hello and get the session going. ☕
+                </div>
               ) : (
                 // Merge chat messages, Stuck cards and Teach-Back rounds into one
                 // time-ordered stream.
@@ -470,37 +603,62 @@ function StudyRoomView() {
                   ...visibleMessages.map((m) => {
                     const isMine = m.user_id === meRef.current.userId;
                     return {
-                    at: m.created_at,
-                    node: m.kind === "system" ? (
-                      <div className="sr-system" key={`m-${m.id}`}>
-                        <span className="sr-system-text">{m.body}</span>
-                        <MessageMenu
-                          roomId={roomId} targetId={m.id} authorKind="system" reportedUserId={null}
-                          authorName="System" snapshot={m.body} canBlock={false} onBlock={() => {}}
-                        />
-                      </div>
-                    ) : (
-                      <div className="sr-msg" key={`m-${m.id}`}>
-                        <EcliptarAvatar slug={m.ecliptar_slug} className="sr-msg-ava" />
-                        <div className="sr-msg-body">
-                          <div className="sr-msg-meta">
-                            <span className={`sr-msg-author ${isMine ? "sr-msg-author--me" : ""}`}>{m.author_name || "Learner"}</span>
-                            <span className="sr-msg-time">{clock(m.created_at)}</span>
+                      at: m.created_at,
+                      node:
+                        m.kind === "system" ? (
+                          <div className="sr-system" key={`m-${m.id}`}>
+                            <span className="sr-system-text">{m.body}</span>
                             <MessageMenu
-                              roomId={roomId} targetId={m.id} authorKind="human" reportedUserId={m.user_id}
-                              authorName={m.author_name || "this person"} snapshot={m.body}
-                              canBlock={!isMine}
-                              onBlock={() => void blockAuthor(m.user_id, m.author_name || "this person")}
+                              roomId={roomId}
+                              targetId={m.id}
+                              authorKind="system"
+                              reportedUserId={null}
+                              authorName="System"
+                              snapshot={m.body}
+                              canBlock={false}
+                              onBlock={() => {}}
                             />
                           </div>
-                          <div className="sr-msg-text">{m.body}</div>
-                        </div>
-                      </div>
-                    ),
-                  }; }),
+                        ) : (
+                          <div className="sr-msg" key={`m-${m.id}`}>
+                            <EcliptarAvatar slug={m.ecliptar_slug} className="sr-msg-ava" />
+                            <div className="sr-msg-body">
+                              <div className="sr-msg-meta">
+                                <span
+                                  className={`sr-msg-author ${isMine ? "sr-msg-author--me" : ""}`}
+                                >
+                                  {m.author_name || "Learner"}
+                                </span>
+                                <span className="sr-msg-time">{clock(m.created_at)}</span>
+                                <MessageMenu
+                                  roomId={roomId}
+                                  targetId={m.id}
+                                  authorKind="human"
+                                  reportedUserId={m.user_id}
+                                  authorName={m.author_name || "this person"}
+                                  snapshot={m.body}
+                                  canBlock={!isMine}
+                                  onBlock={() =>
+                                    void blockAuthor(m.user_id, m.author_name || "this person")
+                                  }
+                                />
+                              </div>
+                              <div className="sr-msg-text">{m.body}</div>
+                            </div>
+                          </div>
+                        ),
+                    };
+                  }),
                   ...stuck.map((s) => ({
                     at: s.created_at,
-                    node: <StuckCard key={`s-${s.id}`} stuck={s} meId={meRef.current.userId} roomId={roomId} />,
+                    node: (
+                      <StuckCard
+                        key={`s-${s.id}`}
+                        stuck={s}
+                        meId={meRef.current.userId}
+                        roomId={roomId}
+                      />
+                    ),
                   })),
                   ...rounds
                     .filter((r) => r.status !== "claiming" && r.explainer_id)
@@ -511,7 +669,9 @@ function StudyRoomView() {
                           key={`tb-${r.id}`}
                           round={r}
                           meId={meRef.current.userId}
-                          mySkipUsed={!!members.find((m) => m.user_id === meRef.current.userId)?.tb_skip_used}
+                          mySkipUsed={
+                            !!members.find((m) => m.user_id === meRef.current.userId)?.tb_skip_used
+                          }
                         />
                       ),
                     })),
@@ -523,7 +683,8 @@ function StudyRoomView() {
             {visiblePending.length > 0 && (
               <div className="sr-pending">
                 <button className="sr-pending-btn" onClick={revealPending}>
-                  {visiblePending.length} new message{visiblePending.length === 1 ? "" : "s"} — tap to show
+                  {visiblePending.length} new message{visiblePending.length === 1 ? "" : "s"} — tap
+                  to show
                 </button>
               </div>
             )}
@@ -535,7 +696,12 @@ function StudyRoomView() {
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
                 placeholder="Message the room…"
                 maxLength={1000}
               />

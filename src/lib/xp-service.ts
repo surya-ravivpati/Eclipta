@@ -133,7 +133,7 @@ export async function adminGrantXp(userId: string, amount: number): Promise<numb
     console.error("Failed to grant XP:", error);
     return null;
   }
-  return (data as number | null) ?? null;
+  return (data) ?? null;
 }
 
 /**
@@ -149,5 +149,5 @@ export async function adminSetXp(userId: string, xpAmount: number): Promise<numb
     console.error("Failed to set XP:", error);
     return null;
   }
-  return (data as number | null) ?? null;
+  return (data) ?? null;
 }

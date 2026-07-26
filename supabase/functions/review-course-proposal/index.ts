@@ -4,8 +4,7 @@ import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 type Proposal = {
@@ -42,16 +41,33 @@ function heuristicGate(p: Proposal): { pass: boolean; reason?: string } {
   const reasoning = (p.creator_reasoning || "").trim();
   const desc = (p.description || "").trim();
 
-  if (topic.length < 4) return { pass: false, reason: "Topic is too short to evaluate. Add a clearer course title (at least a few words)." };
-  if (/^[a-z]{1,3}$/i.test(topic)) return { pass: false, reason: "Topic looks like a placeholder. Use a descriptive title." };
-  if (reasoning.length < 40) return { pass: false, reason: "Your 'why are you the right person' answer is too short. Add 2–3 sentences about your experience or motivation." };
+  if (topic.length < 4)
+    return {
+      pass: false,
+      reason: "Topic is too short to evaluate. Add a clearer course title (at least a few words).",
+    };
+  if (/^[a-z]{1,3}$/i.test(topic))
+    return { pass: false, reason: "Topic looks like a placeholder. Use a descriptive title." };
+  if (reasoning.length < 40)
+    return {
+      pass: false,
+      reason:
+        "Your 'why are you the right person' answer is too short. Add 2–3 sentences about your experience or motivation.",
+    };
 
   // Coherence: depth/level mismatch
   if (p.level === "beginner" && p.depth === "mastery") {
-    return { pass: false, reason: "An 80+ hour mastery course doesn't fit a beginner audience. Pick a shorter depth or a higher level." };
+    return {
+      pass: false,
+      reason:
+        "An 80+ hour mastery course doesn't fit a beginner audience. Pick a shorter depth or a higher level.",
+    };
   }
   if (p.level === "advanced" && p.depth === "overview") {
-    return { pass: false, reason: "A 2–5 hour overview is too thin for an advanced course. Pick a deeper depth." };
+    return {
+      pass: false,
+      reason: "A 2–5 hour overview is too thin for an advanced course. Pick a deeper depth.",
+    };
   }
 
   // Profanity / spam keywords (very light filter)
@@ -74,8 +90,12 @@ function heuristicGate(p: Proposal): { pass: boolean; reason?: string } {
 function sanitize(input: string | null | undefined, max: number): string {
   if (!input) return "";
   // Drop control characters except newline/tab; collapse runs of whitespace.
+  // eslint-disable-next-line no-control-regex -- deliberate: control characters are stripped before user text reaches the AI prompt.
   let s = input.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, " ");
-  s = s.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  s = s
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   if (s.length > max) s = s.slice(0, max) + "…";
   return s;
 }
@@ -170,13 +190,15 @@ serve(async (req) => {
     const { proposalId } = await req.json();
     if (!proposalId) {
       return new Response(JSON.stringify({ error: "proposalId required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const PUBLISHABLE_KEY = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
+    const PUBLISHABLE_KEY =
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
 
     // Verify caller via their JWT (so reviewer = proposal author)
     const authHeader = req.headers.get("Authorization") || "";
@@ -187,7 +209,8 @@ serve(async (req) => {
     const userId = userData?.user?.id;
     if (!userId) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -195,46 +218,60 @@ serve(async (req) => {
 
     const { data: proposal, error: pErr } = await admin
       .from("course_proposals")
-      .select("id,user_id,topic,description,level,structure,depth,weekly_hours,prerequisites,creator_reasoning,status")
+      .select(
+        "id,user_id,topic,description,level,structure,depth,weekly_hours,prerequisites,creator_reasoning,status",
+      )
       .eq("id", proposalId)
       .maybeSingle();
 
     if (pErr || !proposal) {
       return new Response(JSON.stringify({ error: "Proposal not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (proposal.user_id !== userId) {
       return new Response(JSON.stringify({ error: "Not your proposal" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Idempotency guard: if the proposal was already decided, don't re-run the
     // AI (prevents credit drain and re-rolling for a more favorable verdict).
     if (proposal.status === "approved" || proposal.status === "denied") {
-      return new Response(JSON.stringify({ error: "Proposal already reviewed", status: proposal.status }), {
-        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Proposal already reviewed", status: proposal.status }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // 1. Heuristic gate
     const gate = heuristicGate(proposal as Proposal);
     if (!gate.pass) {
-      await admin.from("course_proposals").update({
-        status: "denied",
-        denial_reason: gate.reason,
-        ai_score: 0,
-        ai_feedback: gate.reason,
-      }).eq("id", proposal.id);
+      await admin
+        .from("course_proposals")
+        .update({
+          status: "denied",
+          denial_reason: gate.reason,
+          ai_score: 0,
+          ai_feedback: gate.reason,
+        })
+        .eq("id", proposal.id);
 
-      return new Response(JSON.stringify({
-        decision: "deny",
-        reason: gate.reason,
-        feedback: gate.reason,
-        score: 0,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({
+          decision: "deny",
+          reason: gate.reason,
+          feedback: gate.reason,
+          score: 0,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // 2. AI grading
@@ -247,18 +284,23 @@ serve(async (req) => {
       verdict = {
         decision: "approve",
         score: 60,
-        reason: "Auto-approved (AI reviewer unavailable). Build out your course and we'll feature it once reviewed.",
-        feedback: "The AI review service was unavailable. Your course was approved provisionally — you can start building it now.",
+        reason:
+          "Auto-approved (AI reviewer unavailable). Build out your course and we'll feature it once reviewed.",
+        feedback:
+          "The AI review service was unavailable. Your course was approved provisionally — you can start building it now.",
       };
     }
 
     if (verdict.decision === "deny") {
-      await admin.from("course_proposals").update({
-        status: "denied",
-        denial_reason: verdict.reason,
-        ai_score: verdict.score,
-        ai_feedback: verdict.feedback,
-      }).eq("id", proposal.id);
+      await admin
+        .from("course_proposals")
+        .update({
+          status: "denied",
+          denial_reason: verdict.reason,
+          ai_score: verdict.score,
+          ai_feedback: verdict.feedback,
+        })
+        .eq("id", proposal.id);
 
       return new Response(JSON.stringify(verdict), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -267,7 +309,7 @@ serve(async (req) => {
 
     // Approved → create user_courses shell
     const baseSlug = slugify(proposal.topic) || "course";
-    let slug = `${baseSlug}-${proposal.id.slice(0, 6)}`;
+    const slug = `${baseSlug}-${proposal.id.slice(0, 6)}`;
 
     const { data: course, error: cErr } = await admin
       .from("user_courses")
@@ -288,7 +330,8 @@ serve(async (req) => {
     if (cErr) {
       console.error("Course creation failed:", cErr);
       return new Response(JSON.stringify({ error: "Could not create course shell" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -299,23 +342,33 @@ serve(async (req) => {
       position: 0,
     });
 
-    await admin.from("course_proposals").update({
-      status: "approved",
-      denial_reason: null,
-      ai_score: verdict.score,
-      ai_feedback: verdict.feedback,
-      course_id: course.id,
-    }).eq("id", proposal.id);
+    await admin
+      .from("course_proposals")
+      .update({
+        status: "approved",
+        denial_reason: null,
+        ai_score: verdict.score,
+        ai_feedback: verdict.feedback,
+        course_id: course.id,
+      })
+      .eq("id", proposal.id);
 
-    return new Response(JSON.stringify({
-      ...verdict,
-      courseId: course.id,
-      courseSlug: course.slug,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({
+        ...verdict,
+        courseId: course.id,
+        courseSlug: course.slug,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     console.error("review-course-proposal error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

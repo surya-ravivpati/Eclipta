@@ -1,0 +1,43 @@
+# Python linting and formatting. No Python exists in Eclipta yet; this config is
+# here so the first Python file added is linted to the same standard as the
+# TypeScript, rather than setting a precedent nobody goes back to fix.
+#
+# Ruff replaces flake8, isort, pyupgrade, and black in a single fast tool.
+# Install with uv, never pip:  uv tool install ruff
+
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes: undefined names, unused imports
+    "I",    # isort: import ordering
+    "N",    # pep8-naming
+    "UP",   # pyupgrade: modernise old syntax
+    "B",    # flake8-bugbear: likely bugs
+    "A",    # flake8-builtins: shadowing builtins
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "ARG",  # unused arguments
+    "PTH",  # use pathlib over os.path
+    "RUF",  # ruff's own rules
+    "ANN",  # require type annotations
+    "S",    # flake8-bandit: security issues
+]
+ignore = [
+    "ANN401",  # allow typing.Any in narrow cases where nothing else fits
+]
+
+[lint.per-file-ignores]
+# Tests may use assert and skip return annotations.
+"**/test_*.py" = ["S101", "ANN201"]
+"**/tests/**/*.py" = ["S101", "ANN201"]
+
+[lint.pydocstyle]
+convention = "google"
+
+[format]
+quote-style = "double"
+indent-style = "space"

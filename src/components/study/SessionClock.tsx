@@ -15,8 +15,8 @@ import { toast } from "sonner";
  * (if needed) requests the catch-up advance.
  */
 
-const PRESETS: ReadonlyArray<{ label: string; w: number; b: number }> = [
-  { label: "25 / 5",  w: 25, b: 5 },
+const PRESETS: readonly { label: string; w: number; b: number }[] = [
+  { label: "25 / 5", w: 25, b: 5 },
   { label: "50 / 10", w: 50, b: 10 },
 ];
 
@@ -27,14 +27,20 @@ function fmt(secs: number): string {
   return `${m.toString().padStart(2, "0")}:${rem.toString().padStart(2, "0")}`;
 }
 
-export function SessionClock({ room, onPhaseFlip }: {
+export function SessionClock({
+  room,
+  onPhaseFlip,
+}: {
   room: StudyRoom;
   /** Fires once locally each time the visible phase transitions. The room
    *  view uses it to flush collapsed messages when work → break. */
   onPhaseFlip?: (next: "work" | "break") => void;
 }) {
   const durationMin = room.phase === "work" ? room.work_minutes : room.break_minutes;
-  const startedMs = useMemo(() => new Date(room.phase_started_at).getTime(), [room.phase_started_at]);
+  const startedMs = useMemo(
+    () => new Date(room.phase_started_at).getTime(),
+    [room.phase_started_at],
+  );
   const endMs = startedMs + durationMin * 60_000;
 
   const [now, setNow] = useState(() => Date.now());
@@ -72,7 +78,8 @@ export function SessionClock({ room, onPhaseFlip }: {
   const [customB, setCustomB] = useState(String(room.break_minutes));
 
   const apply = async (w: number, b: number) => {
-    setOpen(false); setCustomOpen(false);
+    setOpen(false);
+    setCustomOpen(false);
     const err = await setRoomPattern(room.id, w, b);
     if (err) toast.error("Couldn't change pattern", { description: err });
   };
@@ -83,25 +90,43 @@ export function SessionClock({ room, onPhaseFlip }: {
   const pct = total > 0 ? Math.min(100, (elapsed / total) * 100) : 0;
 
   return (
-    <div className={`sr-clock ${isWork ? "sr-clock--work" : "sr-clock--break"}`}
-      role="group" aria-label={`Session clock — ${isWork ? "focus" : "break"} phase, ${fmt(remaining)} remaining`}>
+    <div
+      className={`sr-clock ${isWork ? "sr-clock--work" : "sr-clock--break"}`}
+      role="group"
+      aria-label={`Session clock — ${isWork ? "focus" : "break"} phase, ${fmt(remaining)} remaining`}
+    >
       <div className="sr-clock-row">
         <span className="sr-clock-phase">
           {isWork ? <BookOpen size={13} /> : <Coffee size={13} />}
           {isWork ? "Focus" : "Break"}
         </span>
-        <span className="sr-clock-time" role="timer" aria-live="off"
-          aria-label={`${fmt(remaining)} remaining in ${isWork ? "focus" : "break"}`}>{fmt(remaining)}</span>
+        <span
+          className="sr-clock-time"
+          role="timer"
+          aria-live="off"
+          aria-label={`${fmt(remaining)} remaining in ${isWork ? "focus" : "break"}`}
+        >
+          {fmt(remaining)}
+        </span>
         <div className="sr-clock-pattern">
-          <button className="sr-clock-pbtn" onClick={() => setOpen((v) => !v)} aria-expanded={open}
-            aria-haspopup="menu" aria-label={`Change work/break pattern (currently ${room.work_minutes} on, ${room.break_minutes} off)`}>
+          <button
+            className="sr-clock-pbtn"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-haspopup="menu"
+            aria-label={`Change work/break pattern (currently ${room.work_minutes} on, ${room.break_minutes} off)`}
+          >
             <Clock size={11} /> {room.work_minutes}/{room.break_minutes}
             <ChevronDown size={11} />
           </button>
           {open && (
             <div className="sr-clock-menu" role="menu">
               {PRESETS.map((p) => (
-                <button key={p.label} className="sr-clock-menu-item" onClick={() => apply(p.w, p.b)}>
+                <button
+                  key={p.label}
+                  className="sr-clock-menu-item"
+                  onClick={() => apply(p.w, p.b)}
+                >
                   {p.label}
                 </button>
               ))}
@@ -110,13 +135,25 @@ export function SessionClock({ room, onPhaseFlip }: {
               </button>
               {customOpen && (
                 <div className="sr-clock-custom">
-                  <label>Work
-                    <input type="number" min={1} max={180} value={customW}
-                      onChange={(e) => setCustomW(e.target.value)} />
+                  <label>
+                    Work
+                    <input
+                      type="number"
+                      min={1}
+                      max={180}
+                      value={customW}
+                      onChange={(e) => setCustomW(e.target.value)}
+                    />
                   </label>
-                  <label>Break
-                    <input type="number" min={1} max={60} value={customB}
-                      onChange={(e) => setCustomB(e.target.value)} />
+                  <label>
+                    Break
+                    <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={customB}
+                      onChange={(e) => setCustomB(e.target.value)}
+                    />
                   </label>
                   <button
                     className="sr-clock-apply"
@@ -125,14 +162,18 @@ export function SessionClock({ room, onPhaseFlip }: {
                       const b = Math.max(1, Math.min(60, parseInt(customB, 10) || 0));
                       if (w && b) void apply(w, b);
                     }}
-                  >Set</button>
+                  >
+                    Set
+                  </button>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
-      <div className="sr-clock-bar"><div className="sr-clock-bar-fill" style={{ width: `${pct}%` }} /></div>
+      <div className="sr-clock-bar">
+        <div className="sr-clock-bar-fill" style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }

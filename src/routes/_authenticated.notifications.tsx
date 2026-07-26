@@ -3,8 +3,12 @@ import { useMemo, useState } from "react";
 import { Bell, Check, Trash2, Loader2, Inbox } from "lucide-react";
 import { useNotifications, type Notification } from "@/hooks/use-notifications";
 import {
-  notificationMeta, dateBucket, timeAgo,
-  CATEGORY_LABEL, CATEGORY_ICON, type NotificationCategory,
+  notificationMeta,
+  dateBucket,
+  timeAgo,
+  CATEGORY_LABEL,
+  CATEGORY_ICON,
+  type NotificationCategory,
 } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +16,10 @@ export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
     meta: [
       { title: "Notifications – Eclipta" },
-      { name: "description", content: "Replies, mentions, follows, challenges, and accepted answers." },
+      {
+        name: "description",
+        content: "Replies, mentions, follows, challenges, and accepted answers.",
+      },
     ],
   }),
   component: NotificationsPage,
@@ -27,13 +34,20 @@ function NotificationsPage() {
 
   // Per-category counts drive the filter chips' subtitles.
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: items.length, unread, forum: 0, social: 0, battle: 0, system: 0 };
+    const c: Record<Filter, number> = {
+      all: items.length,
+      unread,
+      forum: 0,
+      social: 0,
+      battle: 0,
+      system: 0,
+    };
     for (const n of items) c[notificationMeta(n.type).category]++;
     return c;
   }, [items, unread]);
 
   const filtered = useMemo(() => {
-    if (filter === "all")    return items;
+    if (filter === "all") return items;
     if (filter === "unread") return items.filter((n) => !n.read);
     return items.filter((n) => notificationMeta(n.type).category === filter);
   }, [items, filter]);
@@ -123,21 +137,27 @@ function Header({ unread, onMarkAllRead }: { unread: number; onMarkAllRead: () =
 // ─── Filter chips ────────────────────────────────────────────────────
 
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: "all",    label: "All" },
+  { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
-  { value: "forum",  label: CATEGORY_LABEL.forum },
+  { value: "forum", label: CATEGORY_LABEL.forum },
   { value: "social", label: CATEGORY_LABEL.social },
   { value: "battle", label: CATEGORY_LABEL.battle },
 ];
 
 function FilterChips({
-  filter, setFilter, counts,
-}: { filter: Filter; setFilter: (f: Filter) => void; counts: Record<Filter, number> }) {
+  filter,
+  setFilter,
+  counts,
+}: {
+  filter: Filter;
+  setFilter: (f: Filter) => void;
+  counts: Record<Filter, number>;
+}) {
   return (
     <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1">
       {FILTERS.map((f) => {
         const active = filter === f.value;
-        const count  = counts[f.value];
+        const count = counts[f.value];
         return (
           <button
             key={f.value}
@@ -150,10 +170,12 @@ function FilterChips({
             )}
           >
             {f.label.toUpperCase()}
-            <span className={cn(
-              "text-[10px] tabular-nums px-1.5 py-0.5 rounded-sm",
-              active ? "bg-neon-purple/20" : "bg-secondary/60",
-            )}>
+            <span
+              className={cn(
+                "text-[10px] tabular-nums px-1.5 py-0.5 rounded-sm",
+                active ? "bg-neon-purple/20" : "bg-secondary/60",
+              )}
+            >
               {count}
             </span>
           </button>
@@ -166,8 +188,14 @@ function FilterChips({
 // ─── Row ─────────────────────────────────────────────────────────────
 
 function NotificationRow({
-  notification, onRead, onRemove,
-}: { notification: Notification; onRead: () => void; onRemove: () => void }) {
+  notification,
+  onRead,
+  onRemove,
+}: {
+  notification: Notification;
+  onRead: () => void;
+  onRemove: () => void;
+}) {
   const navigate = useNavigate();
   const meta = notificationMeta(notification.type);
   const Icon = meta.icon;
@@ -209,35 +237,40 @@ function NotificationRow({
           : "hover:bg-secondary/40",
       )}
     >
-      <div className={cn(
-        "w-9 h-9 shrink-0 flex items-center justify-center border bg-background/40",
-        !notification.read ? "border-neon-purple/40" : "border-border",
-      )}>
+      <div
+        className={cn(
+          "w-9 h-9 shrink-0 flex items-center justify-center border bg-background/40",
+          !notification.read ? "border-neon-purple/40" : "border-border",
+        )}
+      >
         <Icon className={cn("w-4 h-4", meta.color)} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug">{meta.describe(notification.meta ?? {})}</p>
         <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-          <span className={cn(
-            "px-1.5 py-0.5 border tracking-widest font-bold",
-            meta.category === "forum"  && "border-neon-purple/30 text-neon-purple",
-            meta.category === "social" && "border-neon-cyan/30 text-neon-cyan",
-            meta.category === "battle" && "border-neon-pink/30 text-neon-pink",
-            meta.category === "system" && "border-border text-muted-foreground",
-          )}>
+          <span
+            className={cn(
+              "px-1.5 py-0.5 border tracking-widest font-bold",
+              meta.category === "forum" && "border-neon-purple/30 text-neon-purple",
+              meta.category === "social" && "border-neon-cyan/30 text-neon-cyan",
+              meta.category === "battle" && "border-neon-pink/30 text-neon-pink",
+              meta.category === "system" && "border-border text-muted-foreground",
+            )}
+          >
             {CATEGORY_LABEL[meta.category].toUpperCase()}
           </span>
           <span>{timeAgo(notification.created_at)}</span>
         </div>
       </div>
       {!notification.read && (
-        <span
-          className="w-2 h-2 rounded-full bg-neon-pink mt-1.5 shrink-0"
-          aria-label="Unread"
-        />
+        <span className="w-2 h-2 rounded-full bg-neon-pink mt-1.5 shrink-0" aria-label="Unread" />
       )}
       <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove();
+        }}
         className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label="Dismiss"
         title="Dismiss"
@@ -273,11 +306,13 @@ function NotificationRow({
 
 function EmptyState({ filter }: { filter: Filter }) {
   const isCategory = filter !== "all" && filter !== "unread";
-  const CatIcon = isCategory ? CATEGORY_ICON[filter as NotificationCategory] : Inbox;
+  const CatIcon = isCategory ? CATEGORY_ICON[filter] : Inbox;
   const msg =
-    filter === "unread" ? "Nothing unread. You're all caught up."
-    : filter === "all"  ? "Quiet in here. New replies, mentions, and challenges will land here."
-    : `No ${CATEGORY_LABEL[filter as NotificationCategory].toLowerCase()} notifications yet.`;
+    filter === "unread"
+      ? "Nothing unread. You're all caught up."
+      : filter === "all"
+        ? "Quiet in here. New replies, mentions, and challenges will land here."
+        : `No ${CATEGORY_LABEL[filter].toLowerCase()} notifications yet.`;
   return (
     <div className="text-center py-20 text-muted-foreground border border-dashed border-border">
       <CatIcon className="w-8 h-8 mx-auto mb-3 opacity-40" />

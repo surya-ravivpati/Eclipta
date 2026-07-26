@@ -1,0 +1,15 @@
+pnpm-lock.yaml
+node_modules
+dist
+.output
+.nitro
+.vercel
+.turbo
+coverage
+playwright-report
+test-results
+
+# Generated — regenerating would fight the formatter.
+src/routeTree.gen.ts
+src/integrations/supabase/types.ts
+supabase/migrations

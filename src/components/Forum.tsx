@@ -1,17 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { MessageSquare, Search, Users, BookOpen, ChevronUp, ChevronDown, Clock, MessageCircle, Plus, X, Loader2, Tag, Trash2, ShieldCheck } from "lucide-react";
+import {
+  MessageSquare,
+  Search,
+  Users,
+  BookOpen,
+  ChevronUp,
+  ChevronDown,
+  Clock,
+  MessageCircle,
+  Plus,
+  X,
+  Loader2,
+  Tag,
+  Trash2,
+  ShieldCheck,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useModerator } from "@/hooks/use-moderator";
 import { toast } from "sonner";
 import { findProfanity } from "@/lib/profanity";
-import { moderateContent, moderateAfterInsert, REMOVED_PLACEHOLDER, isContentVisible } from "@/lib/moderation";
+import {
+  moderateContent,
+  moderateAfterInsert,
+  REMOVED_PLACEHOLDER,
+  isContentVisible,
+} from "@/lib/moderation";
 import { CrisisSupport } from "@/components/moderation/CrisisSupport";
 import "@/components/moderation/crisis-support.css";
 
-type Thread = {
+interface Thread {
   id: string;
   user_id: string;
   author_name: string;
@@ -26,9 +46,17 @@ type Thread = {
   created_at: string;
   moderation_status?: "visible" | "pending" | "hidden" | "removed" | null;
   moderation_reason?: string | null;
-};
+}
 
-const COURSES = ["General", "FAANG Interview Prep", "Machine Learning Foundations", "Cybersecurity Fundamentals", "System Design", "Mathematics", "Other"];
+const COURSES = [
+  "General",
+  "FAANG Interview Prep",
+  "Machine Learning Foundations",
+  "Cybersecurity Fundamentals",
+  "System Design",
+  "Mathematics",
+  "Other",
+];
 const FILTER_TABS = ["All", ...COURSES];
 
 function timeAgo(iso: string): string {
@@ -42,8 +70,15 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
-
-function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUserId, isModerator }: {
+function ThreadCard({
+  thread,
+  userVote,
+  onVote,
+  canDelete,
+  onDelete,
+  currentUserId,
+  isModerator,
+}: {
   thread: Thread;
   userVote: number | null;
   onVote: (dir: 1 | -1) => void;
@@ -67,11 +102,7 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUser
   };
 
   return (
-    <Link
-      to="/forum/$threadId"
-      params={{ threadId: thread.id }}
-      className="block"
-    >
+    <Link to="/forum/$threadId" params={{ threadId: thread.id }} className="block">
       <motion.div
         className="glass-panel p-5 hover:border-neon-purple/40 transition-colors group"
         initial={{ opacity: 0, y: 12 }}
@@ -86,7 +117,9 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUser
             >
               <ChevronUp className="w-5 h-5" />
             </button>
-            <span className={`text-sm font-bold font-display ${thread.votes > 0 ? "text-neon-purple" : "text-muted-foreground"}`}>
+            <span
+              className={`text-sm font-bold font-display ${thread.votes > 0 ? "text-neon-purple" : "text-muted-foreground"}`}
+            >
               {thread.votes}
             </span>
             <button
@@ -116,7 +149,9 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUser
               {showBody ? thread.body : REMOVED_PLACEHOLDER}
             </p>
             {hidden && (isOwn || isModerator) && thread.moderation_reason && (
-              <p className="text-[10px] text-neon-pink/80 italic mb-2">Reason: {thread.moderation_reason}</p>
+              <p className="text-[10px] text-neon-pink/80 italic mb-2">
+                Reason: {thread.moderation_reason}
+              </p>
             )}
 
             <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -131,15 +166,22 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUser
                   onClick={(e) => e.stopPropagation()}
                   className="text-[10px] text-muted-foreground hover:text-neon-purple inline-flex items-center gap-0.5"
                 >
-                  <Tag className="w-2.5 h-2.5" />{tag}
+                  <Tag className="w-2.5 h-2.5" />
+                  {tag}
                 </Link>
               ))}
             </div>
 
             <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
               <span className="font-medium text-foreground">{thread.author_name}</span>
-              <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{thread.answer_count}</span>
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>
+              <span className="flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" />
+                {thread.answer_count}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {timeAgo(thread.created_at)}
+              </span>
               <span>{thread.view_count.toLocaleString()} views</span>
               {canDelete && (
                 <button
@@ -147,7 +189,8 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUser
                   className="inline-flex items-center gap-1 hover:text-destructive transition-colors ml-auto"
                   aria-label="Delete thread"
                 >
-                  <Trash2 className="w-3 h-3" />Delete
+                  <Trash2 className="w-3 h-3" />
+                  Delete
                 </button>
               )}
             </div>
@@ -158,7 +201,17 @@ function ThreadCard({ thread, userVote, onVote, canDelete, onDelete, currentUser
   );
 }
 
-function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boolean; onClose: () => void; onCreated: () => void; lockedCourse?: string }) {
+function NewThreadDialog({
+  open,
+  onClose,
+  onCreated,
+  lockedCourse,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  lockedCourse?: string;
+}) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -197,30 +250,43 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
 
     const tags = tagsInput
       .split(",")
-      .map((t) => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""))
+      .map((t) =>
+        t
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, ""),
+      )
       .filter((t) => t.length > 0)
       .slice(0, 5);
 
-    const { data: prof } = await supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle();
+    const { data: prof } = await supabase
+      .from("user_profiles")
+      .select("username")
+      .eq("user_id", user.id)
+      .maybeSingle();
     const author_name = prof?.username || user.email?.split("@")[0] || "Learner";
 
     // 3. Insert. The DB trigger is a final safety net for anything the
     //    edge function missed (or skipped, e.g. AI gateway outage).
-    const { data: inserted, error } = await supabase.from("forum_threads").insert({
-      user_id: user.id,
-      author_name,
-      title: title.trim().slice(0, 200),
-      body: body.trim().slice(0, 4000),
-      course,
-      tags,
-      // If the AI said "hide", insert directly into the hidden state so the
-      // post is never publicly visible. The trigger may upgrade this; never
-      // downgrades.
-      moderation_status: verdict.verdict === "hide" ? "hidden" : "visible",
-      moderation_category: verdict.category,
-      moderation_score: verdict.score,
-      moderation_reason: verdict.verdict === "hide" ? verdict.reason : null,
-    }).select("id").maybeSingle();
+    const { data: inserted, error } = await supabase
+      .from("forum_threads")
+      .insert({
+        user_id: user.id,
+        author_name,
+        title: title.trim().slice(0, 200),
+        body: body.trim().slice(0, 4000),
+        course,
+        tags,
+        // If the AI said "hide", insert directly into the hidden state so the
+        // post is never publicly visible. The trigger may upgrade this; never
+        // downgrades.
+        moderation_status: verdict.verdict === "hide" ? "hidden" : "visible",
+        moderation_category: verdict.category,
+        moderation_score: verdict.score,
+        moderation_reason: verdict.verdict === "hide" ? verdict.reason : null,
+      })
+      .select("id")
+      .maybeSingle();
 
     setSubmitting(false);
     if (error) {
@@ -244,22 +310,32 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
         void moderateAfterInsert(fullText, "thread", inserted.id);
       }
     }
-    setTitle(""); setBody(""); setTagsInput(""); setCourse(lockedCourse ?? "General");
+    setTitle("");
+    setBody("");
+    setTagsInput("");
+    setCourse(lockedCourse ?? "General");
     onCreated();
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-20 px-4 overflow-y-auto" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-20 px-4 overflow-y-auto"
+      onClick={onClose}
+    >
       <CrisisSupport open={showCrisis} onClose={() => setShowCrisis(false)} />
       <div className="glass-panel w-full max-w-2xl p-6 my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display font-bold text-xl tracking-tight">Start a thread</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Title</label>
+            <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              Title
+            </label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -270,7 +346,9 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Category</label>
+              <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                Category
+              </label>
               {lockedCourse ? (
                 <div className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm text-neon-purple">
                   {lockedCourse}
@@ -281,12 +359,18 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
                   onChange={(e) => setCourse(e.target.value)}
                   className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
                 >
-                  {COURSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {COURSES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               )}
             </div>
             <div>
-              <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Tags (comma separated, max 5)</label>
+              <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                Tags (comma separated, max 5)
+              </label>
               <input
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
@@ -296,7 +380,9 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Body</label>
+            <label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              Body
+            </label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -308,8 +394,18 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
             <p className="text-[10px] text-muted-foreground mt-1">{body.length}/4000</p>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors">CANCEL</button>
-            <button type="submit" disabled={submitting} className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors"
+            >
+              CANCEL
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center gap-2"
+            >
               {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
               POST THREAD
             </button>
@@ -320,7 +416,12 @@ function NewThreadDialog({ open, onClose, onCreated, lockedCourse }: { open: boo
   );
 }
 
-export function Forum({ defaultCourse, lockCourse = false, heading, subheading }: {
+export function Forum({
+  defaultCourse,
+  lockCourse = false,
+  heading,
+  subheading,
+}: {
   defaultCourse?: string;
   lockCourse?: boolean;
   heading?: React.ReactNode;
@@ -330,7 +431,11 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
   const { isModerator } = useModerator();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<{ threads: number; answers: number; contributors: number } | null>(null);
+  const [stats, setStats] = useState<{
+    threads: number;
+    answers: number;
+    contributors: number;
+  } | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [selectedCourse, setSelectedCourse] = useState(defaultCourse ?? "All");
   const [sortBy, setSortBy] = useState<"votes" | "recent" | "answers">("recent");
@@ -340,12 +445,21 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
   const fetchData = async () => {
     setLoading(true);
     const [{ data: t }, { data: s }] = await Promise.all([
-      supabase.from("forum_threads").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase
+        .from("forum_threads")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100),
       supabase.rpc("get_forum_stats"),
     ]);
     setThreads((t as Thread[]) || []);
     const row = Array.isArray(s) ? s[0] : s;
-    if (row) setStats({ threads: Number(row.threads), answers: Number(row.answers), contributors: Number(row.contributors) });
+    if (row)
+      setStats({
+        threads: Number(row.threads),
+        answers: Number(row.answers),
+        contributors: Number(row.contributors),
+      });
     setLoading(false);
   };
 
@@ -357,13 +471,19 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
       .eq("target_type", "thread");
     if (data) {
       const map: Record<string, number> = {};
-      data.forEach((v: { target_id: string; value: number }) => { map[v.target_id] = v.value; });
+      data.forEach((v: { target_id: string; value: number }) => {
+        map[v.target_id] = v.value;
+      });
       setUserVotes(map);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
-  useEffect(() => { if (user) fetchUserVotes(user.id); }, [user]);
+  useEffect(() => {
+    fetchData();
+  }, []);
+  useEffect(() => {
+    if (user) fetchUserVotes(user.id);
+  }, [user]);
 
   const handleVote = async (threadId: string, dir: 1 | -1) => {
     if (!user) return toast.error("Sign in to vote");
@@ -374,21 +494,34 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
     if (current === dir) {
       delete optimistic[threadId];
       delta = -dir;
-      await supabase.from("forum_votes").delete()
-        .eq("user_id", user.id).eq("target_type", "thread").eq("target_id", threadId);
+      await supabase
+        .from("forum_votes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("target_type", "thread")
+        .eq("target_id", threadId);
     } else {
       optimistic[threadId] = dir;
       delta = current === 0 ? dir : dir * 2;
-      await supabase.from("forum_votes").upsert({
-        user_id: user.id, target_type: "thread", target_id: threadId, value: dir,
-      }, { onConflict: "user_id,target_type,target_id" });
+      await supabase.from("forum_votes").upsert(
+        {
+          user_id: user.id,
+          target_type: "thread",
+          target_id: threadId,
+          value: dir,
+        },
+        { onConflict: "user_id,target_type,target_id" },
+      );
     }
     setUserVotes(optimistic);
-    setThreads((prev) => prev.map((t) => t.id === threadId ? { ...t, votes: t.votes + delta } : t));
+    setThreads((prev) =>
+      prev.map((t) => (t.id === threadId ? { ...t, votes: t.votes + delta } : t)),
+    );
   };
 
   const handleDeleteThread = async (threadId: string) => {
-    if (!confirm("Delete this thread permanently? All answers and comments will be removed.")) return;
+    if (!confirm("Delete this thread permanently? All answers and comments will be removed."))
+      return;
     const { error } = await supabase.from("forum_threads").delete().eq("id", threadId);
     if (error) return toast.error(error.message);
     setThreads((prev) => prev.filter((t) => t.id !== threadId));
@@ -398,10 +531,12 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
   const filtered = useMemo(() => {
     return threads
       .filter((t) => selectedCourse === "All" || t.course === selectedCourse)
-      .filter((t) => !searchQuery ||
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.tags.some((tag) => tag.includes(searchQuery.toLowerCase()))
+      .filter(
+        (t) =>
+          !searchQuery ||
+          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.tags.some((tag) => tag.includes(searchQuery.toLowerCase())),
       )
       .sort((a, b) => {
         if (sortBy === "votes") return b.votes - a.votes;
@@ -412,10 +547,12 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
 
   const trendingTags = useMemo(() => {
     const counts = new Map<string, number>();
-    threads.forEach((t) => t.tags?.forEach((tag) => {
-      if (!tag) return;
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    }));
+    threads.forEach((t) =>
+      t.tags?.forEach((tag) => {
+        if (!tag) return;
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }),
+    );
     return Array.from(counts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count)
@@ -425,15 +562,25 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
   return (
     <section className="min-h-screen pt-24 pb-16">
       <div className="max-w-5xl mx-auto px-6">
-        <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          className="text-center mb-10"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-neon-pink/30 bg-neon-pink/10 text-neon-pink text-xs font-bold tracking-widest mb-6">
-            <Users className="w-3 h-3" />{lockCourse ? "COURSE COMMUNITY" : "COMMUNITY"}
+            <Users className="w-3 h-3" />
+            {lockCourse ? "COURSE COMMUNITY" : "COMMUNITY"}
           </div>
           <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-4">
-            {heading ?? <>The <span className="text-neon-pink">Forum</span></>}
+            {heading ?? (
+              <>
+                The <span className="text-neon-pink">Forum</span>
+              </>
+            )}
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            {subheading ?? "Ask questions, share insights, and learn from the community. The best answers rise to the top."}
+            {subheading ??
+              "Ask questions, share insights, and learn from the community. The best answers rise to the top."}
           </p>
         </motion.div>
 
@@ -441,15 +588,21 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
           <div className="flex flex-wrap justify-center gap-8 md:gap-12 mb-10 py-4 border-y border-border">
             <div className="text-center">
               <p className="text-2xl font-bold font-display tabular-nums">{stats.threads}</p>
-              <p className="text-[10px] tracking-widest text-muted-foreground font-bold uppercase">Threads</p>
+              <p className="text-[10px] tracking-widest text-muted-foreground font-bold uppercase">
+                Threads
+              </p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold font-display tabular-nums">{stats.answers}</p>
-              <p className="text-[10px] tracking-widest text-muted-foreground font-bold uppercase">Answers</p>
+              <p className="text-[10px] tracking-widest text-muted-foreground font-bold uppercase">
+                Answers
+              </p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold font-display tabular-nums">{stats.contributors}</p>
-              <p className="text-[10px] tracking-widest text-muted-foreground font-bold uppercase">Contributors</p>
+              <p className="text-[10px] tracking-widest text-muted-foreground font-bold uppercase">
+                Contributors
+              </p>
             </div>
           </div>
         )}
@@ -469,7 +622,8 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
               onClick={() => setShowNew(true)}
               className="px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
             >
-              <Plus className="w-3.5 h-3.5" />NEW THREAD
+              <Plus className="w-3.5 h-3.5" />
+              NEW THREAD
             </button>
           ) : (
             <Link
@@ -480,8 +634,12 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
             </Link>
           )}
           {isModerator && (
-            <Link to="/admin/forum" className="px-4 py-2.5 text-xs font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors inline-flex items-center justify-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" />MOD QUEUE
+            <Link
+              to="/admin/forum"
+              className="px-4 py-2.5 text-xs font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors inline-flex items-center justify-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              MOD QUEUE
             </Link>
           )}
         </div>
@@ -520,7 +678,9 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-6">
           <div className="space-y-3 min-w-0">
             {loading ? (
-              <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-neon-purple" /></div>
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-neon-purple" />
+              </div>
             ) : (
               <AnimatePresence mode="popLayout">
                 {filtered.map((thread) => (
@@ -540,10 +700,18 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
             {!loading && filtered.length === 0 && (
               <div className="text-center py-16 text-muted-foreground">
                 <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
-                <p className="text-sm mb-4">{threads.length === 0 ? "No threads yet — be the first to start a discussion." : "No threads match your filters."}</p>
+                <p className="text-sm mb-4">
+                  {threads.length === 0
+                    ? "No threads yet — be the first to start a discussion."
+                    : "No threads match your filters."}
+                </p>
                 {isAuthenticated && threads.length === 0 && (
-                  <button onClick={() => setShowNew(true)} className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center gap-2">
-                    <Plus className="w-3.5 h-3.5" />START THE FIRST THREAD
+                  <button
+                    onClick={() => setShowNew(true)}
+                    className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    START THE FIRST THREAD
                   </button>
                 )}
               </div>
@@ -554,10 +722,14 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
             <div className="glass-panel p-4 sticky top-24">
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="w-3.5 h-3.5 text-neon-pink" />
-                <h3 className="text-[10px] font-bold tracking-widest text-neon-pink">TRENDING TAGS</h3>
+                <h3 className="text-[10px] font-bold tracking-widest text-neon-pink">
+                  TRENDING TAGS
+                </h3>
               </div>
               {trendingTags.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">No tags yet. Add some when you post.</p>
+                <p className="text-[11px] text-muted-foreground">
+                  No tags yet. Add some when you post.
+                </p>
               ) : (
                 <ul className="space-y-1.5">
                   {trendingTags.map(({ tag, count }) => (
@@ -566,8 +738,12 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
                         onClick={() => setSearchQuery(tag)}
                         className="w-full flex items-center justify-between text-left group"
                       >
-                        <span className="text-xs text-foreground group-hover:text-neon-purple transition-colors truncate">#{tag}</span>
-                        <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{count}</span>
+                        <span className="text-xs text-foreground group-hover:text-neon-purple transition-colors truncate">
+                          #{tag}
+                        </span>
+                        <span className="text-[10px] font-bold text-muted-foreground tabular-nums">
+                          {count}
+                        </span>
                       </button>
                     </li>
                   ))}
@@ -588,19 +764,30 @@ export function Forum({ defaultCourse, lockCourse = false, heading, subheading }
               <BookOpen className="w-6 h-6 text-neon-cyan" />
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h3 className="font-bold font-display text-lg tracking-tight mb-1">Study Rooms — learn together, live</h3>
+              <h3 className="font-bold font-display text-lg tracking-tight mb-1">
+                Study Rooms — learn together, live
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Take it real-time: join a public room or start a private one with friends, chat as you work, and bring your Ecliptar along.
+                Take it real-time: join a public room or start a private one with friends, chat as
+                you work, and bring your Ecliptar along.
               </p>
             </div>
-            <Link to="/groups" className="px-5 py-2 text-xs font-bold tracking-widest border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 transition-colors shrink-0">
+            <Link
+              to="/groups"
+              className="px-5 py-2 text-xs font-bold tracking-widest border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 transition-colors shrink-0"
+            >
               ENTER STUDY ROOMS
             </Link>
           </div>
         </motion.div>
       </div>
 
-      <NewThreadDialog open={showNew} onClose={() => setShowNew(false)} onCreated={fetchData} lockedCourse={lockCourse ? selectedCourse : undefined} />
+      <NewThreadDialog
+        open={showNew}
+        onClose={() => setShowNew(false)}
+        onCreated={fetchData}
+        lockedCourse={lockCourse ? selectedCourse : undefined}
+      />
     </section>
   );
 }

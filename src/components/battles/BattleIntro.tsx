@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { HelpCircle } from "lucide-react";
+import { EASING } from "@/config/motion";
 import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
 import type { OpponentType } from "@/lib/matchmaking";
@@ -18,9 +19,7 @@ import "./BattleIntro.css";
  * still tableau under prefers-reduced-motion. See backup/RESTORE.md to revert.
  */
 
-// `as const` pins this to the readonly 4-tuple framer-motion's
-// BezierDefinition wants; a bare array widens to number[] and is rejected.
-const EASE = [0.2, 0.7, 0.2, 1] as const;
+const EASE = EASING.soft;
 
 // Deterministic mote field — golden-angle spread so it reads organic, not
 // gridded. Each mote starts at an edge offset and falls inward to the core.
@@ -39,7 +38,11 @@ const PARTICLES = Array.from({ length: 22 }, (_, i) => {
 const TIERS = ["live", "ghost", "bot"] as const;
 const TIER_LABEL: Record<OpponentType, string> = { live: "Live", ghost: "Ghost", bot: "AI" };
 
-export function BattleIntro({ archetype, matchTier, matchStatus }: {
+export function BattleIntro({
+  archetype,
+  matchTier,
+  matchStatus,
+}: {
   archetype: ArchetypeId;
   matchTier: OpponentType;
   matchStatus: string;
@@ -59,14 +62,16 @@ export function BattleIntro({ archetype, matchTier, matchStatus }: {
             <span
               key={i}
               className="bi-particle"
-              style={{
-                "--sx": `${p.sx}px`,
-                "--sy": `${p.sy}px`,
-                "--d": `${p.d}s`,
-                "--delay": `${p.delay}s`,
-                width: p.size,
-                height: p.size,
-              } as React.CSSProperties}
+              style={
+                {
+                  "--sx": `${p.sx}px`,
+                  "--sy": `${p.sy}px`,
+                  "--d": `${p.d}s`,
+                  "--delay": `${p.delay}s`,
+                  width: p.size,
+                  height: p.size,
+                } as React.CSSProperties
+              }
             />
           ))}
         </div>

@@ -1,0 +1,6 @@
+# pnpm refuses to run a dependency's install script unless it is allowed here.
+# An install script runs arbitrary code on the machine at install time, so this
+# list stays as short as possible. esbuild needs its script to download the
+# native binary that Vite compiles with; without it the build cannot run.
+allowBuilds:
+  esbuild: true

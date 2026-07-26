@@ -16,6 +16,7 @@ import {
   claimChestRpc,
   getClaimedChestNodeIds,
   getOwnedEcliptarSlugs,
+  getUsername,
   getUserXp,
 } from "./profile";
 
@@ -57,6 +58,33 @@ describe("getUserXp", () => {
   it("throws on a genuine database error", async () => {
     mockSelectEq({ data: null, error: { message: "connection reset" } });
     await expect(getUserXp("u1")).rejects.toThrow("connection reset");
+  });
+});
+
+describe("getUsername", () => {
+  it("queries user_profiles filtered to the given user", async () => {
+    const { select, eq } = mockSelectEq({ data: { username: "nova" }, error: null });
+
+    await getUsername("u2");
+
+    expect(supabase.from).toHaveBeenCalledWith("user_profiles");
+    expect(select).toHaveBeenCalledWith("username");
+    expect(eq).toHaveBeenCalledWith("user_id", "u2");
+  });
+
+  it("returns the username", async () => {
+    mockSelectEq({ data: { username: "nova" }, error: null });
+    await expect(getUsername("u2")).resolves.toBe("nova");
+  });
+
+  it("returns null for a user with no profile row, rather than throwing", async () => {
+    mockSelectEq({ data: null, error: null });
+    await expect(getUsername("new-user")).resolves.toBeNull();
+  });
+
+  it("returns null when username was never set, without conflating it with 'no row'", async () => {
+    mockSelectEq({ data: { username: null }, error: null });
+    await expect(getUsername("u2")).resolves.toBeNull();
   });
 });
 

@@ -7,6 +7,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { QuestionRecord } from "@/components/battles/types";
 import type { ArchetypeId } from "@/components/battles/types";
+import { getGhostSessionRpc, recordBattleSessionRpc } from "@/repositories/battles";
 
 export interface GhostSession {
   id: string;
@@ -35,30 +36,27 @@ export async function recordBattleSession(params: {
   bestStreak: number;
   opponentType?: "live" | "ghost" | "bot";
 }): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   // Server-side RPC validates and clamps fields; clients can't fabricate
   // rating/correct values that bypass the matchmaking pipeline.
-  const { data, error } = await supabase.rpc("record_battle_session", {
-    p_archetype:        params.archetype,
-    p_won:              params.won,
-    p_rating:           params.rating,
-    p_total_questions:  params.records.length,
-    p_correct_answers:  params.records.filter(r => r.correct).length,
-    p_best_streak:      params.bestStreak,
-    p_question_records: params.records.map(r => ({
-      action:    r.action,
-      correct:   r.correct,
+  return recordBattleSessionRpc({
+    p_archetype: params.archetype,
+    p_won: params.won,
+    p_rating: params.rating,
+    p_total_questions: params.records.length,
+    p_correct_answers: params.records.filter((r) => r.correct).length,
+    p_best_streak: params.bestStreak,
+    p_question_records: params.records.map((r) => ({
+      action: r.action,
+      correct: r.correct,
       timeSpent: r.timeSpent,
     })),
-    p_opponent_type:    params.opponentType ?? "unknown",
+    p_opponent_type: params.opponentType ?? "unknown",
   });
-  if (error) {
-    console.warn("recordBattleSession failed", error);
-    return null;
-  }
-  return data ?? null;
 }
 
 /**
@@ -68,17 +66,11 @@ export async function recordBattleSession(params: {
  * actual recorded behaviour to replay.
  */
 export async function fetchGhostSession(playerRating: number): Promise<GhostSession | null> {
-  const { data, error } = await supabase.rpc("get_ghost_session", {
-    p_player_rating: playerRating,
-  });
-  if (error) {
-    console.warn("fetchGhostSession failed", error);
-    return null;
-  }
+  const data = await getGhostSessionRpc(playerRating);
   if (!data) return null;
 
-  // question_records stays `Json` in the schema — it's a free-form jsonb
-  // column, so this is the one field that genuinely needs narrowing.
+  // question_records stays `unknown` in the repository — it's a free-form
+  // jsonb column, so this is the one field that genuinely needs narrowing.
   const records = (data.question_records ?? []) as GhostSession["questionRecords"];
   if (!Array.isArray(records) || records.length === 0) {
     // Authenticity guard: an empty record set isn't a ghost, it's a stub.
@@ -88,14 +80,14 @@ export async function fetchGhostSession(playerRating: number): Promise<GhostSess
   }
 
   return {
-    id:              data.id,
-    archetype:       data.archetype as ArchetypeId,
-    won:             data.won,
-    rating:          data.rating,
-    totalQuestions:  data.total_questions,
-    correctAnswers:  data.correct_answers,
-    bestStreak:      data.best_streak,
-    username:        data.username ?? null,
+    id: data.id,
+    archetype: data.archetype as ArchetypeId,
+    won: data.won,
+    rating: data.rating,
+    totalQuestions: data.total_questions,
+    correctAnswers: data.correct_answers,
+    bestStreak: data.best_streak,
+    username: data.username ?? null,
     questionRecords: records,
   };
 }

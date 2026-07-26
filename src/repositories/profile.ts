@@ -18,6 +18,18 @@ export async function getUserXp(userId: string): Promise<number> {
   return data?.xp ?? 0;
 }
 
+/** Null both when the user has no profile row yet and when they have one but never set a username. */
+export async function getUsername(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("username")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data?.username ?? null;
+}
+
 export async function getOwnedEcliptarSlugs(userId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from("user_ecliptars")

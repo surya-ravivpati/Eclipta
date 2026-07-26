@@ -1,9 +1,9 @@
 {
-  "warnings": 584,
+  "warnings": 576,
   "counts": {
     "react-refresh/only-export-components": 11,
     "@typescript-eslint/no-floating-promises": 85,
-    "no-restricted-syntax": 207,
+    "no-restricted-syntax": 199,
     "@typescript-eslint/no-unsafe-assignment": 32,
     "@typescript-eslint/prefer-nullish-coalescing": 111,
     "@typescript-eslint/no-unused-vars": 33,

@@ -5,6 +5,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchGhostSession, type GhostSession } from "./battle-replay";
 import type { ArchetypeId } from "@/components/battles/types";
+import {
+  enqueuePvpRpc,
+  findActivePvpBattleForUser,
+  findPvpMatchRpc,
+  getPlayerRating,
+  leavePvpQueue,
+} from "@/repositories/battles";
+import { getUsername } from "@/repositories/profile";
 
 export type OpponentType = "live" | "ghost" | "bot";
 
@@ -23,8 +31,8 @@ export interface MatchResult {
   ghostSession?: GhostSession;
 }
 
-const QUEUE_TIMEOUT_MS  = 8_000;
-const POLL_INTERVAL_MS  = 800;
+const QUEUE_TIMEOUT_MS = 8_000;
+const POLL_INTERVAL_MS = 800;
 
 // ── Queue management ─────────────────────────────────────────────────────
 
@@ -33,88 +41,72 @@ export async function joinQueue(
   _rating: number,
   _username: string | null,
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return;
   // Server-side enqueue: rating and username are read from authoritative
   // tables inside the SECURITY DEFINER RPC so clients can't spoof them.
-  await supabase.rpc("enqueue_pvp", { p_archetype: archetype });
+  await enqueuePvpRpc(archetype);
 }
 
 export async function leaveQueue(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from("pvp_queue").delete().eq("user_id", user.id);
+  await leavePvpQueue(user.id);
 }
 
 // ── Live match attempt ───────────────────────────────────────────────────
 
-async function tryLiveMatch(
-  archetype: ArchetypeId,
-  rating: number,
-): Promise<MatchResult | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<MatchResult | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   // Case 1: We initiate and find a match (challenger side).
-  const { data } = await supabase.rpc("find_pvp_match", {
-    p_archetype: archetype,
-    p_rating:    rating,
-  });
-  if (data?.matched) {
+  const attempt = await findPvpMatchRpc(archetype, rating);
+  if (attempt.matched) {
     return {
-      type:              "live",
-      opponentName:      data.opponent_username ?? `Player_${data.opponent_user_id.slice(0, 6)}`,
-      opponentUserId:    data.opponent_user_id,
+      type: "live",
+      opponentName: attempt.opponent_username ?? `Player_${attempt.opponent_user_id.slice(0, 6)}`,
+      opponentUserId: attempt.opponent_user_id,
       // The queue only ever holds archetypes this client wrote, so the
       // server's `text` column is an ArchetypeId by construction.
-      opponentArchetype: data.opponent_archetype as ArchetypeId,
-      opponentRating:    data.opponent_rating ?? 1000,
-      pvpBattleId:       data.battle_id,
-      pvpChannelName:    `pvp-battle:${data.battle_id}`,
-      iAmChallenger:     true,
+      opponentArchetype: attempt.opponent_archetype as ArchetypeId,
+      opponentRating: attempt.opponent_rating ?? 1000,
+      pvpBattleId: attempt.battle_id,
+      pvpChannelName: `pvp-battle:${attempt.battle_id}`,
+      iAmChallenger: true,
     };
   }
 
   // Case 2: Someone already matched us. The find_pvp_match RPC only delivers
   // the battle_id to the challenger. The opponent is removed from the queue
   // silently, so they must detect the match by polling pvp_battles directly.
-  const since = new Date(Date.now() - 30_000).toISOString();
-  const { data: battles } = await supabase
-    .from("pvp_battles")
-    .select("id,challenger_id,opponent_id,challenger_archetype,opponent_archetype,status")
-    .or(`challenger_id.eq.${user.id},opponent_id.eq.${user.id}`)
-    .eq("status", "active")
-    .gte("created_at", since)
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  const b = battles?.[0];
+  const b = await findActivePvpBattleForUser(user.id);
   if (b) {
     const isChallenger = b.challenger_id === user.id;
-    const oppId   = isChallenger ? b.opponent_id        : b.challenger_id;
+    const oppId = isChallenger ? b.opponent_id : b.challenger_id;
     const oppArch = isChallenger ? b.opponent_archetype : b.challenger_archetype;
 
-    const { data: oppProfile } = await supabase
-      .from("user_profiles")
-      .select("username")
-      .eq("user_id", oppId)
-      .maybeSingle();
-    const { data: oppRating } = await supabase
-      .from("player_ratings")
-      .select("rating")
-      .eq("user_id", oppId)
-      .maybeSingle();
+    const [oppUsername, oppRating] = await Promise.all([
+      getUsername(oppId),
+      getPlayerRating(oppId),
+    ]);
 
     return {
-      type:              "live",
-      opponentName:      oppProfile?.username ?? `Player_${oppId.slice(0, 6)}`,
-      opponentUserId:    oppId,
+      type: "live",
+      opponentName: oppUsername ?? `Player_${oppId.slice(0, 6)}`,
+      opponentUserId: oppId,
       // Written by this client on enqueue — see the note in Case 1.
       opponentArchetype: oppArch as ArchetypeId,
-      opponentRating:    oppRating?.rating ?? 1000,
-      pvpBattleId:       b.id,
-      pvpChannelName:    `pvp-battle:${b.id}`,
-      iAmChallenger:     isChallenger,
+      opponentRating: oppRating?.rating ?? 1000,
+      pvpBattleId: b.id,
+      pvpChannelName: `pvp-battle:${b.id}`,
+      iAmChallenger: isChallenger,
     };
   }
 
@@ -135,7 +127,9 @@ export async function findMatch(
   username: string | null,
   onStatus: (msg: string, tier: OpponentType) => void,
 ): Promise<MatchResult> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // ── Tier 1: Live PvP ─────────────────────────────────────────────────
   if (user) {
@@ -144,7 +138,7 @@ export async function findMatch(
 
     const deadline = Date.now() + QUEUE_TIMEOUT_MS;
     while (Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
 
       const liveMatch = await tryLiveMatch(archetype, playerRating);
       if (liveMatch) {
@@ -165,11 +159,11 @@ export async function findMatch(
       const ghostLabel = `${ghost.username?.trim() || "Anonymous"} — Ghost`;
       onStatus(`Ghost match loaded — ${ghostLabel}`, "ghost");
       return {
-        type:              "ghost",
-        opponentName:      ghostLabel,
+        type: "ghost",
+        opponentName: ghostLabel,
         opponentArchetype: ghost.archetype,
-        opponentRating:    ghost.rating,
-        ghostSession:      ghost,
+        opponentRating: ghost.rating,
+        ghostSession: ghost,
       };
     }
   }
@@ -177,9 +171,9 @@ export async function findMatch(
   // ── Tier 3: Bot (last resort) ────────────────────────────────────────
   onStatus("Matched with AI bot", "bot");
   return {
-    type:              "bot",
-    opponentName:      "AI Nemesis",
+    type: "bot",
+    opponentName: "AI Nemesis",
     opponentArchetype: null,
-    opponentRating:    playerRating,
+    opponentRating: playerRating,
   };
 }

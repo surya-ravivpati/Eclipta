@@ -62,7 +62,7 @@ type SupplementalViews = {
     };
     Relationships: [];
   };
-}
+};
 
 /** Functions the generator omits entirely. */
 type SupplementalFunctions = {
@@ -95,7 +95,24 @@ type SupplementalFunctions = {
       moderation_status: string;
     };
   };
-}
+  /**
+   * Admin: increments a user's XP by a fixed amount, bypassing the normal
+   * per-event award caps. Returns the resulting total.
+   * Source: `20260725000001_admin-grant-xp.sql`.
+   */
+  admin_grant_xp: {
+    Args: { p_user_id: string; p_amount: number };
+    Returns: number;
+  };
+  /**
+   * Admin: sets a user's XP to an exact value. Returns the resulting total.
+   * Source: `20260725000001_admin-grant-xp.sql`.
+   */
+  admin_set_xp: {
+    Args: { p_user_id: string; p_xp: number };
+    Returns: number;
+  };
+};
 
 /**
  * Argument overrides for functions whose parameters accept NULL.
@@ -146,7 +163,7 @@ type FunctionArgOverrides = {
     Args: { p_room: string; p_goal: string | null };
     Returns: PublicSchema["Functions"]["set_room_goal"]["Returns"];
   };
-}
+};
 
 // ── jsonb payloads ───────────────────────────────────────────────────────
 
@@ -325,7 +342,7 @@ type FunctionReturnOverrides = {
     Args: PublicSchema["Functions"]["submit_pvp_turn_action"]["Args"];
     Returns: PvpTurnResolution;
   };
-}
+};
 
 // ── The merged schema ────────────────────────────────────────────────────
 

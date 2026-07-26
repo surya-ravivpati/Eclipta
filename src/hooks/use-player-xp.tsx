@@ -1,103 +1,103 @@
 /**
- * Hook: live player XP + claimed-node tracking from Supabase.
- * Uses Realtime so XP updates after battles/courses are reflected instantly,
- * with a single refresh on tab-visibility change as a safety net.
+ * Hooks: live player XP and owned-Ecliptar tracking from Supabase.
+ *
+ * Same shape as src/hooks/use-player-rating.tsx — TanStack Query owns the
+ * fetch/cache/loading state, a Realtime subscription invalidates the query
+ * when a battle or course completion changes the row server-side, and
+ * window-focus refetching (Query's default) replaces the old manual
+ * visibilitychange listener.
+ *
+ * The previous `usePlayerXp` wrote a Realtime UPDATE payload's `xp` field
+ * straight into state as a micro-optimisation, skipping a round trip. That
+ * path is gone: invalidate-then-refetch is simpler, matches every other
+ * migrated hook, and cannot drift from what the query function actually
+ * fetches if that ever grows beyond a single column.
  */
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect } from "react";
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import type { TableRow } from "@/integrations/supabase/database";
+import { getOwnedEcliptarSlugs, getUserXp } from "@/repositories/profile";
+
+function playerXpQueryKey(userId: string) {
+  return ["player-xp", userId] as const;
+}
 
 export function usePlayerXp() {
-  const [xp, setXp] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-  const userIdRef = useRef<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    userIdRef.current = user?.id ?? null;
-    if (!user) { setXp(0); setLoading(false); return; }
-    const { data } = await supabase
-      .from("user_profiles")
-      .select("xp")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setXp(data?.xp ?? 0);
-    setLoading(false);
-  }, []);
+  const query = useQuery({
+    queryKey: user ? playerXpQueryKey(user.id) : ["player-xp", "signed-out"],
+    queryFn: user ? () => getUserXp(user.id) : skipToken,
+  });
 
   useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
-    (async () => {
-      await refresh();
-      if (cancelled || !userIdRef.current) return;
-      channel = supabase
-        .channel(`xp:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
-        .on<TableRow<"user_profiles">>(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${userIdRef.current}` },
-          (payload) => {
-            if ("xp" in payload.new && typeof payload.new.xp === "number") setXp(payload.new.xp);
-          }
-        )
-        .subscribe();
-    })();
+    if (!user) return;
 
-    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
-    document.addEventListener("visibilitychange", onVisible);
+    const channel = supabase
+      .channel(`xp:${user.id}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "user_profiles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: playerXpQueryKey(user.id) });
+        },
+      )
+      .subscribe();
 
     return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", onVisible);
-      if (channel) supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [refresh]);
+  }, [user, queryClient]);
 
-  return { xp, loading, refresh };
+  return {
+    xp: user ? (query.data ?? 0) : 0,
+    loading: user ? query.isLoading : false,
+    refresh: () => void query.refetch(),
+  };
+}
+
+function ownedEcliptarsQueryKey(userId: string) {
+  return ["owned-ecliptars", userId] as const;
 }
 
 export function useOwnedEcliptars() {
-  const [slugs, setSlugs] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const userIdRef = useRef<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    userIdRef.current = user?.id ?? null;
-    if (!user) { setSlugs(new Set()); setLoading(false); return; }
-    const { data } = await supabase
-      .from("user_ecliptars")
-      .select("ecliptar_slug")
-      .eq("user_id", user.id);
-    setSlugs(new Set((data ?? []).map((r) => r.ecliptar_slug)));
-    setLoading(false);
-  }, []);
+  const query = useQuery({
+    queryKey: user ? ownedEcliptarsQueryKey(user.id) : ["owned-ecliptars", "signed-out"],
+    queryFn: user ? () => getOwnedEcliptarSlugs(user.id) : skipToken,
+  });
 
   useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
-    (async () => {
-      await refresh();
-      if (cancelled || !userIdRef.current) return;
-      channel = supabase
-        .channel(`ecliptars:${userIdRef.current}:${Math.random().toString(36).slice(2)}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "user_ecliptars", filter: `user_id=eq.${userIdRef.current}` },
-          () => { void refresh(); }
-        )
-        .subscribe();
-    })();
+    if (!user) return;
 
-    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
-    document.addEventListener("visibilitychange", onVisible);
+    const channel = supabase
+      .channel(`ecliptars:${user.id}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_ecliptars", filter: `user_id=eq.${user.id}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ownedEcliptarsQueryKey(user.id) });
+        },
+      )
+      .subscribe();
 
     return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", onVisible);
-      if (channel) supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [refresh]);
+  }, [user, queryClient]);
 
-  return { slugs, loading, refresh };
+  return {
+    slugs: user ? new Set(query.data ?? []) : new Set<string>(),
+    loading: user ? query.isLoading : false,
+    refresh: () => void query.refetch(),
+  };
 }

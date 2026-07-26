@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "./milestones";
 import { ROAD_NODES } from "./trophy-road-data";
 import { CHEST_REWARDS } from "@/config/battle-tuning";
+import {
+  adminGrantXpRpc,
+  adminSetXpRpc,
+  awardBattleXpRpc,
+  awardXpRpc,
+  claimChestRpc,
+  getClaimedChestNodeIds,
+  getUserXp,
+} from "@/repositories/profile";
 
 export { CHEST_REWARDS };
 
@@ -27,20 +36,12 @@ export async function awardXp(
   } = await supabase.auth.getUser();
   if (!user) return { lunaMessages: [], newXp: 0 };
 
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("xp")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const prevXp = profile?.xp ?? 0;
+  const prevXp = await getUserXp(user.id);
   markExistingMilestones(prevXp);
 
-  const { data: newXp } = await supabase.rpc("award_xp", { p_event: event });
-  const finalXp = newXp ?? prevXp + fallbackAmount;
+  const finalXp = await awardXpRpc(event).catch(() => prevXp + fallbackAmount);
 
   const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
-
   fireMilestoneToasts(toasts);
 
   return { lunaMessages, newXp: finalXp };
@@ -58,21 +59,15 @@ export async function awardBattleXp(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { lunaMessages: [], newXp: 0 };
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("xp")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const prevXp = profile?.xp ?? 0;
+
+  const prevXp = await getUserXp(user.id);
   markExistingMilestones(prevXp);
-  const { data: newXp } = await supabase.rpc("award_battle_xp", {
-    p_correct: correct,
-    p_total: total,
-    p_won: won,
-  });
-  const finalXp = newXp ?? prevXp;
+
+  const finalXp = await awardBattleXpRpc(correct, total, won).catch(() => prevXp);
+
   const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
   fireMilestoneToasts(toasts);
+
   return { lunaMessages, newXp: finalXp };
 }
 
@@ -89,12 +84,7 @@ export async function claimChest(nodeId: number, chestLabel: string): Promise<nu
   if (!node) return 0;
   // Server validates eligibility, prevents double-claim (unique index), and
   // credits the chest's fixed bonus XP atomically.
-  const { data, error } = await supabase.rpc("claim_chest", {
-    p_node_id: nodeId,
-    p_chest_label: chestLabel,
-  });
-  if (error) return 0;
-  return data ?? 0;
+  return claimChestRpc(nodeId, chestLabel);
 }
 
 /** Fetch the set of node_ids the current user has already claimed. */
@@ -103,11 +93,7 @@ export async function fetchClaimedChestNodeIds(): Promise<Set<number>> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return new Set();
-  const { data } = await supabase
-    .from("user_chest_claims")
-    .select("node_id")
-    .eq("user_id", user.id);
-  return new Set((data ?? []).map((r) => r.node_id));
+  return new Set(await getClaimedChestNodeIds(user.id));
 }
 
 /**
@@ -115,15 +101,7 @@ export async function fetchClaimedChestNodeIds(): Promise<Set<number>> {
  * Returns the new total XP, or null on error.
  */
 export async function adminGrantXp(userId: string, amount: number): Promise<number | null> {
-  const { data, error } = await supabase.rpc("admin_grant_xp" as any, {
-    p_user_id: userId,
-    p_amount: amount,
-  });
-  if (error) {
-    console.error("Failed to grant XP:", error);
-    return null;
-  }
-  return data ?? null;
+  return adminGrantXpRpc(userId, amount);
 }
 
 /**
@@ -131,13 +109,5 @@ export async function adminGrantXp(userId: string, amount: number): Promise<numb
  * Returns the new total XP, or null on error.
  */
 export async function adminSetXp(userId: string, xpAmount: number): Promise<number | null> {
-  const { data, error } = await supabase.rpc("admin_set_xp" as any, {
-    p_user_id: userId,
-    p_xp: xpAmount,
-  });
-  if (error) {
-    console.error("Failed to set XP:", error);
-    return null;
-  }
-  return data ?? null;
+  return adminSetXpRpc(userId, xpAmount);
 }

@@ -498,7 +498,7 @@
   margin-top: 1px;
 }
 .tr-tooltip-stats {
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   gap: 4px;
 }
 .tr-tooltip-stat { text-align: center; }
@@ -635,7 +635,7 @@
   color: var(--ac);
 }
 .tr-arc-stats {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
 }
 .tr-arc-stat-key {
   font-family: var(--tr-mono); font-size: 7px;

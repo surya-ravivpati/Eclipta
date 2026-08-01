@@ -23,8 +23,8 @@ weak point, grounded in the actual implementation.
 |---|---|---|
 | **Questions** | **Math only** — procedurally generated arithmetic → basic algebra. "Knowledge Battles" teaches addition through exponents, nothing else. | `battles/questions.ts` |
 | **Bot AI** | Sophisticated: per-turn battle memory, pattern detection, 8 personality profiles, bluffing, clutch factor, late-game ramp, anti-frustration, accuracy capped [0.42, 0.92]. | `battles/ai-brain.ts` |
-| **Archetypes** | 8, with real stat trade-offs (HP, damage, multiplier, heal, time, question difficulty, focus). | `battles/archetypes.ts` |
-| **Combat math** | Well-designed: focus economy (Attack/Heal build, Charge/Wild spend), self-damage scales inversely with maxHP, speed/scaling bonuses, action→difficulty mapping. | `battles/stat-mechanics.ts` |
+| **Archetypes** | 8, with real stat trade-offs (HP, damage, defense, time, heal, crit, question difficulty, focus) plus one signature passive each. | `battles/archetypes.ts` |
+| **Combat math** | Well-designed: focus economy (Attack/Heal build, Charge/Wild spend), DEF-based damage reduction, flat 10% crit chance with per-class crit power, speed/ramp bonuses, action→difficulty mapping. | `battles/stat-mechanics.ts` |
 | **Abilities** | Attack / Heal / Charge / Wild. **Already** carry per-archetype tags (`ATTACK_TAG`/`HEAL_TAG`/`CHARGE_TAG`, e.g. "combo every 2", "regen on hits too"). | `KnowledgeBattles.tsx` |
 | **Chat** | Emoji reactions only: 👍👎😂😮🔥💀. No words, no quick-chat. | `KnowledgeBattles.tsx` |
 | **Exit/abandon** | **Already implemented** — confirmation dialog, counts as loss, forfeits rating for ranked. | `KnowledgeBattles.tsx` ~L2591 |
@@ -155,43 +155,53 @@ name/portrait. Zero engine change; pure presentation + a config table.
 
 Derived from the real stats in `archetypes.ts` and `stat-mechanics.ts`. Two
 numbers matter most: **bot accuracy** (avg question difficulty → how often a bot
-of that class answers) and **effective durability** (HP × self-damage mult).
+of that class answers) and **effective durability** (HP ÷ (1 − DEF)).
 
-| Archetype | HP | Base DMG | Mult step | Heal | Q-diff (min–max) | Bot acc | Self-dmg ×@miss | Identity |
-|---|---|---|---|---|---|---|---|---|
-| Tank | 250 | 10 | 0.10 | — (none) | 3–7 | 0.68 | 0.50 | Attrition wall |
-| Speedster | 125 | 15 (+speed) | 0.35 | 12 | 3–7 | 0.68 | ~0.93 | Tempo/burst |
-| Chud | 75 | 30 | 0.30 | 22 | 6–9 | 0.58 | 1.30 | Glass cannon |
-| Healer | 135 | 10 | 0.20 | 25 +regen | 2–6 | 0.72 | ~0.86 | Sustain |
-| Fulcrum | 150 | 18 | 0.20 | 15 | 4–6 | 0.68 | ~0.80 | Consistent all-rounder |
-| Accelerator | 160 | 13→27 | 0.15→0.40 | 18 | 3–7 | 0.68 | ~0.77 | Late-game scaler |
-| Gambler | random | random | random | random | 2–9 | ~0.66 | varies | Variance |
-| God | 200 | 25 | 0.20 | 15 | 8–10 | 0.51 | ~0.59 | Endgame statline |
+This is the current shipped stat sheet. **There is no multiplier stat.** Streak
+scaling used to compound on top of base damage, which ended matches in a
+handful of turns; momentum now feeds *score* only (`getScoreMultiplier`), and
+the slot it vacated is occupied by two new stats — **DEF** (flat incoming-damage
+reduction, which also replaced the old maxHp-derived self-damage curve) and
+**CRIT** (crit *power*; every archetype crits at the same flat `CRIT_CHANCE` of
+10%).
+
+| Archetype | HP | DMG | DEF | Time | Heal | Crit | Q-diff | Bot acc | Passive |
+|---|---|---|---|---|---|---|---|---|---|
+| God | 180 | 24 | 5% | 45s | 12 | 15% | 8–10 | 0.51 | Every 3 correct answers heals 15 HP |
+| Tank | 220 | 11 | 20% | 25s | — | 0% | 2–5 | 0.74 | Cannot heal; takes 20% less damage |
+| Healer | 145 | 14 | 8% | 70s | 24 | 5% | 2–5 | 0.74 | Heal also grants an 8 HP shield |
+| Apex | 95 | 34 | 0% | 50s | 10 | 25% | 6–9 | 0.58 | Below 35 HP gains +30% damage |
+| Speedster | 130 | 16–26 | 5% | 20–40s | 10 | 20% | 3–6 | 0.70 | Damage scales with time remaining |
+| Fulcrum | 165 | 18 | 10% | 60s | 16 | 10% | 4–6 | 0.68 | Copies a random passive each round (half effect) |
+| Gambler | 90–220 | 10–40 | 0–20% | 20–80s | 0–30 | 0–40% | 2–10 | ~0.66 | All stats reroll at the start of each match |
+| Accelerator | 165 | 14→30 | 10% | 35s | 18 | 10% | 3–7 | 0.68 | +2 DMG and +2% score per correct answer |
 
 **Findings:**
 
-- **God is potentially strictly-best for skilled players (W4).** Its sole
-  drawback is brutal questions (diff 8–10). For a player who can answer them,
-  that drawback evaporates, leaving 200 HP + 25 DMG + low self-damage — superior
-  on every axis. The class is partly protected by being **unlock-gated to
-  endgame tiers** (it's `MonsterArchetypeKey`, tied to Trophy Road), so in
-  practice only top players have it and they're matched against each other —
-  but *within* that bracket it's the obvious pick. Needs a real trade-off
-  beyond question difficulty.
-- **Tank has the lowest skill ceiling (W5).** Easy questions + huge HP + 0.5×
-  self-damage + can't-heal + lowest multiplier (0.10) = a slow, low-decision
-  grind. Safe and accessible (good for newcomers) but flat — no rewarding
-  mastery curve.
-- **Healer risks stalling.** 25 heal + regen-on-hit + easy questions can drag
-  games; low damage (10) means it wins by not losing. Fine, but watch match
-  length.
-- **The rest are well-balanced.** Speedster/Fulcrum/Accelerator/Chud/Gambler
-  each have a clear trade-off and a distinct curve. No changes needed.
+- **Match length is the headline change.** Removing the streak damage multiplier
+  cost the roster its exponential term — damage is now flat base ± passives, so
+  HP bars deplete at a predictable rate and a hot streak no longer ends a match
+  three turns early. Score still rewards the streak, so the chase survives.
+- **God's trade-off is now question difficulty plus thin armour.** 180 HP and
+  24 DMG lead the roster, but 5% DEF means it eats nearly full damage, and its
+  sustain is rationed to a fixed cadence (every 3rd correct answer) rather than
+  available on demand. It answers W4 without removing healing outright.
+- **Tank finally has a lever (W5).** 20% DEF is the highest in the game and it
+  applies to attacks, wild events *and* miss penalties alike — the class is
+  built to absorb mistakes, which is exactly the newcomer fantasy. It still
+  can't heal, and 11 DMG keeps its ceiling honest.
+- **Healer's stall risk is bounded.** Regen-on-hit is gone; the shield replaces
+  it, and it caps at `HEAL_SHIELD_CAP` (24) so sustain can't compound
+  indefinitely. The 70s clock is the longest in the roster, which is where its
+  real advantage now lives.
+- **Apex is the highest-variance pick.** 95 HP and 0% DEF against 34 DMG and a
+  25% crit bonus; the sub-35-HP rage means the fight is never over early, in
+  either direction.
 
 **No single archetype dominates the whole roster** thanks to question-difficulty
-gating and self-damage scaling — the system is healthier than the brief assumes.
-The two outliers are *skill-expression* problems (God too safe at the top, Tank
-too flat at the bottom), not raw-number dominance.
+gating and DEF scaling. The former outliers (God too safe at the top, Tank too
+flat at the bottom) are addressed by the passive layer rather than by raw
+numbers.
 
 ---
 

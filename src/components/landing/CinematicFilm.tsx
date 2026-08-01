@@ -378,7 +378,7 @@ export function CinematicFilm() {
               </div>
               <div className="cf-ch" ref={el => { chRefs.current[1] = el; }}>
                 <h2>Streaks <em>compound.</em></h2>
-                <p>Chain correct answers and the multiplier climbs. Break the chain and it resets to zero.</p>
+                <p>Chain correct answers and your score bonus climbs. Break the chain and it resets to zero.</p>
               </div>
               <div className="cf-ch" ref={el => { chRefs.current[2] = el; }}>
                 <h2>Luna coaches.<br /><em>Never answers.</em></h2>

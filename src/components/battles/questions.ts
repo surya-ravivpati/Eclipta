@@ -67,8 +67,6 @@ export function generateQuestion(difficulty: Difficulty): MathQuestion {
   return { q, answer, options: shuffle([...options]), difficulty, topic };
 }
 
-export const TIMER_DURATIONS: Record<Difficulty, number> = { easy: 10, medium: 12, hard: 15 };
-
 /** The difficulty tier each emitted topic belongs to (for weak-spot practice). */
 export const TOPIC_DIFFICULTY: Record<string, Difficulty> = {
   Addition: "easy",

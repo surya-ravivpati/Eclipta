@@ -65,19 +65,22 @@ interface MonsterArchetype {
   id: ArchetypeKey;
   name: string;
   icon: typeof Zap;
-  stats: { health: string; time: string; damage: string; multiplier: string; difficulty: string };
+  stats: { health: string; damage: string; defense: string; time: string; crit: string; difficulty: string };
   special?: string;
 }
 
+// Qualitative summary of the real numbers in battles/archetypes.ts — kept in
+// step with that stat sheet. There is no multiplier stat any more; DEF (damage
+// taken) and CRIT (crit power) took its slot.
 const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
-  speedster:    { id: "speedster",    name: "Speedster",    icon: Zap,        stats: { health: "Mid",  time: "Low",  damage: "Mid",        multiplier: "High",   difficulty: "Mid"    } },
-  tank:         { id: "tank",         name: "Tank",         icon: Shield,     stats: { health: "High", time: "High", damage: "Low",        multiplier: "None",   difficulty: "Mid"    } },
-  chud:         { id: "chud",         name: "Apex",         icon: Skull,      stats: { health: "Low",  time: "Low",  damage: "Ultra High", multiplier: "None",   difficulty: "High"   } },
-  gambler:      { id: "gambler",      name: "Gambler",      icon: Dice5,      stats: { health: "Rand", time: "Rand", damage: "Rand",       multiplier: "Rand",   difficulty: "Rand"   } },
-  healer:       { id: "healer",       name: "Healer",       icon: Heart,      stats: { health: "Low",  time: "Mid",  damage: "Low",        multiplier: "Mid",    difficulty: "Mid"    }, special: "Can heal instead of attacking" },
-  fulcrum:      { id: "fulcrum",      name: "Fulcrum",      icon: Scale,      stats: { health: "Mid",  time: "Mid",  damage: "Mid",        multiplier: "Mid",    difficulty: "Mid"    } },
-  accelerator:  { id: "accelerator",  name: "Accelerator",  icon: TrendingUp, stats: { health: "Low",  time: "Mid",  damage: "Scaling",    multiplier: "None",   difficulty: "Mid"    }, special: "Damage increases every turn" },
-  god:          { id: "god",          name: "God",          icon: Crown,      stats: { health: "High", time: "High", damage: "High",       multiplier: "High",   difficulty: "High"   } },
+  speedster:    { id: "speedster",    name: "Speedster",    icon: Zap,        stats: { health: "Mid",  damage: "Mid",        defense: "Low",  time: "Rand", crit: "High", difficulty: "Mid"  }, special: "Damage scales with time remaining" },
+  tank:         { id: "tank",         name: "Tank",         icon: Shield,     stats: { health: "High", damage: "Low",        defense: "High", time: "Low",  crit: "None", difficulty: "Low"  }, special: "Cannot heal · takes 20% less damage" },
+  chud:         { id: "chud",         name: "Apex",         icon: Skull,      stats: { health: "Low",  damage: "Ultra High", defense: "None", time: "Mid",  crit: "High", difficulty: "High" }, special: "Below 35 HP gains +30% damage" },
+  gambler:      { id: "gambler",      name: "Gambler",      icon: Dice5,      stats: { health: "Rand", damage: "Rand",       defense: "Rand", time: "Rand", crit: "Rand", difficulty: "Rand" }, special: "All stats reroll each match" },
+  healer:       { id: "healer",       name: "Healer",       icon: Heart,      stats: { health: "Low",  damage: "Low",        defense: "Low",  time: "High", crit: "Low",  difficulty: "Low"  }, special: "Heal also grants an 8 HP shield" },
+  fulcrum:      { id: "fulcrum",      name: "Fulcrum",      icon: Scale,      stats: { health: "Mid",  damage: "Mid",        defense: "Mid",  time: "High", crit: "Mid",  difficulty: "Mid"  }, special: "Copies a random passive each round" },
+  accelerator:  { id: "accelerator",  name: "Accelerator",  icon: TrendingUp, stats: { health: "Mid",  damage: "Scaling",    defense: "Mid",  time: "Low",  crit: "Mid",  difficulty: "Mid"  }, special: "+2 DMG and +2% score per correct answer" },
+  god:          { id: "god",          name: "God",          icon: Crown,      stats: { health: "High", damage: "High",       defense: "Low",  time: "Mid",  crit: "Mid",  difficulty: "High" }, special: "Every 3 correct answers heals 15 HP" },
 };
 
 /* ── Derive node state from XP ─────────────────────────────── */

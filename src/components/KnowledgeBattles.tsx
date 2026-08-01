@@ -12,8 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 
 import type { Phase, Action, ArchetypeId, Archetype, Fighter, MathQuestion, QuestionRecord, BattleStats, ActionConfig, GamblerRoll, LogEntry, LogActionType } from "./battles/types";
-import { generateQuestion, TIMER_DURATIONS } from "./battles/questions";
-import { levelToCategory, getActionDifficultyLevel, getEffectiveDamage, getEffectiveMultiplierStep, streakToMultiplier, hpToSelfDmgMult } from "./battles/stat-mechanics";
+import { generateQuestion } from "./battles/questions";
+import {
+  levelToCategory, getActionDifficultyLevel, getQuestionTime, getEffectiveDamage, applyDefense,
+  absorbWithShield, getHealShield, getStreakHeal, getScoreMultiplier, rollCopiedPassive,
+  RAMP_DAMAGE_PER_ANSWER, RAMP_DAMAGE_CAP, RAMP_SCORE_PER_ANSWER, RAMP_SCORE_CAP,
+  SPEED_DAMAGE_BONUS, RAGE_HP_THRESHOLD,
+} from "./battles/stat-mechanics";
 import { createBattleMemory, updateBattleMemoryPlayerTurn, updateBattleMemoryAiTurn, AI_PERSONALITIES, pickAiAction, computeAiAccuracy, getPressureLogLine, type BattleMemory } from "./battles/ai-brain";
 import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
 import { ClassSelectDialog, type ClassSelection } from "./battles/ClassSelectDialog";
@@ -67,39 +72,42 @@ const ACTIONS: Record<Action, ActionConfig> = {
  */
 const ATTACK_TAG: Record<string, string> = {
   speedster: "fast = harder", tank: "low, relentless", chud: "glass cannon",
-  gambler: "rolled stats", healer: "soft hits", fulcrum: "combo every 2",
-  accelerator: "ramps each turn", god: "all maxed",
+  gambler: "rolled stats", healer: "soft hits", fulcrum: "borrowed passive",
+  accelerator: "ramps each answer", god: "all maxed",
 };
 const HEAL_TAG: Record<string, string> = {
   speedster: "quick patch", tank: "", chud: "risky pause", gambler: "rolled",
-  healer: "regen on hits too", fulcrum: "steady", accelerator: "scales up", god: "topped up",
+  healer: "+8 HP shield", fulcrum: "steady", accelerator: "scales up", god: "free every 3rd",
 };
 const CHARGE_TAG: Record<string, string> = {
   speedster: "fast = harder", tank: "rare big hit", chud: "devastating",
-  gambler: "rolled", healer: "burst heal-tank", fulcrum: "highest mult",
+  gambler: "rolled", healer: "burst heal-tank", fulcrum: "always an answer",
   accelerator: "ramps", god: "finisher",
 };
 
-function getActionDesc(action: Action, arch: Archetype, recordCount: number): string {
+/** Base damage shown on the action buttons — live, so ramps read as they climb. */
+function displayDamage(arch: Archetype, correctCount: number): string {
+  if (arch.damageIsTimeScaled) return `${arch.baseDamage}–${arch.baseDamage + SPEED_DAMAGE_BONUS} DMG`;
+  if (arch.damageRamps) {
+    return `${arch.baseDamage + Math.min(correctCount * RAMP_DAMAGE_PER_ANSWER, RAMP_DAMAGE_CAP)} DMG ↑`;
+  }
+  return `${arch.baseDamage} DMG`;
+}
+
+function getActionDesc(action: Action, arch: Archetype, correctCount: number): string {
   const tag = (m: Record<string, string>) => (m[arch.id] ? ` · ${m[arch.id]}` : "");
   switch (action) {
-    case "attack": {
-      let dmg: string;
-      if (arch.damageIsTimeScaled) dmg = `${arch.baseDamage}–${arch.baseDamage * 2} DMG`; // Speedster range
-      else if (arch.multiplierScales) dmg = `${Math.round(13 + Math.min(recordCount / 10, 1) * 14)} DMG ↑`; // Accelerator
-      else dmg = `${arch.baseDamage} DMG`;
-      return `${dmg}${tag(ATTACK_TAG)}`;
-    }
+    case "attack":
+      return `${displayDamage(arch, correctCount)}${tag(ATTACK_TAG)}`;
     case "defend": {
       if (arch.healAmount === null) return "Can't heal · builds Focus"; // Tank
       return `+${arch.healAmount} HP${tag(HEAL_TAG)}`;
     }
     case "charge": {
-      let dmg: string;
-      if (arch.damageIsTimeScaled) { const b = Math.floor(arch.baseDamage * 1.8); dmg = `${b}–${b * 2} DMG`; }
-      else if (arch.multiplierScales) { const b = Math.round(13 + Math.min(recordCount / 10, 1) * 14); dmg = `${Math.floor(b * 1.8)} DMG ↑`; }
-      else dmg = `${Math.floor(arch.baseDamage * 1.8)} DMG`;
-      return `${dmg}${tag(CHARGE_TAG)}`;
+      // Charge is 1.8× whatever Attack would deal right now.
+      const shown = displayDamage(arch, correctCount);
+      const scaled = shown.replace(/\d+/g, (n) => String(Math.floor(Number(n) * 1.8)));
+      return `${scaled}${tag(CHARGE_TAG)}`;
     }
     case "wild":
       return "Chaos effect";
@@ -392,6 +400,20 @@ function FighterCard({ fighter, side, momentum, archetype, showHit, showHeal, ca
           </div>
         </div>
         <HpBar current={fighter.hp} max={fighter.maxHp} color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"} label="HP" />
+        {/* Absorb pool (Healer passive) — only rendered while it holds charge,
+            so classes without a shield never show an empty slot. */}
+        <AnimatePresence>
+          {(fighter.shield ?? 0) > 0 && (
+            <motion.div
+              className="mt-1.5 flex items-center gap-1 text-tier-silver"
+              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              key={fighter.shield}
+            >
+              <Shield className="w-3 h-3" />
+              <span className="text-[10px] font-bold tracking-widest tabular-nums">{fighter.shield} SHIELD</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="mt-2"><FocusBar current={fighter.focus} max={fighter.maxFocus} isPlayer={side === "left"} canCharge={canCharge && side === "left"} /></div>
       </div>
       <AnimatePresence>
@@ -770,12 +792,13 @@ type RevealDef = {
 };
 
 const REVEAL_DEFS: RevealDef[] = [
-  { key: "maxHp",          label: "HP",    lockText: s => String(s.maxHp),                          cycleRange: [80, 180],  qualityScore: s => (s.maxHp - 80) / 100,                  hasQuality: true  },
-  { key: "baseDamage",     label: "DMG",   lockText: s => String(s.baseDamage),                     cycleRange: [8,  28],   qualityScore: s => (s.baseDamage - 8) / 20,               hasQuality: true  },
-  { key: "multiplierStep", label: "MULTI", lockText: s => `+${Math.round(s.multiplierStep * 100)}%`, cycleRange: [5,  30],   qualityScore: s => (s.multiplierStep - 0.05) / 0.25,      hasQuality: true  },
-  { key: "healAmount",     label: "HEAL",  lockText: s => `+${s.healAmount}`,                       cycleRange: [5,  25],   qualityScore: s => (s.healAmount - 5) / 20,               hasQuality: true  },
-  { key: "timeMultiplier", label: "TIME",  lockText: s => `${s.timeMultiplier}×`,                   cycleRange: [75, 125],  qualityScore: s => 1 - (s.timeMultiplier - 0.75) / 0.5,   hasQuality: true  },
-  { key: "diffMin",        label: "DIFF",  lockText: s => `${s.diffMin}–${s.diffMax}`,              cycleRange: [2,  9],    qualityScore: () => 0.5,                                  hasQuality: false },
+  { key: "maxHp",      label: "HP",   lockText: s => String(s.maxHp),                       cycleRange: [90, 220], qualityScore: s => (s.maxHp - 90) / 130,      hasQuality: true  },
+  { key: "baseDamage", label: "DMG",  lockText: s => String(s.baseDamage),                  cycleRange: [10, 40],  qualityScore: s => (s.baseDamage - 10) / 30,  hasQuality: true  },
+  { key: "defense",    label: "DEF",  lockText: s => `${Math.round(s.defense * 100)}%`,     cycleRange: [0,  20],  qualityScore: s => s.defense / 0.20,          hasQuality: true  },
+  { key: "timeSeconds",label: "TIME", lockText: s => `${s.timeSeconds}s`,                   cycleRange: [20, 80],  qualityScore: s => (s.timeSeconds - 20) / 60, hasQuality: true  },
+  { key: "healAmount", label: "HEAL", lockText: s => `+${s.healAmount}`,                    cycleRange: [0,  30],  qualityScore: s => s.healAmount / 30,         hasQuality: true  },
+  { key: "critBonus",  label: "CRIT", lockText: s => `+${Math.round(s.critBonus * 100)}%`,  cycleRange: [0,  40],  qualityScore: s => s.critBonus / 0.40,        hasQuality: true  },
+  { key: "diffMin",    label: "DIFF", lockText: s => `${s.diffMin}–${s.diffMax}`,           cycleRange: [2,  10],  qualityScore: () => 0.5,                      hasQuality: false },
 ];
 
 type StatQuality = "poor" | "standard" | "good" | "legendary";
@@ -800,7 +823,7 @@ function GamblerRevealScreen({ stats, opponentName, onComplete }: {
   opponentName: string;
   onComplete: () => void;
 }) {
-  const STAGGER = 1100; // ms between each stat locking
+  const STAGGER = 850; // ms between each stat locking (7 stats — keep it snappy)
 
   const [lockedCount, setLockedCount] = useState(0);
   const lockedRef = useRef(0);
@@ -979,6 +1002,12 @@ function BattleArena() {
   const [showPlayerHeal, setShowPlayerHeal] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [records, setRecords] = useState<QuestionRecord[]>([]);
+  // Correct answers banked this match — drives the Accelerator ramp and God's
+  // every-third-answer heal, both of which count answers, not turns.
+  const [correctCount, setCorrectCount] = useState(0);
+  // Fulcrum only: the passive borrowed for the current round, rolled fresh
+  // each time an action is chosen and applied at COPY_STRENGTH.
+  const [copiedPassive, setCopiedPassive] = useState<ArchetypeId | null>(null);
   const [longestStreak, setLongestStreak] = useState(0);
   const [fastestAnswer, setFastestAnswer] = useState(Infinity);
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
@@ -1004,6 +1033,9 @@ function BattleArena() {
   const playerRef   = useRef(player);
   const opponentRef = useRef(opponent);
   const recordsRef = useRef<QuestionRecord[]>([]);
+  const archetypeRef = useRef<ArchetypeId>(archetype);
+  const correctCountRef = useRef(0);
+  const copiedPassiveRef = useRef<ArchetypeId | null>(null);
   const longestStreakRef = useRef(0);
   const fastestAnswerRef = useRef(Infinity);
   const totalScoreRef = useRef(0);
@@ -1153,6 +1185,9 @@ function BattleArena() {
   useEffect(() => { playerRef.current   = player;   }, [player]);
   useEffect(() => { opponentRef.current = opponent; }, [opponent]);
   useEffect(() => { recordsRef.current = records; }, [records]);
+  useEffect(() => { archetypeRef.current = archetype; }, [archetype]);
+  useEffect(() => { correctCountRef.current = correctCount; }, [correctCount]);
+  useEffect(() => { copiedPassiveRef.current = copiedPassive; }, [copiedPassive]);
   useEffect(() => { longestStreakRef.current = longestStreak; }, [longestStreak]);
   useEffect(() => { fastestAnswerRef.current = fastestAnswer; }, [fastestAnswer]);
   useEffect(() => { totalScoreRef.current = totalScore; }, [totalScore]);
@@ -1328,8 +1363,16 @@ function BattleArena() {
     }
 
     const arch = getArch(archetype);
-    const step = getEffectiveMultiplierStep(arch, nextRecords.length - 1);
-    const currentStreakMult = streakToMultiplier(momentum, step);
+    const oppArchNow = getArch(opponentArchetype);
+    const copied = copiedPassiveRef.current;
+    // Answers banked BEFORE this one — what the Accelerator ramp had to work
+    // with when the question was posed.
+    const priorCorrect = correctCountRef.current;
+    if (correct) {
+      correctCountRef.current = priorCorrect + 1;
+      setCorrectCount(priorCorrect + 1);
+    }
+    const scoreMult = getScoreMultiplier(arch, momentum, priorCorrect, copied);
 
     if (opponentTypeRef.current === "live") {
       const nextMom = correct ? momentum + 1 : 0;
@@ -1346,9 +1389,8 @@ function BattleArena() {
       if (correct) {
         sfxStreak(nextMom);
         if (nextMom > 0 && nextMom % comboThreshold === 0) {
-          const newMult = streakToMultiplier(nextMom, step);
-          addLog({ actor: "system", actionType: "combo", result: `COMBO x${Math.floor(nextMom / comboThreshold)} — ${newMult.toFixed(2)}× damage locked!` });
-          fireComboBurst(Math.floor(nextMom / comboThreshold), newMult);
+          addLog({ actor: "system", actionType: "combo", result: `COMBO x${Math.floor(nextMom / comboThreshold)} — ${scoreMult.toFixed(2)}× score!` });
+          fireComboBurst(Math.floor(nextMom / comboThreshold), scoreMult);
           sfxCombo();
         }
 
@@ -1357,15 +1399,25 @@ function BattleArena() {
         } else if (currentAction === "wild") {
           sfxWild();
           const roll = Math.random();
-          if (roll < 0.333) damage = Math.floor(Math.random() * 30) + 10;
+          if (roll < 0.333) damage = applyDefense(Math.floor(Math.random() * 30) + 10, oppArchNow);
           else if (roll < 0.667) heal = Math.min(20, playerRef.current.maxHp - playerRef.current.hp);
-          else { damage = 20; focusDelta += 20; }
+          else { damage = applyDefense(20, oppArchNow); focusDelta += 20; }
         } else {
-          damage = Math.floor(getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: nextRecords.length - 1 }) * currentStreakMult);
+          const hit = getEffectiveDamage(arch, {
+            action: currentAction, timeSpent, maxTime,
+            correctCount: priorCorrect, currentHp: playerRef.current.hp, copied,
+          });
+          damage = applyDefense(hit.damage, oppArchNow);
         }
+        // God's every-third-answer restore rides on top of whatever was chosen,
+        // clamped so the reported heal never overshoots the HP bar.
+        heal = Math.min(
+          heal + getStreakHeal(arch, correctCountRef.current, copied),
+          playerRef.current.maxHp - playerRef.current.hp,
+        );
       } else {
         sfxBreak();
-        selfDamage = Math.floor((Math.floor(Math.random() * 10) + 8) * hpToSelfDmgMult(arch.maxHp));
+        selfDamage = applyDefense(Math.floor(Math.random() * 10) + 8, arch, copied);
       }
 
       liveActionLockedRef.current = true;
@@ -1455,11 +1507,10 @@ function BattleArena() {
       if (newMom > longestStreak) setLongestStreak(newMom);
       sfxStreak(newMom);
 
-      // Announce combo activations in the log with the actual live multiplier
+      // Announce combo activations — momentum pays out in score, not damage.
       if (newMom > 0 && newMom % comboThreshold === 0) {
-        const newMult = streakToMultiplier(newMom, step);
-        addLog({ actor: "system", actionType: "combo", result: `COMBO x${Math.floor(newMom / comboThreshold)} — ${newMult.toFixed(2)}× damage!` });
-        fireComboBurst(Math.floor(newMom / comboThreshold), newMult);
+        addLog({ actor: "system", actionType: "combo", result: `COMBO x${Math.floor(newMom / comboThreshold)} — ${scoreMult.toFixed(2)}× score!` });
+        fireComboBurst(Math.floor(newMom / comboThreshold), scoreMult);
         sfxCombo();
       }
 
@@ -1467,9 +1518,18 @@ function BattleArena() {
         const gain = FOCUS_GAIN.defend;
         if (arch.healAmount !== null) {
           const heal = Math.min(arch.healAmount, player.maxHp - player.hp);
-          setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!), focus: Math.min(prev.maxFocus, prev.focus + gain) }));
+          // Healer (or Fulcrum borrowing it) banks an absorb shield on top.
+          const shieldBefore = playerRef.current.shield ?? 0;
+          const shieldAfter  = getHealShield(arch, shieldBefore, copied);
+          setPlayer(prev => ({
+            ...prev,
+            hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!),
+            shield: getHealShield(arch, prev.shield ?? 0, copied),
+            focus: Math.min(prev.maxFocus, prev.focus + gain),
+          }));
           setShowPlayerHeal(true);
-          addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.`, value: heal });
+          const shieldNote = shieldAfter > shieldBefore ? ` +${shieldAfter - shieldBefore} shield.` : "";
+          addLog({ actor: "player", actionType: "heal", result: `Defend: +${heal} HP, +${gain} Focus.${shieldNote}`, value: heal });
         } else {
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
           addLog({ actor: "player", actionType: "heal", result: `Defend: +${gain} Focus (this class cannot heal).`, value: gain });
@@ -1479,7 +1539,7 @@ function BattleArena() {
         sfxWild();
         const roll = Math.random();
         if (roll < 0.333) {
-          const d = Math.floor(Math.random() * 30) + 10;
+          const d = applyDefense(Math.floor(Math.random() * 30) + 10, oppArchNow);
           setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
           setShowOpponentHit(true);
           setWildEvent({ type: "chaos", sub: `${d} DMG` });
@@ -1490,7 +1550,7 @@ function BattleArena() {
           setWildEvent({ type: "mend", sub: "+20 HP" });
           addLog({ actor: "player", actionType: "wild", result: `WILD MEND: +20 HP!`, value: 20 });
         } else {
-          const d = 20;
+          const d = applyDefense(20, oppArchNow);
           setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
           setShowOpponentHit(true);
           setPlayer(prev => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + 20) }));
@@ -1499,10 +1559,11 @@ function BattleArena() {
         }
         setTimeout(() => setWildEvent(null), 1400);
       } else {
-        const dmg = Math.floor(
-          getEffectiveDamage(arch, { action: currentAction, timeSpent, maxTime, recordCount: records.length })
-          * currentStreakMult
-        );
+        const hit = getEffectiveDamage(arch, {
+          action: currentAction, timeSpent, maxTime,
+          correctCount: priorCorrect, currentHp: playerRef.current.hp, copied,
+        });
+        const dmg = applyDefense(hit.damage, oppArchNow);
         setOpponent(prev => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
         const focusGain = FOCUS_GAIN[currentAction];
         if (focusGain > 0) {
@@ -1510,22 +1571,31 @@ function BattleArena() {
         }
         setShowOpponentHit(true);
         const focusNote = focusGain > 0 ? ` +${focusGain} Focus.` : "";
-        addLog({ actor: "player", actionType: currentAction as LogActionType, result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${focusNote}${currentStreakMult > 1.1 ? ` ${currentStreakMult.toFixed(2)}x STREAK!` : ""}`, value: dmg });
+        const critNote  = hit.crit ? " CRIT!" : "";
+        const rageNote  = arch.ragesWhenLow && playerRef.current.hp < RAGE_HP_THRESHOLD ? " RAGE!" : "";
+        addLog({ actor: "player", actionType: currentAction as LogActionType, result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${critNote}${rageNote}${focusNote}`, value: dmg });
       }
-      setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * currentStreakMult);
+
+      // God (or Fulcrum borrowing it): a free restore every third correct answer.
+      const divineHeal = getStreakHeal(arch, correctCountRef.current, copied);
+      if (divineHeal > 0) {
+        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + divineHeal) }));
+        setShowPlayerHeal(true);
+        addLog({ actor: "system", actionType: "heal", result: `${arch.name}'s passive: +${divineHeal} HP.`, value: divineHeal });
+      }
+
+      setTotalScore(prev => prev + (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * scoreMult);
     } else {
       setMomentum(0);
       sfxBreak();
-      let counterDmg = Math.floor(Math.random() * 10) + 8;
-      counterDmg = Math.floor(counterDmg * hpToSelfDmgMult(arch.maxHp));
-      // Healer passive: recover some HP on getting hit
-      if (archetype === "healer") {
-        const healAmt = Math.floor(counterDmg * 0.3);
-        setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }));
-      }
-      setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - counterDmg) }));
+      // Miss penalty runs through DEF like any other incoming damage — the old
+      // maxHp-derived self-damage curve is gone along with the multiplier stat.
+      const counterDmg = applyDefense(Math.floor(Math.random() * 10) + 8, arch, copied);
+      const { hpLoss, shieldLeft } = absorbWithShield(counterDmg, playerRef.current.shield ?? 0);
+      setPlayer(prev => ({ ...prev, hp: Math.max(0, prev.hp - hpLoss), shield: shieldLeft }));
       setShowPlayerHit(true);
-      addLog({ actor: "player", actionType: "miss", result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${counterDmg} HP. Streak reset.${arch.maxHp >= 160 ? " Shield reduced!" : ""}`, value: counterDmg });
+      const absorbedNote = hpLoss < counterDmg ? ` Shield absorbed ${counterDmg - hpLoss}.` : "";
+      addLog({ actor: "player", actionType: "miss", result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${hpLoss} HP. Streak reset.${absorbedNote}`, value: hpLoss });
     }
 
     setTimeout(() => {
@@ -1546,7 +1616,7 @@ function BattleArena() {
         aiTurn();
       }
     }, 800);
-  }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, longestStreak, fastestAnswer]);
+  }, [currentAction, momentum, player, totalScore, timeLeft, maxTime, question, archetype, opponentArchetype, longestStreak, fastestAnswer]);
 
   const finishBattle = useCallback((won: boolean) => {
     if (battleFinishedRef.current) return;
@@ -1746,11 +1816,21 @@ function BattleArena() {
       let newOppFocus = prevOpp.focus;
       let nextOppMom  = opponentMomentum;
 
+      const playerArch = getArch(archetypeRef.current);
+      let newPlayerShield = prevPlayer.shield ?? 0;
+      /** Route incoming damage through the player's DEF, then their shield. */
+      const hitPlayer = (raw: number): number => {
+        const after = applyDefense(raw, playerArch, copiedPassiveRef.current);
+        const { hpLoss, shieldLeft } = absorbWithShield(after, newPlayerShield);
+        newPlayerShield = shieldLeft;
+        newPlayerHp = Math.max(0, newPlayerHp - hpLoss);
+        return hpLoss;
+      };
+
       if (success) {
         nextOppMom = opponentMomentum + 1;
-        // Fix: pass turnNumber so Accelerator's multiplier step actually ramps
-        const oppStep = getEffectiveMultiplierStep(oppArch, mem.turnNumber);
-        const sMult   = streakToMultiplier(nextOppMom, oppStep);
+        // The bot's correct-answer count drives its Accelerator ramp / God heal.
+        const oppCorrect = mem.turnNumber;
 
         if (choice === "defend") {
           newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
@@ -1764,40 +1844,45 @@ function BattleArena() {
           newOppFocus = Math.max(0, prevOpp.focus - 15);
           const roll = Math.random();
           if (roll < 0.34) {
-            const d = Math.floor(Math.random() * 30) + 10;
-            newPlayerHp = Math.max(0, prevPlayer.hp - d);
+            const d = hitPlayer(Math.floor(Math.random() * 30) + 10);
             setShowPlayerHit(true);
             addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: ${d} chaos DMG!`, value: d });
           } else if (roll < 0.67) {
             newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + 20);
             addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: +20 HP!`, value: 20 });
           } else {
-            const d = 20;
-            newPlayerHp = Math.max(0, prevPlayer.hp - d);
+            const d = hitPlayer(20);
             setShowPlayerHit(true);
             addLog({ actor: "opponent", actionType: "wild", result: `${prevOpp.name} Wild: ${d} DMG.`, value: d });
           }
         } else {
-          const dmg = Math.floor(getEffectiveDamage(oppArch, { action: choice, recordCount: 0 }) * sMult);
-          newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
+          const hit = getEffectiveDamage(oppArch, { action: choice, correctCount: oppCorrect, currentHp: prevOpp.hp });
+          const dmg = hitPlayer(hit.damage);
           const cost = ACTIONS[choice].focusCost;
           if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
           const gain = FOCUS_GAIN[choice];
           if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
           setShowPlayerHit(true);
-          const streakNote = sMult > 1.1 ? ` ${sMult.toFixed(2)}x STREAK` : "";
-          addLog({ actor: "opponent", actionType: choice as LogActionType, result: `${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${streakNote}`, value: dmg });
+          const critNote = hit.crit ? " CRIT!" : "";
+          addLog({ actor: "opponent", actionType: choice as LogActionType, result: `${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${critNote}`, value: dmg });
+        }
+
+        // Opponent's own every-third-answer restore (God, or a Fulcrum bot).
+        const oppDivine = getStreakHeal(oppArch, oppCorrect + 1);
+        if (oppDivine > 0) {
+          newOppHp = Math.min(prevOpp.maxHp, newOppHp + oppDivine);
+          addLog({ actor: "opponent", actionType: "heal", result: `${prevOpp.name}'s passive: +${oppDivine} HP.`, value: oppDivine });
         }
       } else {
         nextOppMom = 0;
-        const flub = Math.floor((Math.floor(Math.random() * 6) + 4) * hpToSelfDmgMult(oppArch.maxHp));
+        const flub = applyDefense(Math.floor(Math.random() * 6) + 4, oppArch);
         newOppHp = Math.max(0, prevOpp.hp - flub);
         addLog({ actor: "opponent", actionType: "miss", result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`, value: flub });
       }
 
       if (memory) updateBattleMemoryAiTurn(memory, success);
       setOpponentMomentum(nextOppMom);
-      setPlayer(p => ({ ...p, hp: newPlayerHp }));
+      setPlayer(p => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
       setOpponent(o => ({ ...o, hp: newOppHp, focus: newOppFocus }));
 
       setTimeout(() => {
@@ -1832,25 +1917,29 @@ function BattleArena() {
       const prevOpp    = opponentRef.current;
       const prevPlayer = playerRef.current;
       let newPlayerHp = prevPlayer.hp;
+      let newPlayerShield = prevPlayer.shield ?? 0;
       let newOppHp    = prevOpp.hp;
 
       if (record.correct) {
-        const dmg = Math.floor(
-          getEffectiveDamage(oppArch, {
-            action: record.action as Action,
-            recordCount: ghostTurnIndexRef.current,
-          })
-        );
-        newPlayerHp = Math.max(0, prevPlayer.hp - dmg);
+        const hit = getEffectiveDamage(oppArch, {
+          action: record.action as Action,
+          correctCount: ghostTurnIndexRef.current,
+          currentHp: prevOpp.hp,
+        });
+        const playerArch = getArch(archetypeRef.current);
+        const after = applyDefense(hit.damage, playerArch, copiedPassiveRef.current);
+        const { hpLoss, shieldLeft } = absorbWithShield(after, newPlayerShield);
+        newPlayerShield = shieldLeft;
+        newPlayerHp = Math.max(0, prevPlayer.hp - hpLoss);
         setShowPlayerHit(true);
-        addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name}: ${dmg} DMG (ghost replay)`, value: dmg });
+        addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name}: ${hpLoss} DMG (ghost replay)${hit.crit ? " CRIT!" : ""}`, value: hpLoss });
       } else {
-        const flub = Math.floor(Math.random() * 6) + 3;
+        const flub = applyDefense(Math.floor(Math.random() * 6) + 3, oppArch);
         newOppHp = Math.max(0, prevOpp.hp - flub);
         addLog({ actor: "opponent", actionType: "ghost", result: `${prevOpp.name} missed (-${flub} self)`, value: flub });
       }
 
-      setPlayer(p => ({ ...p, hp: newPlayerHp }));
+      setPlayer(p => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
       setOpponent(o => ({ ...o, hp: newOppHp }));
 
       setTimeout(() => {
@@ -1874,11 +1963,20 @@ function BattleArena() {
     addLog({ actor: "player", actionType: "info", result: `You ${ACTIONS[action].label.toLowerCase()}…` });
 
     const arch = getArch(archetype);
+
+    // Fulcrum borrows a fresh passive at the top of every round, at half power.
+    if (arch.copiesPassive) {
+      const borrowed = rollCopiedPassive();
+      copiedPassiveRef.current = borrowed;
+      setCopiedPassive(borrowed);
+      addLog({ actor: "system", actionType: "info", result: `Fulcrum copies ${ARCHETYPES[borrowed].name}'s passive this round (reduced).` });
+    }
+
     const level = getActionDifficultyLevel(arch, action);
     const category = levelToCategory(level);
     const q = generateQuestion(category);
     setQuestion(q);
-    const t = Math.max(4, Math.round(TIMER_DURATIONS[category] * arch.timeMultiplier));
+    const t = getQuestionTime(arch, category);
     setMaxTime(t);
     setTimeLeft(t);
     setPhase("question");
@@ -1967,7 +2065,7 @@ function BattleArena() {
       const oppArch       = ARCHETYPES[oppArchetype];
 
       setPlayer({
-        name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
+        name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp, shield: 0,
         focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
         sprite: eclip ? ecliptarSpriteUrl(eclip.slug) : undefined,
       });
@@ -1981,6 +2079,8 @@ function BattleArena() {
       setMomentum(0); setOpponentMomentum(0); setLogs([]);
       setTotalScore(0); setRecords([]); setLongestStreak(0);
       setFastestAnswer(Infinity); setBattleStats(null);
+      correctCountRef.current = 0; setCorrectCount(0);
+      copiedPassiveRef.current = null; setCopiedPassive(null);
 
       if (rolledGambler) {
         setPhase("gamblerReveal");
@@ -2049,7 +2149,7 @@ function BattleArena() {
     const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
 
     setPlayer({
-      name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp,
+      name: playerName, hp: effectiveArch.maxHp, maxHp: effectiveArch.maxHp, shield: 0,
       focus: baseArch.startFocus, maxFocus: baseArch.focusPool, icon: playerIcon,
       sprite: ecliptar ? ecliptarSpriteUrl(ecliptar.slug) : undefined,
     });
@@ -2062,6 +2162,8 @@ function BattleArena() {
     setMomentum(0); setOpponentMomentum(0); setLogs([]);
     setTotalScore(0); setRecords([]); setLongestStreak(0);
     setFastestAnswer(Infinity); setBattleStats(null);
+    correctCountRef.current = 0; setCorrectCount(0);
+    copiedPassiveRef.current = null; setCopiedPassive(null);
     if (rolledGambler) {
       setPhase("gamblerReveal");
     } else {
@@ -2287,7 +2389,7 @@ function BattleArena() {
                 COMBO ×{comboBurst.combo}
               </p>
               <p className="btt-mono-text text-[12px] tracking-[0.34em] text-neon-pink/80 mt-2">
-                {comboBurst.mult.toFixed(2)}× DAMAGE
+                {comboBurst.mult.toFixed(2)}× SCORE
               </p>
             </motion.div>
           </motion.div>
@@ -2354,7 +2456,7 @@ function BattleArena() {
       </div>
 
       <div className="space-y-3">
-        {/* Momentum bar with near-miss telegraphing and live multiplier readout */}
+        {/* Momentum bar with near-miss telegraphing and live score-bonus readout */}
         {(() => {
           // How far into the current combo cycle are we?
           // At threshold multiples (3, 6, 9…) show the bar fully filled.
@@ -2365,12 +2467,12 @@ function BattleArena() {
           const isNearMiss = momentum > 0 && momentum % comboThreshold === comboThreshold - 1;
           const comboActive = momentum >= comboThreshold;
           const arch = getArch(archetype);
-          const step = getEffectiveMultiplierStep(arch, records.length);
-          const activeMult = streakToMultiplier(momentum, step);
+          // Momentum pays out in SCORE only — it no longer touches damage.
+          const activeMult = getScoreMultiplier(arch, momentum, correctCount, copiedPassive);
 
           return (
             <div className="btt-card p-3">
-              {/* Top row: label + live multiplier + COMBO badge */}
+              {/* Top row: label + live score bonus + COMBO badge */}
               <div className="flex items-center gap-2 mb-2">
                 <motion.div
                   animate={isNearMiss ? { scale: [1, 1.25, 1] } : {}}
@@ -2391,7 +2493,7 @@ function BattleArena() {
                     initial={{ scale: comboProgress === 0 ? 1.4 : 1.1, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                   >
-                    {activeMult.toFixed(2)}×
+                    {activeMult.toFixed(2)}× SCORE
                   </motion.span>
                 )}
                 {comboActive && (
@@ -2457,9 +2559,14 @@ function BattleArena() {
             core USP: sustained correct answers directly compound combat
             power. Every question answered is ammunition for the future. */}
         {archetype === "accelerator" && (() => {
-          const scalePct    = Math.min(records.length / 10, 1);           // 0 → 1 over 10 questions
-          const effectiveDmg  = Math.round(13 + scalePct * 14);           // 13 → 27
-          const effectiveMult = Math.round((0.15 + scalePct * 0.25) * 100); // 15% → 40%
+          const arch = getArch("accelerator");
+          const dmgBonus   = Math.min(correctCount * RAMP_DAMAGE_PER_ANSWER, RAMP_DAMAGE_CAP);
+          // The ramp caps at +16 DMG (8 answers) and +35% score (18 answers) —
+          // bar tracks the slower of the two so it fills as the class matures.
+          const answersToCap = Math.ceil(RAMP_SCORE_CAP / RAMP_SCORE_PER_ANSWER);
+          const scalePct     = Math.min(correctCount / answersToCap, 1);
+          const effectiveDmg   = arch.baseDamage + dmgBonus;
+          const effectiveScore = Math.round(Math.min(correctCount * RAMP_SCORE_PER_ANSWER, RAMP_SCORE_CAP) * 100);
 
           // Stage labels communicate qualitative feel, not just a number
           const stage =
@@ -2511,14 +2618,14 @@ function BattleArena() {
                   </span>
                 </span>
                 <span className="text-muted-foreground">
-                  MULTI{" "}
+                  SCORE{" "}
                   <span className={scalePct >= 0.60 ? "text-neon-pink" : "text-foreground"}>
-                    +{effectiveMult}%
+                    +{effectiveScore}%
                   </span>
                 </span>
                 <span className="text-muted-foreground">
-                  Q{" "}
-                  <span className="text-foreground">{Math.min(records.length, 10)}/10</span>
+                  ✓{" "}
+                  <span className="text-foreground">{Math.min(correctCount, answersToCap)}/{answersToCap}</span>
                 </span>
               </div>
             </div>
@@ -2555,7 +2662,7 @@ function BattleArena() {
                 <div className="btt-mono-text text-[9px] text-muted-foreground mt-1 leading-tight">
                   {/* getActionDesc returns "Can't heal · builds Focus" for any no-heal
                       class (Tank and now God), so this stays correct without hardcoding a name. */}
-                  {getActionDesc(key, getArch(archetype), records.length)}
+                  {getActionDesc(key, getArch(archetype), correctCount)}
                 </div>
                 {cost > 0 && (
                   <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-purple border border-neon-purple/30 px-1">−{cost}</div>
@@ -3092,7 +3199,7 @@ export function KnowledgeBattles() {
                 <li><span className="text-foreground font-bold">Wild</span> — a chaotic effect for <span className="text-neon-purple">15 Focus</span>.</li>
                 <li><span className="text-foreground font-bold">Every number on the action buttons is YOUR archetype's</span> — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows each turn, an Apex's is brutal but fragile. Read them before you commit.</li>
                 <li><span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp; Wild — build it with Attack/Heal. Pool size differs by class (Speedster small, Apex huge).</li>
-                <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> → bigger damage multipliers. A wrong answer or timeout breaks Momentum and lets your opponent counter.</li>
+                <li>Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> → a bigger score bonus. A wrong answer or timeout breaks Momentum and lets your opponent counter.</li>
                 <li><span className="text-foreground font-bold">Leaving a battle counts as a loss by abandonment</span> — finish what you start.</li>
               </ul>
             </section>
@@ -3102,7 +3209,7 @@ export function KnowledgeBattles() {
                 <Sparkles className="w-3.5 h-3.5" /> ARCHETYPES &amp; REWARDS
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
-                <li>Each archetype tweaks HP, time, damage, multiplier, and question difficulty — pick the one that fits your style.</li>
+                <li>Each archetype tweaks HP, damage, defense, time, heal, crit power, and question difficulty — plus one signature passive. Pick the one that fits your style.</li>
                 <li>Every battle counts toward your <span className="text-foreground font-bold">daily practice streak</span>; streak milestones grant bonus XP.</li>
                 <li>XP earned advances your Trophy Road and unlocks new Ecliptars to claim.</li>
               </ul>

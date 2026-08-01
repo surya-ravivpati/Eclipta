@@ -62,7 +62,7 @@ const BLURB: Record<ArchetypeId, string> = {
   chud:        "Glass cannon. Massive damage, almost no HP.",
   gambler:     "Every stat rolled fresh each battle. Pure chaos.",
   healer:      "Sustain and regen. Built to outlast.",
-  fulcrum:     "Balanced, with the highest multiplier. Rewards consistency.",
+  fulcrum:     "Balanced, and borrows a rival's passive every round.",
   accelerator: "Damage that scales with every question answered.",
   god:         "Max stats across the board. The hardest questions.",
 };
@@ -425,12 +425,12 @@ function ArchetypePanel({
         <StatCell label="HP"   value={arch.statsAreRandom ? "??" : String(arch.maxHp)} aura={aura} />
         <StatCell
           label="DMG"
-          value={arch.multiplierScales ? `${arch.baseDamage}↑` : arch.statsAreRandom ? "??" : String(arch.baseDamage)}
+          value={arch.statsAreRandom ? "??" : arch.damageRamps ? `${arch.baseDamage}↑` : String(arch.baseDamage)}
           aura={aura}
         />
         <StatCell
-          label="MULT"
-          value={arch.statsAreRandom ? "??" : `+${Math.round(arch.multiplierStep * 100)}%`}
+          label="DEF"
+          value={arch.statsAreRandom ? "??" : `${Math.round(arch.defense * 100)}%`}
           aura={aura}
         />
       </div>

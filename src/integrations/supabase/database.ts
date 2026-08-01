@@ -183,11 +183,15 @@ interface RatingApplication {
 }
 
 /**
- * The four moves a battle turn can be. `submit_pvp_turn_action` rejects
- * anything else outright, so the `text` column can only ever hold one of
- * these — it is a union in practice, and typed as one here.
+ * The moves a battle turn can be. `submit_pvp_turn_action` rejects anything
+ * else outright, so the `text` column can only ever hold one of these — it is a
+ * union in practice, and typed as one here.
+ *
+ * `wild` is retained: the action was replaced by per-Ecliptar `ultimate` casts
+ * (migration 20260801000000), but historical rows still hold it, so reads must
+ * keep accepting it even though the client no longer writes it.
  */
-type PvpActionName = "attack" | "defend" | "charge" | "wild";
+type PvpActionName = "attack" | "defend" | "charge" | "ultimate" | "wild";
 
 /**
  * One player's action within a resolved turn, mirroring a

@@ -23,8 +23,8 @@ export function levelToCategory(level: number): Difficulty {
  * Pick a difficulty level (1–10) for the given action based on the archetype's range.
  * - Defend  → diffMin  (easiest question — rewards safe play)
  * - Attack  → midpoint (balanced question)
- * - Charge  → diffMax  (hardest question — high risk, high reward)
- * - Wild    → random in [diffMin, diffMax]
+ * - Charge   → diffMax  (hardest question — high risk, high reward)
+ * - Ultimate → midpoint (a committed play, not a difficulty gamble)
  */
 export function getActionDifficultyLevel(arch: Archetype, action: Action): number {
   const { diffMin, diffMax } = arch;
@@ -35,8 +35,8 @@ export function getActionDifficultyLevel(arch: Archetype, action: Action): numbe
       return Math.round((diffMin + diffMax) / 2);
     case "charge":
       return diffMax;
-    case "wild":
-      return diffMin + Math.floor(Math.random() * (diffMax - diffMin + 1));
+    case "ultimate":
+      return Math.round((diffMin + diffMax) / 2);
   }
 }
 

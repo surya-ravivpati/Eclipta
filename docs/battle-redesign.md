@@ -19,18 +19,18 @@ weak point, grounded in the actual implementation.
 
 ## 0. Ground truth (what the code actually does)
 
-| Area                    | Reality                                                                                                                                                                                         | File                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **Questions**           | **Math only** — procedurally generated arithmetic → basic algebra. "Knowledge Battles" teaches addition through exponents, nothing else.                                                        | `battles/questions.ts`                |
-| **Bot AI**              | Sophisticated: per-turn battle memory, pattern detection, 8 personality profiles, bluffing, clutch factor, late-game ramp, anti-frustration, accuracy capped [0.42, 0.92].                      | `battles/ai-brain.ts`                 |
-| **Archetypes**          | 8, with real stat trade-offs (HP, damage, defense, time, heal, crit, question difficulty, focus) plus one signature passive each.                                                               | `battles/archetypes.ts`               |
-| **Combat math**         | Well-designed: focus economy (Attack/Heal build, Charge/Wild spend), DEF-based damage reduction, flat 10% crit chance with per-class crit power, speed/ramp bonuses, action→difficulty mapping. | `battles/stat-mechanics.ts`           |
-| **Abilities**           | Attack / Heal / Charge / Wild. **Already** carry per-archetype tags (`ATTACK_TAG`/`HEAL_TAG`/`CHARGE_TAG`, e.g. "combo every 2", "regen on hits too").                                          | `KnowledgeBattles.tsx`                |
-| **Chat**                | Emoji reactions only: 👍👎😂😮🔥💀. No words, no quick-chat.                                                                                                                                    | `KnowledgeBattles.tsx`                |
-| **Exit/abandon**        | **Already implemented** — confirmation dialog, counts as loss, forfeits rating for ranked.                                                                                                      | `KnowledgeBattles.tsx` ~L2591         |
-| **Info panel**          | **Already exists** — a how-to list (mechanics, leaving=loss, archetypes, streak).                                                                                                               | `KnowledgeBattles.tsx` ~L3057         |
-| **Practice Weak Spots** | **Does not exist.** Only a marketing mention on /about.                                                                                                                                         | —                                     |
-| **Emoji as UI**         | Pervasive: chat reactions, AI pressure lines (⚡🧠🩸🔥), match-start (⚔️).                                                                                                                      | `ai-brain.ts`, `KnowledgeBattles.tsx` |
+| Area                    | Reality                                                                                                                                                                                     | File                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **Questions**           | **Math only** — procedurally generated arithmetic → basic algebra. "Knowledge Battles" teaches addition through exponents, nothing else.                                                    | `battles/questions.ts`                |
+| **Bot AI**              | Sophisticated: per-turn battle memory, pattern detection, 8 personality profiles, bluffing, clutch factor, late-game ramp, anti-frustration, accuracy capped [0.42, 0.92].                  | `battles/ai-brain.ts`                 |
+| **Archetypes**          | 8, with real stat trade-offs (HP, damage, defense, time, heal, crit, question difficulty, focus) plus one signature passive each.                                                           | `battles/archetypes.ts`               |
+| **Combat math**         | Well-designed: focus economy (Attack/Heal build, Charge spends), DEF-based damage reduction, flat 10% crit chance with per-class crit power, speed/ramp bonuses, action→difficulty mapping. | `battles/stat-mechanics.ts`           |
+| **Abilities**           | Attack / Heal / Charge / **Ultimate**. Wild's random chaos was replaced by a per-Ecliptar signature move (`battles/ultimates.ts`); the first three carry per-archetype tags.                | `KnowledgeBattles.tsx`                |
+| **Chat**                | Emoji reactions only: 👍👎😂😮🔥💀. No words, no quick-chat.                                                                                                                                | `KnowledgeBattles.tsx`                |
+| **Exit/abandon**        | **Already implemented** — confirmation dialog, counts as loss, forfeits rating for ranked.                                                                                                  | `KnowledgeBattles.tsx` ~L2591         |
+| **Info panel**          | **Already exists** — a how-to list (mechanics, leaving=loss, archetypes, streak).                                                                                                           | `KnowledgeBattles.tsx` ~L3057         |
+| **Practice Weak Spots** | **Does not exist.** Only a marketing mention on /about.                                                                                                                                     | —                                     |
+| **Emoji as UI**         | Pervasive: chat reactions, AI pressure lines (⚡🧠🩸🔥), match-start (⚔️).                                                                                                                  | `ai-brain.ts`, `KnowledgeBattles.tsx` |
 
 **Implications that drive the redesign:**
 
@@ -70,8 +70,10 @@ all-subject competitive learning loop.
 
 **Strengths to preserve (do not "redesign" these):**
 
-- The **focus economy** (Attack/Heal build focus; Charge/Wild spend it) gives
+- The **focus economy** (Attack/Heal build focus; Charge spends it) gives
   Attack a real role and makes Charge a setup payoff — genuine decision depth.
+  The Ultimate sits deliberately outside it, on its own charge meter, so the two
+  payoff moves never compete for one resource.
 - The **action→difficulty contract** (Heal = easiest question, Charge =
   hardest) means power costs risk. This is the cleverest mechanic in the system.
 - **Damage reduction** (`applyDefense`) auto-balances glass cannons vs tanks
@@ -215,6 +217,55 @@ numbers.
 
 ---
 
+## 6b. Ecliptar Ultimates
+
+The **Wild** action is gone. It rolled one of three generic chaos outcomes and
+belonged to no one; every Ecliptar now brings its own signature **Ultimate**
+instead, so the creature you equip changes how you fight rather than only how
+your card looks.
+
+**Resource.** Ultimates spend a dedicated 0–1 charge meter, filled only by
+answering correctly (`ULTIMATE_TUNING.chargePerCorrectAnswer`, currently 25% — so
+four correct answers), plus a short cooldown after casting. Focus is untouched:
+it remains the short-term tempo currency for Charge, and the ultimate is the
+long-term one. The two never bid against each other.
+
+**Architecture.** 32 ultimates would be 32 code paths if written directly, so
+they are **data**: each is a list of `UltimateOp`s in `battles/ultimates.ts`,
+interpreted by a pure resolver in `battles/resolve-ultimate.ts`. The resolver
+takes a snapshot of both sides and returns a new one, touching no React state —
+which is what lets all 32 be tested without mounting a battle, and lets the
+player, the bot, a ghost replay and live PvP share one code path.
+
+Anything that outlasts its turn becomes an `ActiveEffect` in
+`battles/effects.ts`: poison (optionally escalating), regen, flat and
+multiplicative damage buffs, damage reduction, reflect, freeze, heal-block,
+score bonuses, guaranteed crits, weakening, and Petrona's borrowed passive.
+Durations come in two flavours because the spec uses both — **turn-based**
+("for 3 turns") ticks at the owner's turn start, **use-based** ("the next 2
+attacks") is spent on use. Re-casting a kind refreshes it rather than stacking,
+so no ultimate chain can pile up an unbounded buff; escalating poison is the
+deliberate exception.
+
+**Effects the engine gained for these.** True damage (skips DEF), shield-piercing
+damage, multi-hit volleys with per-hit crit rolls, HP rewind over a turn history,
+extra turns, timer manipulation with a floor, permanent stat gains, score-
+multiplier theft, whole-battle stat equalisation, and weighted / draw-without-
+replacement random tables for the four Gambler ultimates and Ticonder.
+
+**Balance guards.** Shields cap at `ULTIMATE_TUNING.maxShield`; no timer can fall
+below `minTimerSeconds`; healing still respects both a heal-block and a class
+that cannot heal, so Tank's "cannot heal" is not laundered through its own
+ultimate; and damage counts only HP actually removed, so an overkill never
+reports a phantom number to the log or the PvP wire.
+
+**Server note.** `submit_pvp_turn_action` validated the action name against a
+hardcoded four-value list, so live PvP would have rejected `'ultimate'` outright.
+Migration `20260801000000_pvp-ultimate-action.sql` widens it and deliberately
+keeps `'wild'` valid, because historical `pvp_turn_actions` rows still hold it.
+
+---
+
 ## 7. Recommended Balance Changes
 
 Minimal, trade-off-preserving — no numerical power creep.
@@ -351,7 +402,7 @@ The info exists but is a **text list**. Replace with **progressive onboarding**:
 - **The reference panel** stays available but becomes **visual + scannable**:
   - A one-screen **diagram** of the turn loop (Pick action → Answer question →
     Resolve → Opponent).
-  - **Action cards** (Attack/Heal/Charge/Wild) each showing its focus effect
+  - **Action cards** (Attack/Heal/Charge/Ultimate) each showing its cost
     _and its question difficulty_ (the risk that's currently hidden).
   - A **win-condition** line, a **status/combo** line, **two strategy tips**.
 - **No wall of text** — every item is a chip, an icon, or a one-liner.

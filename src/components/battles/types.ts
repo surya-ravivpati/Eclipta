@@ -10,7 +10,7 @@ export type Phase =
   | "question"
   | "animate"
   | "result";
-export type Action = "attack" | "defend" | "charge" | "wild";
+export type Action = "attack" | "defend" | "charge" | "ultimate";
 export type Difficulty = "easy" | "medium" | "hard";
 export type ArchetypeId = MonsterArchetypeKey;
 
@@ -106,7 +106,7 @@ export type LogActionType =
   | "attack" // deal damage (Attack action)
   | "heal" // restore HP (Defend action)
   | "charge" // power attack (Charge action)
-  | "wild" // wild event (Wild action)
+  | "ultimate" // Ecliptar ultimate cast
   | "miss" // wrong answer or timeout
   | "combo" // streak milestone reached
   | "separator" // turn-start indicator

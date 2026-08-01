@@ -74,15 +74,16 @@ describe("getActionDifficultyLevel", () => {
     expect(getActionDifficultyLevel(arch, "attack")).toBe(5);
   });
 
-  it("keeps wild inside the range at both extremes of the roll", () => {
-    const random = vi.spyOn(Math, "random");
+  it("puts the ultimate at the midpoint, like a normal attack", () => {
+    expect(getActionDifficultyLevel(arch, "ultimate")).toBe(5);
+  });
 
-    random.mockReturnValue(0);
-    expect(getActionDifficultyLevel(arch, "wild")).toBe(2);
-
-    // 0.999… is the largest value Math.random can return.
-    random.mockReturnValue(0.9999999);
-    expect(getActionDifficultyLevel(arch, "wild")).toBe(8);
+  it("keeps every action inside the archetype's range", () => {
+    for (const action of ["attack", "defend", "charge", "ultimate"] as const) {
+      const level = getActionDifficultyLevel(arch, action);
+      expect(level).toBeGreaterThanOrEqual(arch.diffMin);
+      expect(level).toBeLessThanOrEqual(arch.diffMax);
+    }
   });
 
   afterEach(() => {

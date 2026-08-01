@@ -34,27 +34,27 @@ import { botAccuracy } from "./stat-mechanics";
 
 export interface BattleMemory {
   playerActionCounts: Record<Action, number>;
-  playerLastActions:  Action[];   // ring buffer of last 6 player actions
+  playerLastActions: Action[]; // ring buffer of last 6 player actions
   playerCorrectCount: number;
-  playerMissStreak:   number;     // consecutive wrong/timeout answers
-  playerTurnCount:    number;     // total player turns this battle
-  aiSuccessStreak:    number;     // AI consecutive correct-answer chain
-  turnNumber:         number;     // increments each AI turn (for late-game ramp)
+  playerMissStreak: number; // consecutive wrong/timeout answers
+  playerTurnCount: number; // total player turns this battle
+  aiSuccessStreak: number; // AI consecutive correct-answer chain
+  turnNumber: number; // increments each AI turn (for late-game ramp)
   dominantPlayerAction: Action | null;
-  patternConfidence:  number;     // 0–1: share of total turns dominated by one action
+  patternConfidence: number; // 0–1: share of total turns dominated by one action
 }
 
 export function createBattleMemory(): BattleMemory {
   return {
-    playerActionCounts:    { attack: 0, defend: 0, charge: 0, wild: 0 },
-    playerLastActions:     [],
-    playerCorrectCount:    0,
-    playerMissStreak:      0,
-    playerTurnCount:       0,
-    aiSuccessStreak:       0,
-    turnNumber:            0,
-    dominantPlayerAction:  null,
-    patternConfidence:     0,
+    playerActionCounts: { attack: 0, defend: 0, charge: 0, ultimate: 0 },
+    playerLastActions: [],
+    playerCorrectCount: 0,
+    playerMissStreak: 0,
+    playerTurnCount: 0,
+    aiSuccessStreak: 0,
+    turnNumber: 0,
+    dominantPlayerAction: null,
+    patternConfidence: 0,
   };
 }
 
@@ -79,19 +79,17 @@ export function updateBattleMemoryPlayerTurn(
   let maxCount = 0;
   let dominant: Action | null = null;
   for (const [a, c] of Object.entries(memory.playerActionCounts) as [Action, number][]) {
-    if (c > maxCount) { maxCount = c; dominant = a; }
+    if (c > maxCount) {
+      maxCount = c;
+      dominant = a;
+    }
   }
   memory.dominantPlayerAction = dominant;
-  memory.patternConfidence = memory.playerTurnCount >= 3
-    ? maxCount / memory.playerTurnCount
-    : 0;
+  memory.patternConfidence = memory.playerTurnCount >= 3 ? maxCount / memory.playerTurnCount : 0;
 }
 
 /** Called at the end of each AI turn. */
-export function updateBattleMemoryAiTurn(
-  memory: BattleMemory,
-  aiSucceeded: boolean,
-): void {
+export function updateBattleMemoryAiTurn(memory: BattleMemory, aiSucceeded: boolean): void {
   memory.turnNumber++;
   memory.aiSuccessStreak = aiSucceeded ? memory.aiSuccessStreak + 1 : 0;
 }
@@ -132,94 +130,102 @@ export interface AiPersonality {
  */
 export const AI_PERSONALITIES: Record<ArchetypeId, AiPersonality> = {
   speedster: {
-    aggressionBase:          0.60,
-    adaptRate:               0.65,
-    riskTolerance:           0.80,
-    bluffFreq:               0.10,
-    clutchFactor:            0.05,
-    counterPlaySensitivity:  0.55,
-    lateGameRamp:            false,
-    pressureStyle:           "burst",
+    aggressionBase: 0.6,
+    adaptRate: 0.65,
+    riskTolerance: 0.8,
+    bluffFreq: 0.1,
+    clutchFactor: 0.05,
+    counterPlaySensitivity: 0.55,
+    lateGameRamp: false,
+    pressureStyle: "burst",
   },
   tank: {
-    aggressionBase:          0.20,
-    adaptRate:               0.18,
-    riskTolerance:           0.22,
-    bluffFreq:               0.05,
-    clutchFactor:            0.12,
-    counterPlaySensitivity:  0.28,
-    lateGameRamp:            false,
-    pressureStyle:           "sustained",
+    aggressionBase: 0.2,
+    adaptRate: 0.18,
+    riskTolerance: 0.22,
+    bluffFreq: 0.05,
+    clutchFactor: 0.12,
+    counterPlaySensitivity: 0.28,
+    lateGameRamp: false,
+    pressureStyle: "sustained",
   },
   chud: {
-    aggressionBase:          0.92,
-    adaptRate:               0.35,
-    riskTolerance:           0.96,
-    bluffFreq:               0.04,
-    clutchFactor:            0.04,
-    counterPlaySensitivity:  0.22,
-    lateGameRamp:            false,
-    pressureStyle:           "burst",
+    aggressionBase: 0.92,
+    adaptRate: 0.35,
+    riskTolerance: 0.96,
+    bluffFreq: 0.04,
+    clutchFactor: 0.04,
+    counterPlaySensitivity: 0.22,
+    lateGameRamp: false,
+    pressureStyle: "burst",
   },
   healer: {
-    aggressionBase:          0.28,
-    adaptRate:               0.50,
-    riskTolerance:           0.18,
-    bluffFreq:               0.15,
-    clutchFactor:            0.08,
-    counterPlaySensitivity:  0.60,
-    lateGameRamp:            false,
-    pressureStyle:           "opportunistic",
+    aggressionBase: 0.28,
+    adaptRate: 0.5,
+    riskTolerance: 0.18,
+    bluffFreq: 0.15,
+    clutchFactor: 0.08,
+    counterPlaySensitivity: 0.6,
+    lateGameRamp: false,
+    pressureStyle: "opportunistic",
   },
   fulcrum: {
-    aggressionBase:          0.50,
-    adaptRate:               0.88,
-    riskTolerance:           0.60,
-    bluffFreq:               0.22,
-    clutchFactor:            0.10,
-    counterPlaySensitivity:  0.72,
-    lateGameRamp:            false,
-    pressureStyle:           "opportunistic",
+    aggressionBase: 0.5,
+    adaptRate: 0.88,
+    riskTolerance: 0.6,
+    bluffFreq: 0.22,
+    clutchFactor: 0.1,
+    counterPlaySensitivity: 0.72,
+    lateGameRamp: false,
+    pressureStyle: "opportunistic",
   },
   accelerator: {
-    aggressionBase:          0.32,
-    adaptRate:               0.58,
-    riskTolerance:           0.45,
-    bluffFreq:               0.10,
-    clutchFactor:            0.12,
-    counterPlaySensitivity:  0.48,
-    lateGameRamp:            true,
-    pressureStyle:           "sustained",
+    aggressionBase: 0.32,
+    adaptRate: 0.58,
+    riskTolerance: 0.45,
+    bluffFreq: 0.1,
+    clutchFactor: 0.12,
+    counterPlaySensitivity: 0.48,
+    lateGameRamp: true,
+    pressureStyle: "sustained",
   },
   gambler: {
-    aggressionBase:          0.50,
-    adaptRate:               0.08,
-    riskTolerance:           0.50,
-    bluffFreq:               0.42,
-    clutchFactor:            0.00,
-    counterPlaySensitivity:  0.10,
-    lateGameRamp:            false,
-    pressureStyle:           "chaos",
+    aggressionBase: 0.5,
+    adaptRate: 0.08,
+    riskTolerance: 0.5,
+    bluffFreq: 0.42,
+    clutchFactor: 0.0,
+    counterPlaySensitivity: 0.1,
+    lateGameRamp: false,
+    pressureStyle: "chaos",
   },
   god: {
-    aggressionBase:          0.68,
-    adaptRate:               0.95,
-    riskTolerance:           0.72,
-    bluffFreq:               0.28,
-    clutchFactor:            0.15,
-    counterPlaySensitivity:  0.82,
-    lateGameRamp:            false,
-    pressureStyle:           "opportunistic",
+    aggressionBase: 0.68,
+    adaptRate: 0.95,
+    riskTolerance: 0.72,
+    bluffFreq: 0.28,
+    clutchFactor: 0.15,
+    counterPlaySensitivity: 0.82,
+    lateGameRamp: false,
+    pressureStyle: "opportunistic",
   },
 };
 
 // ─── Decision Engine ──────────────────────────────────────────────────────────
 
 interface OppState {
-  hp: number; maxHp: number; focus: number; maxFocus: number; canHeal: boolean;
+  hp: number;
+  maxHp: number;
+  focus: number;
+  maxFocus: number;
+  canHeal: boolean;
+  /** Whether the ultimate charge is full — gates the `ultimate` action. */
+  ultimateReady: boolean;
 }
 interface PlayerState {
-  hp: number; maxHp: number; momentum: number;
+  hp: number;
+  maxHp: number;
+  momentum: number;
 }
 
 /**
@@ -236,21 +242,21 @@ interface PlayerState {
  * and are excluded from sampling — no phantom choices.
  */
 export function pickAiAction(
-  memory:      BattleMemory,
+  memory: BattleMemory,
   personality: AiPersonality,
-  opp:         OppState,
-  player:      PlayerState,
+  opp: OppState,
+  player: PlayerState,
 ): Action {
-  const oppHpPct    = opp.hp    / opp.maxHp;
+  const oppHpPct = opp.hp / opp.maxHp;
   const playerHpPct = player.hp / player.maxHp;
 
   // ── Gambler: mostly chaotic, occasionally drops into smart-play mode ──────
   if (personality.pressureStyle === "chaos") {
     if (Math.random() > 0.14) {
-      const pool: Action[] = ["attack", "attack", "wild", "wild", "charge", "defend"];
-      const available = pool.filter(a => {
+      const pool: Action[] = ["attack", "attack", "ultimate", "charge", "charge", "defend"];
+      const available = pool.filter((a) => {
         if (a === "charge") return opp.focus >= 25;
-        if (a === "wild")   return opp.focus >= 15;
+        if (a === "ultimate") return opp.ultimateReady;
         if (a === "defend") return opp.canHeal;
         return true;
       });
@@ -260,29 +266,28 @@ export function pickAiAction(
   }
 
   // ── Late-game ramp (Accelerator only) ────────────────────────────────────
-  const aggressionRamp = personality.lateGameRamp
-    ? Math.min(memory.turnNumber * 0.055, 0.43)
-    : 0;
+  const aggressionRamp = personality.lateGameRamp ? Math.min(memory.turnNumber * 0.055, 0.43) : 0;
   const eff = Math.min(0.96, personality.aggressionBase + aggressionRamp);
 
   // ── Base weights ─────────────────────────────────────────────────────────
-  // Charge and wild are 0 when unaffordable — they will be excluded.
+  // Charge is 0 when unaffordable and the ultimate 0 until charged —
+  // both are then excluded from the weighted draw.
   const w: Record<Action, number> = {
     attack: 3.0,
     defend: opp.canHeal ? 1.5 : 0,
     charge: opp.focus >= 25 ? 2.0 : 0,
-    wild:   opp.focus >= 15 ? 0.5 : 0,
+    ultimate: opp.ultimateReady ? 0.9 : 0,
   };
 
   // ── Personality: aggression lifts charge, dampens defend ─────────────────
-  w.charge *= 0.40 + eff * 2.20;
-  w.defend *= 2.00 - eff * 1.60;
-  w.attack *= 0.80 + eff * 0.40;
-  w.wild   *= 0.60 + eff * 0.80;
+  w.charge *= 0.4 + eff * 2.2;
+  w.defend *= 2.0 - eff * 1.6;
+  w.attack *= 0.8 + eff * 0.4;
+  w.ultimate *= 0.6 + eff * 0.8;
 
   // ── Situational: AI HP ───────────────────────────────────────────────────
   if (oppHpPct < 0.28) {
-    if (personality.riskTolerance >= 0.70) {
+    if (personality.riskTolerance >= 0.7) {
       // Aggressive identity: all-in, do or die
       w.charge *= 2.8;
       w.defend *= 0.12;
@@ -291,7 +296,7 @@ export function pickAiAction(
       w.defend *= 3.8;
       w.charge *= 0.28;
     }
-  } else if (oppHpPct < 0.50 && !personality.lateGameRamp) {
+  } else if (oppHpPct < 0.5 && !personality.lateGameRamp) {
     const conserve = 1.5 + (1 - personality.riskTolerance) * 1.5;
     w.defend *= conserve;
   }
@@ -302,20 +307,20 @@ export function pickAiAction(
     w.defend *= 0.32;
     w.attack *= 1.35;
   } else if (playerHpPct < 0.55) {
-    w.charge *= 1.40;
+    w.charge *= 1.4;
     w.attack *= 1.15;
   }
 
   // ── Situational: player momentum — hot streaks demand a response ──────────
   if (player.momentum >= 4) {
-    if (personality.riskTolerance >= 0.60) {
+    if (personality.riskTolerance >= 0.6) {
       // Counter-aggress: charge to interrupt their flow
       w.charge *= 1.75;
       w.defend *= 0.38;
     } else {
       // Absorb: defend and wait for them to miss
-      w.defend *= 2.10;
-      w.attack *= 0.70;
+      w.defend *= 2.1;
+      w.attack *= 0.7;
     }
   } else if (player.momentum >= 2) {
     w.charge *= 1.22;
@@ -323,7 +328,7 @@ export function pickAiAction(
 
   // ── Adaptive: pattern counter ─────────────────────────────────────────────
   // Only engages once there's enough data and a clear dominant pattern.
-  const hasData       = memory.playerTurnCount >= 4;
+  const hasData = memory.playerTurnCount >= 4;
   const strongPattern = memory.patternConfidence >= personality.counterPlaySensitivity;
 
   if (hasData && strongPattern && Math.random() < personality.adaptRate) {
@@ -331,7 +336,7 @@ export function pickAiAction(
       case "attack":
         // Player stacks focus via attacks — charge before they cash out with a Charge
         w.charge *= 1.95;
-        w.attack *= 0.60;
+        w.attack *= 0.6;
         break;
       case "defend":
         // Player stalls, heals, builds HP — break through with charge
@@ -341,13 +346,13 @@ export function pickAiAction(
       case "charge":
         // Player is all-in — if cautious archetype, outlast them
         if (personality.riskTolerance < 0.65) {
-          w.defend *= 1.90;
-          w.charge *= 0.70;
+          w.defend *= 1.9;
+          w.charge *= 0.7;
         }
         break;
-      case "wild":
+      case "ultimate":
         // Player plays chaos — mirror chaos or ignore, depending on personality
-        if (personality.adaptRate > 0.6) w.wild *= 1.5;
+        if (personality.adaptRate > 0.6) w.ultimate *= 1.5;
         break;
     }
   }
@@ -356,7 +361,7 @@ export function pickAiAction(
   if (memory.playerMissStreak >= 2) {
     const pressMult = 1.0 + Math.min(memory.playerMissStreak, 4) * 0.22 * personality.adaptRate;
     w.charge *= pressMult;
-    w.wild   *= pressMult * 0.60;
+    w.ultimate *= pressMult * 1.1;
   }
 
   // ── Adaptive: AI success streak — confidence building ───────────────────
@@ -376,7 +381,7 @@ export function pickAiAction(
       // False retreat: appear passive, conserve focus for a surprise Charge next turn
       w.defend *= 5.5;
       w.charge *= 0.06;
-    } else if (roll < 0.80 && w.charge > 0) {
+    } else if (roll < 0.8 && w.charge > 0) {
       // Reckless surge: commits to charge at a suboptimal moment
       w.charge *= 5.0;
       w.defend *= 0.06;
@@ -412,10 +417,10 @@ export function pickAiAction(
  *   Anti-frustration — caps accuracy if player is already critically low
  */
 export function computeAiAccuracy(
-  arch:        Archetype,
+  arch: Archetype,
   personality: AiPersonality,
-  memory:      BattleMemory,
-  oppHpPct:    number,
+  memory: BattleMemory,
+  oppHpPct: number,
   playerHpPct: number,
 ): number {
   const base = botAccuracy(arch);
@@ -423,7 +428,7 @@ export function computeAiAccuracy(
 
   // Clutch factor
   if (oppHpPct < 0.35) acc += personality.clutchFactor;
-  else if (oppHpPct < 0.55) acc += personality.clutchFactor * 0.40;
+  else if (oppHpPct < 0.55) acc += personality.clutchFactor * 0.4;
 
   // AI momentum chain bonus
   if (memory.aiSuccessStreak > 0) {
@@ -456,20 +461,17 @@ export function computeAiAccuracy(
  * They don't reveal hidden AI state; they narrate observable situations.
  */
 export function getPressureLogLine(
-  memory:             BattleMemory,
-  personality:        AiPersonality,
-  oppName:            string,
-  oppHpPct:           number,
-  wasPatternCounter:  boolean,
+  memory: BattleMemory,
+  personality: AiPersonality,
+  oppName: string,
+  oppHpPct: number,
+  wasPatternCounter: boolean,
 ): string | null {
-  if (Math.random() > 0.52) return null;   // usually silent
+  if (Math.random() > 0.52) return null; // usually silent
 
   // Clutch situation
   if (oppHpPct < 0.35 && personality.clutchFactor >= 0.08 && Math.random() < 0.72) {
-    const msgs = [
-      `${oppName} finds a second wind.`,
-      `${oppName} digs deep — danger zone.`,
-    ];
+    const msgs = [`${oppName} finds a second wind.`, `${oppName} digs deep — danger zone.`];
     return msgs[Math.floor(Math.random() * msgs.length)];
   }
 
@@ -484,10 +486,7 @@ export function getPressureLogLine(
 
   // Player on a bad miss streak
   if (memory.playerMissStreak >= 3 && Math.random() < 0.72) {
-    const msgs = [
-      `${oppName} senses weakness — pressing hard.`,
-      `${oppName} smells blood.`,
-    ];
+    const msgs = [`${oppName} senses weakness — pressing hard.`, `${oppName} smells blood.`];
     return msgs[Math.floor(Math.random() * msgs.length)];
   }
 

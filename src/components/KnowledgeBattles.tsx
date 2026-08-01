@@ -54,6 +54,21 @@ import type {
 } from "./battles/types";
 import { generateQuestion } from "./battles/questions";
 import {
+  tickEffects,
+  consumeUse,
+  totalOf,
+  has as hasEffect,
+  isHarmful,
+  type ActiveEffect,
+} from "./battles/effects";
+import { getUltimate, type Ultimate } from "./battles/ultimates";
+import {
+  resolveUltimate,
+  damageWithEffects,
+  defendWithEffects,
+  type SideState,
+} from "./battles/resolve-ultimate";
+import {
   levelToCategory,
   getActionDifficultyLevel,
   getQuestionTime,
@@ -66,7 +81,7 @@ import {
   rollCopiedPassive,
   rollMissPenalty,
 } from "./battles/stat-mechanics";
-import { DAMAGE_TUNING } from "@/config/battle-tuning";
+import { DAMAGE_TUNING, ULTIMATE_TUNING } from "@/config/battle-tuning";
 import {
   createBattleMemory,
   updateBattleMemoryPlayerTurn,
@@ -111,16 +126,22 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
 }
 
 // ─── Action Config ───────────────────────────────────────────────────
-// Focus economy: Attack & Defend BUILD focus, Charge & Wild SPEND it.
-// This gives Attack a real role (cheap, fast focus build) and makes Charge
-// a payoff move that requires setup rather than a strictly-better Attack.
-const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, wild: 0 };
+// Focus economy: Attack & Defend BUILD focus, Charge SPENDS it. Ultimate is
+// deliberately outside that economy — it spends its own charge meter, earned
+// only by answering correctly — so the two payoff moves never compete for the
+// same resource and Charge keeps its role as the tempo play.
+const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, ultimate: 0 };
 
 const ACTIONS: Record<Action, ActionConfig> = {
   attack: { label: "Attack", icon: Swords, focusCost: 0, desc: "Your base DMG · +15 Focus" },
   defend: { label: "Heal", icon: Heart, focusCost: 0, desc: "Restore HP · +10 Focus" },
   charge: { label: "Charge", icon: Zap, focusCost: 25, desc: "1.8× your DMG · −25 Focus" },
-  wild: { label: "Wild", icon: Dices, focusCost: 15, desc: "Chaos effect · −15 Focus" },
+  ultimate: {
+    label: "Ultimate",
+    icon: Sparkles,
+    focusCost: 0,
+    desc: "Your Ecliptar's signature move",
+  },
 };
 
 /**
@@ -171,7 +192,12 @@ function displayDamage(arch: Archetype, correctCount: number): string {
   return `${arch.baseDamage} DMG`;
 }
 
-function getActionDesc(action: Action, arch: Archetype, correctCount: number): string {
+function getActionDesc(
+  action: Action,
+  arch: Archetype,
+  correctCount: number,
+  ultimate?: Ultimate | null,
+): string {
   const tag = (m: Record<string, string>) => (m[arch.id] ? ` · ${m[arch.id]}` : "");
   switch (action) {
     case "attack":
@@ -187,8 +213,8 @@ function getActionDesc(action: Action, arch: Archetype, correctCount: number): s
       );
       return `${scaled}${tag(CHARGE_TAG)}`;
     }
-    case "wild":
-      return "Chaos effect";
+    case "ultimate":
+      return ultimate ? ultimate.tag : "No Ecliptar equipped";
   }
 }
 
@@ -215,7 +241,9 @@ interface ChatItem {
 
 interface LiveTurnActionRow {
   actor_id: string;
-  action: Action;
+  /** `PvpActionName`, not `Action`: rows written before Ultimate replaced Wild
+   *  still carry "wild", so reads must tolerate it. */
+  action: Action | "wild";
   correct: boolean;
   damage: number;
   self_damage: number;
@@ -445,11 +473,13 @@ function FighterCard({
   showHit,
   showHeal,
   canCharge = false,
+  effects = [],
 }: {
   fighter: Fighter;
   side: "left" | "right";
   momentum: number;
   archetype?: ArchetypeId;
+  effects?: ActiveEffect[];
   showHit: boolean;
   showHeal: boolean;
   canCharge?: boolean;
@@ -612,6 +642,7 @@ function FighterCard({
             canCharge={canCharge && side === "left"}
           />
         </div>
+        <EffectChips effects={effects} side={side} />
       </div>
       <AnimatePresence>
         {momentum > 0 && momentum % comboThreshold === 0 && (
@@ -775,7 +806,7 @@ function BattleLog({ logs }: { logs: LogEntry[] }) {
     if (e.actor === "player") {
       if (e.actionType === "miss") return "text-neon-pink/80";
       if (e.actionType === "heal") return "text-neon-cyan";
-      if (e.actionType === "wild") return "text-neon-purple";
+      if (e.actionType === "ultimate") return "text-neon-purple";
       return "text-foreground";
     }
     // opponent
@@ -825,54 +856,70 @@ function BattleLog({ logs }: { logs: LogEntry[] }) {
 }
 
 // ─── Wild Event Overlay ───────────────────────────────────────────────
-// Each Wild outcome has a distinct visual identity so the event reads as a
-// force of nature, not a plain attack. Three event types, three color lanes.
-type WildEventType = "chaos" | "mend" | "surge";
-const WILD_CONFIGS: Record<
-  WildEventType,
-  { headline: string; color: string; border: string; bg: string }
-> = {
-  chaos: {
-    headline: "CHAOS STRIKE",
-    color: "text-tier-gold",
-    border: "border-tier-gold/50",
-    bg: "bg-tier-gold/10",
-  },
-  mend: {
-    headline: "WILD MEND",
-    color: "text-neon-cyan",
-    border: "border-neon-cyan/50",
-    bg: "bg-neon-cyan/10",
-  },
-  surge: {
-    headline: "ARCANE SURGE",
-    color: "text-neon-purple",
-    border: "border-neon-purple/50",
-    bg: "bg-neon-purple/10",
-  },
-};
-
-function WildEventOverlay({ event }: { event: { type: WildEventType; sub: string } }) {
-  const cfg = WILD_CONFIGS[event.type];
+// An ultimate is the loudest thing that happens in a battle, so the cast gets
+// its own overlay: the move's name, who cast it, and any random branches it
+// rolled (the Gambler ultimates lean on this to show what the dice gave).
+function UltimateCastOverlay({
+  cast,
+}: {
+  cast: { name: string; caster: "player" | "opponent"; rolls: string[] };
+}) {
+  const mine = cast.caster === "player";
+  const color = mine ? "text-neon-purple" : "text-neon-pink";
+  const border = mine ? "border-neon-purple/60" : "border-neon-pink/60";
+  const bg = mine ? "bg-neon-purple/10" : "bg-neon-pink/10";
   return (
     <motion.div
       className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: [0, 1, 1, 0] }}
-      transition={{ duration: 1.3, times: [0, 0.08, 0.72, 1] }}
+      transition={{ duration: 1.8, times: [0, 0.06, 0.78, 1] }}
     >
       <motion.div
-        className={`px-10 py-6 border-2 ${cfg.border} ${cfg.bg} text-center backdrop-blur-sm`}
+        className={`px-10 py-6 border-2 ${border} ${bg} text-center backdrop-blur-sm max-w-[90%]`}
         initial={{ scale: 0.55, y: 24 }}
         animate={{ scale: [0.55, 1.12, 1], y: [24, -4, 0] }}
         transition={{ duration: 0.38, ease: "easeOut" }}
       >
-        <p className={`text-2xl font-bold font-display tracking-widest ${cfg.color}`}>
-          {cfg.headline}
+        <p className={`text-[10px] font-bold tracking-[0.3em] ${color} opacity-70`}>
+          {mine ? "ULTIMATE" : "ENEMY ULTIMATE"}
         </p>
-        <p className={`text-sm font-bold mt-1.5 ${cfg.color} opacity-75`}>{event.sub}</p>
+        <p className={`text-2xl font-bold font-display tracking-widest ${color} mt-1`}>
+          {cast.name.toUpperCase()}
+        </p>
+        {cast.rolls.length > 0 && (
+          <p className={`text-xs font-bold mt-2 ${color} opacity-80 tracking-wider`}>
+            {cast.rolls.join("  ·  ")}
+          </p>
+        )}
       </motion.div>
     </motion.div>
+  );
+}
+
+/** Active status effects as compact chips under a fighter's bars. */
+function EffectChips({ effects, side }: { effects: ActiveEffect[]; side: "left" | "right" }) {
+  if (effects.length === 0) return null;
+  return (
+    <div className={`mt-1.5 flex flex-wrap gap-1 ${side === "right" ? "justify-end" : ""}`}>
+      <AnimatePresence>
+        {effects.map((e) => (
+          <motion.span
+            key={`${e.kind}-${e.label}`}
+            className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-widest tabular-nums ${
+              isHarmful(e.kind)
+                ? "border-neon-pink/50 text-neon-pink bg-neon-pink/5"
+                : "border-neon-cyan/50 text-neon-cyan bg-neon-cyan/5"
+            }`}
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.7 }}
+          >
+            {e.label}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -1369,6 +1416,46 @@ function BattleArena() {
   const [showPlayerHeal, setShowPlayerHeal] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [records, setRecords] = useState<QuestionRecord[]>([]);
+  // ── Ultimate & status-effect state ──────────────────────────────────
+  // Charge is a 0–1 meter filled by correct answers; effects are the flat,
+  // serialisable status lists from battles/effects.ts. Each has a ref twin
+  // because the async turn callbacks (bot, ghost, PvP resolution) read them
+  // outside React's render cycle.
+  const [ultimateCharge, setUltimateCharge] = useState(0);
+  const [opponentCharge, setOpponentCharge] = useState(0);
+  const [playerEffects, setPlayerEffects] = useState<ActiveEffect[]>([]);
+  const [opponentEffects, setOpponentEffects] = useState<ActiveEffect[]>([]);
+  const [ultimateCast, setUltimateCast] = useState<{
+    name: string;
+    caster: "player" | "opponent";
+    rolls: string[];
+  } | null>(null);
+  /** Equipped Ecliptar slug and remaining cooldown, as state so the UI reacts. */
+  const [ecliptarSlug, setEcliptarSlug] = useState<string | null>(null);
+  const [ultimateCooldown, setUltimateCooldown] = useState(0);
+  const ultimateChargeRef = useRef(0);
+  const opponentChargeRef = useRef(0);
+  const playerEffectsRef = useRef<ActiveEffect[]>([]);
+  const opponentEffectsRef = useRef<ActiveEffect[]>([]);
+  const playerBonusDamageRef = useRef(0);
+  const opponentBonusDamageRef = useRef(0);
+  const ultimateCooldownRef = useRef(0);
+  const opponentCooldownRef = useRef(0);
+  /** Seconds to add to the player's next clock, set by an opponent ultimate. */
+  const pendingTimerDeltaRef = useRef(0);
+  /** Correr: pins the next clock and pays out for unused seconds. */
+  const nextTimerOverrideRef = useRef<{ seconds: number; damagePerUnusedSecond: number } | null>(
+    null,
+  );
+  /** Set when an ultimate grants an immediate second turn. */
+  const extraTurnRef = useRef(false);
+  /** Player HP at the start of each past turn, most recent first (Temporobys). */
+  const hpHistoryRef = useRef<number[]>([]);
+  /** The bot's Ecliptar, so it casts a real ultimate from its own archetype. */
+  const opponentEcliptarRef = useRef<string | null>(null);
+  /** The player's equipped Ecliptar slug — keys their ultimate. */
+  const ecliptarRef = useRef<string | null>(null);
+  const momentumRef = useRef(0);
   // Correct answers banked this match — drives the Accelerator ramp and God's
   // every-third-answer heal, both of which count answers, not turns.
   const [correctCount, setCorrectCount] = useState(0);
@@ -1379,7 +1466,6 @@ function BattleArena() {
   const [fastestAnswer, setFastestAnswer] = useState(Infinity);
   const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const [gamblerStats, setGamblerStats] = useState<GamblerRoll | null>(null);
-  const [wildEvent, setWildEvent] = useState<{ type: WildEventType; sub: string } | null>(null);
   // Impact/event layer: combo bursts, battle-start stinger, KO banner
   const [comboBurst, setComboBurst] = useState<{ id: number; combo: number; mult: number } | null>(
     null,
@@ -1589,6 +1675,56 @@ function BattleArena() {
     copiedPassiveRef.current = copiedPassive;
   }, [copiedPassive]);
   useEffect(() => {
+    ultimateChargeRef.current = ultimateCharge;
+  }, [ultimateCharge]);
+  useEffect(() => {
+    opponentChargeRef.current = opponentCharge;
+  }, [opponentCharge]);
+  useEffect(() => {
+    playerEffectsRef.current = playerEffects;
+  }, [playerEffects]);
+  useEffect(() => {
+    opponentEffectsRef.current = opponentEffects;
+  }, [opponentEffects]);
+  useEffect(() => {
+    momentumRef.current = momentum;
+  }, [momentum]);
+  useEffect(() => {
+    ecliptarRef.current = ecliptarSlug;
+  }, [ecliptarSlug]);
+
+  /** Clear every ultimate and status-effect field at the start of a battle. */
+  const resetUltimateState = useCallback(() => {
+    ultimateChargeRef.current = 0;
+    setUltimateCharge(0);
+    opponentChargeRef.current = 0;
+    setOpponentCharge(0);
+    playerEffectsRef.current = [];
+    setPlayerEffects([]);
+    opponentEffectsRef.current = [];
+    setOpponentEffects([]);
+    playerBonusDamageRef.current = 0;
+    opponentBonusDamageRef.current = 0;
+    ultimateCooldownRef.current = 0;
+    setUltimateCooldown(0);
+    opponentCooldownRef.current = 0;
+    pendingTimerDeltaRef.current = 0;
+    nextTimerOverrideRef.current = null;
+    extraTurnRef.current = false;
+    hpHistoryRef.current = [];
+    setUltimateCast(null);
+  }, []);
+
+  /** Single writer for the player's cooldown, keeping ref and state in step. */
+  const setPlayerCooldown = useCallback((turns: number) => {
+    ultimateCooldownRef.current = turns;
+    setUltimateCooldown(turns);
+  }, []);
+
+  /** The equipped Ecliptar's ultimate, and whether it can be cast right now. */
+  const playerUltimate = getUltimate(ecliptarSlug);
+  const ultimateReady = Boolean(playerUltimate) && ultimateCharge >= 1 && ultimateCooldown <= 0;
+  useEffect(() => {
     longestStreakRef.current = longestStreak;
   }, [longestStreak]);
   useEffect(() => {
@@ -1706,8 +1842,8 @@ function BattleArena() {
         setShowOpponentHit(true);
         addLog({
           actor: "player",
-          actionType: mine.action as LogActionType,
-          result: `${ACTIONS[mine.action].label}: ${mine.damage} DMG.`,
+          actionType: mine.action === "wild" ? "info" : (mine.action as LogActionType),
+          result: `${mine.action === "wild" ? "Wild" : ACTIONS[mine.action].label}: ${mine.damage} DMG.`,
           value: mine.damage,
         });
       }
@@ -1826,6 +1962,176 @@ function BattleArena() {
     });
   }
 
+  /** Snapshot one side in the shape resolve-ultimate.ts expects. */
+  const snapshotSide = useCallback(
+    (who: "player" | "opponent"): SideState => {
+      const f = who === "player" ? playerRef.current : opponentRef.current;
+      const arch = getArch(who === "player" ? archetypeRef.current : opponentArchetype);
+      return {
+        arch,
+        hp: f.hp,
+        maxHp: f.maxHp,
+        shield: f.shield ?? 0,
+        effects: who === "player" ? playerEffectsRef.current : opponentEffectsRef.current,
+        bonusDamage:
+          who === "player" ? playerBonusDamageRef.current : opponentBonusDamageRef.current,
+        scoreMult:
+          who === "player"
+            ? getScoreMultiplier(
+                arch,
+                momentumRef.current,
+                correctCountRef.current,
+                copiedPassiveRef.current,
+              )
+            : 1 + totalOf(opponentEffectsRef.current, "scoreMult"),
+      };
+    },
+    [getArch, opponentArchetype],
+  );
+
+  /**
+   * Cast an ultimate and commit its outcome to battle state.
+   *
+   * Everything the ops produced — HP, shields, effects, timers, permanent
+   * damage, charge refunds — is written here so the player, bot and PvP paths
+   * share one commit point rather than each re-deriving the rules.
+   */
+  const castUltimate = useCallback(
+    (ult: Ultimate, caster: "player" | "opponent"): { extraTurn: boolean } => {
+      const casterSide = snapshotSide(caster);
+      const targetSide = snapshotSide(caster === "player" ? "opponent" : "player");
+
+      const outcome = resolveUltimate(ult, {
+        caster: casterSide,
+        target: targetSide,
+        correctCount: correctCountRef.current,
+        hpHistory: caster === "player" ? hpHistoryRef.current : [],
+      });
+
+      const isPlayer = caster === "player";
+      const casterIsPlayerSide = isPlayer ? outcome.caster : outcome.target;
+      const oppSideOut = isPlayer ? outcome.target : outcome.caster;
+
+      // Player fighter + effects
+      setPlayer((prev) => ({
+        ...prev,
+        hp: Math.max(0, Math.min(prev.maxHp, casterIsPlayerSide.hp)),
+        shield: casterIsPlayerSide.shield,
+      }));
+      playerEffectsRef.current = casterIsPlayerSide.effects;
+      setPlayerEffects(casterIsPlayerSide.effects);
+      playerBonusDamageRef.current = casterIsPlayerSide.bonusDamage;
+
+      // Opponent fighter + effects
+      setOpponent((prev) => ({
+        ...prev,
+        hp: Math.max(0, Math.min(prev.maxHp, oppSideOut.hp)),
+        shield: oppSideOut.shield,
+      }));
+      opponentEffectsRef.current = oppSideOut.effects;
+      setOpponentEffects(oppSideOut.effects);
+      opponentBonusDamageRef.current = oppSideOut.bonusDamage;
+
+      // Timers: a delta aimed at "opponent" lands on whoever is not the caster,
+      // and only the player's clock is ours to change.
+      const playerTimerDelta = isPlayer ? outcome.timerDelta.self : outcome.timerDelta.opponent;
+      if (playerTimerDelta !== 0) pendingTimerDeltaRef.current += playerTimerDelta;
+      if (isPlayer && outcome.nextTimerOverride) {
+        nextTimerOverrideRef.current = outcome.nextTimerOverride;
+      }
+
+      // Charge: spend it, then honour any refund the ultimate rolled.
+      // Casting resets to the configured floor, then any refund is added — the
+      // level before the cast plays no part, so nothing is passed in.
+      const chargeAfterCast = Math.max(
+        0,
+        Math.min(1, ULTIMATE_TUNING.chargeAfterCast + outcome.chargeRefund),
+      );
+      if (isPlayer) {
+        const next = chargeAfterCast;
+        ultimateChargeRef.current = next;
+        setUltimateCharge(next);
+        setPlayerCooldown(outcome.resetCooldowns ? 0 : ULTIMATE_TUNING.cooldownTurns);
+      } else {
+        const next = chargeAfterCast;
+        opponentChargeRef.current = next;
+        setOpponentCharge(next);
+        opponentCooldownRef.current = outcome.resetCooldowns ? 0 : ULTIMATE_TUNING.cooldownTurns;
+      }
+
+      if (outcome.damageDealt > 0) {
+        if (isPlayer) setShowOpponentHit(true);
+        else setShowPlayerHit(true);
+      }
+      if (outcome.healed > 0 && isPlayer) setShowPlayerHeal(true);
+      if (outcome.selfDamage > 0) {
+        if (isPlayer) setShowPlayerHit(true);
+        else setShowOpponentHit(true);
+      }
+
+      setUltimateCast({ name: ult.name, caster, rolls: outcome.rolls });
+      setTimeout(() => setUltimateCast(null), 1800);
+      sfxWild();
+
+      const rollNote = outcome.rolls.length > 0 ? ` [${outcome.rolls.join(" · ")}]` : "";
+      addLog({
+        actor: isPlayer ? "player" : "opponent",
+        actionType: "ultimate",
+        result: `${isPlayer ? "" : `${opponentRef.current.name} `}ULTIMATE — ${ult.name}!${rollNote} ${outcome.notes.join(" ")}`,
+        value: outcome.damageDealt,
+      });
+
+      return { extraTurn: outcome.extraTurn };
+    },
+    [addLog, snapshotSide, setPlayerCooldown],
+  );
+
+  /**
+   * Run one side's turn-start effect tick: poison, regen and freeze expiry.
+   * Returns whether the tick froze the turn, so callers can skip the action.
+   */
+  const runEffectTick = useCallback(
+    (who: "player" | "opponent"): { frozen: boolean; died: boolean } => {
+      const isPlayer = who === "player";
+      const current = isPlayer ? playerEffectsRef.current : opponentEffectsRef.current;
+      if (current.length === 0) return { frozen: false, died: false };
+
+      const tick = tickEffects(current);
+      const fighter = isPlayer ? playerRef.current : opponentRef.current;
+      const canHeal =
+        getArch(isPlayer ? archetypeRef.current : opponentArchetype).healAmount !== null;
+      const healBlocked = hasEffect(current, "healBlock") || !canHeal;
+
+      let hp = fighter.hp - tick.poisonDamage;
+      if (!healBlocked) hp = Math.min(fighter.maxHp, hp + tick.regenHeal);
+      hp = Math.max(0, hp);
+
+      if (isPlayer) {
+        playerEffectsRef.current = tick.effects;
+        setPlayerEffects(tick.effects);
+        setPlayer((prev) => ({ ...prev, hp }));
+        if (tick.poisonDamage > 0) setShowPlayerHit(true);
+        if (tick.regenHeal > 0 && !healBlocked) setShowPlayerHeal(true);
+      } else {
+        opponentEffectsRef.current = tick.effects;
+        setOpponentEffects(tick.effects);
+        setOpponent((prev) => ({ ...prev, hp }));
+        if (tick.poisonDamage > 0) setShowOpponentHit(true);
+      }
+
+      for (const note of tick.notes) {
+        addLog({
+          actor: isPlayer ? "player" : "opponent",
+          actionType: tick.poisonDamage > 0 ? "miss" : "heal",
+          result: `${isPlayer ? "You" : opponentRef.current.name}: ${note}`,
+        });
+      }
+
+      return { frozen: tick.frozen, died: hp <= 0 };
+    },
+    [addLog, getArch, opponentArchetype],
+  );
+
   useEffect(() => {
     if (phase === "question" && timeLeft > 0) {
       timerRef.current = setInterval(() => {
@@ -1877,6 +2183,20 @@ function BattleArena() {
         correctCountRef.current = priorCorrect + 1;
         setCorrectCount(priorCorrect + 1);
       }
+
+      // Ultimate charge is earned only by answering correctly, and never while
+      // the ultimate being cast is the action itself.
+      if (correct && currentAction !== "ultimate") {
+        const nextCharge = Math.min(
+          1,
+          ultimateChargeRef.current + ULTIMATE_TUNING.chargePerCorrectAnswer,
+        );
+        ultimateChargeRef.current = nextCharge;
+        setUltimateCharge(nextCharge);
+      }
+      if (ultimateCooldownRef.current > 0) setPlayerCooldown(ultimateCooldownRef.current - 1);
+      // Keep a short HP trail so Infinite Cycle has a past to rewind to.
+      hpHistoryRef.current = [playerRef.current.hp, ...hpHistoryRef.current].slice(0, 6);
       const scoreMult = getScoreMultiplier(arch, momentum, priorCorrect, copied);
 
       if (opponentTypeRef.current === "live") {
@@ -1889,7 +2209,7 @@ function BattleArena() {
         let damage = 0;
         let selfDamage = 0;
         let heal = 0;
-        let focusDelta = correct ? FOCUS_GAIN[currentAction] : 0;
+        const focusDelta = correct ? FOCUS_GAIN[currentAction] : 0;
 
         if (correct) {
           sfxStreak(nextMom);
@@ -1908,27 +2228,38 @@ function BattleArena() {
               arch.healAmount === null
                 ? 0
                 : Math.min(arch.healAmount, playerRef.current.maxHp - playerRef.current.hp);
-          } else if (currentAction === "wild") {
-            sfxWild();
-            const roll = Math.random();
-            if (roll < 0.333)
-              damage = applyDefense(Math.floor(Math.random() * 30) + 10, oppArchNow);
-            else if (roll < 0.667)
-              heal = Math.min(20, playerRef.current.maxHp - playerRef.current.hp);
-            else {
-              damage = applyDefense(20, oppArchNow);
-              focusDelta += 20;
+          } else if (currentAction === "ultimate") {
+            // The ultimate resolves locally and writes HP/effects itself; the
+            // damage and heal it reports go on the wire so the opponent's client
+            // mirrors the same numbers.
+            const ult = getUltimate(ecliptarRef.current);
+            if (ult) {
+              const before = opponentRef.current.hp;
+              const beforeSelf = playerRef.current.hp;
+              const { extraTurn } = castUltimate(ult, "player");
+              damage = Math.max(0, before - opponentRef.current.hp);
+              heal = Math.max(0, playerRef.current.hp - beforeSelf);
+              if (extraTurn) extraTurnRef.current = true;
             }
           } else {
-            const hit = getEffectiveDamage(arch, {
-              action: currentAction,
-              timeSpent,
-              maxTime,
-              correctCount: priorCorrect,
-              currentHp: playerRef.current.hp,
-              copied,
-            });
-            damage = applyDefense(hit.damage, oppArchNow);
+            const hit = damageWithEffects(
+              arch,
+              playerEffectsRef.current,
+              playerBonusDamageRef.current,
+              {
+                action: currentAction,
+                timeSpent,
+                maxTime,
+                correctCount: priorCorrect,
+                currentHp: playerRef.current.hp,
+                copied,
+              },
+            );
+            damage = defendWithEffects(hit.damage, oppArchNow, opponentEffectsRef.current);
+            for (const kind of hit.consumed) {
+              playerEffectsRef.current = consumeUse(playerEffectsRef.current, kind);
+            }
+            setPlayerEffects(playerEffectsRef.current);
           }
           // God's every-third-answer restore rides on top of whatever was
           // chosen, clamped so the reported heal never overshoots the HP bar.
@@ -2070,55 +2401,53 @@ function BattleArena() {
               value: gain,
             });
           }
-        } else if (currentAction === "wild") {
-          // Three distinct event types — each with unique visual/audio identity
-          sfxWild();
-          const roll = Math.random();
-          if (roll < 0.333) {
-            const d = applyDefense(Math.floor(Math.random() * 30) + 10, oppArchNow);
-            setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
-            setShowOpponentHit(true);
-            setWildEvent({ type: "chaos", sub: `${d} DMG` });
-            addLog({
-              actor: "player",
-              actionType: "wild",
-              result: `CHAOS STRIKE: ${d} DMG!`,
-              value: d,
-            });
-          } else if (roll < 0.667) {
-            setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 20) }));
-            setShowPlayerHeal(true);
-            setWildEvent({ type: "mend", sub: "+20 HP" });
-            addLog({
-              actor: "player",
-              actionType: "wild",
-              result: `WILD MEND: +20 HP!`,
-              value: 20,
-            });
+        } else if (currentAction === "ultimate") {
+          // The whole effect is data-driven; castUltimate commits HP, shields,
+          // effects, timers and charge, and tells us if it granted a free turn.
+          const ult = getUltimate(ecliptarRef.current);
+          if (ult) {
+            const { extraTurn } = castUltimate(ult, "player");
+            if (extraTurn) extraTurnRef.current = true;
           } else {
-            const d = applyDefense(20, oppArchNow);
-            setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - d) }));
-            setShowOpponentHit(true);
-            setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + 20) }));
-            setWildEvent({ type: "surge", sub: `${d} DMG + Focus` });
             addLog({
-              actor: "player",
-              actionType: "wild",
-              result: `ARCANE SURGE: ${d} DMG + Focus!`,
-              value: d,
+              actor: "system",
+              actionType: "info",
+              result: `No Ecliptar equipped — the ultimate fizzles.`,
             });
           }
-          setTimeout(() => setWildEvent(null), 1400);
         } else {
-          const hit = getEffectiveDamage(arch, {
-            action: currentAction,
-            timeSpent,
-            maxTime,
-            correctCount: priorCorrect,
-            currentHp: playerRef.current.hp,
-            copied,
-          });
-          const dmg = applyDefense(hit.damage, oppArchNow);
+          const hit = damageWithEffects(
+            arch,
+            playerEffectsRef.current,
+            playerBonusDamageRef.current,
+            {
+              action: currentAction,
+              timeSpent,
+              maxTime,
+              correctCount: priorCorrect,
+              currentHp: playerRef.current.hp,
+              copied,
+            },
+          );
+          for (const kind of hit.consumed) {
+            playerEffectsRef.current = consumeUse(playerEffectsRef.current, kind);
+          }
+          setPlayerEffects(playerEffectsRef.current);
+          // Velocity Break: the pinned clock pays out for every unused second.
+          let bonus = 0;
+          if (nextTimerOverrideRef.current) {
+            const unused = Math.max(0, maxTime - Math.ceil(timeSpent));
+            bonus = unused * nextTimerOverrideRef.current.damagePerUnusedSecond;
+            nextTimerOverrideRef.current = null;
+            if (bonus > 0) {
+              addLog({
+                actor: "player",
+                actionType: "info",
+                result: `Velocity Break: ${unused}s unused → +${bonus} damage.`,
+              });
+            }
+          }
+          const dmg = defendWithEffects(hit.damage + bonus, oppArchNow, opponentEffectsRef.current);
           setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
           const focusGain = FOCUS_GAIN[currentAction];
           if (focusGain > 0) {
@@ -2190,6 +2519,11 @@ function BattleArena() {
           finishBattle(true);
         } else if (curPlayer.hp <= 0) {
           finishBattle(false);
+        } else if (extraTurnRef.current) {
+          // Time Fracture / Wheel of Fortune: act again without ceding the turn.
+          extraTurnRef.current = false;
+          addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
+          setPhase("select");
         } else if (opponentTypeRef.current === "ghost") {
           ghostTurn();
         } else {
@@ -2394,11 +2728,27 @@ function BattleArena() {
     const memory = battleMemoryRef.current;
 
     setTimeout(() => {
+      // Poison/regen/freeze resolve before the bot chooses — a frozen turn is
+      // skipped outright, and a poison that kills ends the match here.
+      const oppTick = runEffectTick("opponent");
+      if (oppTick.died) {
+        finishBattle(true);
+        return;
+      }
+      if (oppTick.frozen) {
+        setTimeout(() => setPhase("select"), 600);
+        return;
+      }
+
       const prevOpp = opponentRef.current;
       const prevPlayer = playerRef.current;
       const oppHpPct = prevOpp.hp / prevOpp.maxHp;
       const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
       const mem = memory ?? createBattleMemory();
+
+      const oppUltimate = getUltimate(opponentEcliptarRef.current);
+      const oppUltimateReady =
+        Boolean(oppUltimate) && opponentChargeRef.current >= 1 && opponentCooldownRef.current <= 0;
 
       const choice = pickAiAction(
         mem,
@@ -2409,6 +2759,7 @@ function BattleArena() {
           focus: prevOpp.focus,
           maxFocus: prevOpp.maxFocus,
           canHeal: oppArch.healAmount !== null,
+          ultimateReady: oppUltimateReady,
         },
         { hp: prevPlayer.hp, maxHp: prevPlayer.maxHp, momentum: opponentMomentum },
       );
@@ -2435,12 +2786,33 @@ function BattleArena() {
       let nextOppMom = opponentMomentum;
 
       const playerArch = getArch(archetypeRef.current);
-      /** Route incoming damage through the player's DEF, then their shield. */
+      /** True while the resolver already committed both sides (bot ultimate). */
+      let ultimateHandled = false;
+      /**
+       * Route incoming damage through the player's DEF and any damageReduction
+       * effect, then their shield, then pay back a reflect share.
+       */
       const hitPlayer = (raw: number): number => {
-        const after = applyDefense(raw, playerArch, copiedPassiveRef.current);
+        const after = defendWithEffects(
+          raw,
+          playerArch,
+          playerEffectsRef.current,
+          copiedPassiveRef.current,
+        );
         const { hpLoss, shieldLeft } = absorbWithShield(after, newPlayerShield);
         newPlayerShield = shieldLeft;
         newPlayerHp = Math.max(0, newPlayerHp - hpLoss);
+        const reflect = totalOf(playerEffectsRef.current, "reflect");
+        if (reflect > 0 && after > 0) {
+          const back = Math.max(1, Math.floor(after * reflect));
+          newOppHp = Math.max(0, newOppHp - back);
+          addLog({
+            actor: "player",
+            actionType: "attack",
+            result: `Reflected ${back} damage back.`,
+            value: back,
+          });
+        }
         return hpLoss;
       };
 
@@ -2467,42 +2839,26 @@ function BattleArena() {
               value: FOCUS_GAIN.defend,
             });
           }
-        } else if (choice === "wild") {
-          newOppFocus = Math.max(0, prevOpp.focus - 15);
-          const roll = Math.random();
-          if (roll < 0.34) {
-            const d = hitPlayer(Math.floor(Math.random() * 30) + 10);
-            setShowPlayerHit(true);
-            addLog({
-              actor: "opponent",
-              actionType: "wild",
-              result: `${prevOpp.name} Wild: ${d} chaos DMG!`,
-              value: d,
-            });
-          } else if (roll < 0.67) {
-            newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + 20);
-            addLog({
-              actor: "opponent",
-              actionType: "wild",
-              result: `${prevOpp.name} Wild: +20 HP!`,
-              value: 20,
-            });
-          } else {
-            const d = hitPlayer(20);
-            setShowPlayerHit(true);
-            addLog({
-              actor: "opponent",
-              actionType: "wild",
-              result: `${prevOpp.name} Wild: ${d} DMG.`,
-              value: d,
-            });
-          }
+        } else if (choice === "ultimate" && oppUltimate) {
+          // The bot's ultimate goes through the same resolver, which commits
+          // both sides itself — so this branch skips the local HP bookkeeping
+          // and re-syncs from the refs afterwards.
+          castUltimate(oppUltimate, "opponent");
+          newPlayerHp = playerRef.current.hp;
+          newPlayerShield = playerRef.current.shield ?? 0;
+          newOppHp = opponentRef.current.hp;
+          ultimateHandled = true;
         } else {
-          const hit = getEffectiveDamage(oppArch, {
-            action: choice,
-            correctCount: oppCorrect,
-            currentHp: prevOpp.hp,
-          });
+          const hit = damageWithEffects(
+            oppArch,
+            opponentEffectsRef.current,
+            opponentBonusDamageRef.current,
+            { action: choice, correctCount: oppCorrect, currentHp: prevOpp.hp },
+          );
+          for (const kind of hit.consumed) {
+            opponentEffectsRef.current = consumeUse(opponentEffectsRef.current, kind);
+          }
+          setOpponentEffects(opponentEffectsRef.current);
           const dmg = hitPlayer(hit.damage);
           const cost = ACTIONS[choice].focusCost;
           if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
@@ -2543,8 +2899,22 @@ function BattleArena() {
 
       if (memory) updateBattleMemoryAiTurn(memory, success);
       setOpponentMomentum(nextOppMom);
-      setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
-      setOpponent((o) => ({ ...o, hp: newOppHp, focus: newOppFocus }));
+      if (!ultimateHandled) {
+        setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
+        setOpponent((o) => ({ ...o, hp: newOppHp, focus: newOppFocus }));
+      } else {
+        setOpponent((o) => ({ ...o, focus: newOppFocus }));
+      }
+      // A correct bot answer builds its ultimate charge the same way ours does.
+      if (success) {
+        const nextCharge = Math.min(
+          1,
+          opponentChargeRef.current + ULTIMATE_TUNING.chargePerCorrectAnswer,
+        );
+        opponentChargeRef.current = nextCharge;
+        setOpponentCharge(nextCharge);
+      }
+      if (opponentCooldownRef.current > 0) opponentCooldownRef.current -= 1;
 
       setTimeout(() => {
         setShowPlayerHit(false);
@@ -2635,6 +3005,39 @@ function BattleArena() {
       });
       return;
     }
+
+    // Start-of-turn effects resolve before the question is drawn: poison can
+    // end the match, and a freeze costs the turn outright.
+    const tick = runEffectTick("player");
+    if (tick.died) {
+      finishBattle(false);
+      return;
+    }
+    if (tick.frozen) {
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `You are frozen — the turn is skipped.`,
+      });
+      setTimeout(() => {
+        if (opponentTypeRef.current === "ghost") ghostTurn();
+        else aiTurn();
+      }, 700);
+      return;
+    }
+
+    if (action === "ultimate" && !ultimateReady) {
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result:
+          ultimateCooldownRef.current > 0
+            ? `Ultimate cooling down for ${ultimateCooldownRef.current} more turn(s).`
+            : `Ultimate not charged yet.`,
+      });
+      return;
+    }
+
     const cost = ACTIONS[action].focusCost;
     if (cost > 0 && player.focus < cost) {
       addLog({ actor: "system", actionType: "info", result: `Need ${cost} Focus!` });
@@ -2666,7 +3069,21 @@ function BattleArena() {
     const category = levelToCategory(level);
     const q = generateQuestion(category);
     setQuestion(q);
-    const t = getQuestionTime(arch, category);
+    // Base clock, then Velocity Break's pin, then any delta an ultimate left on
+    // us — floored so a stacked debuff can never make a question unanswerable.
+    let t = nextTimerOverrideRef.current
+      ? nextTimerOverrideRef.current.seconds
+      : getQuestionTime(arch, category);
+    if (pendingTimerDeltaRef.current !== 0) {
+      t += pendingTimerDeltaRef.current;
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `Your clock is ${pendingTimerDeltaRef.current < 0 ? "cut" : "extended"} by ${Math.abs(pendingTimerDeltaRef.current)}s.`,
+      });
+      pendingTimerDeltaRef.current = 0;
+    }
+    t = Math.max(ULTIMATE_TUNING.minTimerSeconds, Math.round(t));
     setMaxTime(t);
     setTimeLeft(t);
     setPhase("question");
@@ -2678,7 +3095,11 @@ function BattleArena() {
     const cls = selection?.archetype || archetype;
     const eclip = selection?.ecliptar ?? ecliptar;
     if (selection?.archetype) setArchetype(selection.archetype);
-    if (selection?.ecliptar) setEcliptar(selection.ecliptar);
+    if (selection?.ecliptar) {
+      setEcliptar(selection.ecliptar);
+      setEcliptarSlug(selection.ecliptar.slug);
+      ecliptarRef.current = selection.ecliptar.slug;
+    }
 
     const rolledGambler = cls === "gambler" ? rollGamblerStats() : null;
     setGamblerStats(rolledGambler);
@@ -2777,6 +3198,7 @@ function BattleArena() {
         sprite: oppSlug ? ecliptarSpriteUrl(oppSlug) : undefined,
       });
       setOpponentArchetype(oppArchetype);
+      opponentEcliptarRef.current = oppSlug ?? null;
       battleMemoryRef.current = createBattleMemory();
       setMomentum(0);
       setOpponentMomentum(0);
@@ -2787,6 +3209,7 @@ function BattleArena() {
       setCorrectCount(0);
       copiedPassiveRef.current = null;
       setCopiedPassive(null);
+      resetUltimateState();
       setLongestStreak(0);
       setFastestAnswer(Infinity);
       setBattleStats(null);
@@ -2891,6 +3314,7 @@ function BattleArena() {
       setCorrectCount(0);
       copiedPassiveRef.current = null;
       setCopiedPassive(null);
+      resetUltimateState();
       setLongestStreak(0);
       setFastestAnswer(Infinity);
       setBattleStats(null);
@@ -3169,7 +3593,9 @@ function BattleArena() {
       </AnimatePresence>
 
       {/* Wild event overlay — appears on the battle field, not inside the question panel */}
-      <AnimatePresence>{wildEvent && <WildEventOverlay event={wildEvent} />}</AnimatePresence>
+      <AnimatePresence>
+        {ultimateCast && <UltimateCastOverlay cast={ultimateCast} />}
+      </AnimatePresence>
 
       {/* Forfeit / leave control — confirms, then counts as a loss by abandonment */}
       {(phase === "select" || phase === "question" || phase === "animate") && !koBanner && (
@@ -3190,6 +3616,7 @@ function BattleArena() {
           side="left"
           momentum={momentum}
           archetype={archetype}
+          effects={playerEffects}
           showHit={showPlayerHit}
           showHeal={showPlayerHeal}
           // Charge is only genuinely "ready" when the player can actually click
@@ -3238,6 +3665,7 @@ function BattleArena() {
           archetype={opponentArchetype}
           showHit={showOpponentHit}
           showHeal={false}
+          effects={opponentEffects}
         />
       </div>
 
@@ -3469,15 +3897,66 @@ function BattleArena() {
             </motion.span>
           </motion.div>
         )}
+        {/* Ultimate charge — the resource that gates the Ecliptar's signature move.
+            Shown whenever an Ecliptar is equipped so the player can see it fill. */}
+        {playerUltimate && (
+          <div
+            className={`btt-card p-3 border-l-2 ${ultimateReady ? "border-neon-purple" : "border-neon-purple/40"}`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Sparkles
+                  className={`w-3.5 h-3.5 shrink-0 ${ultimateReady ? "text-neon-purple" : "text-neon-purple/50"}`}
+                />
+                <span className="text-[10px] font-bold tracking-widest text-neon-purple truncate">
+                  {playerUltimate.name.toUpperCase()}
+                </span>
+              </div>
+              <motion.span
+                key={ultimateReady ? "ready" : `charging-${Math.round(ultimateCharge * 100)}`}
+                className={`text-[9px] font-bold tracking-widest shrink-0 ${
+                  ultimateReady ? "text-neon-purple" : "text-muted-foreground"
+                }`}
+                initial={{ opacity: 0.6, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                {ultimateCooldown > 0
+                  ? `COOLDOWN ${ultimateCooldown}`
+                  : ultimateReady
+                    ? "READY"
+                    : `${Math.round(ultimateCharge * 100)}%`}
+              </motion.span>
+            </div>
+            <div className="h-2 bg-secondary/40 overflow-hidden rounded-sm mb-2">
+              <motion.div
+                className="h-full rounded-sm bg-neon-purple"
+                animate={{
+                  width: `${ultimateCharge * 100}%`,
+                  opacity: ultimateReady ? [1, 0.6, 1] : 1,
+                }}
+                transition={{
+                  width: { duration: 0.5, ease: "easeOut" },
+                  opacity: ultimateReady ? { duration: 1.1, repeat: Infinity } : {},
+                }}
+              />
+            </div>
+            <p className="text-[9px] leading-snug text-muted-foreground">
+              {playerUltimate.description}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-4 gap-2">
           {(Object.entries(ACTIONS) as [Action, ActionConfig][]).map(([key, act]) => {
             const Icon = act.icon;
             const cost = act.focusCost;
             const cannotHeal = key === "defend" && getArch(archetype).healAmount === null;
+            const ultimateBlocked = key === "ultimate" && !ultimateReady;
             const disabled =
               phase !== "select" ||
               (cost > 0 && player.focus < cost) ||
               cannotHeal ||
+              ultimateBlocked ||
               liveActionLocked;
             return (
               <motion.button
@@ -3489,17 +3968,34 @@ function BattleArena() {
                 whileTap={!disabled ? { scale: 0.97 } : {}}
               >
                 <Icon
-                  className={`w-8 h-8 mx-auto mb-2 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "wild" ? "text-neon-purple" : "text-foreground/80"}`}
+                  className={`w-8 h-8 mx-auto mb-2 ${key === "charge" ? "text-neon-pink" : key === "defend" ? "text-neon-cyan" : key === "ultimate" ? "text-neon-purple" : "text-foreground/80"}`}
                 />
-                <div className="btt-shout text-lg tracking-wider">{act.label.toUpperCase()}</div>
+                <div className="btt-shout text-lg tracking-wider">
+                  {key === "ultimate" && playerUltimate
+                    ? playerUltimate.name.toUpperCase()
+                    : act.label.toUpperCase()}
+                </div>
                 <div className="btt-mono-text text-[9px] text-muted-foreground mt-1 leading-tight">
                   {/* getActionDesc returns "Can't heal · builds Focus" for any no-heal
                       class (Tank and now God), so this stays correct without hardcoding a name. */}
-                  {getActionDesc(key, getArch(archetype), correctCount)}
+                  {getActionDesc(key, getArch(archetype), correctCount, playerUltimate)}
                 </div>
                 {cost > 0 && (
                   <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-purple border border-neon-purple/30 px-1">
                     −{cost}
+                  </div>
+                )}
+                {key === "ultimate" && (
+                  <div
+                    className={`absolute top-2 right-2 btt-mono-text text-[8px] font-bold px-1 border ${
+                      ultimateReady
+                        ? "text-neon-purple border-neon-purple/50"
+                        : "text-muted-foreground border-border/50"
+                    }`}
+                  >
+                    {ultimateCooldown > 0
+                      ? `CD ${ultimateCooldown}`
+                      : `${Math.round(ultimateCharge * 100)}%`}
                   </div>
                 )}
                 {FOCUS_GAIN[key] > 0 && (

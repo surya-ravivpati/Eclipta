@@ -130,6 +130,37 @@ export const BOT_ACCURACY: BotAccuracyTuning = botAccuracySchema.parse({
   difficultyScaleWidth: 9,
 } satisfies BotAccuracyTuning);
 
+// ── Ecliptar ultimates ───────────────────────────────────────────────────────
+// The Ultimate action replaced Wild. Where Charge spends Focus, an ultimate
+// spends its own charge meter, so the two payoff moves never compete for the
+// same resource: Focus stays the short-term tempo currency and the ultimate is
+// the long-term one, earned only by answering correctly.
+
+const ultimateTuningSchema = z
+  .object({
+    /** Charge gained per correct answer, as a fraction of a full meter. */
+    chargePerCorrectAnswer: z.number().positive().max(1),
+    /** Charge remaining after casting — 0 means a full re-earn each time. */
+    chargeAfterCast: z.number().min(0).max(1),
+    /** Owner-turns before the same ultimate may be cast again. */
+    cooldownTurns: z.number().int().nonnegative(),
+    /** Floor on any timer an ultimate shortens, so a turn stays playable. */
+    minTimerSeconds: z.number().int().positive(),
+    /** Cap on the absorb pool an ultimate's shields can bank. */
+    maxShield: z.number().int().positive(),
+  })
+  .refine((u) => u.chargeAfterCast < 1, "casting must consume some charge");
+
+export type UltimateTuning = z.infer<typeof ultimateTuningSchema>;
+
+export const ULTIMATE_TUNING: UltimateTuning = ultimateTuningSchema.parse({
+  chargePerCorrectAnswer: 0.25,
+  chargeAfterCast: 0,
+  cooldownTurns: 2,
+  minTimerSeconds: 5,
+  maxShield: 80,
+} satisfies UltimateTuning);
+
 // ── Question timers ──────────────────────────────────────────────────────────
 // There is no per-difficulty timer table any more. The clock is an absolute
 // per-archetype stat (`timeSeconds`, e.g. Tank 25s / Healer 70s) on the stat

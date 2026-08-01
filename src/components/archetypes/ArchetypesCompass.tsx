@@ -25,10 +25,10 @@ import {
   useScroll,
   useTransform,
   useSpring,
-  useReducedMotion,
   useMotionValueEvent,
   type MotionValue,
 } from "framer-motion";
+import { useAppReducedMotion } from "@/hooks/use-reduced-motion";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import type { ArchetypeId } from "@/components/battles/types";
 
@@ -90,7 +90,8 @@ const R_NODE = 150; // icon-node ring — clear of the central text, clear of th
 
 export function ArchetypesCompass() {
   const containerRef = useRef<HTMLElement | null>(null);
-  const reduce = useReducedMotion();
+  // Combines the OS query with the in-app Reduce Motion preference.
+  const reduce = useAppReducedMotion();
 
   const { scrollYProgress } = useScroll({
     target: containerRef,

@@ -314,7 +314,7 @@ export function CinematicFilm() {
       <div className="cf-bg" aria-hidden="true">
         <div className="cf-aurora" ref={auroraRef} />
         <div className="cf-grain" />
-        <div className="cf-vignette" />
+        <div className="cf-vignette" aria-hidden="true" />
       </div>
       <div className="cf-flash" ref={flashRef} aria-hidden="true" />
 

@@ -82,6 +82,8 @@ import {
   rollMissPenalty,
 } from "./battles/stat-mechanics";
 import { DAMAGE_TUNING, ULTIMATE_TUNING } from "@/config/battle-tuning";
+import { useTranslation } from "@/i18n/use-translation";
+import { announce } from "@/lib/a11y";
 import {
   createBattleMemory,
   updateBattleMemoryPlayerTurn,
@@ -361,7 +363,16 @@ function HpBar({
   const pct = Math.max(0, (current / max) * 100);
   const isCritical = max > 0 && current / max < 0.2;
   return (
-    <div className="w-full">
+    <div
+      className="w-full"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.max(0, Math.round(current))}
+      // A bare "70%" is meaningless: name the bar, and spell out the critical
+      // state, which is otherwise carried only by the colour turning pink.
+      aria-valuetext={`${label}: ${Math.max(0, Math.round(current))} / ${max}${isCritical ? " — critical" : ""}`}
+    >
       <div className="flex justify-between items-center mb-1">
         <span
           className={`text-[10px] font-bold tracking-widest transition-colors ${isCritical ? "text-neon-pink" : "text-muted-foreground"}`}
@@ -415,7 +426,16 @@ function FocusBar({
   const fillRatio = max > 0 ? current / max : 0;
   const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
-    <div className="w-full">
+    <div
+      className="w-full"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.max(0, Math.round(current))}
+      // "Charged" is signalled visually by a pink pulse — state that in words
+      // too, so the cue is not colour-and-motion only.
+      aria-valuetext={`Focus: ${Math.max(0, Math.round(current))} / ${max}${isCharged ? " — charged, Charge available" : ""}`}
+    >
       <div className="flex justify-between items-center mb-1">
         <motion.span
           className={`text-[10px] font-bold tracking-widest transition-colors ${isCharged ? "text-neon-pink" : isWarm ? "text-neon-purple" : "text-muted-foreground"}`}
@@ -564,7 +584,10 @@ function FighterCard({
             />
             <img
               src={fighter.sprite}
-              alt={fighter.name}
+              // Decorative: the fighter's name is rendered as text directly
+              // below, so alt text here would just be a duplicate announcement.
+              alt=""
+              aria-hidden="true"
               onError={() => setSpriteFailed(true)}
               className="relative h-32 sm:h-44 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)]"
             />
@@ -1384,6 +1407,7 @@ function GamblerRevealScreen({
 
 // ─── Main Battle Engine ──────────────────────────────────────────────
 function BattleArena() {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [showPractice, setShowPractice] = useState(false);
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
@@ -2549,6 +2573,9 @@ function BattleArena() {
     (won: boolean) => {
       if (battleFinishedRef.current) return;
       battleFinishedRef.current = true;
+      // Assertive: the match is over, which the user needs to hear now rather
+      // than after whatever the reader is currently working through.
+      announce(won ? t("battle.victoryAnnouncement") : t("battle.defeatAnnouncement"), "assertive");
       const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
       if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
         pvpChannelRef.current.send({
@@ -3486,7 +3513,9 @@ function BattleArena() {
       </AnimatePresence>
 
       {/* Critical-HP danger framing */}
-      {playerCritical && !koBanner && <div className="btt-danger-vignette" aria-hidden />}
+      {playerCritical && !koBanner && (
+        <div className="btt-danger-vignette" aria-hidden data-decorative="motion" />
+      )}
 
       {/* Battle-start stinger */}
       <AnimatePresence>
@@ -3527,8 +3556,19 @@ function BattleArena() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="text-center px-6">
+            <div className="text-center px-6" role="alert">
+              {/* Icon, not colour alone: Trophy for a win, Skull for a loss. */}
+              {koBanner === "victory" ? (
+                <Trophy className="w-12 h-12 mx-auto mb-3 text-primary" aria-hidden="true" />
+              ) : (
+                <Skull className="w-12 h-12 mx-auto mb-3 text-neon-pink" aria-hidden="true" />
+              )}
               <motion.p
+                aria-label={
+                  koBanner === "victory"
+                    ? t("battle.victoryAnnouncement")
+                    : t("battle.defeatAnnouncement")
+                }
                 className={`btt-stinger-word text-7xl sm:text-8xl md:text-9xl ${koBanner === "victory" ? "text-primary" : "text-neon-pink"}`}
                 style={{
                   textShadow:
@@ -3927,7 +3967,20 @@ function BattleArena() {
                     : `${Math.round(ultimateCharge * 100)}%`}
               </motion.span>
             </div>
-            <div className="h-2 bg-secondary/40 overflow-hidden rounded-sm mb-2">
+            <div
+              className="h-2 bg-secondary/40 overflow-hidden rounded-sm mb-2"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(ultimateCharge * 100)}
+              aria-valuetext={
+                ultimateCooldown > 0
+                  ? t("battle.ultimateCooldown", { turns: ultimateCooldown })
+                  : ultimateReady
+                    ? `${playerUltimate.name}: ${t("battle.ultimateReady")}`
+                    : `${playerUltimate.name}: ${t("battle.ultimateCharging", { percent: Math.round(ultimateCharge * 100) })}`
+              }
+            >
               <motion.div
                 className="h-full rounded-sm bg-neon-purple"
                 animate={{
@@ -4502,7 +4555,7 @@ export function KnowledgeBattles() {
       <div className="btt-bg" aria-hidden>
         <div className="btt-aurora" />
         <div className="btt-grid" />
-        <div className="btt-vignette" />
+        <div className="btt-vignette" aria-hidden="true" />
         <div className="btt-noise" />
       </div>
       <div className="max-w-7xl mx-auto px-6">

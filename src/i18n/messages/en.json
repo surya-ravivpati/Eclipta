@@ -12,7 +12,9 @@
     "sortedDescending": "sorted descending",
     "progressOf": "{{subject}}: {{current}} of {{max}}, {{percent}} percent",
     "chartSummary": "Chart: {{summary}}",
-    "decorativeAnimation": "Decorative animation"
+    "decorativeAnimation": "Decorative animation",
+    "currentPage": "current page",
+    "modalTitle": "Dialog"
   },
   "nav": {
     "home": "Home",
@@ -38,7 +40,28 @@
     "notificationsNone": "Notifications, none unread",
     "streakDays_one": "{{count}} day practice streak",
     "streakDays_other": "{{count}} day practice streak",
-    "themeSwitch": "Theme: {{current}}. Activate to switch to {{next}}."
+    "themeSwitch": "Theme: {{current}}. Activate to switch to {{next}}.",
+    "learn": "Learn",
+    "practice": "Practice",
+    "community": "Community",
+    "buildCourse": "Build a Course",
+    "lunaTutor": "Luna Tutor",
+    "knowledgeBattles": "Knowledge Battles",
+    "trophyRoad": "Trophy Road",
+    "studyRooms": "Study Rooms",
+    "about": "About",
+    "descCourses": "Everything you're learning",
+    "descBuildCourse": "Personalized syllabi",
+    "descLuna": "Your AI guide",
+    "descBattles": "1v1 duels",
+    "descProgress": "Your progression map",
+    "descCollection": "Your Ecliptar dex",
+    "descForum": "Ask & share",
+    "descGroups": "Learn together, live",
+    "descAbout": "Mission & team",
+    "signedOut": "Signed out",
+    "streakAtRisk": "Streak at risk",
+    "xpAmount": "{{amount}} XP"
   },
   "pages": {
     "home": "Home",

@@ -57,7 +57,7 @@ export function BattleIntro({
 
       <div className="bi-stage">
         {/* inward-falling motes */}
-        <div className="bi-particles" aria-hidden="true">
+        <div className="bi-particles" aria-hidden="true" data-decorative="motion">
           {PARTICLES.map((p, i) => (
             <span
               key={i}

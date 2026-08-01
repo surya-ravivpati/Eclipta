@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "@/i18n/use-translation";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
@@ -6,38 +7,59 @@ import { useDailyStreak } from "@/hooks/use-daily-streak";
 import { isAtRisk } from "@/lib/daily-streak";
 import { useTheme } from "@/hooks/use-theme";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Menu, X, Zap, ChevronDown, Sun, Moon, Monitor, Bell, Flame } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Menu,
+  X,
+  Zap,
+  ChevronDown,
+  Sun,
+  Moon,
+  Monitor,
+  Bell,
+  Flame,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/hooks/use-notifications";
 import { BrandLockup } from "@/components/BrandLockup";
 import { useLogoPresent } from "@/components/BrandPresent";
 
+/**
+ * Nav structure holds translation KEYS, not text. The uppercase styling of the
+ * group labels is done in CSS (`uppercase`) rather than baked into the string,
+ * because several languages — German nouns, Japanese, Hindi — either have no
+ * case distinction or change meaning when force-cased.
+ */
 const NAV_GROUPS = [
   {
-    label: "LEARN",
+    labelKey: "nav.learn",
     items: [
-      { to: "/courses", label: "Courses", desc: "Everything you're learning" },
-      { to: "/build-course", label: "Build a Course", desc: "Personalized syllabi" },
-      { to: "/luna", label: "Luna Tutor", desc: "Your AI guide" },
+      { to: "/courses", labelKey: "nav.courses", descKey: "nav.descCourses" },
+      { to: "/build-course", labelKey: "nav.buildCourse", descKey: "nav.descBuildCourse" },
+      { to: "/luna", labelKey: "nav.lunaTutor", descKey: "nav.descLuna" },
     ],
   },
   {
-    label: "PRACTICE",
+    labelKey: "nav.practice",
     items: [
-      { to: "/battles", label: "Knowledge Battles", desc: "1v1 duels" },
-      { to: "/progress", label: "Trophy Road", desc: "Your progression map" },
-      { to: "/collection", label: "Collection", desc: "Your Ecliptar dex" },
+      { to: "/battles", labelKey: "nav.knowledgeBattles", descKey: "nav.descBattles" },
+      { to: "/progress", labelKey: "nav.trophyRoad", descKey: "nav.descProgress" },
+      { to: "/collection", labelKey: "nav.collection", descKey: "nav.descCollection" },
     ],
   },
   {
-    label: "COMMUNITY",
+    labelKey: "nav.community",
     items: [
-      { to: "/forum", label: "Forum", desc: "Ask & share" },
-      { to: "/groups", label: "Study Rooms", desc: "Learn together, live" },
-      { to: "/about", label: "About", desc: "Mission & team" },
+      { to: "/forum", labelKey: "nav.forum", descKey: "nav.descForum" },
+      { to: "/groups", labelKey: "nav.studyRooms", descKey: "nav.descGroups" },
+      { to: "/about", labelKey: "nav.about", descKey: "nav.descAbout" },
     ],
   },
 ] as const;
@@ -61,34 +83,39 @@ export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
   const { onLogoClick, present } = useLogoPresent();
+  const { t, formatNumber } = useTranslation();
 
-  const isGroupActive = (group: typeof NAV_GROUPS[number]) =>
+  const isGroupActive = (group: (typeof NAV_GROUPS)[number]) =>
     group.items.some((it) => pathname.startsWith(it.to));
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast.success("Signed out");
+    toast.success(t("nav.signedOut"));
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/70 backdrop-blur-xl">
+    <nav
+      aria-label={t("nav.mainNavigation")}
+      className="fixed top-0 w-full z-50 border-b border-border bg-background/70 backdrop-blur-xl"
+    >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-9 min-w-0">
-          <Link to="/" className="shrink-0" aria-label="Eclipta home" onClick={onLogoClick}>
+          <Link to="/" className="shrink-0" aria-label={t("nav.eclipteHome")} onClick={onLogoClick}>
             <BrandLockup size="sm" />
           </Link>
           <div className="hidden lg:flex gap-1">
             {NAV_GROUPS.map((group) => {
               const active = isGroupActive(group);
               return (
-                <DropdownMenu key={group.label}>
+                <DropdownMenu key={group.labelKey}>
                   <DropdownMenuTrigger
-                    className={`px-3 py-1.5 font-mono text-[11px] tracking-[0.22em] uppercase transition-colors inline-flex items-center gap-1.5 outline-none ${
+                    aria-current={active ? "true" : undefined}
+                    className={`px-3 py-1.5 font-mono text-[11px] tracking-[0.22em] uppercase transition-colors inline-flex items-center gap-1.5 ${
                       active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {group.label}
-                    <ChevronDown className="w-3 h-3 opacity-50" />
+                    {t(group.labelKey)}
+                    <ChevronDown className="w-3 h-3 opacity-50" aria-hidden="true" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="start"
@@ -100,8 +127,8 @@ export function Navbar() {
                           to={it.to}
                           className="flex flex-col items-start gap-0.5 cursor-pointer focus:bg-secondary/80 focus:text-foreground"
                         >
-                          <span className="text-sm font-medium">{it.label}</span>
-                          <span className="text-[11px] text-muted-foreground">{it.desc}</span>
+                          <span className="text-sm font-medium">{t(it.labelKey)}</span>
+                          <span className="text-[11px] text-muted-foreground">{t(it.descKey)}</span>
                         </Link>
                       </DropdownMenuItem>
                     ))}
@@ -115,22 +142,29 @@ export function Navbar() {
           <button
             onClick={cycleTheme}
             className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-            title={`Theme: ${theme} — click to switch to ${themeNext}`}
-            aria-label={`Theme: ${theme}. Click to switch to ${themeNext}.`}
+            title={t("nav.themeSwitch", { current: theme, next: themeNext })}
+            aria-label={t("nav.themeSwitch", { current: theme, next: themeNext })}
           >
-            <ThemeIcon className="w-4 h-4" />
+            <ThemeIcon className="w-4 h-4" aria-hidden="true" />
           </button>
           {isAuthenticated ? (
             <>
               <Link
                 to="/notifications"
                 className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
-                title="Notifications"
+                aria-label={
+                  unread > 0
+                    ? t("nav.notificationsWithCount", { count: unread })
+                    : t("nav.notificationsNone")
+                }
+                title={t("nav.notifications")}
               >
-                <Bell className="w-4 h-4" />
+                <Bell className="w-4 h-4" aria-hidden="true" />
                 {unread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-neon-pink text-[9px] font-bold text-foreground flex items-center justify-center tabular-nums">
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-neon-pink text-[9px] font-bold text-foreground flex items-center justify-center tabular-nums"
+                  >
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
@@ -139,21 +173,36 @@ export function Navbar() {
                 <Link
                   to="/streak"
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-secondary/30 border transition-colors ${streakAtRisk ? "border-primary/70 animate-pulse" : "border-border hover:border-primary/40"}`}
-                  title={streakAtRisk ? `${dailyStreak}-day streak at risk — practice today!` : `${dailyStreak}-day practice streak — keep it alive`}
-                  aria-label={`${dailyStreak} day practice streak`}
+                  title={t("nav.streakDays", { count: dailyStreak })}
+                  aria-label={
+                    // "At risk" is signalled by a pulsing border, which is
+                    // invisible to a screen reader — so say it.
+                    streakAtRisk
+                      ? `${t("nav.streakDays", { count: dailyStreak })}. ${t("nav.streakAtRisk")}`
+                      : t("nav.streakDays", { count: dailyStreak })
+                  }
                 >
-                  <Flame className={`w-3.5 h-3.5 text-primary ${streakAtRisk ? "" : ""}`} />
-                  <span className="text-xs font-bold tabular-nums text-foreground">{dailyStreak}</span>
+                  <Flame className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                  <span
+                    aria-hidden="true"
+                    className="text-xs font-bold tabular-nums text-foreground"
+                  >
+                    {dailyStreak}
+                  </span>
                 </Link>
               )}
               <Link
                 to="/profile"
                 className="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-secondary/30 border border-border hover:border-foreground/25 transition-colors"
-                title="View profile"
+                title={t("nav.profile")}
               >
-                <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-neon-purple">
-                  <Zap className="w-3 h-3" />
-                  {xp.toLocaleString()}
+                <span
+                  className="flex items-center gap-1 text-xs font-bold tabular-nums text-neon-purple"
+                  aria-label={t("nav.xpAmount", { amount: formatNumber(xp) })}
+                >
+                  <Zap className="w-3 h-3" aria-hidden="true" />
+                  {/* Locale-aware grouping: 1,234 / 1.234 / 1 234 / 12,34,567. */}
+                  {formatNumber(xp)}
                 </span>
                 <span className="w-px h-3 bg-border" />
                 <span className="flex items-center gap-1.5">
@@ -166,36 +215,50 @@ export function Navbar() {
               <button
                 onClick={handleLogout}
                 className="p-2 text-muted-foreground hover:text-neon-pink transition-colors"
-                title="Sign out"
-                aria-label="Sign out"
+                title={t("nav.signOut")}
+                aria-label={t("nav.signOut")}
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4" aria-hidden="true" />
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="hidden sm:inline-block px-5 py-1.5 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase border border-border hover:border-foreground/40 text-muted-foreground hover:text-foreground transition-colors">
-                Login
+              <Link
+                to="/login"
+                className="hidden sm:inline-block px-5 py-1.5 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase border border-border hover:border-foreground/40 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("nav.signIn")}
               </Link>
-              <Link to="/signup" className="hidden sm:inline-block px-5 py-1.5 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase bg-foreground text-background hover:opacity-90 transition-opacity">
-                Sign up
+              <Link
+                to="/signup"
+                className="hidden sm:inline-block px-5 py-1.5 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase bg-foreground text-background hover:opacity-90 transition-opacity"
+              >
+                {t("onboarding.continue")}
               </Link>
             </>
           )}
           <button
             onClick={() => setMobileOpen((v) => !v)}
             className="lg:hidden p-2 text-foreground hover:text-muted-foreground transition-colors"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileOpen ? t("a11y.closeMenu") : t("a11y.openMenu")}
             aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileOpen ? (
+              <X className="w-5 h-5" aria-hidden="true" />
+            ) : (
+              <Menu className="w-5 h-5" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div
+          id="mobile-nav"
+          className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl max-h-[calc(100vh-4rem)] overflow-y-auto"
+        >
           <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4">
             {isAuthenticated && (
               <>
@@ -206,7 +269,8 @@ export function Navbar() {
                 >
                   <span className="text-sm font-medium">{user?.email?.split("@")[0]}</span>
                   <span className="flex items-center gap-1 text-xs font-bold text-neon-purple tabular-nums">
-                    <Zap className="w-3 h-3" />{xp.toLocaleString()} XP
+                    <Zap className="w-3 h-3" />
+                    {xp.toLocaleString()} XP
                   </span>
                 </Link>
                 <Link
@@ -215,7 +279,8 @@ export function Navbar() {
                   className="flex items-center justify-between px-3 py-3 border border-border rounded-md hover:border-foreground/25 transition-colors"
                 >
                   <span className="inline-flex items-center gap-2 text-sm font-medium">
-                    <Bell className="w-4 h-4 text-muted-foreground" />Notifications
+                    <Bell className="w-4 h-4 text-muted-foreground" />
+                    Notifications
                   </span>
                   {unread > 0 && (
                     <span className="min-w-[20px] h-[20px] px-1.5 rounded-full bg-neon-pink text-[10px] font-bold text-foreground flex items-center justify-center tabular-nums">
@@ -230,11 +295,13 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="px-3 py-2 font-mono text-[11px] tracking-[0.22em] uppercase text-foreground hover:text-muted-foreground"
             >
-              Home
+              {t("nav.home")}
             </Link>
             {NAV_GROUPS.map((group) => (
-              <div key={group.label}>
-                <p className="px-3 font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase mb-1">{group.label}</p>
+              <div key={group.labelKey}>
+                <p className="px-3 font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase mb-1">
+                  {t(group.labelKey)}
+                </p>
                 {group.items.map((it) => (
                   <Link
                     key={it.to}
@@ -242,7 +309,7 @@ export function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
                   >
-                    {it.label}
+                    {t(it.labelKey)}
                   </Link>
                 ))}
               </div>
@@ -254,14 +321,14 @@ export function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="flex-1 text-center px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
                 >
-                  Login
+                  {t("nav.signIn")}
                 </Link>
                 <Link
                   to="/signup"
                   onClick={() => setMobileOpen(false)}
                   className="flex-1 text-center px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.22em] uppercase bg-foreground text-background hover:opacity-90 transition-opacity"
                 >
-                  Sign up
+                  {t("onboarding.continue")}
                 </Link>
               </div>
             )}

@@ -2,15 +2,15 @@
 @import "tw-animate-css";
 
 @font-face {
-  font-family: 'RobotHeroes';
-  src: url('/fonts/RobotHeroes.ttf') format('truetype');
+  font-family: "RobotHeroes";
+  src: url("/fonts/RobotHeroes.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'RobotHeroes';
-  src: url('/fonts/RobotHeroesItalic.ttf') format('truetype');
+  font-family: "RobotHeroes";
+  src: url("/fonts/RobotHeroesItalic.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -85,12 +85,15 @@
      the same role never drifts between faces across surfaces. These
      also generate Tailwind utilities: font-display, font-body,
      font-serif, font-shout, font-cinematic, font-mono. */
-  --font-display:   'Fraunces', 'Playfair Display', Georgia, 'Times New Roman', serif; /* signature: scholarly serif headings */
-  --font-body:      'Inter', Calibri, sans-serif;                          /* body copy */
-  --font-mono:      'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; /* labels / numerics / wordmark */
-  --font-serif:     'Instrument Serif', 'Times New Roman', serif;          /* emotional accent (italic) */
-  --font-shout:     'Bebas Neue', 'RobotHeroes', sans-serif;               /* condensed stat / shout */
-  --font-cinematic: 'Archivo', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif; /* editorial hero / long-form display */
+  --font-display:
+    "Fraunces", "Playfair Display", Georgia, "Times New Roman", serif; /* signature: scholarly serif headings */
+  --font-body: "Inter", Calibri, sans-serif; /* body copy */
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace; /* labels / numerics / wordmark */
+  --font-serif: "Instrument Serif", "Times New Roman", serif; /* emotional accent (italic) */
+  --font-shout: "Bebas Neue", "RobotHeroes", sans-serif; /* condensed stat / shout */
+  --font-cinematic:
+    "Archivo", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif; /* editorial hero / long-form display */
 }
 
 :root {
@@ -98,25 +101,34 @@
   /* Base surfaces — "Competitive Intelligence": deep midnight navy, warm
      ivory ink, gold accent. Reads as elite academy / prestige, not neon
      gamer. (Previous cinematic-blue look: branch backup/brand-v1-cinematic-blue.) */
-  --background: #0B1020;
-  --foreground: #F4F1EA;
+  --background: #0b1020;
+  --foreground: #f4f1ea;
   --card: #121831;
-  --card-foreground: #F4F1EA;
+  --card-foreground: #f4f1ea;
   --popover: #121831;
-  --popover-foreground: #F4F1EA;
-  --primary: #D4AF37;
-  --primary-foreground: #0B1020;
-  --secondary: #232B3D;
-  --secondary-foreground: #F4F1EA;
-  --muted: #1A2034;
-  --muted-foreground: #9AA1B5;
-  --accent: #D4AF37;
-  --accent-foreground: #0B1020;
+  --popover-foreground: #f4f1ea;
+  --primary: #d4af37;
+  --primary-foreground: #0b1020;
+  --secondary: #232b3d;
+  --secondary-foreground: #f4f1ea;
+  --muted: #1a2034;
+  --muted-foreground: #9aa1b5;
+  --accent: #d4af37;
+  --accent-foreground: #0b1020;
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: #F4F1EA;
-  --border: rgba(244, 241, 234, 0.10);
+  --destructive-foreground: #f4f1ea;
+  --border: rgba(244, 241, 234, 0.1);
   --input: rgba(244, 241, 234, 0.14);
-  --ring: #D4AF37;
+  --ring: #d4af37;
+
+  /* ── Focus system ────────────────────────────────────────────
+     Deliberately NOT the gold brand accent: gold is used decoratively all
+     over the app, so a gold ring is ambiguous. Electric blue means one
+     thing only — "this is where the keyboard is". Both values clear 3:1
+     against their theme's background and card surfaces (WCAG 2.2 SC
+     1.4.11 non-text contrast). */
+  --focus-ring: oklch(0.72 0.19 250);
+  --focus-glow: oklch(0.72 0.19 250 / 0.32);
 
   /* Eclipta custom colors.
      --neon-purple is a DEPRECATED alias kept so the existing
@@ -130,29 +142,29 @@
      now both carry BLUE so the whole app stays on-palette; --neon-purple is
      gold. (Trophy Road tiers and Ecliptar archetype colors are exempt and use
      their own tokens / literal classes.) */
-  --neon-pink: oklch(0.60 0.17 255);
-  --neon-cyan: oklch(0.70 0.14 245);
-  --arena: #0B1020;
+  --neon-pink: oklch(0.6 0.17 255);
+  --neon-cyan: oklch(0.7 0.14 245);
+  --arena: #0b1020;
   --arena-light: #121831;
-  --marble: #F4F1EA;
+  --marble: #f4f1ea;
   --acrylic: rgba(244, 241, 234, 0.03);
-  --acrylic-border: rgba(244, 241, 234, 0.10);
+  --acrylic-border: rgba(244, 241, 234, 0.1);
 
   /* ── Brand spine ──────────────────────────────────────────────
      Canonical brand primitives shared by every cinematic surface
      (.cf landing, .ab about, .btt battles). Those scopes alias their
      local tokens to these, so a brand change happens in ONE place
      instead of drifting across four files. */
-  --brand-bg:      #0B1020;                /* deep midnight navy        */
-  --brand-ink:     #F4F1EA;                /* warm ivory text           */
-  --brand-dim:     #BCBAB0;                /* secondary ivory           */
-  --brand-fog:     #7C8093;                /* tertiary / slate labels   */
-  --brand-line:    rgba(244, 241, 234, 0.10);
-  --brand-line-2:  rgba(244, 241, 234, 0.16);
-  --brand-flash:   #F6EFD9;                /* warm gold-ivory burst     */
-  --brand-accent:       #D4AF37;           /* gold — large display accent */
-  --brand-accent-base:  #D4AF37;           /* gold — app interactive accent */
-  --brand-slate:        #3A4458;           /* slate support             */
+  --brand-bg: #0b1020; /* deep midnight navy        */
+  --brand-ink: #f4f1ea; /* warm ivory text           */
+  --brand-dim: #bcbab0; /* secondary ivory           */
+  --brand-fog: #7c8093; /* tertiary / slate labels   */
+  --brand-line: rgba(244, 241, 234, 0.1);
+  --brand-line-2: rgba(244, 241, 234, 0.16);
+  --brand-flash: #f6efd9; /* warm gold-ivory burst     */
+  --brand-accent: #d4af37; /* gold — large display accent */
+  --brand-accent-base: #d4af37; /* gold — app interactive accent */
+  --brand-slate: #3a4458; /* slate support             */
   /* Brand TYPE roles live in @theme above (--font-display / -cinematic /
      -serif / -shout / -body / -mono). Every cinematic scope references
      those by role rather than re-declaring font stacks. */
@@ -169,64 +181,68 @@
   --tier-unreal: oklch(0.6 0.28 310);
   --tier-god: oklch(0.85 0.12 90);
 
-  --chart-1: #D4AF37;
-  --chart-2: #3A4458;
-  --chart-3: #C3C0B6;
-  --chart-4: oklch(0.70 0.14 245);
-  --chart-5: oklch(0.55 0.10 255);
-  --sidebar: #0E1426;
-  --sidebar-foreground: #F4F1EA;
-  --sidebar-primary: #D4AF37;
-  --sidebar-primary-foreground: #0B1020;
-  --sidebar-accent: #232B3D;
-  --sidebar-accent-foreground: #F4F1EA;
+  --chart-1: #d4af37;
+  --chart-2: #3a4458;
+  --chart-3: #c3c0b6;
+  --chart-4: oklch(0.7 0.14 245);
+  --chart-5: oklch(0.55 0.1 255);
+  --sidebar: #0e1426;
+  --sidebar-foreground: #f4f1ea;
+  --sidebar-primary: #d4af37;
+  --sidebar-primary-foreground: #0b1020;
+  --sidebar-accent: #232b3d;
+  --sidebar-accent-foreground: #f4f1ea;
   --sidebar-border: rgba(244, 241, 234, 0.08);
-  --sidebar-ring: #D4AF37;
+  --sidebar-ring: #d4af37;
 
   /* ── Elevation scale ──────────────────────────────────────────
      One intentional depth language for the whole app: a tight contact
      shadow + a soft ambient layer (physical, not a glowing halo).
        1 = resting cards · 2 = floating menus/popovers · 3 = modals/overlays
      On the deep-navy ground these read as near-black depth. */
-  --elevation-1: 0 1px 2px oklch(0 0 0 / 0.40), 0 1px 1px oklch(0 0 0 / 0.30);
-  --elevation-2: 0 4px 10px oklch(0 0 0 / 0.40), 0 14px 30px oklch(0 0 0 / 0.42);
-  --elevation-3: 0 12px 32px oklch(0 0 0 / 0.46), 0 32px 64px oklch(0 0 0 / 0.50);
+  --elevation-1: 0 1px 2px oklch(0 0 0 / 0.4), 0 1px 1px oklch(0 0 0 / 0.3);
+  --elevation-2: 0 4px 10px oklch(0 0 0 / 0.4), 0 14px 30px oklch(0 0 0 / 0.42);
+  --elevation-3: 0 12px 32px oklch(0 0 0 / 0.46), 0 32px 64px oklch(0 0 0 / 0.5);
 }
 
 /* Light theme — toggled via .light on <html> */
 .light {
   /* Warm ivory paper + deep navy ink + deep-gold accent. */
-  --background: #F4F1EA;
-  --foreground: #15192A;
-  --card: #FBF9F4;
-  --card-foreground: #15192A;
-  --popover: #FBF9F4;
-  --popover-foreground: #15192A;
-  --primary: #9A7B1E;
-  --primary-foreground: #F4F1EA;
-  --secondary: #E7E2D5;
-  --secondary-foreground: #20263A;
-  --muted: #E7E2D5;
-  --muted-foreground: #5B6173;
-  --accent: #9A7B1E;
-  --accent-foreground: #F4F1EA;
+  --background: #f4f1ea;
+  --foreground: #15192a;
+  --card: #fbf9f4;
+  --card-foreground: #15192a;
+  --popover: #fbf9f4;
+  --popover-foreground: #15192a;
+  --primary: #9a7b1e;
+  --primary-foreground: #f4f1ea;
+  --secondary: #e7e2d5;
+  --secondary-foreground: #20263a;
+  --muted: #e7e2d5;
+  --muted-foreground: #5b6173;
+  --accent: #9a7b1e;
+  --accent-foreground: #f4f1ea;
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: #F4F1EA;
+  --destructive-foreground: #f4f1ea;
   --border: rgba(21, 25, 42, 0.12);
   --input: rgba(21, 25, 42, 0.16);
-  --ring: #9A7B1E;
+  --ring: #9a7b1e;
+
+  /* Darker in light mode so the ring keeps 3:1 against ivory surfaces. */
+  --focus-ring: oklch(0.52 0.22 258);
+  --focus-glow: oklch(0.52 0.22 258 / 0.28);
 
   --neon-purple: var(--accent);
-  --neon-pink: oklch(0.50 0.16 255);
+  --neon-pink: oklch(0.5 0.16 255);
   --neon-cyan: oklch(0.52 0.14 248);
-  --arena: #F4F1EA;
-  --arena-light: #FBF9F4;
-  --marble: #15192A;
+  --arena: #f4f1ea;
+  --arena-light: #fbf9f4;
+  --marble: #15192a;
   --acrylic: rgba(21, 25, 42, 0.03);
-  --acrylic-border: rgba(21, 25, 42, 0.10);
+  --acrylic-border: rgba(21, 25, 42, 0.1);
 
-  --sidebar: #EDE8DC;
-  --sidebar-foreground: #15192A;
+  --sidebar: #ede8dc;
+  --sidebar-foreground: #15192a;
   --sidebar-border: rgba(21, 25, 42, 0.08);
 
   /* Shadows are much subtler on the light paper ground. */
@@ -238,14 +254,18 @@
 .light .glass-panel {
   background: oklch(1 0 0 / 75%);
   border: 1px solid oklch(0 0 0 / 8%);
-  box-shadow: inset 0 1px 0 oklch(1 0 0 / 50%), var(--elevation-2);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 50%),
+    var(--elevation-2);
   backdrop-filter: blur(16px);
 }
 
 /* Tone down dramatic neon glows in light mode (less halo, more accent) */
 .light .neon-glow-purple,
 .light .neon-glow-pink {
-  box-shadow: 0 4px 20px oklch(0.62 0.11 88 / 22%), 0 1px 3px oklch(0 0 0 / 8%);
+  box-shadow:
+    0 4px 20px oklch(0.62 0.11 88 / 22%),
+    0 1px 3px oklch(0 0 0 / 8%);
 }
 .light .text-glow-purple {
   text-shadow: none;
@@ -275,7 +295,12 @@
   /* Serif display headings read best with tight, near-neutral tracking
      (the old 0.08em was tuned for the uppercase gamer sans). */
   .font-display,
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     letter-spacing: -0.01em;
   }
 }
@@ -289,22 +314,34 @@
     background: oklch(1 0 0 / 4.5%);
     backdrop-filter: blur(16px);
     border: 1px solid oklch(1 0 0 / 10%);
-    box-shadow: inset 0 1px 0 oklch(1 0 0 / 6%), var(--elevation-2);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 6%),
+      var(--elevation-2);
   }
 
   /* Intentional elevation utilities — the single depth scale (see :root). */
-  .elev-1 { box-shadow: var(--elevation-1); }
-  .elev-2 { box-shadow: var(--elevation-2); }
-  .elev-3 { box-shadow: var(--elevation-3); }
+  .elev-1 {
+    box-shadow: var(--elevation-1);
+  }
+  .elev-2 {
+    box-shadow: var(--elevation-2);
+  }
+  .elev-3 {
+    box-shadow: var(--elevation-3);
+  }
 
   /* Refined elevation — a grounded shadow with a faint brand-tinted lift,
      instead of a glowing halo. Reads as intentional depth, not neon. */
   .neon-glow-purple {
-    box-shadow: 0 1px 2px oklch(0 0 0 / 28%), 0 10px 28px oklch(0.78 0.13 88 / 14%);
+    box-shadow:
+      0 1px 2px oklch(0 0 0 / 28%),
+      0 10px 28px oklch(0.78 0.13 88 / 14%);
   }
 
   .neon-glow-pink {
-    box-shadow: 0 1px 2px oklch(0 0 0 / 28%), 0 10px 28px oklch(0.60 0.17 255 / 14%);
+    box-shadow:
+      0 1px 2px oklch(0 0 0 / 28%),
+      0 10px 28px oklch(0.6 0.17 255 / 14%);
   }
 
   /* A restrained gold sheen on display words — a hint of light, not a neon
@@ -319,36 +356,67 @@
 
 /* Progress / XP bar shimmer sweep */
 @keyframes xp-shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(350%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
 }
 
 /* Road connector unlocked fill sweep */
 @keyframes road-fill {
-  from { transform: scaleX(0); transform-origin: left; }
-  to   { transform: scaleX(1); transform-origin: left; }
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
 }
 
 /* Rank badge pulse ring */
 @keyframes rank-aura {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50%       { opacity: 0.75; transform: scale(1.18); }
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.18);
+  }
 }
 
 @layer utilities {
-  .animate-xp-shimmer   { animation: xp-shimmer 2.2s linear infinite; }
-  .animate-rank-aura    { animation: rank-aura 2.2s ease-in-out infinite; }
+  .animate-xp-shimmer {
+    animation: xp-shimmer 2.2s linear infinite;
+  }
+  .animate-rank-aura {
+    animation: rank-aura 2.2s ease-in-out infinite;
+  }
 }
 
 /* Luna thinking indicator — CSS-only animations so they run on the compositor
    thread, independent of the requestAnimationFrame path-mutation loop. */
 @keyframes luna-thinking-glow {
-  0%, 100% { filter: drop-shadow(0 0 2px oklch(0.78 0.13 88 / 0.20)); }
-  50%       { filter: drop-shadow(0 0 8px oklch(0.78 0.13 88 / 0.58)); }
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px oklch(0.78 0.13 88 / 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px oklch(0.78 0.13 88 / 0.58));
+  }
 }
 @keyframes luna-thinking-fade {
-  0%, 100% { opacity: 0.35; }
-  50%       { opacity: 0.88; }
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.88;
+  }
 }
 .luna-thinking-moon {
   will-change: filter;
@@ -382,14 +450,160 @@
 @media (max-width: 639.98px) {
   .text-\[8px\],
   .text-\[8\.5px\],
-  .text-\[9px\]  { font-size: 10px; }
-  .text-\[10px\] { font-size: 11px; }
-  .text-\[11px\] { font-size: 12px; }
+  .text-\[9px\] {
+    font-size: 10px;
+  }
+  .text-\[10px\] {
+    font-size: 11px;
+  }
+  .text-\[11px\] {
+    font-size: 12px;
+  }
 }
 
 /* Milestone celebration toast */
 .milestone-toast {
   border: 1px solid oklch(0.78 0.13 88 / 42%) !important;
-  background: oklch(0.20 0.02 258 / 95%) !important;
-  box-shadow: 0 0 30px oklch(0.78 0.13 88 / 20%), 0 4px 20px oklch(0 0 0 / 40%) !important;
+  background: oklch(0.2 0.02 258 / 95%) !important;
+  box-shadow:
+    0 0 30px oklch(0.78 0.13 88 / 20%),
+    0 4px 20px oklch(0 0 0 / 40%) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ACCESSIBILITY FOUNDATION
+   These rules are deliberately UNLAYERED. Tailwind emits utilities into
+   `@layer utilities`, and un-layered CSS beats layered CSS in the cascade
+   regardless of specificity — so a single rule here overrides every
+   `focus:outline-none` in the codebase without !important and without
+   editing 40+ call sites. See the label-floor block above for the same
+   technique.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Universal focus ring ───────────────────────────────────
+   One treatment for every focusable thing: buttons, links, cards, lesson
+   tiles, battle cards, tabs, nav items, inputs, forum posts, profile
+   elements. `outline` (not a border) so layout never shifts, and modern
+   browsers already curve an outline to follow `border-radius`, which gives
+   the "rounded corners following component radius" for free.
+
+   `:focus-visible` rather than `:focus` so pointer users never see a ring
+   they didn't ask for, while keyboard users always do. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  /* Subtle glow. Kept as a ring-shaped shadow so it reads as part of the
+     outline rather than as elevation. */
+  box-shadow: 0 0 0 5px var(--focus-glow);
+  /* Some surfaces animate box-shadow; make the ring appear instantly. */
+  transition: none;
+}
+
+/* Elements that legitimately need the ring drawn inside their own box
+   (sticky headers, overflow-hidden tiles) opt in rather than lose it. */
+[data-focus-inset]:focus-visible {
+  outline-offset: -3px;
+}
+
+/* A focused element inside a scroll container should never hide under a
+   sticky header. */
+:focus-visible {
+  scroll-margin-block: 6rem;
+}
+
+/* ─── Skip-to-content ────────────────────────────────────────
+   Present in the DOM at all times (so it is the first tab stop) but only
+   visible once focused. */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -120%);
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--card);
+  color: var(--foreground);
+  border: 2px solid var(--focus-ring);
+  border-radius: 0 0 0.5rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: transform 160ms ease-out;
+}
+.skip-link:focus-visible {
+  transform: translate(-50%, 0);
+  outline-offset: -2px;
+}
+
+/* ─── Motion accessibility ───────────────────────────────────
+   Two triggers, one behaviour: the OS-level `prefers-reduced-motion` and an
+   in-app Reduce Motion switch (`<html data-motion="reduce">`) for users whose
+   OS setting is off but who still want a calmer page. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) *,
+  html:not([data-motion="full"]) *::before,
+  html:not([data-motion="full"]) *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  html:not([data-motion="full"]) {
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-motion="reduce"] *,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+  transition-delay: 0ms !important;
+}
+html[data-motion="reduce"] {
+  scroll-behavior: auto !important;
+}
+
+/* Purely decorative motion layers are removed outright rather than sped up:
+   a particle field that finishes in 1ms still repaints and still distracts.
+   Anything marked `data-decorative` is both hidden here and hidden from
+   assistive tech at the markup level (aria-hidden). */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) [data-decorative="motion"] {
+    display: none !important;
+  }
+}
+html[data-motion="reduce"] [data-decorative="motion"] {
+  display: none !important;
+}
+
+/* ─── Non-text contrast floor ────────────────────────────────
+   The UI leans on very low-alpha borders (0.10–0.16) for structure. That is
+   below the 3:1 required for meaningful boundaries, so lift the shared
+   border tokens when the user asks for more contrast. */
+@media (prefers-contrast: more) {
+  :root {
+    --border: rgba(244, 241, 234, 0.38);
+    --input: rgba(244, 241, 234, 0.46);
+  }
+  .light {
+    --border: rgba(21, 25, 42, 0.42);
+    --input: rgba(21, 25, 42, 0.5);
+  }
+  :focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* Windows High Contrast Mode draws its own colours and drops box-shadows, so
+   the glow disappears; keep a real outline so focus survives. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+    box-shadow: none;
+  }
 }

@@ -117,3 +117,28 @@ export async function adminSetXpRpc(userId: string, xp: number): Promise<number 
   }
   return data;
 }
+
+/**
+ * Persist the user's chosen interface language.
+ *
+ * Stored as a bare BCP 47 tag; the client validates it against the locale
+ * registry on read, so an unknown value degrades to browser detection rather
+ * than breaking the UI.
+ */
+export async function setPreferredLanguage(userId: string, locale: string): Promise<void> {
+  const { error } = await supabase
+    .from("user_profiles")
+    .update({ preferred_language: locale })
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+/** The user's saved language, or null when they have never chosen one. */
+export async function getPreferredLanguage(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("preferred_language")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.preferred_language ?? null;
+}

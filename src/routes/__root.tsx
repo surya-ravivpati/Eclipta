@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Outlet,
   Link,
@@ -10,6 +10,10 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Luna } from "@/components/Luna";
 import { Navbar } from "@/components/Navbar";
+import { announce, applyMotionPreference } from "@/lib/a11y";
+import { I18nProvider } from "@/i18n";
+import { useTranslation } from "@/i18n/use-translation";
+import { pageTitleFor } from "@/i18n/page-titles";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StreakCelebrationListener } from "@/components/streak/StreakCelebration";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -142,23 +146,78 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showLuna = !HIDE_LUNA_ON.some((p) => pathname.startsWith(p));
-  const showFooter = !isLanding(pathname) && !HIDE_FOOTER_ON.some((p) => pathname.startsWith(p));
-  const showNavbar = !HIDE_NAVBAR_ON.some((p) => pathname.startsWith(p));
   const [queryClient] = useState(createQueryClient);
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          {showNavbar && <Navbar />}
-          <Outlet />
-          {showFooter && <SiteFooter />}
-          {showLuna && <Luna />}
-          <StreakCelebrationListener />
-          <Toaster />
+          {/* I18nProvider sits inside AuthProvider so it can read the signed-in
+              user's saved language, and outside everything that renders text. */}
+          <I18nProvider>
+            <AppShell />
+          </I18nProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+}
+
+function AppShell() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showLuna = !HIDE_LUNA_ON.some((p) => pathname.startsWith(p));
+  const showFooter = !isLanding(pathname) && !HIDE_FOOTER_ON.some((p) => pathname.startsWith(p));
+  const showNavbar = !HIDE_NAVBAR_ON.some((p) => pathname.startsWith(p));
+  const { t } = useTranslation();
+
+  // Reflect the stored Reduce Motion choice before first paint so a user who
+  // asked for calm never sees one frame of animation.
+  useEffect(() => {
+    applyMotionPreference();
+  }, []);
+
+  // Route changes are invisible to a screen reader in a SPA — nothing reloads,
+  // so nothing is announced. Naming the new page on navigation restores the
+  // orientation a full page load would have given for free.
+  useEffect(() => {
+    announce(t("a11y.navigatedTo", { page: pageTitleFor(pathname, t) }));
+  }, [pathname, t]);
+
+  return (
+    <>
+      {/* First tab stop on every page. */}
+      <a href="#main-content" className="skip-link">
+        {t("a11y.skipToContent")}
+      </a>
+
+      {showNavbar && <Navbar />}
+
+      {/* The one and only <main>. `tabIndex={-1}` makes it a valid target
+              for the skip link without adding it to the tab order. */}
+      <main id="main-content" tabIndex={-1}>
+        <Outlet />
+      </main>
+
+      {showFooter && <SiteFooter />}
+      {showLuna && <Luna />}
+      <StreakCelebrationListener />
+      <Toaster />
+
+      {/* Announcement channels. Empty and visually hidden, but present on
+              every page so `announce()` always has somewhere to write. */}
+      <div
+        id="a11y-live-polite"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      />
+      <div
+        id="a11y-live-assertive"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      />
+    </>
   );
 }

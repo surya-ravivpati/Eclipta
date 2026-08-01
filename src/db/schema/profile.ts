@@ -97,6 +97,8 @@ export const userProfiles = pgTable("user_profiles", {
   best_streak: integer("best_streak").notNull().default(0),
   xp: integer("xp").notNull().default(0),
   equipped_ecliptar: text("equipped_ecliptar"),
+  /** BCP 47 tag; NULL means auto-detect from the browser. See src/i18n/locales.ts. */
+  preferred_language: text("preferred_language"),
 
   onboarded_at: timestamp("onboarded_at", { withTimezone: true, mode: "string" }),
   luna_notes: text("luna_notes"),

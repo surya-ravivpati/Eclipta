@@ -1774,6 +1774,7 @@ export type Database = {
           current_streak: number
           daily_streak: number
           equipped_ecliptar: string | null
+          preferred_language: string | null
           id: string
           last_practice_date: string | null
           learner_profile: Json | null
@@ -1807,6 +1808,7 @@ export type Database = {
           current_streak?: number
           daily_streak?: number
           equipped_ecliptar?: string | null
+          preferred_language?: string | null
           id?: string
           last_practice_date?: string | null
           learner_profile?: Json | null
@@ -1840,6 +1842,7 @@ export type Database = {
           current_streak?: number
           daily_streak?: number
           equipped_ecliptar?: string | null
+          preferred_language?: string | null
           id?: string
           last_practice_date?: string | null
           learner_profile?: Json | null
@@ -1953,6 +1956,7 @@ export type Database = {
           created_at: string | null
           current_streak: number | null
           equipped_ecliptar: string | null
+          preferred_language: string | null
           user_id: string | null
           username: string | null
           xp: number | null
@@ -1964,6 +1968,7 @@ export type Database = {
           created_at?: string | null
           current_streak?: number | null
           equipped_ecliptar?: string | null
+          preferred_language?: string | null
           user_id?: string | null
           username?: string | null
           xp?: number | null
@@ -1975,6 +1980,7 @@ export type Database = {
           created_at?: string | null
           current_streak?: number | null
           equipped_ecliptar?: string | null
+          preferred_language?: string | null
           user_id?: string | null
           username?: string | null
           xp?: number | null

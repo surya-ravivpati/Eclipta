@@ -3,6 +3,7 @@ import { Lock, ArrowLeft, Zap, Swords, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ARCHETYPES, ARCHETYPE_ABILITY_COPY } from "./archetypes";
 import type { ArchetypeId } from "./types";
+import { DAMAGE_TUNING } from "@/config/battle-tuning";
 import { getUnlockedArchetypes, ROAD_NODES } from "@/lib/trophy-road-data";
 import { cn } from "@/lib/utils";
 import { useOwnedEcliptars, usePlayerXp } from "@/hooks/use-player-xp";
@@ -31,24 +32,33 @@ function ArchStatGrid({
   isUnlocked: boolean;
 }) {
   const rnd = arch.statsAreRandom;
-  const dmgVal = rnd ? "???" : arch.multiplierScales ? "13→27" : String(arch.baseDamage);
-  const multVal = rnd
+  // Ranged stats read as a span; the Gambler hides everything until it rolls.
+  const dmgVal = rnd
     ? "???"
-    : arch.multiplierScales
-      ? "+15→40%"
-      : `+${Math.round(arch.multiplierStep * 100)}%`;
+    : arch.damageRamps
+      ? `${arch.baseDamage}→${arch.baseDamage + DAMAGE_TUNING.accelerator.damageCap}`
+      : arch.damageIsTimeScaled
+        ? `${arch.baseDamage}–${arch.baseDamage + DAMAGE_TUNING.speedster.maxSpeedBonus}`
+        : String(arch.baseDamage);
+  const defVal = rnd ? "???" : `${Math.round(arch.defense * 100)}%`;
+  const critVal = rnd ? "???" : `${Math.round(arch.critBonus * 100)}%`;
   const healVal = rnd ? "???" : arch.healAmount === null ? "NONE" : String(arch.healAmount);
   const diffVal = rnd ? "???" : `${arch.diffMin}–${arch.diffMax}`;
-  const timeVal = rnd ? "???" : `${arch.timeMultiplier}×`;
+  const timeVal = rnd
+    ? "???"
+    : arch.timeSecondsRange
+      ? `${arch.timeSecondsRange[0]}–${arch.timeSecondsRange[1]}s`
+      : `${arch.timeSeconds}s`;
   const hpVal = rnd ? "???" : String(arch.maxHp);
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
       <StatPill label="HP" value={hpVal} dim={!isUnlocked} />
       <StatPill label="DMG" value={dmgVal} dim={!isUnlocked} />
-      <StatPill label="MULT" value={multVal} dim={!isUnlocked} />
-      <StatPill label="HEAL" value={healVal} dim={!isUnlocked} />
-      <StatPill label="DIFF" value={diffVal} dim={!isUnlocked} />
+      <StatPill label="DEF" value={defVal} dim={!isUnlocked} />
       <StatPill label="TIME" value={timeVal} dim={!isUnlocked} />
+      <StatPill label="HEAL" value={healVal} dim={!isUnlocked} />
+      <StatPill label="CRIT" value={critVal} dim={!isUnlocked} />
+      <StatPill label="DIFF" value={diffVal} dim={!isUnlocked} />
     </div>
   );
 }

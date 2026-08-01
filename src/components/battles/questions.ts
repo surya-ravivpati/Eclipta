@@ -85,9 +85,6 @@ export function generateQuestion(difficulty: Difficulty): MathQuestion {
   return { q, answer, options: shuffle([...options]), difficulty, topic };
 }
 
-/** Re-exported for backward compatibility — src/config/battle-tuning.ts is the source of truth. */
-export { TIMER_DURATIONS } from "@/config/battle-tuning";
-
 /** The difficulty tier each emitted topic belongs to (for weak-spot practice). */
 export const TOPIC_DIFFICULTY: Record<string, Difficulty> = {
   Addition: "easy",

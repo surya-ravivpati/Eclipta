@@ -3,6 +3,8 @@ import {
   BOT_ACCURACY,
   CHEST_REWARDS,
   DAMAGE_TUNING,
+  damageTuningSchema,
+  QUESTION_TIMER,
   RATING_LEAGUES,
   ratingLeagueSchema,
 } from "./battle-tuning";
@@ -58,18 +60,74 @@ describe("DAMAGE_TUNING", () => {
     expect(DAMAGE_TUNING.chargeMultiplier).toBeGreaterThan(1);
   });
 
-  it("accelerator's damage floor is below its ceiling", () => {
-    expect(DAMAGE_TUNING.accelerator.baseDamage).toBeLessThan(
-      DAMAGE_TUNING.accelerator.baseDamage + DAMAGE_TUNING.accelerator.damageRange,
+  it("crit chance is a probability, shared by the whole roster", () => {
+    expect(DAMAGE_TUNING.critChance).toBeGreaterThan(0);
+    expect(DAMAGE_TUNING.critChance).toBeLessThanOrEqual(1);
+  });
+
+  it("caps defense below total immunity, so every archetype stays killable", () => {
+    expect(DAMAGE_TUNING.maxDefense).toBeLessThan(1);
+  });
+
+  it("accelerator's caps leave room for at least one ramp step", () => {
+    const { damagePerAnswer, damageCap, scorePerAnswer, scoreCap } = DAMAGE_TUNING.accelerator;
+    expect(damageCap).toBeGreaterThanOrEqual(damagePerAnswer);
+    expect(scoreCap).toBeGreaterThanOrEqual(scorePerAnswer);
+  });
+
+  it("healer's shield cap leaves room for at least one heal", () => {
+    expect(DAMAGE_TUNING.healer.shieldCap).toBeGreaterThanOrEqual(
+      DAMAGE_TUNING.healer.shieldPerHeal,
     );
   });
 
-  it("self-damage formula punishes low-HP archetypes more than high-HP ones", () => {
-    const { baseMultiplier, referenceHp, hpDivisor, hpMultiplierRange } = DAMAGE_TUNING.selfDamage;
-    const glassCannonMult = baseMultiplier;
-    const tankMult =
-      baseMultiplier - Math.max(0, (250 - referenceHp) / hpDivisor) * hpMultiplierRange;
-    expect(glassCannonMult).toBeGreaterThan(tankMult);
+  it("god heals on a whole-number cadence of at least every other answer", () => {
+    expect(Number.isInteger(DAMAGE_TUNING.god.healInterval)).toBe(true);
+    expect(DAMAGE_TUNING.god.healInterval).toBeGreaterThan(1);
+  });
+
+  it("a borrowed passive is strictly weaker than owning it", () => {
+    expect(DAMAGE_TUNING.fulcrum.copyStrength).toBeLessThan(1);
+    expect(DAMAGE_TUNING.fulcrum.copyStrength).toBeGreaterThan(0);
+  });
+
+  it("the miss-penalty band is ordered", () => {
+    expect(DAMAGE_TUNING.missPenalty.max).toBeGreaterThanOrEqual(DAMAGE_TUNING.missPenalty.min);
+  });
+
+  it("rejects a streak bonus that would feed back into damage", () => {
+    // Guards the whole point of the redesign: momentum scales SCORE only, so
+    // there is no damage multiplier key here to retune by accident.
+    expect(DAMAGE_TUNING).not.toHaveProperty("streakDamage");
+    expect(DAMAGE_TUNING).not.toHaveProperty("multiplierStep");
+  });
+});
+
+describe("damage tuning schema", () => {
+  it("rejects a ramp whose cap is below a single step", () => {
+    expect(() =>
+      damageTuningSchema.parse({
+        ...DAMAGE_TUNING,
+        accelerator: { ...DAMAGE_TUNING.accelerator, damageCap: 1, damagePerAnswer: 2 },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a crit chance above certainty", () => {
+    expect(() => damageTuningSchema.parse({ ...DAMAGE_TUNING, critChance: 1.5 })).toThrow();
+  });
+
+  it("rejects an inverted miss-penalty band", () => {
+    expect(() =>
+      damageTuningSchema.parse({ ...DAMAGE_TUNING, missPenalty: { min: 20, max: 5 } }),
+    ).toThrow();
+  });
+});
+
+describe("QUESTION_TIMER", () => {
+  it("keeps a whole-second floor that leaves a question answerable", () => {
+    expect(Number.isInteger(QUESTION_TIMER.minSeconds)).toBe(true);
+    expect(QUESTION_TIMER.minSeconds).toBeGreaterThan(0);
   });
 });
 

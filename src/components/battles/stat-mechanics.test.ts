@@ -2,14 +2,26 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import type { LucideIcon } from "lucide-react";
 import type { Archetype } from "./types";
 import {
+  absorbWithShield,
+  applyDefense,
   botAccuracy,
+  COPYABLE_PASSIVES,
   getActionDifficultyLevel,
   getEffectiveDamage,
-  getEffectiveMultiplierStep,
-  hpToSelfDmgMult,
+  getHealShield,
+  getQuestionTime,
+  getScoreMultiplier,
+  getStreakHeal,
   levelToCategory,
-  streakToMultiplier,
+  rollCopiedPassive,
+  rollMissPenalty,
 } from "./stat-mechanics";
+import { DAMAGE_TUNING, QUESTION_TIMER } from "@/config/battle-tuning";
+
+/** Damage without the crit roll — keeps the arithmetic assertions deterministic. */
+function damage(arch: Archetype, opts: Parameters<typeof getEffectiveDamage>[1]): number {
+  return getEffectiveDamage(arch, { ...opts, allowCrit: false }).damage;
+}
 
 function archetype(overrides: Partial<Archetype> = {}): Archetype {
   return {
@@ -22,9 +34,10 @@ function archetype(overrides: Partial<Archetype> = {}): Archetype {
     passive: "",
     maxHp: 150,
     baseDamage: 15,
-    multiplierStep: 0.2,
+    defense: 0,
+    critBonus: 0,
     healAmount: 10,
-    timeMultiplier: 1,
+    timeSeconds: 30,
     diffMin: 3,
     diffMax: 7,
     focusPool: 10,
@@ -79,76 +92,257 @@ describe("getActionDifficultyLevel", () => {
 
 describe("getEffectiveDamage", () => {
   it("returns the flat base damage for a plain attack", () => {
-    expect(getEffectiveDamage(archetype(), { action: "attack" })).toBe(15);
+    expect(damage(archetype(), { action: "attack" })).toBe(15);
   });
 
-  it("multiplies charge damage by 1.8", () => {
-    expect(getEffectiveDamage(archetype(), { action: "charge" })).toBe(27);
-  });
-
-  it("doubles a time-scaled archetype's damage at full speed", () => {
-    const speedster = archetype({ damageIsTimeScaled: true, baseDamage: 15 });
-    expect(getEffectiveDamage(speedster, { action: "attack", timeSpent: 0, maxTime: 30 })).toBe(30);
-  });
-
-  it("gives a time-scaled archetype no bonus when the clock runs out", () => {
-    const speedster = archetype({ damageIsTimeScaled: true, baseDamage: 15 });
-    expect(getEffectiveDamage(speedster, { action: "attack", timeSpent: 30, maxTime: 30 })).toBe(
-      15,
+  it("multiplies charge damage by the charge multiplier", () => {
+    expect(damage(archetype(), { action: "charge" })).toBe(
+      Math.floor(15 * DAMAGE_TUNING.chargeMultiplier),
     );
   });
 
-  it("scales a ramping archetype from 13 up to 27 over ten questions", () => {
-    const accelerator = archetype({ multiplierScales: true });
-    expect(getEffectiveDamage(accelerator, { action: "attack", recordCount: 0 })).toBe(13);
-    expect(getEffectiveDamage(accelerator, { action: "attack", recordCount: 10 })).toBe(27);
+  it("gives a time-scaled archetype its full bonus at full speed", () => {
+    const speedster = archetype({ damageIsTimeScaled: true, baseDamage: 16 });
+    expect(damage(speedster, { action: "attack", timeSpent: 0, maxTime: 30 })).toBe(
+      16 + DAMAGE_TUNING.speedster.maxSpeedBonus,
+    );
   });
 
-  it("caps the ramp so damage cannot grow past ten questions", () => {
-    const accelerator = archetype({ multiplierScales: true });
-    expect(getEffectiveDamage(accelerator, { action: "attack", recordCount: 50 })).toBe(27);
+  it("gives a time-scaled archetype no bonus when the clock runs out", () => {
+    const speedster = archetype({ damageIsTimeScaled: true, baseDamage: 16 });
+    expect(damage(speedster, { action: "attack", timeSpent: 30, maxTime: 30 })).toBe(16);
   });
 
   it("ignores the time bonus when maxTime is zero rather than dividing by it", () => {
     const speedster = archetype({ damageIsTimeScaled: true });
-    expect(getEffectiveDamage(speedster, { action: "attack", timeSpent: 5, maxTime: 0 })).toBe(15);
+    expect(damage(speedster, { action: "attack", timeSpent: 5, maxTime: 0 })).toBe(15);
+  });
+
+  it("ramps a scaling archetype by a fixed step per correct answer", () => {
+    const { damagePerAnswer } = DAMAGE_TUNING.accelerator;
+    const accelerator = archetype({ damageRamps: true, baseDamage: 14 });
+    expect(damage(accelerator, { action: "attack", correctCount: 0 })).toBe(14);
+    expect(damage(accelerator, { action: "attack", correctCount: 3 })).toBe(
+      14 + 3 * damagePerAnswer,
+    );
+  });
+
+  it("caps the ramp however long the match runs", () => {
+    const { damageCap } = DAMAGE_TUNING.accelerator;
+    const accelerator = archetype({ damageRamps: true, baseDamage: 14 });
+    expect(damage(accelerator, { action: "attack", correctCount: 999 })).toBe(14 + damageCap);
+  });
+
+  it("gives a raging archetype bonus damage only below the HP threshold", () => {
+    const { rageHpThreshold, rageDamageBonus } = DAMAGE_TUNING.apex;
+    const apex = archetype({ ragesWhenLow: true, baseDamage: 34 });
+    expect(damage(apex, { action: "attack", currentHp: rageHpThreshold })).toBe(34);
+    expect(damage(apex, { action: "attack", currentHp: rageHpThreshold - 1 })).toBe(
+      Math.floor(34 * (1 + rageDamageBonus)),
+    );
+  });
+
+  it("applies the crit bonus when the roll lands, and nothing when it misses", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0);
+    const crit = getEffectiveDamage(archetype({ critBonus: 0.25 }), { action: "attack" });
+    expect(crit.crit).toBe(true);
+    expect(crit.damage).toBe(Math.floor(15 * 1.25));
+
+    random.mockReturnValue(0.99);
+    const plain = getEffectiveDamage(archetype({ critBonus: 0.25 }), { action: "attack" });
+    expect(plain.crit).toBe(false);
+    expect(plain.damage).toBe(15);
+  });
+
+  it("never crits an archetype with no crit power, however lucky the roll", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    expect(getEffectiveDamage(archetype({ critBonus: 0 }), { action: "attack" }).crit).toBe(false);
+  });
+
+  it("gives a Fulcrum a reduced share of a borrowed passive", () => {
+    const { copyStrength } = DAMAGE_TUNING.fulcrum;
+    const { maxSpeedBonus } = DAMAGE_TUNING.speedster;
+    const fulcrum = archetype({ copiesPassive: true, baseDamage: 18 });
+    expect(
+      damage(fulcrum, { action: "attack", timeSpent: 0, maxTime: 30, copied: "speedster" }),
+    ).toBe(Math.floor(18 + maxSpeedBonus * copyStrength));
+  });
+
+  it("ignores a borrowed passive for an archetype that cannot copy", () => {
+    const plain = archetype({ baseDamage: 18 });
+    expect(
+      damage(plain, { action: "attack", timeSpent: 0, maxTime: 30, copied: "speedster" }),
+    ).toBe(18);
+  });
+
+  it("never resolves below one damage", () => {
+    expect(damage(archetype({ baseDamage: 0 }), { action: "attack" })).toBe(1);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 });
 
-describe("getEffectiveMultiplierStep", () => {
-  it("uses the archetype's fixed step when it does not scale", () => {
-    expect(getEffectiveMultiplierStep(archetype({ multiplierStep: 0.2 }), 5)).toBe(0.2);
+describe("applyDefense", () => {
+  it("passes damage through untouched with no defense", () => {
+    expect(applyDefense(20, archetype({ defense: 0 }))).toBe(20);
   });
 
-  it("ramps a scaling archetype from 0.15 to 0.40 over ten questions", () => {
-    const accelerator = archetype({ multiplierScales: true });
-    expect(getEffectiveMultiplierStep(accelerator, 0)).toBeCloseTo(0.15);
-    expect(getEffectiveMultiplierStep(accelerator, 10)).toBeCloseTo(0.4);
-    expect(getEffectiveMultiplierStep(accelerator, 99)).toBeCloseTo(0.4);
+  it("reduces damage by the defender's defense", () => {
+    expect(applyDefense(20, archetype({ defense: 0.2 }))).toBe(16);
+  });
+
+  it("caps defense so no archetype becomes immune", () => {
+    const invincible = archetype({ defense: 1 });
+    expect(applyDefense(100, invincible)).toBe(Math.floor(100 * (1 - DAMAGE_TUNING.maxDefense)));
+  });
+
+  it("never reduces a hit below one damage", () => {
+    expect(applyDefense(1, archetype({ defense: 0.9 }))).toBe(1);
+  });
+
+  it("adds a reduced share of Tank's armour when a Fulcrum borrows it", () => {
+    const fulcrum = archetype({ copiesPassive: true, defense: 0.1 });
+    expect(applyDefense(100, fulcrum, "tank")).toBeLessThan(applyDefense(100, fulcrum));
   });
 });
 
-describe("streakToMultiplier", () => {
+describe("absorbWithShield", () => {
+  it("passes damage straight to HP with no shield", () => {
+    expect(absorbWithShield(10, 0)).toEqual({ hpLoss: 10, shieldLeft: 0 });
+  });
+
+  it("spends the shield first and passes the remainder to HP", () => {
+    expect(absorbWithShield(10, 4)).toEqual({ hpLoss: 6, shieldLeft: 0 });
+  });
+
+  it("absorbs the hit entirely when the shield covers it", () => {
+    expect(absorbWithShield(4, 10)).toEqual({ hpLoss: 0, shieldLeft: 6 });
+  });
+});
+
+describe("getHealShield", () => {
+  it("grants nothing to an archetype without the passive", () => {
+    expect(getHealShield(archetype(), 0)).toBe(0);
+  });
+
+  it("grants the full amount to a Healer", () => {
+    const { shieldPerHeal } = DAMAGE_TUNING.healer;
+    expect(getHealShield(archetype({ healGrantsShield: true }), 0)).toBe(shieldPerHeal);
+  });
+
+  it("banks repeat heals up to the cap and no further", () => {
+    const { shieldCap } = DAMAGE_TUNING.healer;
+    const healer = archetype({ healGrantsShield: true });
+    expect(getHealShield(healer, shieldCap)).toBe(shieldCap);
+    expect(getHealShield(healer, shieldCap - 1)).toBe(shieldCap);
+  });
+
+  it("grants a Fulcrum a reduced shield when it borrows the passive", () => {
+    const { shieldPerHeal } = DAMAGE_TUNING.healer;
+    const fulcrum = archetype({ copiesPassive: true });
+    expect(getHealShield(fulcrum, 0, "healer")).toBe(
+      Math.round(shieldPerHeal * DAMAGE_TUNING.fulcrum.copyStrength),
+    );
+  });
+});
+
+describe("getStreakHeal", () => {
+  const god = archetype({ healsOnCorrectStreak: true });
+  const { healInterval, healAmount } = DAMAGE_TUNING.god;
+
+  it("heals only on answers that complete an interval", () => {
+    expect(getStreakHeal(god, healInterval)).toBe(healAmount);
+    expect(getStreakHeal(god, healInterval * 2)).toBe(healAmount);
+    expect(getStreakHeal(god, healInterval - 1)).toBe(0);
+    expect(getStreakHeal(god, healInterval + 1)).toBe(0);
+  });
+
+  it("heals nothing before the first answer", () => {
+    expect(getStreakHeal(god, 0)).toBe(0);
+  });
+
+  it("heals nothing for an archetype without the passive", () => {
+    expect(getStreakHeal(archetype(), healInterval)).toBe(0);
+  });
+
+  it("heals a Fulcrum a reduced amount when it borrows the passive", () => {
+    const fulcrum = archetype({ copiesPassive: true });
+    expect(getStreakHeal(fulcrum, healInterval, "god")).toBe(
+      Math.round(healAmount * DAMAGE_TUNING.fulcrum.copyStrength),
+    );
+  });
+});
+
+describe("getScoreMultiplier", () => {
+  const { stepPerHit, cap } = DAMAGE_TUNING.streakScore;
+
   it("is neutral with no momentum", () => {
-    expect(streakToMultiplier(0, 0.2)).toBe(1);
+    expect(getScoreMultiplier(archetype(), 0, 0)).toBe(1);
   });
 
   it("adds one step per point of momentum", () => {
-    expect(streakToMultiplier(3, 0.2)).toBeCloseTo(1.6);
+    expect(getScoreMultiplier(archetype(), 3, 0)).toBeCloseTo(1 + 3 * stepPerHit);
+  });
+
+  it("caps the streak bonus", () => {
+    expect(getScoreMultiplier(archetype(), 9999, 0)).toBeCloseTo(1 + cap);
+  });
+
+  it("adds the Accelerator's own ramp on top, capped", () => {
+    const { scorePerAnswer, scoreCap } = DAMAGE_TUNING.accelerator;
+    const accelerator = archetype({ damageRamps: true });
+    expect(getScoreMultiplier(accelerator, 0, 2)).toBeCloseTo(1 + 2 * scorePerAnswer);
+    expect(getScoreMultiplier(accelerator, 0, 9999)).toBeCloseTo(1 + scoreCap);
   });
 });
 
-describe("hpToSelfDmgMult", () => {
-  it("punishes the lowest-HP archetype hardest", () => {
-    expect(hpToSelfDmgMult(75)).toBeCloseTo(1.3);
+describe("getQuestionTime", () => {
+  it("uses the archetype's absolute clock regardless of question tier", () => {
+    const healer = archetype({ timeSeconds: 70 });
+    expect(getQuestionTime(healer, "easy")).toBe(70);
+    expect(getQuestionTime(healer, "hard")).toBe(70);
   });
 
-  it("barely stings the highest-HP archetype", () => {
-    expect(hpToSelfDmgMult(250)).toBeCloseTo(0.5);
+  it("stretches a ranged clock across the question tiers", () => {
+    const speedster = archetype({ timeSeconds: 30, timeSecondsRange: [20, 40] });
+    expect(getQuestionTime(speedster, "easy")).toBe(20);
+    expect(getQuestionTime(speedster, "medium")).toBe(30);
+    expect(getQuestionTime(speedster, "hard")).toBe(40);
   });
 
-  it("never exceeds the 1.30 ceiling below the 75 HP floor", () => {
-    expect(hpToSelfDmgMult(40)).toBeCloseTo(1.3);
+  it("never drops below the answerable floor", () => {
+    expect(getQuestionTime(archetype({ timeSeconds: 1 }), "easy")).toBe(QUESTION_TIMER.minSeconds);
+  });
+});
+
+describe("rollMissPenalty", () => {
+  const { min, max } = DAMAGE_TUNING.missPenalty;
+
+  it("stays inside the configured band at both extremes of the roll", () => {
+    const random = vi.spyOn(Math, "random");
+    random.mockReturnValue(0);
+    expect(rollMissPenalty()).toBe(min);
+    random.mockReturnValue(0.9999999);
+    expect(rollMissPenalty()).toBe(max);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+});
+
+describe("rollCopiedPassive", () => {
+  it("only ever returns a copyable passive", () => {
+    for (let i = 0; i < 50; i++) {
+      expect(COPYABLE_PASSIVES).toContain(rollCopiedPassive());
+    }
+  });
+
+  it("excludes Fulcrum itself and the Gambler's reroll", () => {
+    expect(COPYABLE_PASSIVES).not.toContain("fulcrum");
+    expect(COPYABLE_PASSIVES).not.toContain("gambler");
   });
 });
 

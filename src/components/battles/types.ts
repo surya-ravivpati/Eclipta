@@ -1,7 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 
-export type Phase = "idle" | "classSelect" | "searching" | "gamblerReveal" | "select" | "question" | "animate" | "result";
+export type Phase =
+  | "idle"
+  | "classSelect"
+  | "searching"
+  | "gamblerReveal"
+  | "select"
+  | "question"
+  | "animate"
+  | "result";
 export type Action = "attack" | "defend" | "charge" | "wild";
 export type Difficulty = "easy" | "medium" | "hard";
 export type ArchetypeId = MonsterArchetypeKey;
@@ -27,6 +35,8 @@ export interface Fighter {
   maxHp: number;
   focus: number;
   maxFocus: number;
+  /** Absorb pool consumed before HP (Healer passive). Absent = 0. */
+  shield?: number;
   icon: LucideIcon;
   /** Optional in-battle creature art (falls back to `icon` when absent/broken). */
   sprite?: string;
@@ -43,24 +53,39 @@ export interface Archetype {
   /** Direct mechanical values — no more 0-4 abstraction */
   maxHp: number;
   baseDamage: number;
-  multiplierStep: number;      // additive per-momentum bonus (e.g. 0.20 = +20% per streak hit)
-  healAmount: number | null;   // null = cannot heal (Tank)
-  timeMultiplier: number;      // multiplied against base TIMER_DURATIONS per category
-  diffMin: number;             // min difficulty level 1–10
-  diffMax: number;             // max difficulty level 1–10
+  /** Incoming-damage reduction, 0–1 (0.20 = takes 20% less). Replaces the old
+   *  maxHp-derived self-damage curve — durability is now one explicit stat. */
+  defense: number;
+  /** Extra damage on a crit, 0–1 (0.25 = +25%). Crit *chance* is a flat
+   *  CRIT_CHANCE for every archetype; classes differ in how hard crits land. */
+  critBonus: number;
+  healAmount: number | null; // null = cannot heal (Tank)
+  /** Absolute seconds on the clock per question — no longer a multiplier over
+   *  a per-difficulty base, so the sheet value is what the player actually sees. */
+  timeSeconds: number;
+  diffMin: number; // min difficulty level 1–10
+  diffMax: number; // max difficulty level 1–10
   focusPool: number;
   startFocus: number;
-  damageIsTimeScaled?: boolean;  // Speedster: bonus damage for fast answers
-  multiplierScales?: boolean;    // Accelerator: damage & step grow with question count
-  statsAreRandom?: boolean;      // Gambler: roll overrides at battle start
+  /** Speedster: clock varies by question tier across [min, max] instead of a
+   *  flat `timeSeconds` (easy → min, hard → max). */
+  timeSecondsRange?: [number, number];
+  damageIsTimeScaled?: boolean; // Speedster: bonus damage for fast answers
+  damageRamps?: boolean; // Accelerator: +2 DMG and +2% score per correct answer
+  healGrantsShield?: boolean; // Healer: Defend also grants an absorb shield
+  healsOnCorrectStreak?: boolean; // God: every 3rd correct answer restores HP
+  ragesWhenLow?: boolean; // Apex: +30% damage below RAGE_HP_THRESHOLD
+  copiesPassive?: boolean; // Fulcrum: borrows a random passive each round
+  statsAreRandom?: boolean; // Gambler: roll overrides at battle start
 }
 
 export interface GamblerRoll {
   maxHp: number;
   baseDamage: number;
-  multiplierStep: number;
+  defense: number;
   healAmount: number;
-  timeMultiplier: number;
+  timeSeconds: number;
+  critBonus: number;
   diffMin: number;
   diffMax: number;
 }
@@ -78,22 +103,22 @@ export interface ActionConfig {
 // numeric value. The ID is monotonically increasing — never reordered.
 export type LogActor = "player" | "opponent" | "system";
 export type LogActionType =
-  | "attack"     // deal damage (Attack action)
-  | "heal"       // restore HP (Defend action)
-  | "charge"     // power attack (Charge action)
-  | "wild"       // wild event (Wild action)
-  | "miss"       // wrong answer or timeout
-  | "combo"      // streak milestone reached
-  | "separator"  // turn-start indicator
-  | "info"       // match start, pressure lines, warnings
-  | "ghost";     // ghost-replay opponent action
+  | "attack" // deal damage (Attack action)
+  | "heal" // restore HP (Defend action)
+  | "charge" // power attack (Charge action)
+  | "wild" // wild event (Wild action)
+  | "miss" // wrong answer or timeout
+  | "combo" // streak milestone reached
+  | "separator" // turn-start indicator
+  | "info" // match start, pressure lines, warnings
+  | "ghost"; // ghost-replay opponent action
 
 export interface LogEntry {
-  id: number;              // monotonically increasing — stable React key, never reordered
+  id: number; // monotonically increasing — stable React key, never reordered
   actor: LogActor;
   actionType: LogActionType;
-  result: string;          // human-readable description
-  value?: number;          // primary numeric value (damage / heal amount)
+  result: string; // human-readable description
+  value?: number; // primary numeric value (damage / heal amount)
 }
 
 // ─── Battle Stats ────────────────────────────────────────────────────

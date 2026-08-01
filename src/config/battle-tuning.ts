@@ -16,57 +16,94 @@ import { z } from "zod";
 // ── Damage formulas ─────────────────────────────────────────────────────────
 // Used by src/components/battles/stat-mechanics.ts.
 
-const damageTuningSchema = z.object({
+/**
+ * There is deliberately **no streak damage multiplier** here. Momentum used to
+ * compound on top of base damage, which ended matches in three or four turns;
+ * it now feeds `streakScore` only. The durability knob that replaced the old
+ * maxHp-derived self-damage curve is DEF, which lives per-archetype on the stat
+ * sheet in battles/archetypes.ts — only the shared *formula* constants belong
+ * in this file.
+ */
+export const damageTuningSchema = z.object({
   /** Charge multiplies base damage by this before other bonuses. */
   chargeMultiplier: z.number().positive(),
+  /**
+   * Crit chance is flat across the whole roster — archetypes differ in crit
+   * *power* (`critBonus` on the stat sheet), not in how often they crit.
+   */
+  critChance: z.number().min(0).max(1),
+  /** Ceiling on DEF, so no archetype or borrowed passive can reach immunity. */
+  maxDefense: z.number().min(0).max(1),
   accelerator: z
     .object({
-      /** Damage at zero questions answered. */
-      baseDamage: z.number().nonnegative(),
-      /** Added on top of baseDamage, scaled by progress toward questionsToMaxScale. */
-      damageRange: z.number().positive(),
-      /** Per-hit multiplier step at zero questions answered. */
-      stepBase: z.number().nonnegative(),
-      /** Added on top of stepBase, scaled by progress toward questionsToMaxScale. */
-      stepRange: z.number().positive(),
-      /** Questions answered at which scaling reaches its maximum. */
-      questionsToMaxScale: z.number().int().positive(),
+      /** Damage added per correct answer. */
+      damagePerAnswer: z.number().positive(),
+      /** Most damage the ramp can add, however long the match runs. */
+      damageCap: z.number().positive(),
+      /** Score bonus added per correct answer, as a fraction. */
+      scorePerAnswer: z.number().positive(),
+      /** Largest score bonus the ramp can reach, as a fraction. */
+      scoreCap: z.number().positive(),
     })
-    .refine((a) => a.baseDamage + a.damageRange > a.baseDamage, "damageRange must be positive"),
-  selfDamage: z
+    .refine((a) => a.damageCap >= a.damagePerAnswer, "the damage cap must allow at least one step")
+    .refine((a) => a.scoreCap >= a.scorePerAnswer, "the score cap must allow at least one step"),
+  /** Speedster: bonus damage at an instant answer, decaying to zero at the buzzer. */
+  speedster: z.object({ maxSpeedBonus: z.number().positive() }),
+  /** Apex: below the HP threshold, damage gains this fraction. */
+  apex: z.object({
+    rageHpThreshold: z.number().positive(),
+    rageDamageBonus: z.number().positive(),
+  }),
+  /** Healer: absorb granted per Defend, and the most that can be banked. */
+  healer: z
     .object({
-      /** Self-damage multiplier at the reference (lowest-HP) archetype. */
-      baseMultiplier: z.number().positive(),
-      /** The maxHp value the formula is anchored to — this archetype takes baseMultiplier exactly. */
-      referenceHp: z.number().positive(),
-      /** HP above referenceHp divided by this before scaling down the multiplier. */
-      hpDivisor: z.number().positive(),
-      /** Maximum amount the multiplier can drop by, reached at hpDivisor + referenceHp HP and beyond. */
-      hpMultiplierRange: z.number().positive(),
+      shieldPerHeal: z.number().positive(),
+      shieldCap: z.number().positive(),
     })
-    .refine(
-      (s) => s.baseMultiplier - s.hpMultiplierRange >= 0,
-      "a tanky enough archetype must not reach negative self-damage",
-    ),
+    .refine((h) => h.shieldCap >= h.shieldPerHeal, "the shield cap must allow at least one heal"),
+  /** God: correct answers per free heal, and how much it restores. */
+  god: z.object({
+    healInterval: z.number().int().positive(),
+    healAmount: z.number().positive(),
+  }),
+  /** Fulcrum: the fraction of a borrowed passive's strength it receives. */
+  fulcrum: z.object({ copyStrength: z.number().min(0).max(1) }),
+  /**
+   * Score-only streak bonus. This is where momentum pays out now — the reward
+   * for a long chain is a bigger score, never a shorter match.
+   */
+  streakScore: z.object({
+    stepPerHit: z.number().positive(),
+    cap: z.number().positive(),
+  }),
+  /** Damage taken for a wrong answer or a timeout, before DEF. */
+  missPenalty: z
+    .object({
+      min: z.number().positive(),
+      max: z.number().positive(),
+    })
+    .refine((m) => m.max >= m.min, "max must be at or above min"),
 });
 
 export type DamageTuning = z.infer<typeof damageTuningSchema>;
 
 export const DAMAGE_TUNING: DamageTuning = damageTuningSchema.parse({
   chargeMultiplier: 1.8,
+  critChance: 0.1,
+  maxDefense: 0.9,
   accelerator: {
-    baseDamage: 13,
-    damageRange: 14,
-    stepBase: 0.15,
-    stepRange: 0.25,
-    questionsToMaxScale: 10,
+    damagePerAnswer: 2,
+    damageCap: 16,
+    scorePerAnswer: 0.02,
+    scoreCap: 0.35,
   },
-  selfDamage: {
-    baseMultiplier: 1.3,
-    referenceHp: 75,
-    hpDivisor: 175,
-    hpMultiplierRange: 0.8,
-  },
+  speedster: { maxSpeedBonus: 10 },
+  apex: { rageHpThreshold: 35, rageDamageBonus: 0.3 },
+  healer: { shieldPerHeal: 8, shieldCap: 24 },
+  god: { healInterval: 3, healAmount: 15 },
+  fulcrum: { copyStrength: 0.5 },
+  streakScore: { stepPerHit: 0.05, cap: 1.0 },
+  missPenalty: { min: 8, max: 17 },
 } satisfies DamageTuning);
 
 // ── Bot accuracy ─────────────────────────────────────────────────────────────
@@ -94,27 +131,23 @@ export const BOT_ACCURACY: BotAccuracyTuning = botAccuracySchema.parse({
 } satisfies BotAccuracyTuning);
 
 // ── Question timers ──────────────────────────────────────────────────────────
-// Re-exported from here by src/components/battles/questions.ts so existing
-// imports keep working; this file is the source of truth.
+// There is no per-difficulty timer table any more. The clock is an absolute
+// per-archetype stat (`timeSeconds`, e.g. Tank 25s / Healer 70s) on the stat
+// sheet in battles/archetypes.ts, so the number on the sheet is the number the
+// player sees. Only the floor is a shared formula constant: archetypes with a
+// `timeSecondsRange` (Speedster) interpolate across the question tier, and no
+// interpolation may drop the clock below something answerable.
 
-const timerDurationsSchema = z
-  .object({
-    easy: z.number().positive(),
-    medium: z.number().positive(),
-    hard: z.number().positive(),
-  })
-  .refine(
-    (t) => t.easy <= t.medium && t.medium <= t.hard,
-    "harder questions must get at least as much time as easier ones",
-  );
+const questionTimerSchema = z.object({
+  /** No question may ever show less than this many seconds. */
+  minSeconds: z.number().int().positive(),
+});
 
-export type TimerDurations = z.infer<typeof timerDurationsSchema>;
+export type QuestionTimerTuning = z.infer<typeof questionTimerSchema>;
 
-export const TIMER_DURATIONS: TimerDurations = timerDurationsSchema.parse({
-  easy: 10,
-  medium: 12,
-  hard: 15,
-} satisfies TimerDurations);
+export const QUESTION_TIMER: QuestionTimerTuning = questionTimerSchema.parse({
+  minSeconds: 4,
+} satisfies QuestionTimerTuning);
 
 // ── Competitive rating leagues ───────────────────────────────────────────────
 // Used by src/lib/rating.ts. These are the *seasonal* rating standing —

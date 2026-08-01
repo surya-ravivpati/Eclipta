@@ -46,14 +46,14 @@ const STARS = Array.from({ length: 26 }, (_, i) => ({
 }));
 
 const TIERS = [
-  { name: "Bronze",   c: "#c08a55" },
-  { name: "Silver",   c: "#c2c7d1" },
-  { name: "Gold",     c: "#ecc45c" },
+  { name: "Bronze", c: "#c08a55" },
+  { name: "Silver", c: "#c2c7d1" },
+  { name: "Gold", c: "#ecc45c" },
   { name: "Platinum", c: "#9adcd2" },
-  { name: "Diamond",  c: "#74b8ff" },
+  { name: "Diamond", c: "#74b8ff" },
   { name: "Champion", c: "#ff6a5e" },
-  { name: "Unreal",   c: "#c77dff" },
-  { name: "God",      c: "#ffe9a8" },
+  { name: "Unreal", c: "#c77dff" },
+  { name: "God", c: "#ffe9a8" },
 ] as const;
 
 /* Ring geometry (viewBox 0 0 480 480) */
@@ -65,19 +65,23 @@ const TICKS = Array.from({ length: 72 }, (_, i) => {
   const major = i % 18 === 0;
   const r1 = major ? 208 : 212;
   return {
-    x1: RC + Math.cos(a) * r1,  y1: RC + Math.sin(a) * r1,
-    x2: RC + Math.cos(a) * 218, y2: RC + Math.sin(a) * 218,
+    x1: RC + Math.cos(a) * r1,
+    y1: RC + Math.sin(a) * r1,
+    x2: RC + Math.cos(a) * 218,
+    y2: RC + Math.sin(a) * 218,
     major,
   };
 });
 /** SVG arc path along radius r from angle a0 to a1 (radians). */
 function arcPath(r: number, a0: number, a1: number): string {
-  const x0 = RC + Math.cos(a0) * r, y0 = RC + Math.sin(a0) * r;
-  const x1 = RC + Math.cos(a1) * r, y1 = RC + Math.sin(a1) * r;
+  const x0 = RC + Math.cos(a0) * r,
+    y0 = RC + Math.sin(a0) * r;
+  const x1 = RC + Math.cos(a1) * r,
+    y1 = RC + Math.sin(a1) * r;
   const large = a1 - a0 > Math.PI ? 1 : 0;
   return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 }
-const COMBO_ARCS = [0, 1, 2].map(i => {
+const COMBO_ARCS = [0, 1, 2].map((i) => {
   const start = -Math.PI / 2 + i * ((Math.PI * 2) / 3) + 0.18;
   return arcPath(178, start, start + (Math.PI * 2) / 3 - 0.36);
 });
@@ -93,35 +97,35 @@ export function CinematicFilm() {
   const activeTierRef = useRef(0);
 
   /* DOM refs — everything the camera touches */
-  const auroraRef    = useRef<HTMLDivElement>(null);
-  const flashRef     = useRef<HTMLDivElement>(null);
+  const auroraRef = useRef<HTMLDivElement>(null);
+  const flashRef = useRef<HTMLDivElement>(null);
 
-  const s1Ref        = useRef<HTMLElement>(null);
-  const starsRef     = useRef<HTMLDivElement>(null);
-  const coreRef      = useRef<HTMLDivElement>(null);
-  const titleRef     = useRef<HTMLDivElement>(null);
-  const stepRefs     = useRef<(HTMLParagraphElement | null)[]>([]);
-  const hintRef      = useRef<HTMLDivElement>(null);
+  const s1Ref = useRef<HTMLElement>(null);
+  const starsRef = useRef<HTMLDivElement>(null);
+  const coreRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLParagraphElement | null)[]>([]);
+  const hintRef = useRef<HTMLDivElement>(null);
 
-  const s2Ref        = useRef<HTMLElement>(null);
-  const ringWrapRef  = useRef<HTMLDivElement>(null);
-  const ringSpinRef  = useRef<SVGGElement>(null);
-  const ringRef      = useRef<SVGCircleElement>(null);
-  const arcRefs      = useRef<(SVGPathElement | null)[]>([]);
-  const moonRef      = useRef<SVGCircleElement>(null);
-  const moonCutRef   = useRef<SVGCircleElement>(null);
-  const numARef      = useRef<HTMLSpanElement>(null);
-  const numBRef      = useRef<HTMLSpanElement>(null);
-  const chRefs       = useRef<(HTMLDivElement | null)[]>([]);
+  const s2Ref = useRef<HTMLElement>(null);
+  const ringWrapRef = useRef<HTMLDivElement>(null);
+  const ringSpinRef = useRef<SVGGElement>(null);
+  const ringRef = useRef<SVGCircleElement>(null);
+  const arcRefs = useRef<(SVGPathElement | null)[]>([]);
+  const moonRef = useRef<SVGCircleElement>(null);
+  const moonCutRef = useRef<SVGCircleElement>(null);
+  const numARef = useRef<HTMLSpanElement>(null);
+  const numBRef = useRef<HTMLSpanElement>(null);
+  const chRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const s4Ref        = useRef<HTMLElement>(null);
-  const beamFillRef  = useRef<HTMLDivElement>(null);
+  const s4Ref = useRef<HTMLElement>(null);
+  const beamFillRef = useRef<HTMLDivElement>(null);
   const tierStackRef = useRef<HTMLDivElement>(null);
-  const freezeRef    = useRef<HTMLDivElement>(null);
+  const freezeRef = useRef<HTMLDivElement>(null);
 
-  const s5Ref        = useRef<HTMLElement>(null);
+  const s5Ref = useRef<HTMLElement>(null);
 
-  const mouseRef  = useRef({ x: 0, y: 0 });
+  const mouseRef = useRef({ x: 0, y: 0 });
   const smouseRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -137,7 +141,9 @@ export function CinematicFilm() {
     let sY = targetY;
     let raf = 0;
 
-    const onScroll = () => { targetY = window.scrollY; };
+    const onScroll = () => {
+      targetY = window.scrollY;
+    };
     const onMouse = (e: MouseEvent) => {
       mouseRef.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
       mouseRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -167,27 +173,24 @@ export function CinematicFilm() {
 
       /* ── ACT I — title push + portal ─────────────────────────── */
       if (starsRef.current) {
-        starsRef.current.style.transform =
-          `translate3d(${(mx * -14).toFixed(1)}px, ${(my * -10 + sY * 0.03).toFixed(1)}px, 0)`;
+        starsRef.current.style.transform = `translate3d(${(mx * -14).toFixed(1)}px, ${(my * -10 + sY * 0.03).toFixed(1)}px, 0)`;
       }
-      const push = smooth(clamp01((p1 - 0.06) / 0.30));
+      const push = smooth(clamp01((p1 - 0.06) / 0.3));
       if (titleRef.current) {
         titleRef.current.style.opacity = (1 - push).toFixed(3);
-        titleRef.current.style.transform =
-          `translate3d(${(mx * 9).toFixed(1)}px, ${(my * 6 - push * 46).toFixed(1)}px, 0) scale(${(1 + push * 0.5).toFixed(3)})`;
+        titleRef.current.style.transform = `translate3d(${(mx * 9).toFixed(1)}px, ${(my * 6 - push * 46).toFixed(1)}px, 0) scale(${(1 + push * 0.5).toFixed(3)})`;
         titleRef.current.style.filter = push > 0.01 ? `blur(${(push * 16).toFixed(1)}px)` : "";
       }
       const grow = smooth(clamp01((p1 - 0.24) / 0.46));
       if (coreRef.current) {
-        coreRef.current.style.transform =
-          `translate3d(${(mx * 6).toFixed(1)}px, ${(my * 4).toFixed(1)}px, 0) scale(${(0.16 + grow * 26).toFixed(3)})`;
+        coreRef.current.style.transform = `translate3d(${(mx * 6).toFixed(1)}px, ${(my * 4).toFixed(1)}px, 0) scale(${(0.16 + grow * 26).toFixed(3)})`;
       }
       /* Portal flash — whites out the screen well BEFORE the text beats so
          every line lands on a fully bright field, holds, then dissolves
          over Act II's entry. */
-      const whiteUp   = smooth(clamp01((p1 - 0.40) / 0.16));
-      const bridgeOut = 1 - smooth(clamp01(p2 / 0.10));
-      const flash     = whiteUp * bridgeOut;
+      const whiteUp = smooth(clamp01((p1 - 0.4) / 0.16));
+      const bridgeOut = 1 - smooth(clamp01(p2 / 0.1));
+      const flash = whiteUp * bridgeOut;
       if (flashRef.current) flashRef.current.style.opacity = flash.toFixed(3);
       /* Inside the light — three dark-ink beats. Each window is comfortably
          wider than its fade, so the line rises, HOLDS at full for a real
@@ -196,7 +199,11 @@ export function CinematicFilm() {
          (it lives outside the pinned section, so it can't scroll away on its
          own). */
       const STEP_FADE = 0.045;
-      const STEP_WINDOWS: [number, number][] = [[0.58, 0.74], [0.76, 0.91], [0.93, 1.10]];
+      const STEP_WINDOWS: [number, number][] = [
+        [0.58, 0.74],
+        [0.76, 0.91],
+        [0.93, 1.1],
+      ];
       stepRefs.current.forEach((el, i) => {
         if (!el) return;
         const v = win(p1, STEP_WINDOWS[i][0], STEP_WINDOWS[i][1], STEP_FADE) * bridgeOut;
@@ -210,13 +217,12 @@ export function CinematicFilm() {
       if (ringWrapRef.current) {
         const enter = smooth(clamp01(p2 / 0.06));
         ringWrapRef.current.style.opacity = p2 >= 1 ? "1" : enter.toFixed(3);
-        ringWrapRef.current.style.transform =
-          `translate3d(${(mx * 5).toFixed(1)}px, ${((1 - enter) * 26 + my * 4).toFixed(1)}px, 0)`;
+        ringWrapRef.current.style.transform = `translate3d(${(mx * 5).toFixed(1)}px, ${((1 - enter) * 26 + my * 4).toFixed(1)}px, 0)`;
       }
       if (ringSpinRef.current) {
         ringSpinRef.current.style.transform = `rotate(${(p2 * 26).toFixed(2)}deg)`;
       }
-      const drawP = smooth(clamp01((p2 - 0.01) / 0.30));
+      const drawP = smooth(clamp01((p2 - 0.01) / 0.3));
       const cres = smooth(clamp01((p2 - 0.68) / 0.24));
       if (ringRef.current) {
         ringRef.current.setAttribute("stroke-dashoffset", (RING_C * (1 - drawP)).toFixed(1));
@@ -236,7 +242,7 @@ export function CinematicFilm() {
       if (numARef.current) {
         const v = win(p2, 0.015, 0.34, 0.07);
         numARef.current.style.opacity = v.toFixed(3);
-        const secs = Math.ceil(180 * (1 - clamp01((p2 - 0.02) / 0.30)));
+        const secs = Math.ceil(180 * (1 - clamp01((p2 - 0.02) / 0.3)));
         numARef.current.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
       }
       if (numBRef.current) {
@@ -244,7 +250,11 @@ export function CinematicFilm() {
         numBRef.current.style.opacity = v.toFixed(3);
         numBRef.current.textContent = `×${(1 + clamp01((p2 - 0.36) / 0.26) * 1.4).toFixed(2)}`;
       }
-      const chWins: [number, number][] = [[0.02, 0.34], [0.36, 0.66], [0.68, 1.2]];
+      const chWins: [number, number][] = [
+        [0.02, 0.34],
+        [0.36, 0.66],
+        [0.68, 1.2],
+      ];
       chRefs.current.forEach((ch, i) => {
         if (!ch) return;
         const v = win(p2, chWins[i][0], chWins[i][1], 0.075);
@@ -254,7 +264,7 @@ export function CinematicFilm() {
       });
 
       /* ── ACT III — the climb ─────────────────────────────────── */
-      const idx = Math.min(7, Math.floor(clamp01((p4 - 0.05) / 0.70) * 8));
+      const idx = Math.min(7, Math.floor(clamp01((p4 - 0.05) / 0.7) * 8));
       if (idx !== activeTierRef.current) {
         activeTierRef.current = idx;
         setActiveTier(idx);
@@ -262,10 +272,11 @@ export function CinematicFilm() {
       if (beamFillRef.current) {
         beamFillRef.current.style.transform = `scaleY(${smooth(clamp01((p4 - 0.03) / 0.74)).toFixed(3)})`;
       }
-      const freeze = smooth(clamp01((p4 - 0.80) / 0.13));
+      const freeze = smooth(clamp01((p4 - 0.8) / 0.13));
       if (tierStackRef.current) {
         tierStackRef.current.style.opacity = (1 - freeze).toFixed(3);
-        tierStackRef.current.style.filter = freeze > 0.01 ? `blur(${(freeze * 12).toFixed(1)}px)` : "";
+        tierStackRef.current.style.filter =
+          freeze > 0.01 ? `blur(${(freeze * 12).toFixed(1)}px)` : "";
       }
       if (freezeRef.current) {
         freezeRef.current.style.opacity = freeze.toFixed(3);
@@ -299,7 +310,6 @@ export function CinematicFilm() {
 
   return (
     <div className={`cf${staticMode ? " cf-static" : ""}`}>
-
       {/* ── Environment ─────────────────────────────────────────── */}
       <div className="cf-bg" aria-hidden="true">
         <div className="cf-aurora" ref={auroraRef} />
@@ -312,9 +322,27 @@ export function CinematicFilm() {
           layer) so its z-index actually sits above the white, and gated by
           the flash's dissolve so it never lingers into Act II. */}
       <div className="cf-step" aria-hidden="true">
-        <p ref={el => { stepRefs.current[0] = el; }}>Step <em>inside.</em></p>
-        <p ref={el => { stepRefs.current[1] = el; }}>The arena is <em>listening.</em></p>
-        <p ref={el => { stepRefs.current[2] = el; }}>Show it what you <em>know.</em></p>
+        <p
+          ref={(el) => {
+            stepRefs.current[0] = el;
+          }}
+        >
+          Step <em>inside.</em>
+        </p>
+        <p
+          ref={(el) => {
+            stepRefs.current[1] = el;
+          }}
+        >
+          The arena is <em>listening.</em>
+        </p>
+        <p
+          ref={(el) => {
+            stepRefs.current[2] = el;
+          }}
+        >
+          Show it what you <em>know.</em>
+        </p>
       </div>
 
       {/* ── ACT I — Title ───────────────────────────────────────── */}
@@ -325,11 +353,16 @@ export function CinematicFilm() {
               <span
                 key={i}
                 className="cf-star"
-                style={{
-                  left: `${s.x}%`, top: `${s.y}%`,
-                  width: s.s, height: s.s,
-                  "--o": s.o, "--d": `${s.d}s`,
-                } as React.CSSProperties}
+                style={
+                  {
+                    left: `${s.x}%`,
+                    top: `${s.y}%`,
+                    width: s.s,
+                    height: s.s,
+                    "--o": s.o,
+                    "--d": `${s.d}s`,
+                  } as React.CSSProperties
+                }
               />
             ))}
           </div>
@@ -348,7 +381,12 @@ export function CinematicFilm() {
             <p className="cf-kicker">Eclipta · Season 01</p>
             <h1 className="cf-title" aria-label="Eclipta">
               {"ECLIPTA".split("").map((c, i) => (
-                <span key={i} className="cf-char" aria-hidden="true" style={{ "--ci": i } as React.CSSProperties}>
+                <span
+                  key={i}
+                  className="cf-char"
+                  aria-hidden="true"
+                  style={{ "--ci": i } as React.CSSProperties}
+                >
                   {c}
                 </span>
               ))}
@@ -372,22 +410,61 @@ export function CinematicFilm() {
           <div className="cf-act2-grid">
             <div className="cf-act2-copy">
               <p className="cf-actlabel">Act II · The Loop</p>
-              <div className="cf-ch" ref={el => { chRefs.current[0] = el; }}>
-                <h2>Three minutes.<br /><em>Live stakes.</em></h2>
-                <p>Real opponents, in real time. Every correct answer lands as damage — every hesitation costs you.</p>
+              <div
+                className="cf-ch"
+                ref={(el) => {
+                  chRefs.current[0] = el;
+                }}
+              >
+                <h2>
+                  Three minutes.
+                  <br />
+                  <em>Live stakes.</em>
+                </h2>
+                <p>
+                  Real opponents, in real time. Every correct answer lands as damage — every
+                  hesitation costs you.
+                </p>
               </div>
-              <div className="cf-ch" ref={el => { chRefs.current[1] = el; }}>
-                <h2>Streaks <em>compound.</em></h2>
-                <p>Chain correct answers and the multiplier climbs. Break the chain and it resets to zero.</p>
+              <div
+                className="cf-ch"
+                ref={(el) => {
+                  chRefs.current[1] = el;
+                }}
+              >
+                <h2>
+                  Streaks <em>compound.</em>
+                </h2>
+                <p>
+                  Chain correct answers and your score bonus climbs. Break the chain and it resets
+                  to zero.
+                </p>
               </div>
-              <div className="cf-ch" ref={el => { chRefs.current[2] = el; }}>
-                <h2>Luna coaches.<br /><em>Never answers.</em></h2>
-                <p>A hint-first AI that makes you reason it out — then sends you back into the fight.</p>
+              <div
+                className="cf-ch"
+                ref={(el) => {
+                  chRefs.current[2] = el;
+                }}
+              >
+                <h2>
+                  Luna coaches.
+                  <br />
+                  <em>Never answers.</em>
+                </h2>
+                <p>
+                  A hint-first AI that makes you reason it out — then sends you back into the fight.
+                </p>
               </div>
             </div>
 
             <div className="cf-ringwrap" ref={ringWrapRef}>
-              <svg className="cf-ring-svg" viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <svg
+                className="cf-ring-svg"
+                viewBox="0 0 480 480"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
                 <defs>
                   <radialGradient id="cfMoonGrad" cx="42%" cy="38%" r="75%">
                     <stop offset="0%" stopColor="oklch(0.92 0.04 250)" />
@@ -400,13 +477,21 @@ export function CinematicFilm() {
                   </mask>
                 </defs>
 
-                <g className="cf-ring-spin" ref={ringSpinRef} style={{ transformOrigin: "center", transformBox: "fill-box" }}>
+                <g
+                  className="cf-ring-spin"
+                  ref={ringSpinRef}
+                  style={{ transformOrigin: "center", transformBox: "fill-box" }}
+                >
                   {TICKS.map((t, i) => (
                     <line
                       key={i}
-                      x1={t.x1.toFixed(1)} y1={t.y1.toFixed(1)}
-                      x2={t.x2.toFixed(1)} y2={t.y2.toFixed(1)}
-                      stroke={t.major ? "oklch(0.82 0.12 235 / 0.5)" : "oklch(0.82 0.12 235 / 0.16)"}
+                      x1={t.x1.toFixed(1)}
+                      y1={t.y1.toFixed(1)}
+                      x2={t.x2.toFixed(1)}
+                      y2={t.y2.toFixed(1)}
+                      stroke={
+                        t.major ? "oklch(0.82 0.12 235 / 0.5)" : "oklch(0.82 0.12 235 / 0.16)"
+                      }
                       strokeWidth={t.major ? 1.4 : 0.7}
                     />
                   ))}
@@ -415,8 +500,11 @@ export function CinematicFilm() {
                 {/* Chapter 1 — the match ring draws itself */}
                 <circle
                   ref={ringRef}
-                  cx={RC} cy={RC} r={RING_R}
-                  stroke="oklch(0.84 0.10 235 / 0.85)" strokeWidth="1.6"
+                  cx={RC}
+                  cy={RC}
+                  r={RING_R}
+                  stroke="oklch(0.84 0.10 235 / 0.85)"
+                  strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeDasharray={RING_C}
                   strokeDashoffset={RING_C}
@@ -427,9 +515,12 @@ export function CinematicFilm() {
                 {COMBO_ARCS.map((d, i) => (
                   <path
                     key={i}
-                    ref={el => { arcRefs.current[i] = el; }}
+                    ref={(el) => {
+                      arcRefs.current[i] = el;
+                    }}
                     d={d}
-                    stroke="oklch(0.80 0.13 88 / 0.9)" strokeWidth="3"
+                    stroke="oklch(0.80 0.13 88 / 0.9)"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     style={{ opacity: 0 }}
                   />
@@ -438,7 +529,9 @@ export function CinematicFilm() {
                 {/* Chapter 3 — the ring becomes Luna's crescent */}
                 <circle
                   ref={moonRef}
-                  cx={RC} cy={RC} r="112"
+                  cx={RC}
+                  cy={RC}
+                  r="112"
                   fill="url(#cfMoonGrad)"
                   mask="url(#cfMoonMask)"
                   style={{ opacity: 0 }}
@@ -478,11 +571,15 @@ export function CinematicFilm() {
             <div className="cf-freeze" ref={freezeRef}>
               <div>
                 <p className="cf-freeze-num">08</p>
-                <p className="cf-freeze-line">tiers from Bronze to <em>God</em>.</p>
+                <p className="cf-freeze-line">
+                  tiers from Bronze to <em>God</em>.
+                </p>
                 <p className="cf-freeze-note">Climb them all to reach the summit</p>
               </div>
             </div>
-            <p className="cf-climb-meta">Ranked ascent — tier {String(activeTier + 1).padStart(2, "0")} / 08</p>
+            <p className="cf-climb-meta">
+              Ranked ascent — tier {String(activeTier + 1).padStart(2, "0")} / 08
+            </p>
           </div>
         </div>
       </section>
@@ -514,8 +611,8 @@ export function CinematicFilm() {
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.9, delay: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
           >
-            Free to play. Pick a class, land your first combo, and find out
-            what you actually know — in three minutes.
+            Free to play. Pick a class, land your first combo, and find out what you actually know —
+            in three minutes.
           </motion.p>
           <motion.div
             className="cf-cta-row"
@@ -530,7 +627,9 @@ export function CinematicFilm() {
                 <path d="M0 5 H11 M8 1 L12 5 L8 9" stroke="currentColor" strokeWidth="1.3" />
               </svg>
             </Link>
-            <Link to="/about" className="cf-link">How it works</Link>
+            <Link to="/about" className="cf-link">
+              How it works
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -538,7 +637,14 @@ export function CinematicFilm() {
       {/* ── Credits ─────────────────────────────────────────────── */}
       <footer className="cf-foot">
         <Link to="/" className="cf-brand">
-          <img src="/eclipta-logo.png" alt="" className="cf-brand-logo" width={22} height={22} draggable={false} />
+          <img
+            src="/eclipta-logo.png"
+            alt=""
+            className="cf-brand-logo"
+            width={22}
+            height={22}
+            draggable={false}
+          />
           <span>Eclipta</span>
         </Link>
         <nav className="cf-foot-links" aria-label="Footer">
@@ -549,7 +655,6 @@ export function CinematicFilm() {
         </nav>
         <div>© 2026</div>
       </footer>
-
     </div>
   );
 }

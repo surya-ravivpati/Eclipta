@@ -20,14 +20,27 @@
  */
 import { useRef, useState, useEffect } from "react";
 import {
-  motion, AnimatePresence, useScroll, useTransform, useSpring,
-  useReducedMotion, useMotionValueEvent, type MotionValue,
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useSpring,
+  useReducedMotion,
+  useMotionValueEvent,
+  type MotionValue,
 } from "framer-motion";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import type { ArchetypeId } from "@/components/battles/types";
 
 const ORDER: ArchetypeId[] = [
-  "speedster", "tank", "chud", "gambler", "healer", "fulcrum", "accelerator", "god",
+  "speedster",
+  "tank",
+  "chud",
+  "gambler",
+  "healer",
+  "fulcrum",
+  "accelerator",
+  "god",
 ];
 
 // Scroll budget per archetype, in viewport heights. Section height is
@@ -38,42 +51,42 @@ const SLOT_VH = 40;
 // Film fonts — reference the canonical type roles (defined in styles.css
 // @theme, loaded globally from the <head> in __root.tsx).
 const F_DISPLAY = "var(--font-cinematic)";
-const F_SERIF   = "var(--font-serif)";
-const F_MONO    = "var(--font-mono)";
+const F_SERIF = "var(--font-serif)";
+const F_MONO = "var(--font-mono)";
 
 // Per-archetype identity colour. Hex (not oklch) so framer-motion can use
 // them in style props and withAlpha() math works everywhere.
 const AURA: Record<ArchetypeId, string> = {
-  speedster:   "#5dd9ff",
-  tank:        "#cbd2dd",
-  chud:        "#ff5d6c",
-  gambler:     "#f5c542",
-  healer:      "#ff5fa1",
-  fulcrum:     "#8a6bff",
+  speedster: "#5dd9ff",
+  tank: "#cbd2dd",
+  chud: "#ff5d6c",
+  gambler: "#f5c542",
+  healer: "#ff5fa1",
+  fulcrum: "#8a6bff",
   accelerator: "#9fc4e8",
-  god:         "#ffd86b",
+  god: "#ffd86b",
 };
 
 // Short, punchy one-liner per archetype — keeps the panel uncluttered
 // (the full ARCHETYPES descriptions are longer and used elsewhere).
 const BLURB: Record<ArchetypeId, string> = {
-  speedster:   "Less time per question — but faster answers hit harder.",
-  tank:        "A wall of HP. Low damage, and it can't heal.",
-  chud:        "Glass cannon. Massive damage, almost no HP.",
-  gambler:     "Every stat rolled fresh each battle. Pure chaos.",
-  healer:      "Sustain and regen. Built to outlast.",
-  fulcrum:     "Balanced, with the highest multiplier. Rewards consistency.",
+  speedster: "Less time per question — but faster answers hit harder.",
+  tank: "A wall of HP. Low damage, and it can't heal.",
+  chud: "Glass cannon. Massive damage, almost no HP.",
+  gambler: "Every stat rolled fresh each battle. Pure chaos.",
+  healer: "Sustain and regen. Built to outlast.",
+  fulcrum: "Balanced, and borrows a rival's passive every round.",
   accelerator: "Damage that scales with every question answered.",
-  god:         "Max stats across the board. The hardest questions.",
+  god: "Max stats across the board. The hardest questions.",
 };
 
 /* Wheel geometry — viewBox is 400×400 centred on origin.
    Nodes orbit near the outer ring (R_NODE high) so they hug the edge of
    the wheel and leave a clear "stage" in the middle for the panel text. */
 const VIEW = 400;
-const R_OUTER  = 190;
+const R_OUTER = 190;
 const R_TICK_IN = 178;
-const R_NODE   = 150; // icon-node ring — clear of the central text, clear of the top navbar
+const R_NODE = 150; // icon-node ring — clear of the central text, clear of the top navbar
 
 export function ArchetypesCompass() {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -101,11 +114,7 @@ export function ArchetypesCompass() {
   const wheelRotate = useSpring(wheelTarget, { stiffness: 110, damping: 22, mass: 0.7 });
 
   // Continuous segIndex drives per-icon scale/opacity falloff (eases, not snaps).
-  const segIndex = useTransform(
-    scrollYProgress,
-    [1 / (N + 2), (N + 1) / (N + 2)],
-    [0, N],
-  );
+  const segIndex = useTransform(scrollYProgress, [1 / (N + 2), (N + 1) / (N + 2)], [0, N]);
 
   return (
     <section
@@ -131,15 +140,20 @@ export function ArchetypesCompass() {
 /* ─── Background ─────────────────────────────────────────────────────── */
 
 function BackgroundLayer({
-  auraColour, reduce,
-}: { auraColour: MotionValue<string>; reduce: boolean }) {
+  auraColour,
+  reduce,
+}: {
+  auraColour: MotionValue<string>;
+  reduce: boolean;
+}) {
   const wash = useTransform(
     auraColour,
     (c) => `radial-gradient(58% 56% at 50% 46%, ${withAlpha(c, 0.16)} 0%, transparent 68%)`,
   );
   const sweepTint = useTransform(
     auraColour,
-    (c) => `conic-gradient(from 0deg at 50% 46%, transparent 0deg, ${withAlpha(c, 0.07)} 38deg, transparent 110deg, transparent 360deg)`,
+    (c) =>
+      `conic-gradient(from 0deg at 50% 46%, transparent 0deg, ${withAlpha(c, 0.07)} 38deg, transparent 110deg, transparent 360deg)`,
   );
   return (
     <>
@@ -157,8 +171,10 @@ function BackgroundLayer({
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(180,205,255,0.16) 1px, transparent 1.5px)",
           backgroundSize: "52px 52px",
-          maskImage: "radial-gradient(circle at 50% 46%, transparent 24%, black 60%, transparent 82%)",
-          WebkitMaskImage: "radial-gradient(circle at 50% 46%, transparent 24%, black 60%, transparent 82%)",
+          maskImage:
+            "radial-gradient(circle at 50% 46%, transparent 24%, black 60%, transparent 82%)",
+          WebkitMaskImage:
+            "radial-gradient(circle at 50% 46%, transparent 24%, black 60%, transparent 82%)",
         }}
         aria-hidden
       />
@@ -175,7 +191,9 @@ function BackgroundLayer({
       {/* Edge vignette */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(circle at 50% 50%, transparent 48%, rgba(4,5,10,0.72) 100%)" }}
+        style={{
+          background: "radial-gradient(circle at 50% 50%, transparent 48%, rgba(4,5,10,0.72) 100%)",
+        }}
         aria-hidden
       />
     </>
@@ -185,12 +203,15 @@ function BackgroundLayer({
 /* ─── Compass wheel ──────────────────────────────────────────────────── */
 
 function CompassLayer({
-  wheelRotate, segIndex, auraColour, reduce,
+  wheelRotate,
+  segIndex,
+  auraColour,
+  reduce,
 }: {
   wheelRotate: MotionValue<number>;
-  segIndex:    MotionValue<number>;
-  auraColour:  MotionValue<string>;
-  reduce:      boolean;
+  segIndex: MotionValue<number>;
+  auraColour: MotionValue<string>;
+  reduce: boolean;
 }) {
   const N = ORDER.length;
   const wedge = 360 / N;
@@ -200,8 +221,8 @@ function CompassLayer({
   );
 
   // Fixed lock-on arc spanning the top wedge (centred on -90°).
-  const a0 = (-90 - wedge / 2) * Math.PI / 180;
-  const a1 = (-90 + wedge / 2) * Math.PI / 180;
+  const a0 = ((-90 - wedge / 2) * Math.PI) / 180;
+  const a1 = ((-90 + wedge / 2) * Math.PI) / 180;
   const arcPath =
     `M ${(Math.cos(a0) * R_OUTER).toFixed(2)} ${(Math.sin(a0) * R_OUTER).toFixed(2)} ` +
     `A ${R_OUTER} ${R_OUTER} 0 0 1 ${(Math.cos(a1) * R_OUTER).toFixed(2)} ${(Math.sin(a1) * R_OUTER).toFixed(2)}`;
@@ -227,19 +248,32 @@ function CompassLayer({
         }}
         aria-hidden
       >
-        <svg viewBox={`${-VIEW / 2} ${-VIEW / 2} ${VIEW} ${VIEW}`} className="w-full h-full absolute inset-0">
+        <svg
+          viewBox={`${-VIEW / 2} ${-VIEW / 2} ${VIEW} ${VIEW}`}
+          className="w-full h-full absolute inset-0"
+        >
           {/* One clean outer ring */}
-          <circle cx="0" cy="0" r={R_OUTER} fill="none" stroke="rgba(210,225,255,0.12)" strokeWidth="0.6" />
+          <circle
+            cx="0"
+            cy="0"
+            r={R_OUTER}
+            fill="none"
+            stroke="rgba(210,225,255,0.12)"
+            strokeWidth="0.6"
+          />
 
           {/* Boundary ticks (between wedges) — the only marks on the ring */}
           {ORDER.map((_, i) => {
-            const ang = (-90 + i * wedge - wedge / 2) * Math.PI / 180;
+            const ang = ((-90 + i * wedge - wedge / 2) * Math.PI) / 180;
             return (
               <line
                 key={`tick-${i}`}
-                x1={(Math.cos(ang) * R_TICK_IN).toFixed(2)} y1={(Math.sin(ang) * R_TICK_IN).toFixed(2)}
-                x2={(Math.cos(ang) * R_OUTER).toFixed(2)}   y2={(Math.sin(ang) * R_OUTER).toFixed(2)}
-                stroke="rgba(210,225,255,0.14)" strokeWidth="0.6"
+                x1={(Math.cos(ang) * R_TICK_IN).toFixed(2)}
+                y1={(Math.sin(ang) * R_TICK_IN).toFixed(2)}
+                x2={(Math.cos(ang) * R_OUTER).toFixed(2)}
+                y2={(Math.sin(ang) * R_OUTER).toFixed(2)}
+                stroke="rgba(210,225,255,0.14)"
+                strokeWidth="0.6"
               />
             );
           })}
@@ -247,7 +281,7 @@ function CompassLayer({
 
         {/* Icon nodes — HTML overlay, counter-rotated to stay upright */}
         {ORDER.map((id, i) => {
-          const ang = (-90 + i * wedge + wedge / 2) * Math.PI / 180;
+          const ang = ((-90 + i * wedge + wedge / 2) * Math.PI) / 180;
           const radiusPct = (R_NODE / VIEW) * 100;
           const x = 50 + Math.cos(ang) * radiusPct;
           const y = 50 + Math.sin(ang) * radiusPct;
@@ -255,7 +289,8 @@ function CompassLayer({
             <CompassNode
               key={id}
               id={id}
-              xPct={x} yPct={y}
+              xPct={x}
+              yPct={y}
               i={i}
               segIndex={segIndex}
               wheelRotate={wheelRotate}
@@ -267,7 +302,11 @@ function CompassLayer({
 
       {/* Fixed lock-on overlay (does NOT rotate) — frames whichever node is
           currently at the top, recolouring smoothly via CSS transition. */}
-      <div className="absolute" style={{ width: "min(92vh, 92vw)", height: "min(92vh, 92vw)" }} aria-hidden>
+      <div
+        className="absolute"
+        style={{ width: "min(92vh, 92vw)", height: "min(92vh, 92vw)" }}
+        aria-hidden
+      >
         <svg viewBox={`${-VIEW / 2} ${-VIEW / 2} ${VIEW} ${VIEW}`} className="w-full h-full">
           {/* Glowing arc on the active wedge */}
           <motion.path
@@ -275,12 +314,18 @@ function CompassLayer({
             fill="none"
             strokeWidth="2.4"
             strokeLinecap="round"
-            style={{ stroke: auraColour, transition: "stroke 0.6s ease", filter: "drop-shadow(0 0 6px currentColor)" }}
+            style={{
+              stroke: auraColour,
+              transition: "stroke 0.6s ease",
+              filter: "drop-shadow(0 0 6px currentColor)",
+            }}
           />
           {/* Needle marker just inside the outer ring */}
           <motion.path
             d={`M -7 ${-R_OUTER + 4} L 0 ${-R_OUTER + 16} L 7 ${-R_OUTER + 4}`}
-            fill="none" strokeWidth="1.6" strokeLinejoin="round"
+            fill="none"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
             style={{ stroke: auraColour, transition: "stroke 0.6s ease" }}
           />
         </svg>
@@ -290,10 +335,17 @@ function CompassLayer({
 }
 
 function CompassNode({
-  id, xPct, yPct, i, segIndex, wheelRotate, reduce,
+  id,
+  xPct,
+  yPct,
+  i,
+  segIndex,
+  wheelRotate,
+  reduce,
 }: {
   id: ArchetypeId;
-  xPct: number; yPct: number;
+  xPct: number;
+  yPct: number;
   i: number;
   segIndex: MotionValue<number>;
   wheelRotate: MotionValue<number>;
@@ -314,13 +366,14 @@ function CompassNode({
     const raw = Math.abs(s - (i + 0.5));
     return Math.min(raw, N - raw);
   });
-  const scale   = useTransform(distance, [0, 0.5, 1.6], [1.3, 0.95, 0.62]);
+  const scale = useTransform(distance, [0, 0.5, 1.6], [1.3, 0.95, 0.62]);
   const opacity = useTransform(distance, [0, 0.6, 1.5, 3], [1, 0.55, 0.1, 0]);
-  const glow    = useTransform(distance, [0, 0.5], [1, 0]);
-  const ring    = useTransform(glow, (g) => withAlpha(aura, 0.2 + g * 0.65));
-  const shadow  = useTransform(glow, (g) =>
-    g > 0.05 ? `0 0 ${(8 + g * 26).toFixed(0)}px ${withAlpha(aura, 0.18 + g * 0.5)}` : "none");
-  const bg      = useTransform(glow, (g) => withAlpha(aura, 0.04 + g * 0.18));
+  const glow = useTransform(distance, [0, 0.5], [1, 0]);
+  const ring = useTransform(glow, (g) => withAlpha(aura, 0.2 + g * 0.65));
+  const shadow = useTransform(glow, (g) =>
+    g > 0.05 ? `0 0 ${(8 + g * 26).toFixed(0)}px ${withAlpha(aura, 0.18 + g * 0.5)}` : "none",
+  );
+  const bg = useTransform(glow, (g) => withAlpha(aura, 0.04 + g * 0.18));
 
   // Wrapper handles centring (static translate); inner motion.div handles
   // the live counter-rotation + scale, so the two transforms never fight.
@@ -353,11 +406,17 @@ function CompassNode({
 /* ─── Foreground panel ───────────────────────────────────────────────── */
 
 function ForegroundLayer({
-  activeIndex, reduce,
-}: { activeIndex: MotionValue<number>; reduce: boolean }) {
+  activeIndex,
+  reduce,
+}: {
+  activeIndex: MotionValue<number>;
+  reduce: boolean;
+}) {
   const [active, setActive] = useState(0);
   useMotionValueEvent(activeIndex, "change", (i) => setActive(Math.round(i)));
-  useEffect(() => { setActive(Math.round(activeIndex.get())); }, [activeIndex]);
+  useEffect(() => {
+    setActive(Math.round(activeIndex.get()));
+  }, [activeIndex]);
 
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -370,9 +429,7 @@ function ForegroundLayer({
   );
 }
 
-function ArchetypePanel({
-  id, reduce,
-}: { id: ArchetypeId; reduce: boolean }) {
+function ArchetypePanel({ id, reduce }: { id: ArchetypeId; reduce: boolean }) {
   const arch = ARCHETYPES[id];
   const aura = AURA[id];
   // Names read "The Speedster" — render the article as a quiet serif kicker
@@ -395,7 +452,13 @@ function ArchetypePanel({
         {lead && (
           <span
             className="block mb-1"
-            style={{ fontFamily: F_SERIF, fontStyle: "italic", fontSize: "clamp(19px, 2.2vw, 28px)", color: "#b9bfcc", opacity: 0.85 }}
+            style={{
+              fontFamily: F_SERIF,
+              fontStyle: "italic",
+              fontSize: "clamp(19px, 2.2vw, 28px)",
+              color: "#b9bfcc",
+              opacity: 0.85,
+            }}
           >
             {lead}
           </span>
@@ -403,8 +466,10 @@ function ArchetypePanel({
         <span
           className="block"
           style={{
-            fontFamily: F_DISPLAY, fontWeight: 200,
-            fontSize: "clamp(44px, 6vw, 88px)", letterSpacing: "-0.03em",
+            fontFamily: F_DISPLAY,
+            fontWeight: 200,
+            fontSize: "clamp(44px, 6vw, 88px)",
+            letterSpacing: "-0.03em",
             textShadow: `0 0 48px ${withAlpha(aura, 0.4)}`,
           }}
         >
@@ -415,22 +480,33 @@ function ArchetypePanel({
       {/* Short blurb — narrow so it never reaches the node ring */}
       <p
         className="max-w-sm mb-8"
-        style={{ fontSize: "clamp(14px, 1.4vw, 16.5px)", lineHeight: 1.6, color: "#c8cdd8", fontWeight: 300 }}
+        style={{
+          fontSize: "clamp(14px, 1.4vw, 16.5px)",
+          lineHeight: 1.6,
+          color: "#c8cdd8",
+          fontWeight: 300,
+        }}
       >
         {BLURB[id]}
       </p>
 
       {/* Stats */}
       <div className="flex items-stretch gap-3">
-        <StatCell label="HP"   value={arch.statsAreRandom ? "??" : String(arch.maxHp)} aura={aura} />
+        <StatCell label="HP" value={arch.statsAreRandom ? "??" : String(arch.maxHp)} aura={aura} />
         <StatCell
           label="DMG"
-          value={arch.multiplierScales ? `${arch.baseDamage}↑` : arch.statsAreRandom ? "??" : String(arch.baseDamage)}
+          value={
+            arch.statsAreRandom
+              ? "??"
+              : arch.damageRamps
+                ? `${arch.baseDamage}↑`
+                : String(arch.baseDamage)
+          }
           aura={aura}
         />
         <StatCell
-          label="MULT"
-          value={arch.statsAreRandom ? "??" : `+${Math.round(arch.multiplierStep * 100)}%`}
+          label="DEF"
+          value={arch.statsAreRandom ? "??" : `${Math.round(arch.defense * 100)}%`}
           aura={aura}
         />
       </div>
@@ -446,13 +522,25 @@ function StatCell({ label, value, aura }: { label: string; value: string; aura: 
     >
       <div
         className="tabular-nums"
-        style={{ fontFamily: F_DISPLAY, fontWeight: 200, fontSize: 26, letterSpacing: "-0.01em", color: aura }}
+        style={{
+          fontFamily: F_DISPLAY,
+          fontWeight: 200,
+          fontSize: 26,
+          letterSpacing: "-0.01em",
+          color: aura,
+        }}
       >
         {value}
       </div>
       <div
         className="mt-1"
-        style={{ fontFamily: F_MONO, fontSize: 9, letterSpacing: "0.26em", textTransform: "uppercase", color: "#767b87" }}
+        style={{
+          fontFamily: F_MONO,
+          fontSize: 9,
+          letterSpacing: "0.26em",
+          textTransform: "uppercase",
+          color: "#767b87",
+        }}
       >
         {label}
       </div>
@@ -463,15 +551,24 @@ function StatCell({ label, value, aura }: { label: string; value: string; aura: 
 /* ─── Progress rail ──────────────────────────────────────────────────── */
 
 function ProgressRail({
-  activeIndex, reduce,
-}: { activeIndex: MotionValue<number>; reduce: boolean }) {
+  activeIndex,
+  reduce,
+}: {
+  activeIndex: MotionValue<number>;
+  reduce: boolean;
+}) {
   const [active, setActive] = useState(0);
   useMotionValueEvent(activeIndex, "change", (i) => setActive(Math.round(i)));
-  useEffect(() => { setActive(Math.round(activeIndex.get())); }, [activeIndex]);
+  useEffect(() => {
+    setActive(Math.round(activeIndex.get()));
+  }, [activeIndex]);
   const N = ORDER.length;
 
   return (
-    <div className="absolute right-7 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 pointer-events-none" aria-hidden>
+    <div
+      className="absolute right-7 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 pointer-events-none"
+      aria-hidden
+    >
       {ORDER.map((id, i) => {
         const on = i === active;
         const done = i < active;

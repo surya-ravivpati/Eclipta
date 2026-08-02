@@ -2244,6 +2244,10 @@ export type Database = {
           threads: number
         }[]
       }
+      get_dashboard: {
+        Args: { p_user?: string }
+        Returns: Json
+      }
       get_ghost_session: { Args: { p_player_rating: number }; Returns: Json }
       get_leaderboard: {
         Args: { p_limit?: number }

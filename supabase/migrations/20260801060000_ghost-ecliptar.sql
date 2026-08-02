@@ -15,8 +15,19 @@ ALTER TABLE public.battle_sessions
 COMMENT ON COLUMN public.battle_sessions.ecliptar_slug IS
   'Ecliptar the player fought with. NULL for sessions recorded before this was captured — clients derive a deterministic stand-in from the archetype in that case.';
 
--- Recreate the recorder with the new parameter. Defaulted so any client that has
--- not reloaded keeps working rather than failing on an unknown argument.
+-- Recreate the recorder with the new parameter.
+--
+-- The old 8-argument function must be DROPPED first. `CREATE OR REPLACE` only
+-- replaces a function with an identical signature — adding a parameter creates a
+-- SECOND overload instead, and PostgREST then cannot choose between
+-- `record_battle_session(8 args)` and `record_battle_session(9 args, 1 default)`
+-- for an 8-argument call. It fails with "Could not choose the best candidate
+-- function", which would silently break battle recording for every client that
+-- has not reloaded.
+DROP FUNCTION IF EXISTS public.record_battle_session(
+  text, boolean, integer, integer, integer, integer, jsonb, text
+);
+
 CREATE OR REPLACE FUNCTION public.record_battle_session(
   p_archetype text,
   p_won boolean,
@@ -26,6 +37,7 @@ CREATE OR REPLACE FUNCTION public.record_battle_session(
   p_best_streak integer,
   p_question_records jsonb,
   p_opponent_type text,
+  -- Defaulted so a caller that does not know about Ecliptars still works.
   p_ecliptar_slug text DEFAULT NULL
 )
 RETURNS uuid

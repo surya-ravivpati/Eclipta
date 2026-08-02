@@ -16,16 +16,23 @@
 -- NOT a category here: it is not opt-outable, and mixing it into the same table
 -- invites a bug where someone unsubscribes from being able to reset a password.
 
-CREATE TYPE public.email_category AS ENUM (
-  'daily_digest',
-  'weekly_report',
-  'streak_saver',
-  'battle',
-  'forum',
-  'group',
-  'ai_followup',
-  'guardian_report'
-);
+-- Guarded: CREATE TYPE has no IF NOT EXISTS, and an aborted push that is retried
+-- would otherwise fail here before reaching the tables below.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'email_category') THEN
+    CREATE TYPE public.email_category AS ENUM (
+      'daily_digest',
+      'weekly_report',
+      'streak_saver',
+      'battle',
+      'forum',
+      'group',
+      'ai_followup',
+      'guardian_report'
+    );
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.email_preferences (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

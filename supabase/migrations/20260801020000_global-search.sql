@@ -16,6 +16,12 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 -- ── Indexes ──────────────────────────────────────────────────────────────────
 -- GIN + trigram: supports both prefix ("integrat") and typo ("integrasion")
 -- matching on the same index, which a btree or plain tsvector cannot.
+--
+-- KNOWN LIMITATION: the predicates below match on lower(unaccent(col)) while
+-- these indexes are on the raw column, so they will NOT be used and search
+-- falls back to a scan. Fine at current data volumes; before this gets large,
+-- add an IMMUTABLE unaccent wrapper and build expression indexes on
+-- lower(f_unaccent(col)) instead. Left explicit rather than silently slow.
 
 CREATE INDEX IF NOT EXISTS idx_forum_threads_title_trgm
   ON public.forum_threads USING gin (title gin_trgm_ops);
@@ -138,7 +144,10 @@ RETURNS TABLE (
   personal boolean
 )
 LANGUAGE plpgsql
-STABLE
+-- Deliberately NOT STABLE: set_limit() below writes the pg_trgm similarity
+-- threshold into a session GUC, which is a side effect. A STABLE function that
+-- mutates state is incorrect and can be rejected outright in a read-only
+-- transaction.
 SECURITY DEFINER
 SET search_path = public
 AS $$

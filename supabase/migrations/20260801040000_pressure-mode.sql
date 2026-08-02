@@ -11,7 +11,12 @@
 --     conditions in the review; nothing derives a penalty from them, and the
 --     score column is computed from performance alone.
 
-CREATE TYPE public.pressure_format AS ENUM ('exam', 'interview', 'rapid');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'pressure_format') THEN
+    CREATE TYPE public.pressure_format AS ENUM ('exam', 'interview', 'rapid');
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.pressure_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

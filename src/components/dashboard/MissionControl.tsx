@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { getDashboard, type DashboardData } from "@/repositories/dashboard";
+import { AlertTriangle } from "lucide-react";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { getEcliptarBySlug, ecliptarSpriteUrl } from "@/lib/ecliptars";
 import { ROAD_NODES } from "@/lib/trophy-road-data";
@@ -43,13 +44,19 @@ import { cn } from "@/lib/utils";
 export function MissionControl() {
   const { t, formatNumber } = useTranslation();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [degraded, setDegraded] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    void getDashboard().then((d) => {
+    void getDashboard().then((res) => {
       if (!alive) return;
-      setData(d);
+      if (res.status === "error") setFailure(res.reason);
+      else {
+        setData(res.data);
+        setDegraded(res.status === "degraded" ? res.reason : null);
+      }
       setLoading(false);
     });
     return () => {
@@ -58,7 +65,7 @@ export function MissionControl() {
   }, []);
 
   if (loading) return <DashboardSkeleton />;
-  if (!data) return <DashboardError />;
+  if (!data) return <DashboardError reason={failure} />;
 
   const xp = data.profile.xp ?? 0;
   const streak = data.profile.daily_streak ?? 0;
@@ -66,6 +73,21 @@ export function MissionControl() {
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-5">
+        {/* A reduced dashboard still works, but say so rather than quietly
+            showing zeroes that look like real data. */}
+        {degraded && (
+          <div
+            role="status"
+            className="flex gap-3 p-3 rounded-xl border border-primary/40 bg-primary/5"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0 text-primary mt-0.5" aria-hidden="true" />
+            <p className="text-[13px] text-muted-foreground">
+              <span className="text-foreground font-bold">{t("dashboard.limitedTitle")}</span>{" "}
+              {t("dashboard.limitedBody")} <span className="font-mono text-[11px]">{degraded}</span>
+            </p>
+          </div>
+        )}
+
         <Hero data={data} streak={streak} />
 
         <div className="grid gap-5 lg:grid-cols-3">
@@ -330,9 +352,7 @@ function SmartInsights({ data }: { data: DashboardData }) {
           to="/courses"
           className="flex items-center justify-between gap-3 p-3 mb-3 rounded-xl border border-primary/40 bg-primary/5"
         >
-          <span className="text-sm">
-            {t("dashboard.dueReview", { count: data.due_review })}
-          </span>
+          <span className="text-sm">{t("dashboard.dueReview", { count: data.due_review })}</span>
           <ArrowRight className="w-4 h-4 shrink-0 text-primary" aria-hidden="true" />
         </Link>
       )}
@@ -391,7 +411,11 @@ function CompetitivePanel({ data }: { data: DashboardData }) {
   const tier = ratingToTier(rating);
 
   return (
-    <Panel title={t("dashboard.competitive")} icon={Swords} action={{ label: t("nav.battles"), to: "/battles" }}>
+    <Panel
+      title={t("dashboard.competitive")}
+      icon={Swords}
+      action={{ label: t("nav.battles"), to: "/battles" }}
+    >
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
         <Figure label={t("dashboard.elo")} value={String(rating)} />
         <Figure label={t("dashboard.league")} value={tier} />
@@ -495,7 +519,11 @@ function TrophyRoadPanel({ xp, claimed }: { xp: number; claimed: number[] }) {
   );
 
   return (
-    <Panel title={t("dashboard.trophyRoad")} icon={Trophy} action={{ label: t("common.next"), to: "/progress" }}>
+    <Panel
+      title={t("dashboard.trophyRoad")}
+      icon={Trophy}
+      action={{ label: t("common.next"), to: "/progress" }}
+    >
       {unclaimed > 0 && (
         <Link
           to="/progress"
@@ -544,7 +572,11 @@ function EcliptarPanel({ data }: { data: DashboardData }) {
   if (!equipped && !mostUsed && data.ecliptars_owned === 0) return null;
 
   return (
-    <Panel title={t("dashboard.ecliptars")} icon={Users} action={{ label: t("nav.collection"), to: "/collection" }}>
+    <Panel
+      title={t("dashboard.ecliptars")}
+      icon={Users}
+      action={{ label: t("nav.collection"), to: "/collection" }}
+    >
       {equipped && (
         <div className="flex items-center gap-3 mb-3">
           <img
@@ -663,11 +695,18 @@ function DashboardSkeleton() {
   );
 }
 
-function DashboardError() {
+function DashboardError({ reason }: { reason: string | null }) {
   const { t } = useTranslation();
   return (
     <div className="min-h-screen pt-32 px-6 text-center">
-      <p className="text-muted-foreground mb-4">{t("common.error")}</p>
+      <p className="text-muted-foreground mb-2">{t("common.error")}</p>
+      {/* Name the cause. "Something went wrong" sends people hunting in the
+          wrong place; the actual Postgres message usually says exactly what. */}
+      {reason && (
+        <p className="max-w-lg mx-auto mb-4 text-[12px] font-mono text-muted-foreground/80">
+          {reason}
+        </p>
+      )}
       <Link
         to="/courses"
         className="inline-block px-4 py-2 rounded-lg border border-border text-sm"

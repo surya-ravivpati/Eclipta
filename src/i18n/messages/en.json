@@ -274,7 +274,9 @@
     "collected": "{{owned}} of {{total}} collected",
     "community": "Community",
     "continueAnywhere": "Continue anywhere",
-    "xpTotal": "{{xp}} XP total"
+    "xpTotal": "{{xp}} XP total",
+    "limitedTitle": "Showing a reduced dashboard.",
+    "limitedBody": "Some panels are unavailable:"
   },
   "notificationType": {
     "forum_reply": "Someone replied to your thread",

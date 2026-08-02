@@ -201,5 +201,30 @@
     "select": "Select language",
     "current": "Current language: {{name}}",
     "changed": "Language changed to {{name}}"
+  },
+  "search": {
+    "title": "Search Eclipta",
+    "open": "Search",
+    "placeholder": "Search courses, people, threads…",
+    "filters": "Filter by type",
+    "recent": "Recent",
+    "trending": "Trending",
+    "clearRecent": "Clear",
+    "hint": "Search courses, lessons, threads, people, groups and your battle history.",
+    "noResults": "No results for “{{query}}”",
+    "resultCount_one": "{{count}} result",
+    "resultCount_other": "{{count}} results",
+    "navigate": "navigate",
+    "select": "select",
+    "yours": "Yours",
+    "kind": {
+      "course": "Courses",
+      "lesson": "Lessons",
+      "thread": "Threads",
+      "user": "People",
+      "group": "Groups",
+      "battle": "Battles",
+      "note": "Notes"
+    }
   }
 }

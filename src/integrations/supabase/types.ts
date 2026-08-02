@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      search_history: {
+        Row: {
+          chosen_id: string | null
+          chosen_kind: string | null
+          created_at: string
+          id: string
+          query: string
+          user_id: string
+        }
+        Insert: {
+          chosen_id?: string | null
+          chosen_kind?: string | null
+          created_at?: string
+          id?: string
+          query: string
+          user_id: string
+        }
+        Update: {
+          chosen_id?: string | null
+          chosen_kind?: string | null
+          created_at?: string
+          id?: string
+          query?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_call_log: {
         Row: {
           called_at: string
@@ -2223,6 +2250,26 @@ export type Database = {
           username: string
           xp: number
         }[]
+      }
+      global_search: {
+        Args: { p_kinds?: string[] | null; p_limit?: number; p_query: string }
+        Returns: {
+          id: string
+          kind: string
+          personal: boolean
+          score: number
+          subtitle: string | null
+          title: string
+          url: string
+        }[]
+      }
+      get_trending_searches: {
+        Args: { p_limit?: number }
+        Returns: { hits: number; query: string }[]
+      }
+      record_search: {
+        Args: { p_chosen_id?: string | null; p_chosen_kind?: string | null; p_query: string }
+        Returns: undefined
       }
       get_platform_stats: {
         Args: never

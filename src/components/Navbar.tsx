@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "@/i18n/use-translation";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
@@ -139,6 +140,9 @@ export function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* ⌘K is global, but a visible affordance matters: most users never
+              discover a keyboard-only entry point. */}
+          {isAuthenticated && <GlobalSearch />}
           <button
             onClick={cycleTheme}
             className="p-2 text-muted-foreground hover:text-foreground transition-colors"

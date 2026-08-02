@@ -119,6 +119,8 @@ export interface RecordBattleSessionPayload {
   p_best_streak: number;
   p_question_records: StoredQuestionRecord[];
   p_opponent_type: string;
+  /** Ecliptar the run was fought with; NULL when none was equipped. */
+  p_ecliptar_slug?: string | null;
 }
 
 /**
@@ -178,6 +180,8 @@ export interface RawGhostSession {
   best_streak: number;
   username: string | null;
   question_records: unknown;
+  /** NULL for sessions recorded before the slug was captured. */
+  ecliptar_slug?: string | null;
 }
 
 /**

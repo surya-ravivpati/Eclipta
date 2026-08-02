@@ -104,6 +104,7 @@ export type Database = {
           best_streak: number
           correct_answers: number
           created_at: string
+          ecliptar_slug: string | null
           id: string
           opponent_type: string
           question_records: Json
@@ -121,6 +122,7 @@ export type Database = {
           best_streak?: number
           correct_answers?: number
           created_at?: string
+          ecliptar_slug?: string | null
           id?: string
           opponent_type?: string
           question_records?: Json
@@ -138,6 +140,7 @@ export type Database = {
           best_streak?: number
           correct_answers?: number
           created_at?: string
+          ecliptar_slug?: string | null
           id?: string
           opponent_type?: string
           question_records?: Json
@@ -2460,6 +2463,7 @@ export type Database = {
           p_archetype: string
           p_best_streak: number
           p_correct_answers: number
+          p_ecliptar_slug?: string | null
           p_opponent_type: string
           p_question_records: Json
           p_rating: number

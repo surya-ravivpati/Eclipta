@@ -19,6 +19,11 @@ export interface GhostSession {
   bestStreak: number;
   /** Original player's username, when available. */
   username: string | null;
+  /**
+   * Ecliptar the original player fought with. NULL for sessions recorded before
+   * this was captured — the caller derives a stable stand-in in that case.
+   */
+  ecliptarSlug: string | null;
   /** Ordered records — action chosen, outcome, and time taken per turn. */
   questionRecords: {
     action: string;
@@ -35,6 +40,8 @@ export async function recordBattleSession(params: {
   records: QuestionRecord[];
   bestStreak: number;
   opponentType?: "live" | "ghost" | "bot";
+  /** So this run replays as a ghost with the creature it was actually fought with. */
+  ecliptarSlug?: string | null;
 }): Promise<string | null> {
   const {
     data: { user },
@@ -50,6 +57,7 @@ export async function recordBattleSession(params: {
     p_total_questions: params.records.length,
     p_correct_answers: params.records.filter((r) => r.correct).length,
     p_best_streak: params.bestStreak,
+    p_ecliptar_slug: params.ecliptarSlug ?? null,
     p_question_records: params.records.map((r) => ({
       action: r.action,
       correct: r.correct,
@@ -88,6 +96,7 @@ export async function fetchGhostSession(playerRating: number): Promise<GhostSess
     correctAnswers: data.correct_answers,
     bestStreak: data.best_streak,
     username: data.username ?? null,
+    ecliptarSlug: data.ecliptar_slug ?? null,
     questionRecords: records,
   };
 }

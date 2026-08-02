@@ -104,7 +104,7 @@ import { BattleIntro } from "./battles/BattleIntro";
 import { StreakHub } from "./streak/StreakHub";
 import { recordDailyPractice } from "@/lib/record-practice";
 import { recordOutcomes } from "@/lib/concept-mastery";
-import { ECLIPTARS, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
+import { ECLIPTARS, ecliptarForArchetype, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import type { TableRow } from "@/integrations/supabase/database";
 import { getDailyChallengeProgress } from "@/repositories/courses";
@@ -2671,6 +2671,9 @@ function BattleArena() {
           records: finalRecords,
           bestStreak: finalStreak,
           opponentType: opponentTypeRef.current,
+          // Recorded so that when this run is served back as someone else's
+          // ghost, it fights with the creature it was actually fought with.
+          ecliptarSlug: ecliptarRef.current,
         });
 
         // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
@@ -3163,6 +3166,23 @@ function BattleArena() {
       if (match.opponentArchetype) {
         oppArchetype = match.opponentArchetype;
         oppName = match.opponentName;
+
+        // Ghost and live opponents arrive as an archetype, so they previously
+        // fought with no Ecliptar at all — no sprite, and no ultimate, since
+        // ultimates are keyed by Ecliptar slug. That made them strictly weaker
+        // than a bot. Equip one for them:
+        //   - a ghost replays with the creature the original player actually
+        //     used, when the session recorded it;
+        //   - otherwise derive a stable stand-in from the archetype, keyed on
+        //     the opponent's identity so the same ghost or rival always brings
+        //     the same creature rather than a new one each encounter.
+        const recorded = match.type === "ghost" ? (match.ghostSession?.ecliptarSlug ?? null) : null;
+        oppSlug =
+          recorded ??
+          ecliptarForArchetype(
+            oppArchetype,
+            match.ghostSession?.id ?? match.opponentUserId ?? oppName,
+          )?.slug;
       } else {
         // Bot: pick a real ecliptar so the opponent has a coherent identity —
         // its creature, name, and sprite all match.

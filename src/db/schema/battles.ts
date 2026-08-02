@@ -76,6 +76,8 @@ export const battleSessions = pgTable("battle_sessions", {
   rating_before: integer("rating_before"),
   rating_after: integer("rating_after"),
   rating_delta: integer("rating_delta"),
+  /** Ecliptar fought with; NULL for sessions recorded before it was captured. */
+  ecliptar_slug: text("ecliptar_slug"),
   opponent_type: text("opponent_type").notNull().default("bot"),
   created_at: timestamp("created_at", { withTimezone: true, mode: "string" })
     .notNull()

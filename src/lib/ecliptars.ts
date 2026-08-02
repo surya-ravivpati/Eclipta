@@ -5,7 +5,18 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { LucideIcon } from "lucide-react";
-import { Zap, Shield, Skull, Dice5, Heart, Scale, FastForward, Crown, Apple, Atom } from "lucide-react";
+import {
+  Zap,
+  Shield,
+  Skull,
+  Dice5,
+  Heart,
+  Scale,
+  FastForward,
+  Crown,
+  Apple,
+  Atom,
+} from "lucide-react";
 import type { MonsterArchetypeKey } from "./trophy-road-data";
 import { ROAD_NODES } from "./trophy-road-data";
 
@@ -36,37 +47,37 @@ const ARCH_ICON: Record<MonsterArchetypeKey, LucideIcon> = {
  * stable (`<arch>-a` / `<arch>-b`) because they're a server claim contract.
  */
 export const ECLIPTAR_NAMES: Record<MonsterArchetypeKey, string[]> = {
-  speedster:   ["Griffstrike", "Spark", "Correr", "Zypheroo"],
-  tank:        ["Dingus", "Syntium", "Mammorock", "Ironhide"],
-  chud:        ["Razorwing", "Crownscar", "Nighthorn", "Nitpick"],
-  gambler:     ["Mr. McHenry", "Rattleslot", "Snailouette", "Fortunox"],
-  healer:      ["BrightEye", "Chobroni", "Bloomheart", "Mossy Golem"],
-  fulcrum:     ["Fuego", "Petrona", "Ticonder", "Equinox"],
+  speedster: ["Griffstrike", "Spark", "Correr", "Zypheroo"],
+  tank: ["Dingus", "Syntium", "Mammorock", "Ironhide"],
+  chud: ["Razorwing", "Crownscar", "Nighthorn", "Nitpick"],
+  gambler: ["Mr. McHenry", "Rattleslot", "Snailouette", "Fortunox"],
+  healer: ["BrightEye", "Chobroni", "Bloomheart", "Mossy Golem"],
+  fulcrum: ["Fuego", "Petrona", "Ticonder", "Equinox"],
   accelerator: ["Venuck", "Fueljaw", "Adrenalynx", "Chronovex"],
-  god:         ["Newton", "Ecliptadon", "Einsteinium", "Temporubyss"],
+  god: ["Newton", "Ecliptadon", "Einsteinium", "Temporubyss"],
 };
 
 const SLOTS = ["a", "b", "c", "d"] as const;
 
-export const ECLIPTARS: Ecliptar[] = (
-  Object.keys(ARCH_ICON) as MonsterArchetypeKey[]
-).flatMap((arch): Ecliptar[] => {
-  if (arch === "god") {
-    return [
-      { slug: "newton",      name: "Newton",      archetype: "god", icon: Apple },
-      { slug: "ecliptadon",  name: "Ecliptadon",  archetype: "god", icon: Atom  },
-      { slug: "einsteinium", name: "Einsteinium", archetype: "god", icon: Crown },
-      { slug: "temporobys",  name: "Temporubyss",  archetype: "god", icon: Crown },
-    ];
-  }
-  // Four claimable per archetype, all granted from the archetype's monster node.
-  return ECLIPTAR_NAMES[arch].map((name, i) => ({
-    slug: `${arch}-${SLOTS[i]}`,
-    name,
-    archetype: arch,
-    icon: ARCH_ICON[arch],
-  }));
-});
+export const ECLIPTARS: Ecliptar[] = (Object.keys(ARCH_ICON) as MonsterArchetypeKey[]).flatMap(
+  (arch): Ecliptar[] => {
+    if (arch === "god") {
+      return [
+        { slug: "newton", name: "Newton", archetype: "god", icon: Apple },
+        { slug: "ecliptadon", name: "Ecliptadon", archetype: "god", icon: Atom },
+        { slug: "einsteinium", name: "Einsteinium", archetype: "god", icon: Crown },
+        { slug: "temporobys", name: "Temporubyss", archetype: "god", icon: Crown },
+      ];
+    }
+    // Four claimable per archetype, all granted from the archetype's monster node.
+    return ECLIPTAR_NAMES[arch].map((name, i) => ({
+      slug: `${arch}-${SLOTS[i]}`,
+      name,
+      archetype: arch,
+      icon: ARCH_ICON[arch],
+    }));
+  },
+);
 
 export function getEcliptarsByArchetype(arch: MonsterArchetypeKey): Ecliptar[] {
   return ECLIPTARS.filter((e) => e.archetype === arch);
@@ -74,6 +85,31 @@ export function getEcliptarsByArchetype(arch: MonsterArchetypeKey): Ecliptar[] {
 
 export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
   return ECLIPTARS.find((e) => e.slug === slug);
+}
+
+/**
+ * Pick a stable Ecliptar for an archetype from an arbitrary key.
+ *
+ * Used for opponents whose own Ecliptar is unknown — ghost replays recorded
+ * before the slug was stored, and live opponents whose profile we have not
+ * fetched. Keying on the session or user id rather than `Math.random()` matters:
+ * the same ghost must bring the same creature every time it is replayed, or its
+ * sprite and its ultimate change between encounters and it stops reading as a
+ * specific opponent.
+ */
+export function ecliptarForArchetype(
+  archetype: MonsterArchetypeKey,
+  key: string,
+): Ecliptar | undefined {
+  const pool = getEcliptarsByArchetype(archetype);
+  if (pool.length === 0) return undefined;
+  // FNV-1a: tiny, stable across runs, and good enough to spread short ids.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return pool[Math.abs(hash) % pool.length];
 }
 
 /**
@@ -110,7 +146,9 @@ async function grantEcliptar(
 
 /** Claim a single specific Ecliptar by slug (used by trophy-road final nodes). */
 export async function claimEcliptarBySlug(slug: string, nodeId: number): Promise<Ecliptar | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
   const ec = getEcliptarBySlug(slug);
   if (!ec) return null;
@@ -129,7 +167,9 @@ export async function claimEcliptarsBySlugs(
   slugs: string[],
   nodeId: number,
 ): Promise<{ granted: Ecliptar[]; error: string | null }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { granted: [], error: "You need to be signed in." };
   const owned = await fetchOwnedEcliptarSlugs();
   const known = slugs.map((s) => getEcliptarBySlug(s)).filter((e): e is Ecliptar => !!e);
@@ -154,7 +194,9 @@ export async function claimEcliptarsBySlugs(
 
 /** Fetch the slugs of Ecliptars owned by the current user. */
 export async function fetchOwnedEcliptarSlugs(): Promise<Set<string>> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return new Set();
   const { data } = await supabase
     .from("user_ecliptars")
@@ -169,9 +211,11 @@ export async function fetchOwnedEcliptarSlugs(): Promise<Set<string>> {
  */
 export async function claimArchetypeReward(
   archetype: MonsterArchetypeKey,
-  nodeId: number
+  nodeId: number,
 ): Promise<Ecliptar[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const owned = await fetchOwnedEcliptarSlugs();

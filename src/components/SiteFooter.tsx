@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Github, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { LEGAL_DOCUMENTS } from "@/content/legal/documents";
 import { BrandLockup } from "@/components/BrandLockup";
 
 const FOOTER_GROUPS = [
@@ -61,9 +62,36 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border">
+        {/* Permanent legal row. Present on every page that renders the footer,
+            because consent and policy access cannot be behind a menu. */}
+        <nav aria-label="Legal" className="pt-6 border-t border-border">
+          <ul className="flex flex-wrap gap-x-4 gap-y-2">
+            {LEGAL_DOCUMENTS.map((d) => (
+              <li key={d.slug}>
+                <Link
+                  to="/legal/$doc"
+                  params={{ doc: d.slug }}
+                  title={d.summary}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {d.title}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link
+                to="/legal/notices"
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Third-Party Notices
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t border-border">
           <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted-foreground">
-            © {new Date().getFullYear()} Eclipta
+            © {new Date().getFullYear()} Eclipta · All rights reserved
           </p>
           <div className="flex items-center gap-3">
             <a
@@ -72,15 +100,6 @@ export function SiteFooter() {
               aria-label="Contact"
             >
               <Mail className="w-4 h-4" />
-            </a>
-            <a
-              href="https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey"
-              target="_blank"
-              rel="noreferrer"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="GitHub"
-            >
-              <Github className="w-4 h-4" />
             </a>
           </div>
         </div>

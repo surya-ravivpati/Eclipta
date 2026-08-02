@@ -226,5 +226,12 @@
       "battle": "Battles",
       "note": "Notes"
     }
+  },
+  "consent": {
+    "title": "Cookies and storage",
+    "body": "We use strictly necessary storage to keep you signed in. We would also like to remember your preferences — theme, language and motion settings — which is optional.",
+    "cookiePolicy": "Cookie Policy",
+    "accept": "Accept all",
+    "essentialOnly": "Essential only"
   }
 }

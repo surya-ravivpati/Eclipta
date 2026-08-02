@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Mail,
-  Github,
+  ShieldCheck,
   MessageSquare,
   Send,
   CheckCircle2,
@@ -595,16 +595,11 @@ function AboutPage() {
                 <h3>Community Forum</h3>
                 <p>Questions, help, and learning out loud with everyone else.</p>
               </Link>
-              <a
-                href="https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ab-channel"
-              >
-                <Github className="w-5 h-5" />
-                <h3>The code</h3>
-                <p>It's open. Poke around, report bugs, or contribute.</p>
-              </a>
+              <Link to="/legal/$doc" params={{ doc: "community" }} className="ab-channel">
+                <ShieldCheck className="w-5 h-5" />
+                <h3>Community Guidelines</h3>
+                <p>How we expect people to treat each other here, and how we enforce it.</p>
+              </Link>
             </div>
           </motion.div>
         </section>

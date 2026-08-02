@@ -1,5 +1,10 @@
 # Eclipta
 
+> **Proprietary and confidential.** Eclipta is proprietary software. This
+> repository and its contents are not public, not open source, and not licensed
+> for redistribution or reuse. Third-party components are listed at
+> `/legal/notices` and remain under their own licences.
+
 > Learn. Compete. Progress.
 
 Eclipta is a competitive learning platform where solving problems directly affects gameplay, progression, and strategy.
@@ -12,7 +17,7 @@ Eclipta is a gamified, AI-assisted learning platform where answering academic
 questions powers real-time competitive **Knowledge Battles**, long-term
 progression (Trophy Road, Ecliptars, daily streaks), collaborative **Study
 Rooms**, a community forum and course system, and **Luna** — an AI tutor that
-coaches *how to think* rather than handing over answers. It runs on React +
+coaches _how to think_ rather than handing over answers. It runs on React +
 Supabase, with all AI behind serverless Edge Functions.
 
 📄 **For a full, grounded product overview — vision, user journeys, features,
@@ -37,33 +42,33 @@ Instead of treating quizzes as something separate from gameplay, Eclipta turns k
 
 In battles, answers directly affect:
 
-* attacks
-* combos
-* momentum
-* progression
-* strategy
+- attacks
+- combos
+- momentum
+- progression
+- strategy
 
 The project combines:
 
-* strategy-game mechanics
-* adaptive learning
-* AI-assisted guidance
-* progression and ranking systems
-* social/community features
-* animated modern UI design
+- strategy-game mechanics
+- adaptive learning
+- AI-assisted guidance
+- progression and ranking systems
+- social/community features
+- animated modern UI design
 
 At the center of the platform is **Knowledge Battles** — a real-time system where educational performance changes what players can actually do during combat.
 
 The current codebase already includes:
 
-* real-time battle systems
-* AI-assisted learning flows
-* progression/ranking systems
-* adaptive educational experiences
-* user profiles and progression tracking
-* forum/community systems
-* courses and learning paths
-* animated UI systems
+- real-time battle systems
+- AI-assisted learning flows
+- progression/ranking systems
+- adaptive educational experiences
+- user profiles and progression tracking
+- forum/community systems
+- courses and learning paths
+- animated UI systems
 
 ---
 
@@ -81,10 +86,10 @@ Eclipta experiments with a different approach:
 
 The goal is to make learning:
 
-* interactive instead of passive
-* skill-based instead of repetitive
-* competitive without losing educational value
-* rewarding beyond grades or completion percentages
+- interactive instead of passive
+- skill-based instead of repetitive
+- competitive without losing educational value
+- rewarding beyond grades or completion percentages
 
 ---
 
@@ -96,35 +101,35 @@ Instead of answering questions just to move forward, your performance changes wh
 
 The project mixes:
 
-* strategy-game mechanics
-* adaptive learning
-* AI-assisted guidance
-* progression systems
-* social/community features
-* modern animated UI design
+- strategy-game mechanics
+- adaptive learning
+- AI-assisted guidance
+- progression systems
+- social/community features
+- modern animated UI design
 
 At the center of the platform is **Knowledge Battles** — a real-time system where solving problems powers attacks, momentum, combos, and strategic decisions.
 
 Current systems in the repository include:
 
-* Competitive knowledge-based battle systems
-* AI-assisted learning flows
-* Adaptive educational experiences
-* Trophy/progression systems
-* Social and community features
-* User profiles and progression tracking
-* Course and learning-path infrastructure
-* Animated modern UI/UX systems
+- Competitive knowledge-based battle systems
+- AI-assisted learning flows
+- Adaptive educational experiences
+- Trophy/progression systems
+- Social and community features
+- User profiles and progression tracking
+- Course and learning-path infrastructure
+- Animated modern UI/UX systems
 
 ## Who It's For
 
 Eclipta is mainly designed for:
 
-* students who enjoy competitive or game-like learning
-* people who like progression/ranking systems
-* classrooms or communities experimenting with interactive learning
-* developers interested in educational gaming systems
-* anyone exploring alternatives to traditional quiz-based learning
+- students who enjoy competitive or game-like learning
+- people who like progression/ranking systems
+- classrooms or communities experimenting with interactive learning
+- developers interested in educational gaming systems
+- anyone exploring alternatives to traditional quiz-based learning
 
 ---
 
@@ -134,36 +139,36 @@ The project is still evolving, but a lot of the core systems are already functio
 
 ## Core Gameplay & Learning
 
-* Real-time knowledge battles
-* Strategic combat mechanics powered by educational performance
-* Combo, momentum, and focus systems
-* AI-driven opponents and battle logic
-* Adaptive learning experiences
-* Trophy road and progression tracking
-* Ranked and skill-based gameplay concepts
+- Real-time knowledge battles
+- Strategic combat mechanics powered by educational performance
+- Combo, momentum, and focus systems
+- AI-driven opponents and battle logic
+- Adaptive learning experiences
+- Trophy road and progression tracking
+- Ranked and skill-based gameplay concepts
 
 ## Learning Systems
 
-* Courses and learning paths
-* AI-assisted educational guidance
-* Knowledge collections and tracking
-* Personalized progression systems
-* Adaptive educational experiences
+- Courses and learning paths
+- AI-assisted educational guidance
+- Knowledge collections and tracking
+- Personalized progression systems
+- Adaptive educational experiences
 
 ## Social & Community
 
-* User profiles
-* Community/forum systems
-* Progress sharing
-* Achievement-oriented progression
+- User profiles
+- Community/forum systems
+- Progress sharing
+- Achievement-oriented progression
 
 ## User Experience
 
-* Modern animated UI
-* Responsive design
-* Framer Motion powered transitions
-* Component-driven architecture
-* Real-time interactive feedback
+- Modern animated UI
+- Responsive design
+- Framer Motion powered transitions
+- Component-driven architecture
+- Real-time interactive feedback
 
 ---
 
@@ -214,17 +219,17 @@ Before running the project locally, ensure the following are installed:
 
 The application expects:
 
-* A configured Supabase project
-* Supabase database access
-* Supabase authentication configuration
+- A configured Supabase project
+- Supabase database access
+- Supabase authentication configuration
 
 ## Supported Operating Systems
 
 The project should work on:
 
-* macOS
-* Linux
-* Windows (WSL recommended)
+- macOS
+- Linux
+- Windows (WSL recommended)
 
 ---
 
@@ -233,7 +238,7 @@ The project should work on:
 ## Quick Setup
 
 ```bash
-git clone https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey.git
+# Obtain the source archive from the Eclipta engineering lead.
 cd eclipta-your-smart-learning-journey
 npm install
 npm run dev
@@ -252,7 +257,7 @@ http://localhost:5173
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/surya-ravivpati/eclipta-your-smart-learning-journey.git
+# Obtain the source archive from the Eclipta engineering lead.
 cd eclipta-your-smart-learning-journey
 ```
 
@@ -284,10 +289,10 @@ VITE_SUPABASE_ANON_KEY=
 
 Create a Supabase project and configure:
 
-* Authentication providers
-* Database schema
-* Storage buckets (if applicable)
-* Row-level security policies
+- Authentication providers
+- Database schema
+- Storage buckets (if applicable)
+- Row-level security policies
 
 > Note: No dedicated migration system or SQL migration directory was clearly present in the repository at the time of analysis. Database setup may currently be managed directly through Supabase.
 
@@ -309,19 +314,19 @@ http://localhost:5173
 
 **App (Vite / build-time, in `.env` and in the Vercel project):**
 
-| Variable                        | Description                        | Required | Example                      |
+| Variable                        | Description                       | Required | Example                      |
 | ------------------------------- | --------------------------------- | -------- | ---------------------------- |
 | `VITE_SUPABASE_URL`             | Supabase project URL              | Yes      | `https://abcxyz.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable/anon API key | Yes      | `eyJhbGciOi...`              |
 
 **Supabase Edge Function secrets** (set with `supabase secrets set …`, not in `.env`):
 
-| Variable             | Description                                                     | Required |
-| -------------------- | -------------------------------------------------------------- | -------- |
-| `AI_GATEWAY_URL`     | OpenAI-compatible chat gateway base URL (e.g. OpenRouter)      | Yes\*    |
-| `AI_GATEWAY_API_KEY` | API key for that gateway                                       | Yes      |
-| `AI_AUDIO_URL`       | Base URL for TTS/STT (e.g. `https://api.openai.com/v1`)        | No       |
-| `AI_AUDIO_API_KEY`   | API key for the audio provider (defaults to the gateway key)   | No       |
+| Variable             | Description                                                  | Required |
+| -------------------- | ------------------------------------------------------------ | -------- |
+| `AI_GATEWAY_URL`     | OpenAI-compatible chat gateway base URL (e.g. OpenRouter)    | Yes\*    |
+| `AI_GATEWAY_API_KEY` | API key for that gateway                                     | Yes      |
+| `AI_AUDIO_URL`       | Base URL for TTS/STT (e.g. `https://api.openai.com/v1`)      | No       |
+| `AI_AUDIO_API_KEY`   | API key for the audio provider (defaults to the gateway key) | No       |
 
 > \*Until `AI_GATEWAY_URL` / `AI_GATEWAY_API_KEY` are set, the edge functions fall
 > back to the legacy `LOVABLE_API_KEY` gateway so nothing breaks mid-migration.
@@ -431,20 +436,20 @@ One of the core systems in the application.
 
 Implements:
 
-* Knowledge-driven combat
-* Strategic gameplay mechanics
-* Combo and momentum systems
-* AI opponent logic
-* Real-time progression interactions
+- Knowledge-driven combat
+- Strategic gameplay mechanics
+- Combo and momentum systems
+- AI opponent logic
+- Real-time progression interactions
 
 ### Routing
 
 The application uses TanStack Router for:
 
-* Nested routing
-* Route-based layouts
-* Authenticated flows
-* Public/private page separation
+- Nested routing
+- Route-based layouts
+- Authenticated flows
+- Public/private page separation
 
 ---
 
@@ -474,17 +479,17 @@ Authentication is managed through Supabase Auth.
 
 Possible auth flows include:
 
-* Email/password
-* OAuth providers (if configured)
-* Session-based authentication
+- Email/password
+- OAuth providers (if configured)
+- Session-based authentication
 
 ## Backend Services
 
 The frontend communicates with:
 
-* Supabase database
-* Supabase authentication APIs
-* Supabase storage APIs
+- Supabase database
+- Supabase authentication APIs
+- Supabase storage APIs
 
 > No standalone REST or Express API server was identified in the repository during analysis.
 
@@ -498,7 +503,7 @@ The frontend communicates with:
 2. Make isolated changes
 3. Run linting and type checks
 4. Test affected functionality
-5. Open a pull request
+5. Request review from the Eclipta engineering lead
 
 ## Local Development Tips
 
@@ -506,10 +511,10 @@ The frontend communicates with:
 
 Prefer explicit typing for:
 
-* Battle systems
-* Game state logic
-* API responses
-* Route data
+- Battle systems
+- Game state logic
+- API responses
+- Route data
 
 ### Keep Components Modular
 
@@ -517,19 +522,19 @@ Some gameplay systems are currently large and complex.
 
 As the project grows, consider splitting large gameplay components into:
 
-* Engine/state logic
-* Rendering layers
-* Animation systems
-* Matchmaking systems
-* AI systems
+- Engine/state logic
+- Rendering layers
+- Animation systems
+- Matchmaking systems
+- AI systems
 
 #### Things That Would Improve the Project Long-Term
 
-* automated testing
-* proper database migrations
-* CI/CD workflows
-* replay/spectator systems
-* better separation of gameplay logic from UI
+- automated testing
+- proper database migrations
+- CI/CD workflows
+- replay/spectator systems
+- better separation of gameplay logic from UI
 
 ---
 
@@ -544,15 +549,14 @@ main
  └── experimental/*
 ```
 
-
 ## Reporting Issues
 
 When opening issues, include:
 
-* Environment details
-* Reproduction steps
-* Expected behavior
-* Screenshots/logs if applicable
+- Environment details
+- Reproduction steps
+- Expected behavior
+- Screenshots/logs if applicable
 
 ---
 
@@ -600,26 +604,26 @@ Then reinstall:
 npm install
 ```
 
-___
+---
 
 ## Major Technologies
 
-* React
-* Vite
-* Supabase
-* Tailwind CSS
-* Framer Motion
-* TanStack Router
+- React
+- Vite
+- Supabase
+- Tailwind CSS
+- Framer Motion
+- TanStack Router
 
 ## Inspiration
 
 The project blends concepts from:
 
-* Competitive gaming systems
-* Educational technology
-* Adaptive learning platforms
-* RPG progression systems
-* Social learning environments
+- Competitive gaming systems
+- Educational technology
+- Adaptive learning platforms
+- RPG progression systems
+- Social learning environments
 
 ---
 
@@ -629,18 +633,18 @@ Eclipta is an experimental learning platform where educational performance direc
 
 The core system — Knowledge Battles — turns solving problems into real-time combat mechanics:
 
-* correct answers power attacks
-* momentum affects strategy
-* progression is skill-based
-* learning becomes interactive instead of passive
+- correct answers power attacks
+- momentum affects strategy
+- progression is skill-based
+- learning becomes interactive instead of passive
 
 The project currently uses:
 
-* React 19
-* TypeScript
-* Vite
-* Supabase
-* Tailwind CSS
-* Framer Motion
+- React 19
+- TypeScript
+- Vite
+- Supabase
+- Tailwind CSS
+- Framer Motion
 
 The codebase is still evolving, but the main gameplay systems already show the direction of the project pretty clearly.

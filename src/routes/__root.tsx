@@ -15,6 +15,7 @@ import { I18nProvider } from "@/i18n";
 import { useTranslation } from "@/i18n/use-translation";
 import { pageTitleFor } from "@/i18n/page-titles";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { StreakCelebrationListener } from "@/components/streak/StreakCelebration";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -199,6 +200,7 @@ function AppShell() {
 
       {showFooter && <SiteFooter />}
       {showLuna && <Luna />}
+      <ConsentBanner />
       <StreakCelebrationListener />
       <Toaster />
 

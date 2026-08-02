@@ -165,3 +165,9 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_dashboard(uuid) FROM public;
 GRANT EXECUTE ON FUNCTION public.get_dashboard(uuid) TO authenticated;
+
+-- PostgREST caches the schema, so a newly created function can stay invisible
+-- to the REST API even after the migration commits — the call keeps returning
+-- PGRST202 until the cache reloads. Supabase usually triggers this via an event
+-- trigger, but not in every path (notably a SQL-Editor run), so ask explicitly.
+NOTIFY pgrst, 'reload schema';

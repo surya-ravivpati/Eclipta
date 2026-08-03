@@ -589,7 +589,14 @@ function FighterCard({
               alt=""
               aria-hidden="true"
               onError={() => setSpriteFailed(true)}
-              className="relative h-32 sm:h-44 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)]"
+              // Ecliptar art is drawn facing left, which is right for the
+              // opponent on the right-hand card but leaves the player's creature
+              // facing away from the fight. Mirroring the left card turns the
+              // two to face each other, which is what makes a duel read as a
+              // duel rather than two portraits side by side.
+              className={`relative h-32 sm:h-44 w-auto max-w-full object-contain select-none pointer-events-none drop-shadow-[0_10px_22px_rgba(0,0,0,0.65)] ${
+                side === "left" ? "-scale-x-100" : ""
+              }`}
             />
           </div>
         )}

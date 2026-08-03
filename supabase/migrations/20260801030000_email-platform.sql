@@ -228,7 +228,8 @@ AS $$
   SELECT jsonb_build_object(
     'xp_gained', coalesce((
       SELECT sum(amount) FROM public.xp_award_log
-       WHERE user_id = p_user AND created_at >= p_since), 0),
+       -- xp_award_log timestamps its rows `awarded_at`, not `created_at`.
+       WHERE user_id = p_user AND awarded_at >= p_since), 0),
     'xp_total', coalesce((SELECT xp FROM public.user_profiles WHERE user_id = p_user), 0),
     'daily_streak', coalesce((SELECT daily_streak FROM public.user_profiles WHERE user_id = p_user), 0),
     'best_streak', coalesce((SELECT best_streak FROM public.user_profiles WHERE user_id = p_user), 0),

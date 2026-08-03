@@ -22,9 +22,9 @@ const T =
   (await import("../supabase/functions/_shared/email/templates.ts")) as typeof import("../supabase/functions/_shared/email/templates.ts");
 
 const ctx = {
-  appUrl: "https://ecliptalearning.com",
+  appUrl: "https://ecliptalearning.vercel.app",
   name: "Surya",
-  unsubscribeUrl: "https://ecliptalearning.com/api/unsubscribe?token=preview",
+  unsubscribeUrl: "https://ecliptalearning.vercel.app/api/unsubscribe?token=preview",
 };
 
 // Realistic sample data. Deliberately not all-zeroes and not all-maxed: the

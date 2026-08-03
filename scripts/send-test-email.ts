@@ -20,10 +20,11 @@
  * cannot work.
  */
 import * as T from "../supabase/functions/_shared/email/templates.ts";
+import { fetchRealStats, type RealStats } from "./real-stats.ts";
 
 const API_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.EMAIL_FROM ?? "Eclipta <onboarding@resend.dev>";
-const APP_URL = process.env.APP_URL ?? "https://ecliptalearning.com";
+const APP_URL = process.env.APP_URL ?? "https://ecliptalearning.vercel.app";
 
 const ctx = {
   appUrl: APP_URL,
@@ -31,7 +32,10 @@ const ctx = {
   unsubscribeUrl: `${APP_URL}/api/unsubscribe?token=preview`,
 };
 
-const [to, which = "daily-digest"] = process.argv.slice(2);
+const args = process.argv.slice(2);
+// --real pulls the recipient's actual figures instead of the sample set.
+const useReal = args.includes("--real");
+const [to, which = "daily-digest"] = args.filter((a) => a !== "--real");
 
 if (!API_KEY) {
   console.error(`
@@ -52,6 +56,7 @@ Usage: RESEND_API_KEY=re_xxx bun scripts/send-test-email.ts <your-email> [templa
 
 Templates: ${Object.keys(build()).join(", ")}
 Use --all to send every one.
+Add --real to use the recipient's actual figures (needs SUPABASE_SERVICE_ROLE_KEY).
 
 With the default sender, Resend only delivers to the address you registered
 with — use that one.
@@ -59,7 +64,35 @@ with — use that one.
   process.exit(1);
 }
 
-function build(): Record<string, T.Rendered> {
+function build(real?: RealStats): Record<string, T.Rendered> {
+  const c = real ? { ...ctx, name: real.username } : ctx;
+  if (real) {
+    return {
+      "daily-digest": T.dailyDigest(c, real.digest),
+      "daily-digest-quiet": T.dailyDigest(c, {
+        ...real.digest,
+        xpGained: 0,
+        lessonsCompleted: 0,
+        battles: { played: 0, won: 0, correct: 0, questions: 0 },
+      }),
+      "weekly-report": T.weeklyReport(c, real.weekly),
+      "streak-saver": T.streakSaver(c, real.streak),
+      "forum-reply": T.eventNotification(c, {
+        kind: "forum_reply",
+        actor: "a community member",
+        link: "/forum",
+        category: "forum",
+      }),
+      "battle-challenge": T.eventNotification(c, {
+        kind: "battle_challenge",
+        actor: "an opponent",
+        link: "/battles",
+        category: "battle",
+      }),
+      "ai-followup": T.aiFollowUp(c, { concept: real.weakestConcept, attempts: 3 }),
+      "guardian-report": T.guardianReport({ ...c, learnerName: real.username }, real.guardian),
+    };
+  }
   return {
     "daily-digest": T.dailyDigest(ctx, {
       xpGained: 240,
@@ -157,7 +190,27 @@ async function send(name: string, r: T.Rendered): Promise<boolean> {
   return false;
 }
 
-const all = build();
+let real: RealStats | undefined;
+if (useReal) {
+  try {
+    real = await fetchRealStats(to);
+    console.log("Using real figures for " + real.username + " (" + to + ")");
+    if (real.gaps.length > 0) {
+      // Name the empty sections, so an empty-looking email reads as an accurate
+      // empty rather than a broken template.
+      console.log("  Note - these are genuinely empty in your data:");
+      for (const g of real.gaps) console.log("    - " + g);
+    }
+    console.log();
+  } catch (err) {
+    console.error(
+      "\nCould not load real stats: " + (err instanceof Error ? err.message : err) + "\n",
+    );
+    process.exit(1);
+  }
+}
+
+const all = build(real);
 const chosen =
   which === "--all" ? Object.entries(all) : [[which, all[which]] as [string, T.Rendered]];
 

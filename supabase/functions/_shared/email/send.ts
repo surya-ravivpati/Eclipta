@@ -59,6 +59,9 @@ export async function deliver(args: {
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
   if (args.threadKey) {
+    // Message-ID domain, not a link. It should be a domain you control — left
+    // as the apex rather than the vercel.app deployment host, which is shared
+    // infrastructure and not yours to mint message ids under.
     headers["References"] = `<${args.threadKey}@ecliptalearning.com>`;
   }
 

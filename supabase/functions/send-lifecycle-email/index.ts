@@ -49,7 +49,7 @@ interface Payload {
   data: Record<string, unknown>;
 }
 
-const APP_URL = Deno.env.get("APP_URL") ?? "https://ecliptalearning.com";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://ecliptalearning.vercel.app";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

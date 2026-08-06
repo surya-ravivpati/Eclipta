@@ -124,8 +124,10 @@ Migrated onto the repository:
       directly — that's a different client surface than `.from()`/`.rpc()`,
       not covered by the repository rule.
 - [x] `src/components/CourseBuilder.tsx` — course-proposal submission.
-- [x] `src/components/CertifiedCourses.tsx` — enrollment list + enroll
-      action. **This component is dead code** — see "Known gaps."
+- [x] ~~`src/components/CertifiedCourses.tsx`~~ — was migrated onto the
+      repository despite being dead code (zero importers); **deleted
+      2026-08-05** per `docs/cleanup-plan.md`'s Phase 4 orphan-component
+      item, once independently re-confirmed still zero-importer.
 - [x] `src/components/ProgressDashboard.tsx` — enrollment count/list only
       (the `user_profiles` stats call in the same `Promise.all` is
       profile-domain, left as-is).

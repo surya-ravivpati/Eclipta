@@ -76,17 +76,7 @@ const KIND_WORDS: Record<SearchKind, string[]> = {
     "team",
     "teams",
   ],
-  battle: [
-    "battle",
-    "battles",
-    "duel",
-    "duels",
-    "match",
-    "matches",
-    "fight",
-    "fights",
-    "history",
-  ],
+  battle: ["battle", "battles", "duel", "duels", "match", "matches", "fight", "fights", "history"],
   note: ["note", "notes", "explanation", "explanations", "ai", "luna", "conversation", "chat"],
 };
 
@@ -175,9 +165,13 @@ export interface ParsedQuery {
  * Parse a raw query.
  *
  * "physics battles"          → needle "physics", kinds [battle]
- * "integration lesson"       → needle "integration", kinds [lesson], + calculus
- * "AI explained vectors"     → needle "vectors",  kinds [note],   + linear algebra
- * "friends studying chemistry" → needle "chemistry", kinds [user], + chem
+ * "integration lesson"       → needle "integration", kinds [lesson], + integral/integrals/calculus
+ * "AI explained vectors"     → needle "vectors",  kinds [note],   + vector/linear algebra
+ * "friends studying chemistry" → needle "chemistry", kinds [user], no expansion
+ *   (SYNONYMS only maps "chem" → "chemistry", not the reverse, so a query
+ *   that already says the full word gets no synonym boost - by design, see
+ *   the SYNONYMS comment below, but worth knowing this example doesn't
+ *   expand even though it looks like it should)
  */
 export function parseQuery(raw: string, explicitKinds: SearchKind[] = []): ParsedQuery {
   const trimmed = raw.trim();

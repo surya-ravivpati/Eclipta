@@ -2627,95 +2627,108 @@ function BattleArena() {
 
       // Persist battle to learning_history + increment daily challenge on win
       (async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
+        try {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) return;
 
-        // Feed every answered question into the shared concept-mastery store so
-        // Practice Weak Spots (and the Courses readiness engine) can use it.
-        // Best-effort — a missing table never affects the battle result.
-        void recordOutcomes(
-          user.id,
-          finalRecords.map((r) => ({
-            concept: r.question.topic,
-            subject: "Mathematics",
-            difficulty: r.question.difficulty,
-            correct: r.correct,
-            timeSpent: r.timeSpent,
-          })),
-        );
+          // Feed every answered question into the shared concept-mastery store so
+          // Practice Weak Spots (and the Courses readiness engine) can use it.
+          // Best-effort — a missing table never affects the battle result.
+          void recordOutcomes(
+            user.id,
+            finalRecords.map((r) => ({
+              concept: r.question.topic,
+              subject: "Mathematics",
+              difficulty: r.question.difficulty,
+              correct: r.correct,
+              timeSpent: r.timeSpent,
+            })),
+          );
 
-        // Award XP here — at the guaranteed battle-end hook — rather than relying
-        // on the result screen mounting (which a live rematch or an early exit can
-        // skip). Server computes the amount from correct/total/won.
-        await awardBattleXp(correctAnswers, totalQuestions, won);
+          // Award XP here — at the guaranteed battle-end hook — rather than relying
+          // on the result screen mounting (which a live rematch or an early exit can
+          // skip). Server computes the amount from correct/total/won.
+          await awardBattleXp(correctAnswers, totalQuestions, won);
 
-        // Count today toward the daily-practice streak (server-authoritative,
-        // idempotent per day). Fires the milestone celebration when crossed.
-        await recordDailyPractice();
+          // Count today toward the daily-practice streak (server-authoritative,
+          // idempotent per day). Fires the milestone celebration when crossed.
+          await recordDailyPractice();
 
-        await supabase.rpc("log_learning_history", {
-          p_session_type: "battle",
-          p_topic: ARCHETYPES[archetype].name,
-          p_question_text: null,
-          p_was_correct: won,
-          p_response_time_ms: null,
-          p_hint_level_used: 0,
-          p_luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(finalScore)} · streak ${finalStreak}`,
-        });
-        if (won) {
-          // Server-side atomic increment; clients can no longer set wins directly.
-          await supabase.rpc("increment_daily_challenge_win");
-          window.dispatchEvent(new Event("daily-challenge-updated"));
-        }
-
-        // Record session as ghost replay data for future opponents
-        const sessionId = await recordBattleSession({
-          archetype,
-          won,
-          rating: playerRatingRef.current,
-          records: finalRecords,
-          bestStreak: finalStreak,
-          opponentType: opponentTypeRef.current,
-          // Recorded so that when this run is served back as someone else's
-          // ghost, it fights with the creature it was actually fought with.
-          ecliptarSlug: ecliptarRef.current,
-        });
-
-        // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
-        if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
-          const { data } = await supabase.rpc("complete_pvp_battle", {
-            p_battle_id: pvpBattleIdRef.current,
-            p_winner_id: winnerId,
+          await supabase.rpc("log_learning_history", {
+            p_session_type: "battle",
+            p_topic: ARCHETYPES[archetype].name,
+            p_question_text: null,
+            p_was_correct: won,
+            p_response_time_ms: null,
+            p_hint_level_used: 0,
+            p_luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(finalScore)} · streak ${finalStreak}`,
           });
-          const nextRating = iAmChallengerRef.current
-            ? data?.challenger_rating_after
-            : data?.opponent_rating_after;
-          if (typeof nextRating === "number") {
-            setRatingChange(nextRating - playerRatingRef.current);
-            setPlayerRating(nextRating);
-            playerRatingRef.current = nextRating;
-            window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+          if (won) {
+            // Server-side atomic increment; clients can no longer set wins directly.
+            await supabase.rpc("increment_daily_challenge_win");
+            window.dispatchEvent(new Event("daily-challenge-updated"));
           }
-        } else if (opponentTypeRef.current === "ghost" && sessionId) {
-          const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
-          setRatingChange(result.ratingDelta);
-          setPlayerRating(result.ratingAfter);
-          playerRatingRef.current = result.ratingAfter;
-          window.dispatchEvent(new Event("pvp-leaderboard-updated"));
-        } else if (opponentTypeRef.current === "bot" && sessionId) {
-          // Bot battles count too, at a reduced rating change (server-enforced),
-          // and update the W/L record via the same applied-session truth model.
-          const { data } = await supabase.rpc("complete_bot_battle", {
-            p_session_id: sessionId,
+
+          // Record session as ghost replay data for future opponents
+          const sessionId = await recordBattleSession({
+            archetype,
+            won,
+            rating: playerRatingRef.current,
+            records: finalRecords,
+            bestStreak: finalStreak,
+            opponentType: opponentTypeRef.current,
+            // Recorded so that when this run is served back as someone else's
+            // ghost, it fights with the creature it was actually fought with.
+            ecliptarSlug: ecliptarRef.current,
           });
-          if (typeof data?.rating_after === "number") {
-            setRatingChange(data.rating_delta ?? 0);
-            setPlayerRating(data.rating_after);
-            playerRatingRef.current = data.rating_after;
+
+          // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
+          if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
+            const { data, error } = await supabase.rpc("complete_pvp_battle", {
+              p_battle_id: pvpBattleIdRef.current,
+              p_winner_id: winnerId,
+            });
+            if (error) {
+              console.error("complete_pvp_battle failed", error);
+              toast.error("Couldn't record this battle's rating change.");
+            } else {
+              const nextRating = iAmChallengerRef.current
+                ? data?.challenger_rating_after
+                : data?.opponent_rating_after;
+              if (typeof nextRating === "number") {
+                setRatingChange(nextRating - playerRatingRef.current);
+                setPlayerRating(nextRating);
+                playerRatingRef.current = nextRating;
+                window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+              }
+            }
+          } else if (opponentTypeRef.current === "ghost" && sessionId) {
+            const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
+            setRatingChange(result.ratingDelta);
+            setPlayerRating(result.ratingAfter);
+            playerRatingRef.current = result.ratingAfter;
             window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+          } else if (opponentTypeRef.current === "bot" && sessionId) {
+            // Bot battles count too, at a reduced rating change (server-enforced),
+            // and update the W/L record via the same applied-session truth model.
+            const { data, error } = await supabase.rpc("complete_bot_battle", {
+              p_session_id: sessionId,
+            });
+            if (error) {
+              console.error("complete_bot_battle failed", error);
+              toast.error("Couldn't record this battle's rating change.");
+            } else if (typeof data?.rating_after === "number") {
+              setRatingChange(data.rating_delta ?? 0);
+              setPlayerRating(data.rating_after);
+              playerRatingRef.current = data.rating_after;
+              window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+            }
           }
+        } catch (error) {
+          console.error("Post-battle persistence (XP/streak/rating) failed", error);
+          toast.error("Some of this battle's results may not have saved.");
         }
       })();
     },
@@ -3155,129 +3168,136 @@ function BattleArena() {
 
     // Run full Tier 1→2→3 matchmaking asynchronously
     void (async () => {
-      const match: MatchResult = await findMatch(
-        cls,
-        playerRatingRef.current,
-        playerUsername,
-        (msg, tier) => {
-          setMatchStatus(msg);
-          setMatchTier(tier);
-        },
-      );
+      try {
+        const match: MatchResult = await findMatch(
+          cls,
+          playerRatingRef.current,
+          playerUsername,
+          (msg, tier) => {
+            setMatchStatus(msg);
+            setMatchTier(tier);
+          },
+        );
 
-      // Resolve opponent from match result
-      let oppArchetype: ArchetypeId;
-      let oppName: string;
-      let oppSlug: string | undefined; // opponent's ecliptar (for its battle sprite)
+        // Resolve opponent from match result
+        let oppArchetype: ArchetypeId;
+        let oppName: string;
+        let oppSlug: string | undefined; // opponent's ecliptar (for its battle sprite)
 
-      if (match.opponentArchetype) {
-        oppArchetype = match.opponentArchetype;
-        oppName = match.opponentName;
+        if (match.opponentArchetype) {
+          oppArchetype = match.opponentArchetype;
+          oppName = match.opponentName;
 
-        // Ghost and live opponents arrive as an archetype, so they previously
-        // fought with no Ecliptar at all — no sprite, and no ultimate, since
-        // ultimates are keyed by Ecliptar slug. That made them strictly weaker
-        // than a bot. Equip one for them:
-        //   - a ghost replays with the creature the original player actually
-        //     used, when the session recorded it;
-        //   - otherwise derive a stable stand-in from the archetype, keyed on
-        //     the opponent's identity so the same ghost or rival always brings
-        //     the same creature rather than a new one each encounter.
-        const recorded = match.type === "ghost" ? (match.ghostSession?.ecliptarSlug ?? null) : null;
-        oppSlug =
-          recorded ??
-          ecliptarForArchetype(
-            oppArchetype,
-            match.ghostSession?.id ?? match.opponentUserId ?? oppName,
-          )?.slug;
-      } else {
-        // Bot: pick a real ecliptar so the opponent has a coherent identity —
-        // its creature, name, and sprite all match.
-        const oppEclip = pickOpponent(cls);
-        oppArchetype = oppEclip.archetype;
-        oppName = oppEclip.name;
-        oppSlug = oppEclip.slug;
-      }
-      // Always use the archetype's icon so ghost / bot / live opponents
-      // visually reflect their build instead of a generic robot.
-      const oppIcon = ARCHETYPES[oppArchetype].icon;
+          // Ghost and live opponents arrive as an archetype, so they previously
+          // fought with no Ecliptar at all — no sprite, and no ultimate, since
+          // ultimates are keyed by Ecliptar slug. That made them strictly weaker
+          // than a bot. Equip one for them:
+          //   - a ghost replays with the creature the original player actually
+          //     used, when the session recorded it;
+          //   - otherwise derive a stable stand-in from the archetype, keyed on
+          //     the opponent's identity so the same ghost or rival always brings
+          //     the same creature rather than a new one each encounter.
+          const recorded =
+            match.type === "ghost" ? (match.ghostSession?.ecliptarSlug ?? null) : null;
+          oppSlug =
+            recorded ??
+            ecliptarForArchetype(
+              oppArchetype,
+              match.ghostSession?.id ?? match.opponentUserId ?? oppName,
+            )?.slug;
+        } else {
+          // Bot: pick a real ecliptar so the opponent has a coherent identity —
+          // its creature, name, and sprite all match.
+          const oppEclip = pickOpponent(cls);
+          oppArchetype = oppEclip.archetype;
+          oppName = oppEclip.name;
+          oppSlug = oppEclip.slug;
+        }
+        // Always use the archetype's icon so ghost / bot / live opponents
+        // visually reflect their build instead of a generic robot.
+        const oppIcon = ARCHETYPES[oppArchetype].icon;
 
-      // Ghost: prime the replay buffer
-      if (match.type === "ghost" && match.ghostSession) {
-        ghostSessionRef.current = match.ghostSession;
-        ghostTurnIndexRef.current = 0;
-      }
+        // Ghost: prime the replay buffer
+        if (match.type === "ghost" && match.ghostSession) {
+          ghostSessionRef.current = match.ghostSession;
+          ghostTurnIndexRef.current = 0;
+        }
 
-      // Live: store battle ID so the Realtime useEffect subscribes
-      if (match.type === "live" && match.pvpBattleId) {
-        setPvpBattleId(match.pvpBattleId);
-      }
+        // Live: store battle ID so the Realtime useEffect subscribes
+        if (match.type === "live" && match.pvpBattleId) {
+          setPvpBattleId(match.pvpBattleId);
+        }
 
-      if (match.type === "live") {
-        iAmChallengerRef.current = match.iAmChallenger === true;
-        opponentUserIdRef.current = match.opponentUserId ?? null;
-        liveResolvedTurnsRef.current = new Set();
-      }
-      resetLiveTurnLocks(1);
+        if (match.type === "live") {
+          iAmChallengerRef.current = match.iAmChallenger === true;
+          opponentUserIdRef.current = match.opponentUserId ?? null;
+          liveResolvedTurnsRef.current = new Set();
+        }
+        resetLiveTurnLocks(1);
 
-      // Sync refs for async-safe use inside callbacks
-      setOpponentType(match.type);
-      opponentTypeRef.current = match.type;
-      setOpponentRating(match.opponentRating);
-      opponentRatingRef.current = match.opponentRating;
+        // Sync refs for async-safe use inside callbacks
+        setOpponentType(match.type);
+        opponentTypeRef.current = match.type;
+        setOpponentRating(match.opponentRating);
+        opponentRatingRef.current = match.opponentRating;
 
-      const baseArch = ARCHETYPES[cls];
-      const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
-      const playerName = eclip?.name ?? "You";
-      const playerIcon = eclip?.icon ?? User;
-      const oppArch = ARCHETYPES[oppArchetype];
+        const baseArch = ARCHETYPES[cls];
+        const effectiveArch = rolledGambler ? { ...baseArch, ...rolledGambler } : baseArch;
+        const playerName = eclip?.name ?? "You";
+        const playerIcon = eclip?.icon ?? User;
+        const oppArch = ARCHETYPES[oppArchetype];
 
-      setPlayer({
-        name: playerName,
-        hp: effectiveArch.maxHp,
-        maxHp: effectiveArch.maxHp,
-        shield: 0,
-        focus: baseArch.startFocus,
-        maxFocus: baseArch.focusPool,
-        icon: playerIcon,
-        sprite: eclip ? ecliptarSpriteUrl(eclip.slug) : undefined,
-      });
-      setOpponent({
-        name: oppName,
-        hp: oppArch.maxHp,
-        maxHp: oppArch.maxHp,
-        focus: oppArch.startFocus,
-        maxFocus: oppArch.focusPool,
-        icon: oppIcon,
-        sprite: oppSlug ? ecliptarSpriteUrl(oppSlug) : undefined,
-      });
-      setOpponentArchetype(oppArchetype);
-      opponentEcliptarRef.current = oppSlug ?? null;
-      battleMemoryRef.current = createBattleMemory();
-      setMomentum(0);
-      setOpponentMomentum(0);
-      setLogs([]);
-      setTotalScore(0);
-      setRecords([]);
-      correctCountRef.current = 0;
-      setCorrectCount(0);
-      copiedPassiveRef.current = null;
-      setCopiedPassive(null);
-      resetUltimateState();
-      setLongestStreak(0);
-      setFastestAnswer(Infinity);
-      setBattleStats(null);
-
-      if (rolledGambler) {
-        setPhase("gamblerReveal");
-      } else {
-        setPhase("select");
-        const typeTag = match.type === "live" ? "LIVE" : match.type === "ghost" ? "GHOST" : "BOT";
-        addLog({
-          actor: "system",
-          actionType: "info",
-          result: `${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}`,
+        setPlayer({
+          name: playerName,
+          hp: effectiveArch.maxHp,
+          maxHp: effectiveArch.maxHp,
+          shield: 0,
+          focus: baseArch.startFocus,
+          maxFocus: baseArch.focusPool,
+          icon: playerIcon,
+          sprite: eclip ? ecliptarSpriteUrl(eclip.slug) : undefined,
         });
+        setOpponent({
+          name: oppName,
+          hp: oppArch.maxHp,
+          maxHp: oppArch.maxHp,
+          focus: oppArch.startFocus,
+          maxFocus: oppArch.focusPool,
+          icon: oppIcon,
+          sprite: oppSlug ? ecliptarSpriteUrl(oppSlug) : undefined,
+        });
+        setOpponentArchetype(oppArchetype);
+        opponentEcliptarRef.current = oppSlug ?? null;
+        battleMemoryRef.current = createBattleMemory();
+        setMomentum(0);
+        setOpponentMomentum(0);
+        setLogs([]);
+        setTotalScore(0);
+        setRecords([]);
+        correctCountRef.current = 0;
+        setCorrectCount(0);
+        copiedPassiveRef.current = null;
+        setCopiedPassive(null);
+        resetUltimateState();
+        setLongestStreak(0);
+        setFastestAnswer(Infinity);
+        setBattleStats(null);
+
+        if (rolledGambler) {
+          setPhase("gamblerReveal");
+        } else {
+          setPhase("select");
+          const typeTag = match.type === "live" ? "LIVE" : match.type === "ghost" ? "GHOST" : "BOT";
+          addLog({
+            actor: "system",
+            actionType: "info",
+            result: `${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}`,
+          });
+        }
+      } catch (error) {
+        console.error("Matchmaking failed", error);
+        toast.error("Couldn't find a match. Please try again.");
+        setPhase("idle");
       }
     })();
   };

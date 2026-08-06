@@ -201,7 +201,7 @@ The project is still evolving, but a lot of the core systems are already functio
 | ------------------- | -------------------- |
 | ESLint              | Linting              |
 | TypeScript Compiler | Static type checking |
-| npm                 | Package management   |
+| pnpm                | Package management   |
 
 ---
 
@@ -211,8 +211,8 @@ Before running the project locally, ensure the following are installed:
 
 | Requirement | Minimum Version |
 | ----------- | --------------- |
-| Node.js     | 18+             |
-| npm         | 9+              |
+| Node.js     | 22.13+          |
+| pnpm        | 11+             |
 | Git         | Latest          |
 
 ## External Services
@@ -240,8 +240,8 @@ The project should work on:
 ```bash
 # Obtain the source archive from the Eclipta engineering lead.
 cd eclipta-your-smart-learning-journey
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Then open:
@@ -264,7 +264,7 @@ cd eclipta-your-smart-learning-journey
 ## 2. Install Dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## 3. Configure Environment Variables
@@ -294,12 +294,15 @@ Create a Supabase project and configure:
 - Storage buckets (if applicable)
 - Row-level security policies
 
-> Note: No dedicated migration system or SQL migration directory was clearly present in the repository at the time of analysis. Database setup may currently be managed directly through Supabase.
+> Note: this section is one of the ones flagged as outdated at the top of this
+> README. The repository has 88 SQL migrations under `supabase/migrations/`,
+> applied via the Supabase CLI (`supabase db push`) — database setup is not
+> ad hoc.
 
 ## 5. Start the Development Server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Once the server starts, the app should usually be available at:
@@ -336,10 +339,10 @@ http://localhost:5173
 # Deployment (Vercel)
 
 The app builds to the Vercel Build Output API via nitro (no Lovable/Cloudflare
-config). `npm run build` produces `.vercel/output/`.
+config). `pnpm build` produces `.vercel/output/`.
 
 1. Import the repo into Vercel. Framework preset: **Other** (the build output is
-   auto-detected); build command `npm run build`.
+   auto-detected); build command `pnpm build`.
 2. Add the app env vars above to the Vercel project.
 3. **Google sign-in** uses Supabase's native OAuth. In the Supabase dashboard →
    Authentication → Providers → Google, enable it and add your Google OAuth
@@ -359,7 +362,7 @@ config). `npm run build` produces `.vercel/output/`.
 Start the local development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ## Production Build
@@ -367,13 +370,13 @@ npm run dev
 Generate an optimized production build:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ## Preview Production Build
 
 ```bash
-npm run preview
+pnpm preview
 ```
 
 ## Linting
@@ -381,27 +384,27 @@ npm run preview
 Run ESLint:
 
 ```bash
-npm run lint
+pnpm lint
 ```
 
 ## Type Checking
 
-Depending on local setup:
-
 ```bash
-npx tsc --noEmit
+pnpm typecheck
 ```
 
 ---
 
 # Scripts
 
-| Script            | Description                      |
-| ----------------- | -------------------------------- |
-| `npm run dev`     | Start Vite development server    |
-| `npm run build`   | Create production build          |
-| `npm run preview` | Preview production build locally |
-| `npm run lint`    | Run ESLint                       |
+| Script         | Description                       |
+| -------------- | --------------------------------- |
+| `pnpm dev`     | Start Vite development server     |
+| `pnpm build`   | Create production build           |
+| `pnpm preview` | Preview production build locally  |
+| `pnpm lint`    | Run ESLint                        |
+| `pnpm test`    | Run the Vitest suite              |
+| `pnpm verify`  | Everything the pre-push hook runs |
 
 > Exact scripts may evolve over time as the platform grows.
 
@@ -415,17 +418,20 @@ Most application logic lives inside `src/`.
 
 ```txt
 src/
-├── components/        # Reusable UI components
-├── battles/           # Knowledge battle systems and gameplay
-├── forum/             # Community/forum functionality
-├── landing/           # Landing page and marketing pages
-├── profile/           # User profile systems
-├── luna/              # AI assistant related systems
-├── routes/            # Application routes
+├── components/        # Reusable UI components, including feature subfolders:
+│   ├── battles/       #   Knowledge battle systems and gameplay
+│   ├── forum/         #   Community/forum functionality
+│   ├── landing/       #   Landing page and marketing pages
+│   ├── profile/       #   User profile systems
+│   └── luna/          #   AI assistant related systems
+├── routes/            # Application routes (file-based, TanStack Router)
+├── repositories/      # The only code allowed to call supabase.from()/.rpc()
+├── db/schema/         # Drizzle schema (types only, no direct DB connection)
 ├── lib/               # Utilities and shared logic
 ├── hooks/             # Custom React hooks
+├── i18n/              # Internationalization (8 locales)
 ├── integrations/      # Third-party service integrations
-└── styles/            # Global styles and Tailwind configuration
+└── styles.css         # Global styles and Tailwind configuration (one file)
 ```
 
 ## Important Areas
@@ -457,7 +463,9 @@ The application uses TanStack Router for:
 
 ## Demo
 
-> ecliptalearning.lovable.app
+> No public demo link is currently maintained (the previous one pointed at a
+> retired Lovable-hosted preview). Ask the Eclipta engineering lead for
+> access to a staging deployment.
 
 ## Screenshots
 
@@ -530,9 +538,10 @@ As the project grows, consider splitting large gameplay components into:
 
 #### Things That Would Improve the Project Long-Term
 
-- automated testing
-- proper database migrations
-- CI/CD workflows
+- a CI/CD workflow to run the existing test suite automatically on push/PR
+  (Vitest + Playwright are already wired locally and pre-push — see
+  `docs/cleanup-plan.md` Phase 1; this is about automation, not creating
+  tests from scratch)
 - replay/spectator systems
 - better separation of gameplay logic from UI
 
@@ -595,13 +604,12 @@ Try deleting:
 
 ```txt
 node_modules/
-package-lock.json
 ```
 
 Then reinstall:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ---

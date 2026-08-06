@@ -39,7 +39,10 @@ export async function awardXp(
   const prevXp = await getUserXp(user.id);
   markExistingMilestones(prevXp);
 
-  const finalXp = await awardXpRpc(event).catch(() => prevXp + fallbackAmount);
+  const finalXp = await awardXpRpc(event).catch((error) => {
+    console.warn("awardXpRpc failed, falling back to a locally-computed total", error);
+    return prevXp + fallbackAmount;
+  });
 
   const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
   fireMilestoneToasts(toasts);
@@ -63,7 +66,10 @@ export async function awardBattleXp(
   const prevXp = await getUserXp(user.id);
   markExistingMilestones(prevXp);
 
-  const finalXp = await awardBattleXpRpc(correct, total, won).catch(() => prevXp);
+  const finalXp = await awardBattleXpRpc(correct, total, won).catch((error) => {
+    console.warn("awardBattleXpRpc failed, falling back to the pre-battle total", error);
+    return prevXp;
+  });
 
   const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
   fireMilestoneToasts(toasts);

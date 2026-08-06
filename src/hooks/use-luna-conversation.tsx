@@ -260,13 +260,15 @@ export function useLunaConversation({
                     currentWeak: (profileRef.current?.weak_areas as string[] | undefined) || [],
                     currentStrong: (profileRef.current?.strong_areas as string[] | undefined) || [],
                   }),
-                }).catch(() => {});
+                }).catch((error) => {
+                  console.warn("luna-memory background extraction failed", error);
+                });
               }
-            } catch {
-              /* ignore */
+            } catch (error) {
+              console.warn("luna-memory background extraction setup failed", error);
             }
-          } catch {
-            /* non-critical, don't break chat */
+          } catch (error) {
+            console.warn("Post-turn persistence (log_learning_history) failed", error);
           }
         })();
         // Stream succeeded — clear the retry buffer entirely so we don't keep

@@ -260,6 +260,10 @@ serve(async (req) => {
           lm.push(
             `Suggested starting difficulty: ${lp.ability}/5 — calibrate up or down from there.`,
           );
+        if (typeof lp.confidence === "number")
+          lm.push(
+            `Profile confidence: ${Math.round(lp.confidence * 100)}% (how much data backs this model — hold it loosely and adjust as you observe more, especially if this is low).`,
+          );
         contextualPrompt += `\n\n═══════════════════════════════════════\nLEARNER MODEL (how this person learns — adapt to it)\n═══════════════════════════════════════\n${lm.join("\n")}`;
       }
     }

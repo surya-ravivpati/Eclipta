@@ -4,6 +4,15 @@ Rules an agent (or human) must follow when writing code here. Short and
 checkable on purpose. Where a rule needs background, `CLAUDE FILES/core.md`,
 `typescript.md`, and `security.md` hold the long form.
 
+## Plan & design docs
+
+Before assuming something isn't planned, or re-deriving project status from
+scratch, check [`docs/README.md`](./docs/README.md) — it indexes every
+plan/design/reference doc in `docs/`, what kind each one is, and its current
+status. Active trackers there (`cleanup-plan.md`,
+`vertical-slice-migration-plan.md`) get a new dated status section appended
+when their state changes; check those before trusting an old checklist item.
+
 ## The stack (decided — do not re-litigate)
 
 - **TanStack Start + TanStack Router** own routing and server rendering. Not

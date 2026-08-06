@@ -25,6 +25,10 @@ AI capabilities, educational philosophy, architecture, and current vs. planned
 state — see [`PRODUCT_OVERVIEW.md`](./PRODUCT_OVERVIEW.md).** It's written to
 onboard a new collaborator (or another LLM) on the project in a few minutes.
 
+📋 **For what's actively planned or in-flight — cleanup work, the domain
+migration, redesign audits — see [`docs/README.md`](./docs/README.md)**, an
+index of every plan/design doc in this repo and its current status.
+
 > Note: some sections further down in this README are older and may be out of
 > date (for example, the repository now contains SQL migrations under
 > `supabase/migrations/` and Supabase Edge Functions under

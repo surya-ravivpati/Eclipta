@@ -3,16 +3,20 @@ import { fetchAllMastery, emptyMastery, type ArchetypeMastery } from "@/lib/arch
 import type { ArchetypeId } from "@/components/battles/types";
 
 const ALL_ARCHETYPES: ArchetypeId[] = [
-  "speedster", "tank", "chud", "gambler",
-  "healer", "fulcrum", "accelerator", "god",
+  "speedster",
+  "tank",
+  "chud",
+  "gambler",
+  "healer",
+  "fulcrum",
+  "accelerator",
+  "god",
 ];
 
 type MasteryMap = Record<ArchetypeId, ArchetypeMastery>;
 
 function buildEmpty(): MasteryMap {
-  return Object.fromEntries(
-    ALL_ARCHETYPES.map(id => [id, emptyMastery(id)])
-  ) as MasteryMap;
+  return Object.fromEntries(ALL_ARCHETYPES.map((id) => [id, emptyMastery(id)])) as MasteryMap;
 }
 
 /**
@@ -32,19 +36,27 @@ export function useArchetypeMastery(): {
   useEffect(() => {
     cancelRef.current = false;
     setLoading(true);
-    fetchAllMastery().then(rows => {
-      if (cancelRef.current) return;
-      const map = buildEmpty();
-      rows.forEach(r => {
-        if (r.archetype in map) {
-          map[r.archetype as ArchetypeId] = r;
-        }
+    fetchAllMastery()
+      .then((rows) => {
+        if (cancelRef.current) return;
+        const map = buildEmpty();
+        rows.forEach((r) => {
+          if (r.archetype in map) {
+            map[r.archetype as ArchetypeId] = r;
+          }
+        });
+        setMastery(map);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (cancelRef.current) return;
+        console.warn("useArchetypeMastery: fetchAllMastery failed", error);
+        setLoading(false);
       });
-      setMastery(map);
-      setLoading(false);
-    });
-    return () => { cancelRef.current = true; };
+    return () => {
+      cancelRef.current = true;
+    };
   }, [tick]);
 
-  return { mastery, loading, refresh: () => setTick(t => t + 1) };
+  return { mastery, loading, refresh: () => setTick((t) => t + 1) };
 }

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { playerRatings, StoredQuestionRecord } from "@/db/schema/battles";
 import type { ArchetypeId } from "@/components/battles/types";
 import type { Json, PvpMatchAttempt } from "@/integrations/supabase/database";
+import type { ArchetypeMastery } from "@/lib/archetype-mastery";
 
 export type PlayerRatingRow = InferSelectModel<typeof playerRatings>;
 
@@ -199,4 +200,61 @@ export async function getGhostSessionRpc(playerRating: number): Promise<RawGhost
     return null;
   }
   return data;
+}
+
+// ── Archetype mastery ────────────────────────────────────────────────────────
+
+const MASTERY_COLUMNS =
+  "archetype,battles_played,wins,best_streak,total_correct,total_questions,perfect_battles";
+
+/**
+ * Atomically upserts one battle into archetype_mastery via the SECURITY
+ * DEFINER RPC (avoids the 1-row-must-exist constraint). Best-effort, like
+ * recordBattleSessionRpc above: a failed mastery update must never block the
+ * player from seeing their own battle result.
+ */
+export async function recordArchetypeMasteryRpc(
+  archetype: ArchetypeId,
+  won: boolean,
+  bestStreak: number,
+  correct: number,
+  total: number,
+  perfect: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc("record_battle_mastery", {
+    p_archetype: archetype,
+    p_won: won,
+    p_best_streak: bestStreak,
+    p_correct: correct,
+    p_total: total,
+    p_perfect: perfect,
+  });
+  if (error) console.warn("recordArchetypeMasteryRpc failed", error);
+}
+
+/** Fetch one archetype's mastery row for a user. Returns null if never recorded — not an error. */
+export async function getArchetypeMastery(
+  userId: string,
+  archetype: ArchetypeId,
+): Promise<ArchetypeMastery | null> {
+  const { data, error } = await supabase
+    .from("archetype_mastery")
+    .select(MASTERY_COLUMNS)
+    .eq("user_id", userId)
+    .eq("archetype", archetype)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/** Fetch every archetype mastery row a user has. */
+export async function getAllArchetypeMastery(userId: string): Promise<ArchetypeMastery[]> {
+  const { data, error } = await supabase
+    .from("archetype_mastery")
+    .select(MASTERY_COLUMNS)
+    .eq("user_id", userId);
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }

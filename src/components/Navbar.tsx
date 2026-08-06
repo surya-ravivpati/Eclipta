@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "@/i18n/use-translation";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayerXp } from "@/hooks/use-player-xp";
@@ -143,6 +144,7 @@ export function Navbar() {
           {/* ⌘K is global, but a visible affordance matters: most users never
               discover a keyboard-only entry point. */}
           {isAuthenticated && <GlobalSearch />}
+          <LanguageSelector className="hidden sm:flex" />
           <button
             onClick={cycleTheme}
             className="p-2 text-muted-foreground hover:text-foreground transition-colors"

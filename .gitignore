@@ -1,13 +1,60 @@
-# Logs
-logs
-*.log
+# ─── Secrets — never commit these ───────────────────────────────────────────
+# .env.example is the only tracked env template; every real env file is
+# ignored, including uncommon-but-real variants (.env.production, .env.vault,
+# .env.local, etc.) via the wildcard. If you ever need a new example file,
+# name it *.env.example and it will still be ignored unless explicitly
+# negated below.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Explicit secret-shaped files, regardless of where they show up in the tree.
+# These patterns match by shape (private key, credential dump, token file),
+# not by a specific provider, so a new cloud provider's default filename is
+# still caught.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.crt
+id_rsa*
+id_ecdsa*
+id_ed25519*
+*credentials*.json
+*service-account*.json
+*secrets*.yml
+*secrets*.yaml
+.npmrc
+.netrc
+*.tfstate
+*.tfstate.*
+
+# Supabase CLI local state (project ref, pooler url, version cache, access token).
+supabase/.temp/
+.supabase/
+
+# ─── AI coding tool state — local only, never project-shared ────────────────
+# These directories can hold session transcripts, credentials, or local
+# config for AI coding assistants. None of it belongs in a shared repo.
+.claude/
+.cursor/
+.aider*
+.windsurf/
+.codeium/
+
+# ─── Node / package managers ─────────────────────────────────────────────────
+node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+logs
+*.log
 
-node_modules
+# ─── Build output ────────────────────────────────────────────────────────────
 dist
 dist-ssr
 .output
@@ -20,28 +67,24 @@ dist-ssr
 .vercel
 .dev.vars
 
-# Secrets. Never commit a real env file — .env.example is the tracked template.
-.env
-.env.*
-!.env.example
-
-# Test + tooling output
+# ─── Test + tooling output ───────────────────────────────────────────────────
 coverage
 playwright-report
 test-results
 .turbo
 .eslintcache
 
-# Editor directories and files
+# ─── Editor / IDE ─────────────────────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Supabase CLI local state (project ref, pooler url, version cache)
-supabase/.temp/
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini

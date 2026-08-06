@@ -46,6 +46,10 @@ lint` run). `@typescript-eslint/no-unused-vars` is back on (this doc's
   `trophy-road-data.ts`, `milestones.ts`, `profanity.ts` have no dedicated
   tests yet. The tests that do exist are for the new repository layer
   (`src/repositories/*.test.ts`) and a couple of Query hooks, not this list.
+  **Update (2026-08-06): `stat-mechanics.ts` is covered now** — a 367-line
+  test file landed for it since this note was written, testing all 13
+  exports. Strike it from the Phase 5 checklist below; the other five items
+  are still genuinely uncovered (plus three added the same date: see below).
 - **Still verified NOT done, as of this date:** Phase 1 (no `.github/workflows`
   exists), Phase 2a (`supabase/functions/_shared/ai.ts:22,25` still falls
   back to `LOVABLE_API_KEY` / the Lovable gateway URL — verified by reading
@@ -325,7 +329,7 @@ Ordered so the tree stays green at every step. Sizes are measured.
 Tests first, so the Phase 6 split has a safety net. These modules have **zero** imports of `supabase` and are directly testable:
 
 - [ ] `vitest.config.ts` + `vitest` devDependency.
-- [ ] `src/components/battles/stat-mechanics.ts` — the highest-value target. Cover `getEffectiveDamage` (Speedster time-scaling, Accelerator ramp, the 1.8× charge), `getEffectiveMultiplierStep`, `streakToMultiplier`, `hpToSelfDmgMult`, `levelToCategory` boundaries (3/4, 7/8), `getActionDifficultyLevel` per action. Pure functions, exact numbers, no mocking.
+- [x] ~~`src/components/battles/stat-mechanics.ts`~~ — **done (2026-08-06)**: `stat-mechanics.test.ts` covers `getEffectiveDamage`, `getEffectiveMultiplierStep`, `streakToMultiplier`, `hpToSelfDmgMult`, `levelToCategory` boundaries, `getActionDifficultyLevel`, and 7 more exports.
 - [ ] `src/components/battles/ai-brain.ts` — `pickAiAction` per personality, `computeAiAccuracy`.
 - [ ] `src/components/battles/questions.ts` — every generated question's `answer` is in its `options`, options are unique, difficulty maps to the right topic set.
 - [ ] `src/lib/trophy-road-data.ts` — node ordering, monotonic XP thresholds, every `ecliptarSlugs` entry resolves in `src/lib/ecliptars.ts`.

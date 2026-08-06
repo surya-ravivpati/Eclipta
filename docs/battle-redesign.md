@@ -11,9 +11,14 @@ weak point, grounded in the actual implementation.
 > bots, no exit friction, and a stale info panel. The code says otherwise — the
 > bot AI is genuinely sophisticated, the abandon flow and info panel already
 > exist, and abilities are already partly archetype-specific. The _real_ gaps
-> are different and deeper: **battles are math-only**, **"Practice Weak Spots"
-> doesn't exist**, and **emoji are used as UI throughout** (against the brand).
-> This document fixes what's actually broken and elevates what's already good.
+> are different and deeper: **battles are math-only** and **emoji are used as
+> UI throughout** (against the brand). This document fixes what's actually
+> broken and elevates what's already good.
+>
+> **Update (2026-08-06):** "Practice Weak Spots" (§8) has since shipped —
+> `WeakSpotPractice.tsx`, reading and writing the real `concept_mastery`
+> store this section originally proposed. See the note at §8 for what's
+> live versus still-proposed refinement.
 
 ---
 
@@ -29,15 +34,16 @@ weak point, grounded in the actual implementation.
 | **Chat**                | Emoji reactions only: 👍👎😂😮🔥💀. No words, no quick-chat.                                                                                                                                | `KnowledgeBattles.tsx`                |
 | **Exit/abandon**        | **Already implemented** — confirmation dialog, counts as loss, forfeits rating for ranked.                                                                                                  | `KnowledgeBattles.tsx` ~L2591         |
 | **Info panel**          | **Already exists** — a how-to list (mechanics, leaving=loss, archetypes, streak).                                                                                                           | `KnowledgeBattles.tsx` ~L3057         |
-| **Practice Weak Spots** | **Does not exist.** Only a marketing mention on /about.                                                                                                                                     | —                                     |
+| **Practice Weak Spots** | **Shipped (2026-08-06 update)** — `WeakSpotPractice.tsx` reads/writes the real `concept_mastery` store. See §8's note for what's live vs. still-proposed.                                   | `battles/WeakSpotPractice.tsx`        |
 | **Emoji as UI**         | Pervasive: chat reactions, AI pressure lines (⚡🧠🩸🔥), match-start (⚔️).                                                                                                                  | `ai-brain.ts`, `KnowledgeBattles.tsx` |
 
 **Implications that drive the redesign:**
 
 1. The headline problem is **educational narrowness**, not polish. A math quiz
-   can't deliver the all-subject mastery the platform promises, and it makes
-   "Practice Weak Spots" impossible (the engine has no concept of your weak
-   _concepts_).
+   can't deliver the all-subject mastery the platform promises. (Practice Weak
+   Spots has since shipped on top of the math-only question set — it tracks
+   weak _math_ concepts specifically, not the all-subject scope this document
+   envisions once battles cover more than math.)
 2. The bot AI doesn't need a rewrite — it needs to be pointed at **real
    subject questions** and **de-emojified**.
 3. Several requested features already exist; the work there is **refinement**,
@@ -292,7 +298,16 @@ balance section of a patch note so players see the reasoning (Riot-style).
 
 ---
 
-## 8. Practice Weak Spots — Redesign (build, doesn't exist)
+## 8. Practice Weak Spots — Redesign (shipped 2026-08-06, partially)
+
+**Status: the core loop shipped.** `src/components/battles/WeakSpotPractice.tsx`
+implements the dedicated coaching mode below — no timer, no opponent, no
+rating, reading and writing the real `concept_mastery` store (via
+`getWeakConcepts`/`recordOutcomes`) rather than the proposal's placeholder.
+**Not yet confirmed shipped:** the graduation nudge back into a
+concept-seeded battle, and the Courses-hub/prerequisite-DAG entry points
+described below — re-verify against the current component before assuming
+either exists; this note only confirms the core practice-and-track loop.
 
 A **dedicated coaching mode**, separate from the battle queue. It reads the same
 `concept_mastery` store proposed for Luna and Courses (see

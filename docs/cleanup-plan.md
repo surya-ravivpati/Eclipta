@@ -328,17 +328,17 @@ Ordered so the tree stays green at every step. Sizes are measured.
 
 Tests first, so the Phase 6 split has a safety net. These modules have **zero** imports of `supabase` and are directly testable:
 
-- [ ] `vitest.config.ts` + `vitest` devDependency.
-- [x] ~~`src/components/battles/stat-mechanics.ts`~~ — **done (2026-08-06)**: `stat-mechanics.test.ts` covers `getEffectiveDamage`, `getEffectiveMultiplierStep`, `streakToMultiplier`, `hpToSelfDmgMult`, `levelToCategory` boundaries, `getActionDifficultyLevel`, and 7 more exports.
-- [ ] `src/components/battles/ai-brain.ts` — `pickAiAction` per personality, `computeAiAccuracy`.
-- [ ] `src/components/battles/questions.ts` — every generated question's `answer` is in its `options`, options are unique, difficulty maps to the right topic set.
-- [ ] `src/lib/trophy-road-data.ts` — node ordering, monotonic XP thresholds, every `ecliptarSlugs` entry resolves in `src/lib/ecliptars.ts`.
-- [ ] `src/lib/milestones.ts`, `src/lib/profanity.ts`.
-- [ ] **(Added 2026-08-05)** `src/lib/pressure/distraction.ts`, `integrity.ts`, `metrics.ts` — 747 lines of scoring/integrity/distraction logic, shipped with zero tests in the same window Ultimates got full test-first treatment.
-- [ ] **(Added 2026-08-05)** `src/lib/search/query.ts` — the global-search query builder, no tests.
-- [ ] **(Added 2026-08-05)** `src/repositories/dashboard.ts` — the Mission Control dashboard's degrade-instead-of-fail logic (falls back to direct reads when its RPC isn't deployed) is exactly the kind of branchy, easy-to-silently-break code this phase exists for, and it has no tests.
+- [x] `vitest.config.ts` + `vitest` devDependency — done, part of the foundation pass.
+- [x] ~~`src/components/battles/stat-mechanics.ts`~~ — **done**: `stat-mechanics.test.ts` covers `getEffectiveDamage`, `getEffectiveMultiplierStep`, `streakToMultiplier`, `hpToSelfDmgMult`, `levelToCategory` boundaries, `getActionDifficultyLevel`, and 7 more exports.
+- [x] ~~`src/components/battles/ai-brain.ts`~~ — **done (2026-08-06)**: `ai-brain.test.ts` covers `pickAiAction` per personality (with `Math.random` pinned via `vi.spyOn` to make branches deterministic) and `computeAiAccuracy`'s five stacking modifiers.
+- [x] ~~`src/components/battles/questions.ts`~~ — **done (2026-08-06)**: `questions.test.ts`, 200-trial property checks per difficulty tier plus arithmetic re-derivation from the question text.
+- [x] ~~`src/lib/trophy-road-data.ts`~~ — **done (2026-08-06)**: `trophy-road-data.test.ts`, including the `ecliptarSlugs` resolution check this line originally asked for.
+- [x] ~~`src/lib/milestones.ts`~~, ~~`src/lib/profanity.ts`~~ — **done (2026-08-06)**: `milestones.integration.test.ts` (module-state isolated via `vi.resetModules()`), `profanity.test.ts`.
+- [x] ~~**(Added 2026-08-05)** `src/lib/pressure/distraction.ts`, `integrity.ts`, `metrics.ts`~~ — **done (2026-08-06)**: `distraction.test.ts` (the pure `planInterruptions` function; the `DistractionEngine` class itself is real Web Audio side effects left to manual/e2e verification), `integrity.integration.test.ts` (jsdom — this module needs `document`/`Event`), `metrics.test.ts` (all 8 scoring functions).
+- [x] ~~**(Added 2026-08-05)** `src/lib/search/query.ts`~~ — **done (2026-08-06)**: `query.test.ts` — also caught and fixed a wrong example in the file's own doc comment along the way.
+- [x] ~~**(Added 2026-08-05)** `src/repositories/dashboard.ts`~~ — **done (2026-08-06)**: `dashboard.test.ts`, covering the happy path, the PGRST202-vs-generic-error distinction, and the fallback assembly.
 
-**Note on scope:** ELO, XP, and mastery math live in SQL `SECURITY DEFINER` RPCs, not TypeScript — `src/lib/rating.ts` is a thin client wrapper. Testing that logic needs `supabase start` + pgTAP, which is a separate lift. Flagging it as a known gap rather than pretending vitest covers it.
+**Note on scope:** ELO, XP, and mastery math live in SQL `SECURITY DEFINER` RPCs, not TypeScript — `src/lib/rating.ts` is a thin client wrapper. Testing that logic needs `supabase start` + pgTAP, which is a separate lift, and remains a known gap: **the "integration" test level (per `AGENTS.md`) doesn't yet do this** — the 3 files under Vitest's `integration` project all mock Supabase entirely, and none of this codebase's tests hit a real Postgres instance, so RLS/constraint/trigger behavior stays unverified by the suite. Flagging it as a known gap rather than pretending vitest covers it.
 
 **Verify:** `npm test` green; tests fail if you deliberately perturb a constant in `archetypes.ts`.
 

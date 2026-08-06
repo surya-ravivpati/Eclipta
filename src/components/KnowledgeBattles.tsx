@@ -3470,7 +3470,7 @@ function BattleArena() {
   // ── Searching ──
   if (phase === "searching") {
     // Cinematic "Eclipse Alignment" intro (docs/battle-redesign loading redesign).
-    // Original spinner-style loader backed up in backup/battle-loading-original-*.
+    // Original spinner-style loader is in git history prior to the Eclipse Alignment redesign.
     return <BattleIntro archetype={archetype} matchTier={matchTier} matchStatus={matchStatus} />;
   }
 

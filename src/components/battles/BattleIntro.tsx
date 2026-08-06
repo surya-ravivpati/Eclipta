@@ -16,7 +16,7 @@ import "./BattleIntro.css";
  * a threshold into the arena rather than waiting for a page to load.
  *
  * All motion is compositor-only (transform/opacity/filter) and collapses to a
- * still tableau under prefers-reduced-motion. See backup/RESTORE.md to revert.
+ * still tableau under prefers-reduced-motion. Revert via git history if needed.
  */
 
 const EASE = EASING.soft;

@@ -10,6 +10,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/database";
 import type { CourseBlockData, CourseBlockRow, CourseBlockType } from "@/lib/course-blocks";
+import { getUsername } from "@/repositories/profile";
 
 // ── Course content reads (courses.$slug.tsx) ────────────────────────────────
 
@@ -66,21 +67,16 @@ export async function getCourseBlocksForModules(moduleIds: string[]): Promise<Co
 }
 
 /**
- * `public_profiles` view lookup, ported unchanged from the pre-repository
- * query. Its `security_invoker` history means this may already be
- * RLS-restricted to the caller's own row rather than exposing any course
- * creator's username — flagged, not fixed, pending empirical verification
- * (see AGENTS.md's courses-domain notes).
+ * Username lookup for a course's creator. Delegates to the profile
+ * repository's `getUsername` rather than querying `public_profiles`
+ * directly — that view was found to be RLS-restricted to the caller's own
+ * row (its `security_invoker` history meant it inherited `user_profiles`'
+ * own-row-only SELECT policy, defeating the view's own purpose), returning
+ * null for every course the caller didn't author. `getUsername` goes
+ * through a security-definer RPC instead, which doesn't have this problem.
  */
 export async function getCourseCreatorUsername(userId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("public_profiles")
-    .select("username")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  return data?.username ?? null;
+  return getUsername(userId);
 }
 
 // ── Course proposals (src/components/CourseBuilder.tsx) ─────────────────────

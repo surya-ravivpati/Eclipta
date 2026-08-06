@@ -112,6 +112,17 @@ type SupplementalFunctions = {
     Args: { p_user_id: string; p_xp: number };
     Returns: number;
   };
+  /**
+   * Security-definer lookup of a username by user_id, bypassing
+   * user_profiles' own-row-only SELECT policy — the same reason
+   * get_public_profile exists, just keyed the other direction. Null if the
+   * user doesn't exist or never set a username.
+   * Source: `20260806000000_get-username-by-id.sql`.
+   */
+  get_username_by_id: {
+    Args: { p_user_id: string };
+    Returns: string | null;
+  };
 };
 
 /**

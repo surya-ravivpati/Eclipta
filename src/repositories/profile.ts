@@ -18,16 +18,19 @@ export async function getUserXp(userId: string): Promise<number> {
   return data?.xp ?? 0;
 }
 
-/** Null both when the user has no profile row yet and when they have one but never set a username. */
+/**
+ * Null both when the user has no profile row yet and when they have one but
+ * never set a username. Goes through a security-definer RPC rather than a
+ * direct `user_profiles` select: that table's SELECT policy is own-row-only,
+ * so a direct query here would silently return null for every user but the
+ * caller — this is the one function on this repository that legitimately
+ * needs another user's row, same reason `get_public_profile` exists.
+ */
 export async function getUsername(userId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("user_profiles")
-    .select("username")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("get_username_by_id", { p_user_id: userId });
 
   if (error) throw new Error(error.message);
-  return data?.username ?? null;
+  return data ?? null;
 }
 
 export async function getOwnedEcliptarSlugs(userId: string): Promise<string[]> {

@@ -62,29 +62,33 @@ describe("getUserXp", () => {
 });
 
 describe("getUsername", () => {
-  it("queries user_profiles filtered to the given user", async () => {
-    const { select, eq } = mockSelectEq({ data: { username: "nova" }, error: null });
+  // Goes through get_username_by_id (security-definer RPC), not a direct
+  // user_profiles select — that table's SELECT policy is own-row-only, so a
+  // direct query would silently return null for every user but the caller.
+  it("calls get_username_by_id with the given user", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: "nova", error: null } as never);
 
     await getUsername("u2");
 
-    expect(supabase.from).toHaveBeenCalledWith("user_profiles");
-    expect(select).toHaveBeenCalledWith("username");
-    expect(eq).toHaveBeenCalledWith("user_id", "u2");
+    expect(supabase.rpc).toHaveBeenCalledWith("get_username_by_id", { p_user_id: "u2" });
   });
 
   it("returns the username", async () => {
-    mockSelectEq({ data: { username: "nova" }, error: null });
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: "nova", error: null } as never);
     await expect(getUsername("u2")).resolves.toBe("nova");
   });
 
-  it("returns null for a user with no profile row, rather than throwing", async () => {
-    mockSelectEq({ data: null, error: null });
+  it("returns null for a user with no profile row or no username set, rather than throwing", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as never);
     await expect(getUsername("new-user")).resolves.toBeNull();
   });
 
-  it("returns null when username was never set, without conflating it with 'no row'", async () => {
-    mockSelectEq({ data: { username: null }, error: null });
-    await expect(getUsername("u2")).resolves.toBeNull();
+  it("throws on a genuine database error", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: "connection reset" },
+    } as never);
+    await expect(getUsername("u2")).rejects.toThrow("connection reset");
   });
 });
 

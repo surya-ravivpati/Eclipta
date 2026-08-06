@@ -5,8 +5,12 @@ vi.mock("@/integrations/supabase/client", () => ({
     from: vi.fn(),
   },
 }));
+vi.mock("@/repositories/profile", () => ({
+  getUsername: vi.fn(),
+}));
 
 import { supabase } from "@/integrations/supabase/client";
+import { getUsername } from "@/repositories/profile";
 import {
   deleteCourseBlock,
   deleteCourseModule,
@@ -113,21 +117,19 @@ describe("getCourseBlocksForModules", () => {
 });
 
 describe("getCourseCreatorUsername", () => {
-  it("queries the public_profiles view by user_id", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: { username: "nova" }, error: null });
-    const eq = vi.fn().mockReturnValue({ maybeSingle });
-    vi.mocked(supabase.from).mockReturnValue({ select: vi.fn().mockReturnValue({ eq }) } as never);
+  // Delegates to the profile repository's getUsername (a security-definer
+  // RPC) rather than querying public_profiles directly - that view was
+  // found to inherit user_profiles' own-row-only RLS policy, returning null
+  // for every course the caller didn't author.
+  it("delegates to profile.getUsername", async () => {
+    vi.mocked(getUsername).mockResolvedValue("nova");
 
     await expect(getCourseCreatorUsername("u1")).resolves.toBe("nova");
-    expect(supabase.from).toHaveBeenCalledWith("public_profiles");
-    expect(eq).toHaveBeenCalledWith("user_id", "u1");
+    expect(getUsername).toHaveBeenCalledWith("u1");
   });
 
-  it("returns null rather than throwing when no profile row is visible", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle }) }),
-    } as never);
+  it("returns null rather than throwing when the creator has no username", async () => {
+    vi.mocked(getUsername).mockResolvedValue(null);
 
     await expect(getCourseCreatorUsername("u1")).resolves.toBeNull();
   });
@@ -150,11 +152,9 @@ describe("isEnrolled", () => {
   it("returns false when no enrollment row exists", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     vi.mocked(supabase.from).mockReturnValue({
-      select: vi
-        .fn()
-        .mockReturnValue({
-          eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle }) }),
-        }),
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle }) }),
+      }),
     } as never);
 
     await expect(isEnrolled("u1", "intro-to-calc")).resolves.toBe(false);

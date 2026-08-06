@@ -164,14 +164,29 @@ repository, no Query hooks for any of them yet. Pick the next one the same
 way battles was picked first: whichever holds the worst raw-Supabase
 exposure or the most user-facing risk.
 
+**Note (2026-08-05):** a 21-commit feature wave landed 2026-08-01 to
+2026-08-03 — a Mission Control dashboard, global search, a lifecycle email
+platform, Pressure Mode, i18n, legal/consent, and Ultimates. None of it is
+Drizzle/repository work (dashboard and search _do_ have repositories —
+`src/repositories/dashboard.ts`, `src/repositories/search.ts` — added
+directly alongside their features rather than as a separate migration
+slice), so its absence from the domain list above isn't an oversight, just
+outside what this plan tracks. See `docs/cleanup-plan.md`'s 2026-08-05
+status update for the test-coverage gap that wave left behind.
+
 ---
 
 ## Known gaps and flagged bugs (not fixed, tracked here so they aren't lost)
 
-- **`src/lib/archetype-mastery.ts`** still has a raw
-  `supabase.rpc("record_battle_mastery", ...)` call touching the
-  already-modelled `archetype_mastery` table (battles domain) — missed
-  during the battles-domain completion pass. Small, isolated, easy pickup.
+- **`src/lib/archetype-mastery.ts` — resolved 2026-08-05 (commit `6e5b5f7`).**
+  Its raw `supabase.rpc("record_battle_mastery", ...)` call and two raw
+  `.from("archetype_mastery")` reads — all three previously discarding
+  `error` entirely — are now `recordArchetypeMasteryRpc`/`getArchetypeMastery`/
+  `getAllArchetypeMastery` in `src/repositories/battles.ts`, using this
+  file's established throw-on-read-failure / log-and-continue-on-best-effort-
+  write shapes. Also fixed in the same pass: `use-archetype-mastery.ts`'s
+  `fetchAllMastery().then()` had no `.catch()`, so a thrown read error would
+  have left `loading` stuck forever — added one.
 - **`KnowledgeBattles.tsx`** (4,062 lines) still calls Supabase directly for
   its own core battle tables despite a battles repository existing. Too
   large and central to bundle into any domain-completion pass — its own

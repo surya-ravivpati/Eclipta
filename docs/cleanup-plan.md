@@ -88,6 +88,56 @@ CertifiedCourses.tsx` really is dead code, and now doubly confirmed —
 
 ---
 
+## Status update — 2026-08-05
+
+Local `main` had drifted 21 commits behind `origin/main` (fast-forwarded this
+date, no conflicts). A repo survey plus a targeted dead-code verification
+pass resolved several items below and found new test-coverage debt from the
+feature work that landed in that gap. As with the note above, this corrects
+this plan's checklists in prose rather than flipping their checkboxes, except
+where a bullet was executed exactly as specified.
+
+- **Phase 2d's `.lovable/plan.md` deletion: done.** Deleted (commit
+  `d85a1a5`) after re-confirming all three items it described
+  (`UserSearchDialog.tsx`, `ChallengeInbox.tsx`, `create_pvp_challenge`) had
+  already shipped.
+- **Phase 4's zero-coupling deletions: `backup/battle-loading-original-2026-06-29/`
+  done** (same commit) — its own `RESTORE.md` conceded `git revert` already
+  covered it. The other two items in that same bullet,
+  `public/placeholder.svg` and `public/fonts/MolganRegular.otf`, were **not**
+  touched this pass — don't assume progress there.
+- **Phase 4's orphan components: both done.** `CertifiedCourses.tsx` and
+  `DailyStreakCard.tsx` re-confirmed zero-importer (fresh grep, not just
+  trusting this doc) and deleted (commit `d85a1a5`). The three comments that
+  pointed at the now-deleted `backup/RESTORE.md`
+  (`src/components/battles/BattleIntro.tsx:19`, `BattleIntro.css:5`,
+  `src/components/KnowledgeBattles.tsx:3473`) were updated to point at git
+  history instead of a path that no longer exists.
+- **Phase 3b's `archetype-mastery.ts:137` bullet: done.** Migrated onto
+  `src/repositories/battles.ts` (commit `6e5b5f7`): `recordArchetypeMasteryRpc`,
+  `getArchetypeMastery`, `getAllArchetypeMastery` now exist there using the
+  file's two established error-handling shapes (throw on read failure,
+  log-and-continue on the best-effort mastery write — the RPC was silently
+  discarding its `error` entirely before, so a failed mastery write was
+  indistinguishable from a successful one). `use-archetype-mastery.ts`'s
+  `fetchAllMastery().then()` is also one of the ~9 unhandled promise chains
+  Phase 3e already flags — it got the missing `.catch()` in the same commit,
+  so `loading` no longer gets stuck forever if the fetch now throws.
+- **New test-coverage debt, worth folding into Phase 5's target list:** a
+  21-commit feature wave (dashboard, global search, lifecycle email,
+  Pressure Mode, i18n, legal/consent, Ultimates) landed 2026-08-01 to
+  2026-08-03, outside this plan's scope. Ultimates got full test-first
+  treatment (582 lines of tests), but `src/lib/pressure/*` (747 lines of
+  scoring/integrity/distraction logic), `src/lib/search/query.ts`, and
+  `src/repositories/dashboard.ts` all shipped in the same window with **zero
+  tests**. None of this is Lovable-severance or bloat-removal work, so it
+  doesn't belong as a new phase here — just an addition to Phase 5's list.
+- **Phase 4's dependency/shadcn-primitive pruning is untouched** — not
+  attempted this pass, still fully open. Don't infer progress here from the
+  other Phase 4 items above being done.
+
+---
+
 ## Context
 
 Eclipta is a React 19 + TanStack Start SPA on Supabase (Postgres + RLS, ~181 `SECURITY DEFINER` RPCs, 78 migrations, 9 Deno edge functions). It was built on the **Lovable** platform and largely migrated off it in commit `f2726f8` ("Decouple from Lovable: Vercel hosting, native Supabase OAuth, env-driven AI"). What remains is the tail of that migration plus the debt it left behind.
@@ -280,6 +330,9 @@ Tests first, so the Phase 6 split has a safety net. These modules have **zero** 
 - [ ] `src/components/battles/questions.ts` — every generated question's `answer` is in its `options`, options are unique, difficulty maps to the right topic set.
 - [ ] `src/lib/trophy-road-data.ts` — node ordering, monotonic XP thresholds, every `ecliptarSlugs` entry resolves in `src/lib/ecliptars.ts`.
 - [ ] `src/lib/milestones.ts`, `src/lib/profanity.ts`.
+- [ ] **(Added 2026-08-05)** `src/lib/pressure/distraction.ts`, `integrity.ts`, `metrics.ts` — 747 lines of scoring/integrity/distraction logic, shipped with zero tests in the same window Ultimates got full test-first treatment.
+- [ ] **(Added 2026-08-05)** `src/lib/search/query.ts` — the global-search query builder, no tests.
+- [ ] **(Added 2026-08-05)** `src/repositories/dashboard.ts` — the Mission Control dashboard's degrade-instead-of-fail logic (falls back to direct reads when its RPC isn't deployed) is exactly the kind of branchy, easy-to-silently-break code this phase exists for, and it has no tests.
 
 **Note on scope:** ELO, XP, and mastery math live in SQL `SECURITY DEFINER` RPCs, not TypeScript — `src/lib/rating.ts` is a thin client wrapper. Testing that logic needs `supabase start` + pgTAP, which is a separate lift. Flagging it as a known gap rather than pretending vitest covers it.
 

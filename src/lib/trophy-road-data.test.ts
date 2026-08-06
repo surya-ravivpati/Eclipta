@@ -4,8 +4,16 @@ import {
   getUnlockedArchetypes,
   isNodeUnlocked,
   isCurrentNode,
+  type RoadNode,
 } from "./trophy-road-data";
 import { getEcliptarBySlug } from "./ecliptars";
+
+/** Indexes ROAD_NODES with a real runtime guard instead of a `!` assertion. */
+function nodeAt(index: number): RoadNode {
+  const node = ROAD_NODES[index];
+  if (!node) throw new Error(`No ROAD_NODES entry at index ${index}`);
+  return node;
+}
 
 describe("ROAD_NODES data invariants", () => {
   it("has unique ids", () => {
@@ -15,7 +23,7 @@ describe("ROAD_NODES data invariants", () => {
 
   it("has non-decreasing xp thresholds in array order", () => {
     for (let i = 1; i < ROAD_NODES.length; i++) {
-      expect(ROAD_NODES[i].xp).toBeGreaterThanOrEqual(ROAD_NODES[i - 1].xp);
+      expect(nodeAt(i).xp).toBeGreaterThanOrEqual(nodeAt(i - 1).xp);
     }
   });
 
@@ -47,8 +55,8 @@ describe("getUnlockedArchetypes", () => {
 
   it("returns exactly the archetypes whose monster node xp threshold has been reached", () => {
     const speedsterNode = ROAD_NODES.find((n) => n.archetype === "speedster");
-    expect(speedsterNode).toBeDefined();
-    const result = getUnlockedArchetypes(speedsterNode!.xp);
+    if (!speedsterNode) throw new Error("Expected a speedster monster node to exist");
+    const result = getUnlockedArchetypes(speedsterNode.xp);
     expect(result).toContain("speedster");
   });
 
@@ -61,7 +69,7 @@ describe("getUnlockedArchetypes", () => {
 
 describe("isNodeUnlocked", () => {
   it("is unlocked exactly when playerXp meets or exceeds the node's threshold", () => {
-    const node = ROAD_NODES[5];
+    const node = nodeAt(5);
     expect(isNodeUnlocked(node, node.xp)).toBe(true);
     expect(isNodeUnlocked(node, node.xp - 1)).toBe(false);
     expect(isNodeUnlocked(node, node.xp + 1)).toBe(true);
@@ -70,26 +78,26 @@ describe("isNodeUnlocked", () => {
 
 describe("isCurrentNode", () => {
   it("is true for the highest node whose threshold has been met, when the next node hasn't been", () => {
-    const node = ROAD_NODES[3];
-    const next = ROAD_NODES[4];
+    const node = nodeAt(3);
+    const next = nodeAt(4);
     // Exactly at this node's xp and below the next node's xp.
     const xp = Math.max(node.xp, next.xp - 1);
     expect(isCurrentNode(node, xp)).toBe(true);
   });
 
   it("is false for a node once the next node is also unlocked", () => {
-    const node = ROAD_NODES[3];
-    const next = ROAD_NODES[4];
+    const node = nodeAt(3);
+    const next = nodeAt(4);
     expect(isCurrentNode(node, next.xp)).toBe(false);
   });
 
   it("is false for a node that isn't unlocked at all", () => {
-    const node = ROAD_NODES[ROAD_NODES.length - 1];
+    const node = nodeAt(ROAD_NODES.length - 1);
     expect(isCurrentNode(node, 0)).toBe(false);
   });
 
   it("is true for the very last node once its own threshold is met (no next node)", () => {
-    const last = ROAD_NODES[ROAD_NODES.length - 1];
+    const last = nodeAt(ROAD_NODES.length - 1);
     expect(isCurrentNode(last, last.xp)).toBe(true);
   });
 });

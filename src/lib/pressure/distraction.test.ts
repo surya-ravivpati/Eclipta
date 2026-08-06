@@ -31,10 +31,13 @@ describe("planInterruptions", () => {
     // slot: usable=480 (600*0.8), spacing=480/(4+1)=96, slots at 96,192,288,384.
     const result = planInterruptions(600, 4);
     const expectedSlots = [96, 192, 288, 384];
-    result.forEach((t, i) => {
+    expect(result).toHaveLength(expectedSlots.length);
+    // Zip rather than index, so no element access needs a bounds assertion.
+    for (const [actual, expected] of result.map((t, i) => [t, expectedSlots[i]] as const)) {
+      if (expected === undefined) throw new Error("unreachable: lengths were just asserted equal");
       // Jitter is +/- 20% of spacing (96 * 0.2 = 19.2).
-      expect(Math.abs(t - expectedSlots[i])).toBeLessThanOrEqual(20);
-    });
+      expect(Math.abs(actual - expected)).toBeLessThanOrEqual(20);
+    }
   });
 
   it("is exactly at the 120-second boundary: still returns [] one second short, but works at exactly 120", () => {

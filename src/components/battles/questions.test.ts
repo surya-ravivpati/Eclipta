@@ -5,6 +5,15 @@ import { generateQuestion, generateQuestionForTopic, TOPIC_DIFFICULTY } from "./
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 const TRIALS = 200;
 
+/** Splits a "a <sep> b" question string into its two operands. */
+function parseOperands(q: string, sep: string): [number, number] {
+  const [a, b] = q.split(sep).map(Number);
+  if (a === undefined || b === undefined) {
+    throw new Error(`Expected "a${sep}b" in question text, got "${q}"`);
+  }
+  return [a, b];
+}
+
 const TOPICS_BY_TIER: Record<Difficulty, string[]> = {
   easy: ["Addition", "Subtraction"],
   medium: ["Multiplication", "Division"],
@@ -38,10 +47,10 @@ describe("generateQuestion", () => {
     for (let i = 0; i < TRIALS; i++) {
       const q = generateQuestion("easy");
       if (q.topic === "Addition") {
-        const [a, b] = q.q.split(" + ").map(Number);
+        const [a, b] = parseOperands(q.q, " + ");
         expect(a + b).toBe(q.answer);
       } else if (q.topic === "Subtraction") {
-        const [a, b] = q.q.split(" - ").map(Number);
+        const [a, b] = parseOperands(q.q, " - ");
         expect(a - b).toBe(q.answer);
         expect(a).toBeGreaterThanOrEqual(b); // never negative
       }
@@ -49,10 +58,10 @@ describe("generateQuestion", () => {
     for (let i = 0; i < TRIALS; i++) {
       const q = generateQuestion("medium");
       if (q.topic === "Multiplication") {
-        const [a, b] = q.q.split(" * ").map(Number);
+        const [a, b] = parseOperands(q.q, " * ");
         expect(a * b).toBe(q.answer);
       } else if (q.topic === "Division") {
-        const [a, b] = q.q.split(" / ").map(Number);
+        const [a, b] = parseOperands(q.q, " / ");
         expect(a / b).toBe(q.answer);
         expect(Number.isInteger(q.answer)).toBe(true); // exact division, no remainder
       }

@@ -97,7 +97,8 @@ describe("composureScore", () => {
 
 describe("calibrationScore", () => {
   it("returns 100 when nothing was rated (nothing to be wrong about)", () => {
-    expect(calibrationScore([item({ statedConfidence: undefined })])).toBe(100);
+    // item()'s default already omits statedConfidence entirely.
+    expect(calibrationScore([item()])).toBe(100);
   });
 
   it("scores confident-and-correct highly", () => {

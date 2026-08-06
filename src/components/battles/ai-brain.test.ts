@@ -53,10 +53,12 @@ function player(overrides: Partial<Parameters<typeof pickAiAction>[3]> = {}) {
 
 /** Pins Math.random to a fixed sequence, cycling if it runs out. */
 function mockRandomSequence(values: number[]) {
+  if (values.length === 0) throw new Error("mockRandomSequence needs at least one value");
   let i = 0;
   return vi.spyOn(Math, "random").mockImplementation(() => {
     const v = values[i % values.length];
     i++;
+    if (v === undefined) throw new Error("unreachable: index is always within bounds");
     return v;
   });
 }

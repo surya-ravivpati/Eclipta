@@ -52,18 +52,29 @@ import type {
   LogEntry,
   LogActionType,
 } from "./battles/types";
-import type { GameModeId } from "@/lib/battle-modes/types";
+import { GAME_MODES, type GameModeId } from "@/lib/battle-modes/types";
 import { GameModeSelectDialog } from "./battles/GameModeSelectDialog";
 import { DraftDialog } from "./battles/DraftDialog";
 import { TerritoryGridView } from "./battles/TerritoryGrid";
 import { TugOfWarBar } from "./battles/TugOfWarBar";
-import { initialTugState, pushTug, tugWinner, type TugState } from "@/lib/battle-modes/tug-of-war";
 import {
-  emptyGrid,
+  initialTugState,
+  pushTug,
+  recoverTug,
+  tugWinner,
+  TUG_BAR_MAX,
+  type TugState,
+} from "@/lib/battle-modes/tug-of-war";
+import {
+  startingGrid,
+  initialWeights,
   placeFlag,
+  scoreGrid,
+  flagWeight,
   territoryWinner,
   chooseBotPlacement,
   type TerritoryGrid as TerritoryGridT,
+  type TerritoryWeights,
 } from "@/lib/battle-modes/territory";
 import {
   startingTeam,
@@ -515,6 +526,7 @@ function FighterCard({
   showHeal,
   canCharge = false,
   effects = [],
+  showHp = true,
 }: {
   fighter: Fighter;
   side: "left" | "right";
@@ -524,6 +536,9 @@ function FighterCard({
   showHit: boolean;
   showHeal: boolean;
   canCharge?: boolean;
+  /** False in modes where health is not the resource — the bar would sit at
+   *  full all match and read as a win condition that isn't one. */
+  showHp?: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
@@ -661,12 +676,14 @@ function FighterCard({
               })()}
           </div>
         </div>
-        <HpBar
-          current={fighter.hp}
-          max={fighter.maxHp}
-          color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"}
-          label="HP"
-        />
+        {showHp && (
+          <HpBar
+            current={fighter.hp}
+            max={fighter.maxHp}
+            color={side === "left" ? "bg-neon-cyan" : "bg-neon-pink"}
+            label="HP"
+          />
+        )}
         {/* Absorb pool (Healer passive) — only rendered while it holds charge,
             so classes without a shield never show an empty slot. */}
         <AnimatePresence>
@@ -1447,11 +1464,28 @@ function BattleArena() {
   const gameModeRef = useRef<GameModeId>("battle");
   const [tugState, setTugState] = useState<TugState>(initialTugState());
   const tugStateRef = useRef<TugState>(initialTugState());
-  const [territoryGrid, setTerritoryGrid] = useState<TerritoryGridT>(emptyGrid());
-  const territoryGridRef = useRef<TerritoryGridT>(emptyGrid());
+  const [territoryGrid, setTerritoryGrid] = useState<TerritoryGridT>(startingGrid());
+  const territoryGridRef = useRef<TerritoryGridT>(startingGrid());
+  const territoryWeightsRef = useRef<TerritoryWeights>(initialWeights());
   const [territoryFlipped, setTerritoryFlipped] = useState<number[]>([]);
-  // Correct answer banked, waiting on the player to click a tile (Territory only).
-  const pendingPlacementRef = useRef<{ dmg: number } | null>(null);
+  // Flags the player has earned but not yet placed (Territory only). The turn
+  // loop parks in the "placing" phase until this reaches zero.
+  const pendingPlacementRef = useRef<{
+    /** What the flag waiting to be planted is worth. */
+    weight: number;
+    /** Whose turn was interrupted to ask for it. A reflect can earn the player
+     *  a flag in the middle of the *bot's* turn, and resuming into the bot
+     *  again there would silently hand it two turns in a row. */
+    resume: "player" | "opponent";
+  } | null>(null);
+  /** Who is acting right now, so grantFlag knows which turn it interrupted. */
+  const actingSideRef = useRef<"player" | "opponent">("player");
+  /** Weight of the flag awaiting placement, for the prompt. 0 when none. */
+  const [placementWeight, setPlacementWeight] = useState(0);
+  /** Turns taken this match — Territory's stand-in for the spec's match clock. */
+  const modeTurnsRef = useRef(0);
+  /** Opponent's correct answers, for Territory's tied-board tiebreak. */
+  const opponentCorrectRef = useRef(0);
   // Draft Battle team state lives only in refs — nothing renders a roster
   // sidebar yet, and the turn-loop logic (resolveModeOutcome, startBattle)
   // only ever needs synchronous reads, never a re-render.
@@ -2083,10 +2117,17 @@ function BattleArena() {
       const casterIsPlayerSide = isPlayer ? outcome.caster : outcome.target;
       const oppSideOut = isPlayer ? outcome.target : outcome.caster;
 
+      // Outside an HP mode the resolver's health numbers are not what the match
+      // turns on, so they are not written to the fighters — the ultimate's
+      // damage and healing get spent on the mode's own resource below instead.
+      // Everything else the ultimate did (shields, effects, bonus damage,
+      // timers, charge) lands identically either way.
+      const usesHp = modeUsesHp();
+
       // Player fighter + effects
       setPlayer((prev) => ({
         ...prev,
-        hp: Math.max(0, Math.min(prev.maxHp, casterIsPlayerSide.hp)),
+        hp: usesHp ? Math.max(0, Math.min(prev.maxHp, casterIsPlayerSide.hp)) : prev.hp,
         shield: casterIsPlayerSide.shield,
       }));
       playerEffectsRef.current = casterIsPlayerSide.effects;
@@ -2096,12 +2137,20 @@ function BattleArena() {
       // Opponent fighter + effects
       setOpponent((prev) => ({
         ...prev,
-        hp: Math.max(0, Math.min(prev.maxHp, oppSideOut.hp)),
+        hp: usesHp ? Math.max(0, Math.min(prev.maxHp, oppSideOut.hp)) : prev.hp,
         shield: oppSideOut.shield,
       }));
       opponentEffectsRef.current = oppSideOut.effects;
       setOpponentEffects(oppSideOut.effects);
       opponentBonusDamageRef.current = oppSideOut.bonusDamage;
+
+      if (!usesHp) {
+        spendDamage(caster, outcome.damageDealt);
+        spendHeal(caster, outcome.healed);
+        // A self-damaging ultimate gives ground in Tug-of-War exactly as a
+        // wrong answer does, and costs nothing on a Territory board.
+        spendMiss(caster, outcome.selfDamage);
+      }
 
       // Timers: a delta aimed at "opponent" lands on whoever is not the caster,
       // and only the player's clock is ours to change.
@@ -2154,6 +2203,10 @@ function BattleArena() {
 
       return { extraTurn: outcome.extraTurn };
     },
+    // The mode-routing helpers are plain declarations recreated each render and
+    // read only refs and stable setters, so listing them would rebuild this
+    // callback every render for no behavioural gain.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [addLog, snapshotSide, setPlayerCooldown],
   );
 
@@ -2173,8 +2226,15 @@ function BattleArena() {
         getArch(isPlayer ? archetypeRef.current : opponentArchetype).healAmount !== null;
       const healBlocked = hasEffect(current, "healBlock") || !canHeal;
 
-      let hp = fighter.hp - tick.poisonDamage;
-      if (!healBlocked) hp = Math.min(fighter.maxHp, hp + tick.regenHeal);
+      // Poison and regen are outcomes like any other, so outside an HP mode
+      // they buy ground or flags instead of quietly draining a bar nobody is
+      // looking at — which would otherwise make poison the only thing in these
+      // modes that could still end a match by health.
+      const other = isPlayer ? "opponent" : "player";
+      const poisonHp = spendDamage(other, tick.poisonDamage);
+      const regenHp = healBlocked ? 0 : spendHeal(who, tick.regenHeal);
+      let hp = fighter.hp - poisonHp;
+      hp = Math.min(fighter.maxHp, hp + regenHp);
       hp = Math.max(0, hp);
 
       if (isPlayer) {
@@ -2198,8 +2258,13 @@ function BattleArena() {
         });
       }
 
-      return { frozen: tick.frozen, died: hp <= 0 };
+      // A freeze still costs the turn in every mode; death is only a thing
+      // where health is the win condition.
+      return { frozen: tick.frozen, died: modeUsesHp() && hp <= 0 };
     },
+    // See the note on castUltimate: the spend*/mode* helpers are stable in
+    // everything they touch, so they are deliberately not dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [addLog, getArch, opponentArchetype],
   );
 
@@ -2225,6 +2290,143 @@ function BattleArena() {
   // damageWithEffects/defendWithEffects/castUltimate — archetype stats, DEF,
   // crit and ultimates all already happened by the time these run. Modes only
   // decide what that number is SPENT ON (HP, a shared bar, a grid tile).
+  //
+  // The rule that keeps a mode from being Battle-with-decoration: outside an
+  // `"hp"` mode, HP is NOT a second win condition ticking away underneath the
+  // visible one. `spendDamage`/`spendHeal` are the only way an outcome reaches
+  // a resource, and in bar/grid modes they return 0 HP — the health bars never
+  // move and are not rendered. Everything the stat sheet does still lands,
+  // because it landed before these ran: DEF and shields already shrank the
+  // number, a crit already grew it.
+
+  /** True when this mode's match is decided by health, i.e. Battle and Draft. */
+  function modeUsesHp() {
+    return GAME_MODES[gameModeRef.current].resource === "hp";
+  }
+
+  /**
+   * How well a side is doing, as a 0–1 fraction of whatever this mode is
+   * fought over. The bot brain reasons entirely in health fractions; outside an
+   * HP mode health never moves, so without this translation the AI would
+   * believe it was at full strength all match and never defend, heal or reach
+   * for its ultimate at the moment it was losing.
+   */
+  function modeStanding(side: "player" | "opponent", fighter: Fighter): number {
+    const resource = GAME_MODES[gameModeRef.current].resource;
+    if (resource === "hp") return fighter.maxHp > 0 ? fighter.hp / fighter.maxHp : 0;
+    if (resource === "bar") {
+      // position > 0 means the player has pulled the rope their way.
+      const pos = tugStateRef.current.position;
+      const towardMe = side === "player" ? pos : -pos;
+      return Math.max(0, Math.min(1, 0.5 + towardMe / (2 * TUG_BAR_MAX)));
+    }
+    const { player, opponent } = scoreGrid(territoryGridRef.current, territoryWeightsRef.current);
+    const claimed = player + opponent;
+    if (claimed === 0) return 0.5;
+    return (side === "player" ? player : opponent) / claimed;
+  }
+
+  const flagNote = (amount: number) => {
+    const w = flagWeight(amount);
+    return w > 1 ? `a flag worth ${w}` : "a flag";
+  };
+
+  /** How an outgoing hit reads in the battle log for the current mode. */
+  function modeDamageLabel(amount: number): string {
+    const resource = GAME_MODES[gameModeRef.current].resource;
+    if (resource === "hp") return `${amount} DMG`;
+    if (resource === "bar") return `pushed the rope ${amount}`;
+    return `earned ${flagNote(amount)}`;
+  }
+
+  /** How a restore reads in the battle log for the current mode. */
+  function modeRestoreLabel(amount: number): string {
+    const resource = GAME_MODES[gameModeRef.current].resource;
+    if (resource === "hp") return `+${amount} HP`;
+    if (resource === "bar") return `pulled the rope back ${amount}`;
+    return `earned ${flagNote(amount)}`;
+  }
+
+  /**
+   * Route an outgoing damage number to whatever this mode is fought over, and
+   * return the HP that should actually be subtracted (0 outside `hp` modes).
+   */
+  function spendDamage(dealer: "player" | "opponent", dmg: number): number {
+    const resource = GAME_MODES[gameModeRef.current].resource;
+    if (resource === "hp") return dmg;
+    if (dmg <= 0) return 0;
+
+    if (resource === "bar") {
+      const next = pushTug(tugStateRef.current, dealer, dmg);
+      tugStateRef.current = next;
+      setTugState(next);
+    } else {
+      grantFlag(dealer, dmg);
+    }
+    return 0;
+  }
+
+  /**
+   * The heal counterpart. A Healer or a God's passive restore is worth just as
+   * much outside Battle mode — it pulls the tug bar back off your own line, or
+   * buys board space — instead of topping up a bar nobody is looking at.
+   */
+  function spendHeal(healer: "player" | "opponent", heal: number): number {
+    const resource = GAME_MODES[gameModeRef.current].resource;
+    if (resource === "hp") return heal;
+    if (heal <= 0) return 0;
+
+    if (resource === "bar") {
+      // Recovery only ever walks the bar back toward center — a heal cannot
+      // push through into enemy ground the way a hit can.
+      const next = recoverTug(tugStateRef.current, healer, heal);
+      tugStateRef.current = next;
+      setTugState(next);
+    } else {
+      grantFlag(healer, heal);
+    }
+    return 0;
+  }
+
+  /**
+   * Territory: a correct answer earns exactly one flag, whose weight carries
+   * the stat sheet onto the board. The player's is banked and the turn loop
+   * parks in the "placing" phase until they tap a tile — placement is the
+   * decision this mode is built around, so it is never auto-resolved for them.
+   * Bots and ghosts resolve immediately against the shared heuristic; a ghost
+   * recorded no spatial choice to replay.
+   */
+  function grantFlag(side: "player" | "opponent", amount: number) {
+    if (!territoryGridRef.current.includes("empty")) return; // board is full
+    const weight = flagWeight(amount);
+
+    if (side === "player") {
+      pendingPlacementRef.current = {
+        weight,
+        // Resume into whoever was NOT acting: a flag from the player's own turn
+        // means the bot goes next; a flag a reflect earned during the bot's
+        // turn means the player's question turn is what comes next.
+        resume: actingSideRef.current === "player" ? "opponent" : "player",
+      };
+      setPlacementWeight(weight);
+      setPhase("placing");
+      return;
+    }
+
+    const target = chooseBotPlacement(territoryGridRef.current, "opponent");
+    if (target === null) return;
+    const res = placeFlag(
+      territoryGridRef.current,
+      target,
+      "opponent",
+      territoryWeightsRef.current,
+      weight,
+    );
+    territoryGridRef.current = res.grid;
+    territoryWeightsRef.current = res.weights;
+    setTerritoryGrid(res.grid);
+    setTerritoryFlipped(res.flipped);
+  }
 
   /** Swap the next drafted Ecliptar in after a KO, resetting its own HP/focus
    *  fresh — a new duel, not a continuation of the fallen member's fight. */
@@ -2301,19 +2503,37 @@ function BattleArena() {
       return "handled";
     }
     if (mode === "territory") {
-      const grid = territoryGridRef.current;
-      if (!grid.includes("empty")) {
-        const winner = territoryWinner(grid);
-        if (winner === "draw") {
-          // Tiebreak on correct-answer count; the vanishingly rare double-tie
-          // falls back to a disclosed coin flip rather than an arbitrary bias.
-          finishBattle(Math.random() < 0.5);
+      // Board full, or the turn cap stood in for the spec's "clock runs out".
+      const winner = territoryWinner(
+        territoryGridRef.current,
+        modeTurnsRef.current,
+        territoryWeightsRef.current,
+      );
+      if (winner === null) return "handled";
+      if (winner === "draw") {
+        // Equal territory falls back to who answered more correctly; only a
+        // double tie reaches the coin flip, which is disclosed in the log.
+        const mine = recordsRef.current.filter((r) => r.correct).length;
+        const theirs = opponentCorrectRef.current;
+        if (mine !== theirs) {
+          addLog({
+            actor: "system",
+            actionType: "info",
+            result: `Territory tied — decided on correct answers, ${mine} to ${theirs}.`,
+          });
+          finishBattle(mine > theirs);
         } else {
-          finishBattle(winner === "player");
+          addLog({
+            actor: "system",
+            actionType: "info",
+            result: `Territory and correct answers both tied — the round is decided by coin flip.`,
+          });
+          finishBattle(Math.random() < 0.5);
         }
-        return "ended";
+      } else {
+        finishBattle(winner === "player");
       }
-      return "handled";
+      return "ended";
     }
     if (mode === "draft") {
       if (currentOppHp <= 0) {
@@ -2342,65 +2562,49 @@ function BattleArena() {
   }
 
   /**
-   * Redirects an already-computed damage number onto the current mode's
-   * resource instead of (or alongside) HP: the Tug-of-War bar, or a banked
-   * Territory placement. No-op for Battle and Draft, which just use HP.
+   * A wrong answer's self-inflicted damage. Separate from `spendDamage`
+   * because the two modes read a miss differently: Tug-of-War hands the ground
+   * you lost to the other side, while Territory "costs you the round's
+   * placement entirely" — no flag for anyone. Returns the HP to subtract.
    */
-  function applyModeHit(dealer: "player" | "opponent", dmg: number) {
-    const mode = gameModeRef.current;
-    if (mode === "tugofwar" && dmg > 0) {
-      const next = pushTug(tugStateRef.current, dealer, dmg);
-      tugStateRef.current = next;
-      setTugState(next);
-    } else if (mode === "territory" && dmg > 0) {
-      if (dealer === "player") {
-        // Bank it — the player picks the tile, so the turn loop pauses here.
-        pendingPlacementRef.current = { dmg };
-        setPhase("placing");
-      } else {
-        // Bot/ghost has no UI to wait on; resolve its placement immediately.
-        const target = chooseBotPlacement(territoryGridRef.current, "opponent");
-        if (target !== null) {
-          const { grid, flipped } = placeFlag(territoryGridRef.current, target, "opponent");
-          territoryGridRef.current = grid;
-          setTerritoryGrid(grid);
-          setTerritoryFlipped(flipped);
-        }
-      }
-    }
-  }
-
-  /**
-   * A wrong answer's self-inflicted damage. Distinct from applyModeHit
-   * because it must NOT trigger Territory's placement — "wrong answers cost
-   * you the round's placement entirely," not hand one to the other side.
-   */
-  function applyModeMiss(missedSide: "player" | "opponent", selfDmg: number) {
-    if (gameModeRef.current === "tugofwar" && selfDmg > 0) {
+  function spendMiss(missedSide: "player" | "opponent", selfDmg: number): number {
+    const resource = GAME_MODES[gameModeRef.current].resource;
+    if (resource === "hp") return selfDmg;
+    if (resource === "bar" && selfDmg > 0) {
       const other = missedSide === "player" ? "opponent" : "player";
       const next = pushTug(tugStateRef.current, other, selfDmg);
       tugStateRef.current = next;
       setTugState(next);
     }
-    // Territory: no grid change on a miss — the round's placement is simply lost.
+    return 0;
   }
 
-  /** Territory only: the player just tapped an open tile after a banked correct answer. */
+  /** Territory: the player tapped an open tile, planting the flag they earned. */
   const resolvePendingPlacement = useCallback(
     (index: number) => {
-      if (!pendingPlacementRef.current) return;
-      const { grid, flipped } = placeFlag(territoryGridRef.current, index, "player");
-      territoryGridRef.current = grid;
-      setTerritoryGrid(grid);
-      setTerritoryFlipped(flipped);
+      const pending = pendingPlacementRef.current;
+      if (!pending) return;
+      const res = placeFlag(
+        territoryGridRef.current,
+        index,
+        "player",
+        territoryWeightsRef.current,
+        pending.weight,
+      );
+      territoryGridRef.current = res.grid;
+      territoryWeightsRef.current = res.weights;
+      setTerritoryGrid(res.grid);
+      setTerritoryFlipped(res.flipped);
       pendingPlacementRef.current = null;
+      setPlacementWeight(0);
 
       setTimeout(() => {
         const outcome = resolveModeOutcome(playerRef.current.hp, opponentRef.current.hp);
-        if (outcome === "ended") {
-          return;
-        }
-        if (extraTurnRef.current) {
+        if (outcome === "ended") return;
+        if (pending.resume === "player") {
+          // This flag interrupted the opponent's turn; the question is ours now.
+          setPhase("select");
+        } else if (extraTurnRef.current) {
           extraTurnRef.current = false;
           addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
           setPhase("select");
@@ -2424,6 +2628,8 @@ function BattleArena() {
         updateBattleMemoryPlayerTurn(battleMemoryRef.current, currentAction, correct);
       }
 
+      modeTurnsRef.current += 1;
+      actingSideRef.current = "player";
       const record: QuestionRecord = { question, correct, timeSpent, action: currentAction };
       const nextRecords = [...recordsRef.current, record];
       recordsRef.current = nextRecords;
@@ -2639,13 +2845,19 @@ function BattleArena() {
         if (currentAction === "defend") {
           const gain = FOCUS_GAIN.defend;
           if (arch.healAmount !== null) {
-            const heal = Math.min(arch.healAmount, player.maxHp - player.hp);
+            // In an HP mode the restore is capped by the missing health; in a
+            // bar/grid mode there is no HP to be missing, so the class's full
+            // heal is what gets spent on the resource.
+            const heal = modeUsesHp()
+              ? Math.min(arch.healAmount, player.maxHp - player.hp)
+              : arch.healAmount;
+            const hpHeal = spendHeal("player", heal);
             // Healer (or Fulcrum borrowing it) banks an absorb shield on top.
             const shieldBefore = playerRef.current.shield ?? 0;
             const shieldAfter = getHealShield(arch, shieldBefore, copied);
             setPlayer((prev) => ({
               ...prev,
-              hp: Math.min(prev.maxHp, prev.hp + arch.healAmount!),
+              hp: Math.min(prev.maxHp, prev.hp + hpHeal),
               shield: getHealShield(arch, prev.shield ?? 0, copied),
               focus: Math.min(prev.maxFocus, prev.focus + gain),
             }));
@@ -2655,7 +2867,7 @@ function BattleArena() {
             addLog({
               actor: "player",
               actionType: "heal",
-              result: `Defend: +${heal} HP, +${gain} Focus.${shieldNote}`,
+              result: `Defend: ${modeRestoreLabel(heal)}, +${gain} Focus.${shieldNote}`,
               value: heal,
             });
           } else {
@@ -2714,8 +2926,8 @@ function BattleArena() {
             }
           }
           const dmg = defendWithEffects(hit.damage + bonus, oppArchNow, opponentEffectsRef.current);
-          setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
-          applyModeHit("player", dmg);
+          const hpDmg = spendDamage("player", dmg);
+          setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - hpDmg) }));
           const focusGain = FOCUS_GAIN[currentAction];
           if (focusGain > 0) {
             setPlayer((prev) => ({
@@ -2733,7 +2945,7 @@ function BattleArena() {
           addLog({
             actor: "player",
             actionType: currentAction,
-            result: `${ACTIONS[currentAction].label}: ${dmg} DMG!${critNote}${rageNote}${focusNote}`,
+            result: `${ACTIONS[currentAction].label}: ${modeDamageLabel(dmg)}!${critNote}${rageNote}${focusNote}`,
             value: dmg,
           });
         }
@@ -2741,12 +2953,13 @@ function BattleArena() {
         // God (or Fulcrum borrowing it): a free restore every third correct answer.
         const divineHeal = getStreakHeal(arch, correctCountRef.current, copied);
         if (divineHeal > 0) {
-          setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + divineHeal) }));
+          const hpDivine = spendHeal("player", divineHeal);
+          setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + hpDivine) }));
           setShowPlayerHeal(true);
           addLog({
             actor: "system",
             actionType: "heal",
-            result: `${arch.name}'s passive: +${divineHeal} HP.`,
+            result: `${arch.name}'s passive: ${modeRestoreLabel(divineHeal)}.`,
             value: divineHeal,
           });
         }
@@ -2763,14 +2976,19 @@ function BattleArena() {
         // the maxHp-derived self-damage curve went with the multiplier stat.
         const counterDmg = applyDefense(rollMissPenalty(), arch, copied);
         const { hpLoss, shieldLeft } = absorbWithShield(counterDmg, playerRef.current.shield ?? 0);
-        setPlayer((prev) => ({ ...prev, hp: Math.max(0, prev.hp - hpLoss), shield: shieldLeft }));
-        applyModeMiss("player", hpLoss);
+        const hpMiss = spendMiss("player", hpLoss);
+        setPlayer((prev) => ({ ...prev, hp: Math.max(0, prev.hp - hpMiss), shield: shieldLeft }));
         setShowPlayerHit(true);
         const absorbedNote = hpLoss < counterDmg ? ` Shield absorbed ${counterDmg - hpLoss}.` : "";
+        const costNote = modeUsesHp()
+          ? `-${hpLoss} HP`
+          : GAME_MODES[gameModeRef.current].resource === "bar"
+            ? `gave up ${hpLoss} ground`
+            : `no flag this round`;
         addLog({
           actor: "player",
           actionType: "miss",
-          result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} -${hpLoss} HP. Streak reset.${absorbedNote}`,
+          result: `${timeSpent >= maxTime ? "Time's up!" : "Wrong!"} ${costNote}. Streak reset.${absorbedNote}`,
           value: hpLoss,
         });
       }
@@ -3035,10 +3253,14 @@ function BattleArena() {
         return;
       }
 
+      actingSideRef.current = "opponent";
       const prevOpp = opponentRef.current;
       const prevPlayer = playerRef.current;
-      const oppHpPct = prevOpp.hp / prevOpp.maxHp;
-      const playerHpPct = prevPlayer.hp / prevPlayer.maxHp;
+      // In a bar/grid mode these describe the bot's standing on the rope or the
+      // board rather than a health bar that never moves, so the AI brain keeps
+      // reading a meaningful "how am I doing" without being changed at all.
+      const oppHpPct = modeStanding("opponent", prevOpp);
+      const playerHpPct = modeStanding("player", prevPlayer);
       const mem = memory ?? createBattleMemory();
 
       const oppUltimate = getUltimate(opponentEcliptarRef.current);
@@ -3049,14 +3271,18 @@ function BattleArena() {
         mem,
         personality,
         {
-          hp: prevOpp.hp,
+          hp: Math.round(oppHpPct * prevOpp.maxHp),
           maxHp: prevOpp.maxHp,
           focus: prevOpp.focus,
           maxFocus: prevOpp.maxFocus,
           canHeal: oppArch.healAmount !== null,
           ultimateReady: oppUltimateReady,
         },
-        { hp: prevPlayer.hp, maxHp: prevPlayer.maxHp, momentum: opponentMomentum },
+        {
+          hp: Math.round(playerHpPct * prevPlayer.maxHp),
+          maxHp: prevPlayer.maxHp,
+          momentum: opponentMomentum,
+        },
       );
 
       const success =
@@ -3096,15 +3322,17 @@ function BattleArena() {
         );
         const { hpLoss, shieldLeft } = absorbWithShield(after, newPlayerShield);
         newPlayerShield = shieldLeft;
-        newPlayerHp = Math.max(0, newPlayerHp - hpLoss);
+        // DEF and the shield have already shrunk this number; spendDamage only
+        // decides where what is left goes, and returns 0 outside an HP mode.
+        newPlayerHp = Math.max(0, newPlayerHp - spendDamage("opponent", hpLoss));
         const reflect = totalOf(playerEffectsRef.current, "reflect");
         if (reflect > 0 && after > 0) {
           const back = Math.max(1, Math.floor(after * reflect));
-          newOppHp = Math.max(0, newOppHp - back);
+          newOppHp = Math.max(0, newOppHp - spendDamage("player", back));
           addLog({
             actor: "player",
             actionType: "attack",
-            result: `Reflected ${back} damage back.`,
+            result: `Reflected ${modeDamageLabel(back)} back.`,
             value: back,
           });
         }
@@ -3119,11 +3347,14 @@ function BattleArena() {
         if (choice === "defend") {
           newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
           if (oppArch.healAmount !== null) {
-            newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + oppArch.healAmount);
+            newOppHp = Math.min(
+              prevOpp.maxHp,
+              prevOpp.hp + spendHeal("opponent", oppArch.healAmount),
+            );
             addLog({
               actor: "opponent",
               actionType: "heal",
-              result: `${prevOpp.name} heals: +${oppArch.healAmount} HP, +${FOCUS_GAIN.defend} Focus.`,
+              result: `${prevOpp.name} heals: ${modeRestoreLabel(oppArch.healAmount)}, +${FOCUS_GAIN.defend} Focus.`,
               value: oppArch.healAmount,
             });
           } else {
@@ -3136,16 +3367,13 @@ function BattleArena() {
           }
         } else if (choice === "ultimate" && oppUltimate) {
           // The bot's ultimate goes through the same resolver, which commits
-          // both sides itself — so this branch skips the local HP bookkeeping
-          // and re-syncs from the refs afterwards.
-          const beforePlayerHp = playerRef.current.hp;
+          // both sides itself — including routing its damage to whatever this
+          // mode is fought over — so this branch skips the local bookkeeping.
           castUltimate(oppUltimate, "opponent");
           newPlayerHp = playerRef.current.hp;
           newPlayerShield = playerRef.current.shield ?? 0;
           newOppHp = opponentRef.current.hp;
           ultimateHandled = true;
-          const ultDmg = Math.max(0, beforePlayerHp - newPlayerHp);
-          if (ultDmg > 0) applyModeHit("opponent", ultDmg);
         } else {
           const hit = damageWithEffects(
             oppArch,
@@ -3158,7 +3386,6 @@ function BattleArena() {
           }
           setOpponentEffects(opponentEffectsRef.current);
           const dmg = hitPlayer(hit.damage);
-          applyModeHit("opponent", dmg);
           const cost = ACTIONS[choice].focusCost;
           if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
           const gain = FOCUS_GAIN[choice];
@@ -3168,7 +3395,7 @@ function BattleArena() {
           addLog({
             actor: "opponent",
             actionType: choice,
-            result: `${prevOpp.name} ${ACTIONS[choice].label}: ${dmg} DMG.${critNote}`,
+            result: `${prevOpp.name} ${ACTIONS[choice].label}: ${modeDamageLabel(dmg)}.${critNote}`,
             value: dmg,
           });
         }
@@ -3176,28 +3403,29 @@ function BattleArena() {
         // The opponent's own every-third-answer restore (God, or a Fulcrum bot).
         const oppDivine = getStreakHeal(oppArch, oppCorrect + 1);
         if (oppDivine > 0) {
-          newOppHp = Math.min(prevOpp.maxHp, newOppHp + oppDivine);
+          newOppHp = Math.min(prevOpp.maxHp, newOppHp + spendHeal("opponent", oppDivine));
           addLog({
             actor: "opponent",
             actionType: "heal",
-            result: `${prevOpp.name}'s passive: +${oppDivine} HP.`,
+            result: `${prevOpp.name}'s passive: ${modeRestoreLabel(oppDivine)}.`,
             value: oppDivine,
           });
         }
       } else {
         nextOppMom = 0;
         const flub = applyDefense(Math.floor(Math.random() * 6) + 4, oppArch);
-        newOppHp = Math.max(0, prevOpp.hp - flub);
-        applyModeMiss("opponent", flub);
+        newOppHp = Math.max(0, prevOpp.hp - spendMiss("opponent", flub));
         addLog({
           actor: "opponent",
           actionType: "miss",
-          result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}: -${flub} HP.`,
+          result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}${modeUsesHp() ? `: -${flub} HP` : ""}.`,
           value: flub,
         });
       }
 
       if (memory) updateBattleMemoryAiTurn(memory, success);
+      if (success) opponentCorrectRef.current += 1;
+      modeTurnsRef.current += 1;
       setOpponentMomentum(nextOppMom);
       if (!ultimateHandled) {
         setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
@@ -3258,6 +3486,7 @@ function BattleArena() {
     const delay = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
 
     setTimeout(() => {
+      actingSideRef.current = "opponent";
       const prevOpp = opponentRef.current;
       const prevPlayer = playerRef.current;
       let newPlayerHp = prevPlayer.hp;
@@ -3274,27 +3503,27 @@ function BattleArena() {
         const after = applyDefense(hit.damage, playerArch, copiedPassiveRef.current);
         const absorbed = absorbWithShield(after, newPlayerShield);
         newPlayerShield = absorbed.shieldLeft;
-        newPlayerHp = Math.max(0, prevPlayer.hp - absorbed.hpLoss);
+        newPlayerHp = Math.max(0, prevPlayer.hp - spendDamage("opponent", absorbed.hpLoss));
         setShowPlayerHit(true);
-        applyModeHit("opponent", absorbed.hpLoss);
         addLog({
           actor: "opponent",
           actionType: "ghost",
-          result: `${prevOpp.name}: ${absorbed.hpLoss} DMG (ghost replay)${hit.crit ? " CRIT!" : ""}`,
+          result: `${prevOpp.name}: ${modeDamageLabel(absorbed.hpLoss)} (ghost replay)${hit.crit ? " CRIT!" : ""}`,
           value: absorbed.hpLoss,
         });
       } else {
         const flub = applyDefense(Math.floor(Math.random() * 6) + 3, oppArch);
-        newOppHp = Math.max(0, prevOpp.hp - flub);
-        applyModeMiss("opponent", flub);
+        newOppHp = Math.max(0, prevOpp.hp - spendMiss("opponent", flub));
         addLog({
           actor: "opponent",
           actionType: "ghost",
-          result: `${prevOpp.name} missed (-${flub} self)`,
+          result: `${prevOpp.name} missed${modeUsesHp() ? ` (-${flub} self)` : ""}`,
           value: flub,
         });
       }
 
+      if (record.correct) opponentCorrectRef.current += 1;
+      modeTurnsRef.current += 1;
       setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
       setOpponent((o) => ({ ...o, hp: newOppHp }));
 
@@ -3443,10 +3672,15 @@ function BattleArena() {
     // and set on gameModeRef before this ran — everything else starts fresh.
     tugStateRef.current = initialTugState();
     setTugState(tugStateRef.current);
-    territoryGridRef.current = emptyGrid();
+    territoryGridRef.current = startingGrid();
+    territoryWeightsRef.current = initialWeights();
     setTerritoryGrid(territoryGridRef.current);
     setTerritoryFlipped([]);
     pendingPlacementRef.current = null;
+    setPlacementWeight(0);
+    modeTurnsRef.current = 0;
+    opponentCorrectRef.current = 0;
+    actingSideRef.current = "player";
     if (gameModeRef.current !== "draft") {
       playerDraftTeamRef.current = null;
     }
@@ -4058,6 +4292,8 @@ function BattleArena() {
               awaitingPlacement={phase === "placing"}
               onPlace={resolvePendingPlacement}
               lastFlipped={territoryFlipped}
+              placementWeight={placementWeight}
+              score={scoreGrid(territoryGrid, territoryWeightsRef.current)}
             />
           </div>
         )}
@@ -4077,6 +4313,7 @@ function BattleArena() {
           canCharge={
             phase === "select" && !liveActionLocked && player.focus >= ACTIONS.charge.focusCost
           }
+          showHp={GAME_MODES[gameMode].resource === "hp"}
         />
         <div className="flex flex-col items-center justify-center px-2 gap-1">
           <motion.div
@@ -4118,6 +4355,7 @@ function BattleArena() {
           showHit={showOpponentHit}
           showHeal={false}
           effects={opponentEffects}
+          showHp={GAME_MODES[gameMode].resource === "hp"}
         />
       </div>
 

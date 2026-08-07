@@ -24,6 +24,18 @@ import type { OpponentType } from "@/lib/matchmaking";
 
 export type GameModeId = "battle" | "tugofwar" | "draft" | "territory";
 
+/**
+ * What the match is actually decided by — and therefore what a damage or heal
+ * number is spent on. This is the field that keeps a mode from being Battle
+ * with decoration bolted on: outside `"hp"` modes, HP is not a second, hidden
+ * win condition running underneath. It never moves, and it is not rendered.
+ *
+ *  - `hp`   — the classic duel. Damage drains the opponent's health bar.
+ *  - `bar`  — one shared tug bar. Damage pushes it; heals pull it back.
+ *  - `grid` — a territory board. Damage and heals both buy flag placements.
+ */
+export type BattleResource = "hp" | "bar" | "grid";
+
 export interface GameModeDef {
   id: GameModeId;
   name: string;
@@ -31,6 +43,7 @@ export interface GameModeDef {
   tagline: string;
   description: string;
   effects: string[];
+  resource: BattleResource;
   /**
    * Which opponent types this mode currently supports. Tug-of-War and
    * Territory need a spatial/positional choice each turn, and a `ghost` is a
@@ -55,6 +68,7 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
     description:
       "The original format. Every wrong answer hurts you, every correct answer keeps you alive.",
     effects: ["Rewards instinct and mastery.", "Great for ranked climbing."],
+    resource: "hp",
     supports: ["bot", "ghost", "live"],
   },
   tugofwar: {
@@ -65,6 +79,7 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
     description:
       "A single shared bar between you. Correct answers pull it toward you; wrong answers give ground. First to drag it all the way to their side wins.",
     effects: ["Visually satisfying.", "Easy to understand.", "Easy leaderboard mode."],
+    resource: "bar",
     supports: ["bot", "ghost"],
   },
   draft: {
@@ -75,6 +90,7 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
     description:
       "Pick one of three offered Ecliptars, three times, to build a team. Fight them in order — lose one and the next steps in.",
     effects: ["Adds strategy before questions even start.", "Rewards a deep collection."],
+    resource: "hp",
     supports: ["bot"],
   },
   territory: {
@@ -83,12 +99,13 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
     icon: Flag,
     tagline: "Claim the board, tile by tile.",
     description:
-      "A 5×5 grid sits between you. Correct answers let you place a flag anywhere open — surround an opponent's tiles and they flip to you. Most territory when the board fills wins.",
+      "A 5×5 board sits between you. Every correct answer plants one flag on any open tile — trap a line of enemy flags between two of yours and the whole line turns. Hit harder and your flag counts for more. Most territory wins.",
     effects: [
       "Every correct answer is a decision, not just an outcome — spatial reasoning on top of the question.",
-      "A capture that flips half the board reads instantly, even to a spectator.",
-      "Reuses the existing correct/wrong pipeline untouched.",
+      "One flag can turn a whole line, so the lead swings in a way a spectator reads instantly.",
+      "Corners can never be flipped. The centre counts double.",
     ],
+    resource: "grid",
     supports: ["bot", "ghost"],
   },
 };

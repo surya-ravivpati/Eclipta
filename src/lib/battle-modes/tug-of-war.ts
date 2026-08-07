@@ -15,12 +15,17 @@
  *     miss-penalty roll Battle mode would have self-inflicted as damage —
  *     "every wrong answer hurts you" becomes "every wrong answer costs you
  *     ground" instead of costing you health that does not exist here.
- *   - Ultimate healing nudges the bar back toward center by the healed
- *     amount, since there is no HP pool for it to restore.
- *   - Defend (Heal) does not move the bar — there is nothing to heal — but
- *     still builds Focus, and a shield it grants reduces the next push
- *     AGAINST you by that amount, the same absorb-then-spend mechanic
- *     `absorbWithShield` already implements for HP.
+ *   - Every heal — Defend, a Healer's restore, God's every-third-answer
+ *     passive, an ultimate's healing, a regen tick — pulls the bar back
+ *     toward center by the healed amount. It can only undo ground already
+ *     lost, never punch through center into enemy territory, so healing
+ *     stays defensive without becoming a second way to win. This is what
+ *     keeps heal-leaning archetypes worth picking here instead of dead
+ *     weight in a mode with no HP pool to top up.
+ *   - Defend also still builds Focus, and a shield it grants reduces the
+ *     next push AGAINST you by that amount — the same absorb-then-spend
+ *     mechanic `absorbWithShield` already implements for HP, applied before
+ *     the number ever reaches the bar.
  */
 
 export const TUG_BAR_MAX = 120;

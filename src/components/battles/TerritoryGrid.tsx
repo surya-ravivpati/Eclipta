@@ -13,12 +13,18 @@ export function TerritoryGridView({
   awaitingPlacement,
   onPlace,
   lastFlipped,
+  placementWeight = 0,
+  score,
 }: {
   grid: Grid;
   awaitingPlacement: boolean;
   onPlace: (index: number) => void;
   /** Cells that just flipped, for a one-beat highlight. */
   lastFlipped: number[];
+  /** Weight of the flag awaiting placement — a harder hit plants a heavier one. */
+  placementWeight?: number;
+  /** Running weighted tile count, so the board reads as a scoreboard too. */
+  score?: { player: number; opponent: number };
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
@@ -27,9 +33,19 @@ export function TerritoryGridView({
           className="text-[11px] font-bold tracking-widest text-primary uppercase"
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
+          role="status"
         >
-          Correct! Place your flag.
+          {placementWeight > 1
+            ? `Correct! Place your flag — worth ${placementWeight}`
+            : "Correct! Place your flag."}
         </motion.p>
+      )}
+      {score && (
+        <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest">
+          <span className="text-neon-cyan">YOU {score.player}</span>
+          <span className="text-muted-foreground/50">·</span>
+          <span className="text-neon-pink">{score.opponent} OPP</span>
+        </div>
       )}
       <div
         role="grid"

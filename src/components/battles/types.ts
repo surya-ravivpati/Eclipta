@@ -3,12 +3,17 @@ import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 
 export type Phase =
   | "idle"
+  | "modeSelect"
+  | "draft"
   | "classSelect"
   | "searching"
   | "gamblerReveal"
   | "select"
   | "question"
   | "animate"
+  /** Territory only: a correct answer is banked and waiting for the player to
+   *  click an open tile. Nothing else in the turn loop advances until they do. */
+  | "placing"
   | "result";
 export type Action = "attack" | "defend" | "charge" | "ultimate";
 export type Difficulty = "easy" | "medium" | "hard";

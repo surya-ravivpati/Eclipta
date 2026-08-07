@@ -126,13 +126,21 @@ export async function findMatch(
   playerRating: number,
   username: string | null,
   onStatus: (msg: string, tier: OpponentType) => void,
+  opts?: {
+    /** Non-Battle modes with no realtime sync yet skip straight past the live queue. */
+    allowLive?: boolean;
+    /** Draft Battle has no ghost-recorded draft picks, so it skips to bot. */
+    allowGhost?: boolean;
+  },
 ): Promise<MatchResult> {
+  const allowLive = opts?.allowLive ?? true;
+  const allowGhost = opts?.allowGhost ?? true;
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   // ── Tier 1: Live PvP ─────────────────────────────────────────────────
-  if (user) {
+  if (user && allowLive) {
     onStatus("Scanning for live opponents…", "live");
     await joinQueue(archetype, playerRating, username);
 
@@ -151,8 +159,10 @@ export async function findMatch(
     }
 
     await leaveQueue();
+  }
 
-    // ── Tier 2: Ghost PvP ───────────────────────────────────────────────
+  // ── Tier 2: Ghost PvP ─────────────────────────────────────────────────
+  if (user && allowGhost) {
     onStatus("No live opponent — loading ghost replay…", "ghost");
     const ghost = await fetchGhostSession(playerRating);
     if (ghost) {

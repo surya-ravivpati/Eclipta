@@ -52,6 +52,27 @@ import type {
   LogEntry,
   LogActionType,
 } from "./battles/types";
+import type { GameModeId } from "@/lib/battle-modes/types";
+import { GameModeSelectDialog } from "./battles/GameModeSelectDialog";
+import { DraftDialog } from "./battles/DraftDialog";
+import { TerritoryGridView } from "./battles/TerritoryGrid";
+import { TugOfWarBar } from "./battles/TugOfWarBar";
+import { initialTugState, pushTug, tugWinner, type TugState } from "@/lib/battle-modes/tug-of-war";
+import {
+  emptyGrid,
+  placeFlag,
+  territoryWinner,
+  chooseBotPlacement,
+  type TerritoryGrid as TerritoryGridT,
+} from "@/lib/battle-modes/territory";
+import {
+  startingTeam,
+  activeMember,
+  advanceTeam,
+  teamDefeated,
+  autoDraftTeam,
+  type DraftTeam,
+} from "@/lib/battle-modes/draft";
 import { generateQuestion } from "./battles/questions";
 import {
   tickEffects,
@@ -110,7 +131,7 @@ import type { TableRow } from "@/integrations/supabase/database";
 import { getDailyChallengeProgress } from "@/repositories/courses";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getTodayChallenge } from "@/lib/daily-challenge";
-import { findMatch, leaveQueue, type MatchResult, type OpponentType } from "@/lib/matchmaking";
+import { findMatch, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
 import { completeGhostBattle, fetchPlayerRating, ratingToTier } from "@/lib/rating";
 import { awardXp, awardBattleXp } from "@/lib/xp-service";
@@ -1417,6 +1438,25 @@ function BattleArena() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [showPractice, setShowPractice] = useState(false);
+  // ── Game mode ─────────────────────────────────────────────────────────
+  // Modes never touch stat-mechanics/resolve-ultimate/effects — they only
+  // redirect what an already-computed dmg/heal number is spent on. `gameMode`
+  // is read inside async turn callbacks, so it gets the same ref-twin pattern
+  // as everything else those callbacks need.
+  const [gameMode, setGameMode] = useState<GameModeId>("battle");
+  const gameModeRef = useRef<GameModeId>("battle");
+  const [tugState, setTugState] = useState<TugState>(initialTugState());
+  const tugStateRef = useRef<TugState>(initialTugState());
+  const [territoryGrid, setTerritoryGrid] = useState<TerritoryGridT>(emptyGrid());
+  const territoryGridRef = useRef<TerritoryGridT>(emptyGrid());
+  const [territoryFlipped, setTerritoryFlipped] = useState<number[]>([]);
+  // Correct answer banked, waiting on the player to click a tile (Territory only).
+  const pendingPlacementRef = useRef<{ dmg: number } | null>(null);
+  // Draft Battle team state lives only in refs — nothing renders a roster
+  // sidebar yet, and the turn-loop logic (resolveModeOutcome, startBattle)
+  // only ever needs synchronous reads, never a re-render.
+  const playerDraftTeamRef = useRef<DraftTeam | null>(null);
+  const opponentDraftTeamRef = useRef<DraftTeam | null>(null);
   const [archetype, setArchetype] = useState<ArchetypeId>("speedster");
   const [opponentArchetype, setOpponentArchetype] = useState<ArchetypeId>("tank");
   const [player, setPlayer] = useState<Fighter>({
@@ -2180,6 +2220,201 @@ function BattleArena() {
     }
   }, [phase, question]);
 
+  // ── Game mode: reinterpreting the same numbers, never new ones ──────────
+  // Every dmg/heal value below is already fully computed by
+  // damageWithEffects/defendWithEffects/castUltimate — archetype stats, DEF,
+  // crit and ultimates all already happened by the time these run. Modes only
+  // decide what that number is SPENT ON (HP, a shared bar, a grid tile).
+
+  /** Swap the next drafted Ecliptar in after a KO, resetting its own HP/focus
+   *  fresh — a new duel, not a continuation of the fallen member's fight. */
+  function swapInDraftMember(side: "player" | "opponent", team: DraftTeam) {
+    const member = activeMember(team);
+    if (!member) return;
+    const arch = ARCHETYPES[member.archetype];
+    if (side === "player") {
+      playerDraftTeamRef.current = team;
+      setArchetype(member.archetype);
+      archetypeRef.current = member.archetype;
+      setEcliptarSlug(member.slug);
+      ecliptarRef.current = member.slug;
+      setPlayer({
+        name: member.name,
+        hp: arch.maxHp,
+        maxHp: arch.maxHp,
+        shield: 0,
+        focus: arch.startFocus,
+        maxFocus: arch.focusPool,
+        icon: member.icon,
+        sprite: ecliptarSpriteUrl(member.slug),
+      });
+      playerEffectsRef.current = [];
+      setPlayerEffects([]);
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `${member.name} steps in for you!`,
+      });
+    } else {
+      opponentDraftTeamRef.current = team;
+      setOpponentArchetype(member.archetype);
+      opponentEcliptarRef.current = member.slug;
+      setOpponent({
+        name: member.name,
+        hp: arch.maxHp,
+        maxHp: arch.maxHp,
+        focus: arch.startFocus,
+        maxFocus: arch.focusPool,
+        icon: member.icon,
+        sprite: ecliptarSpriteUrl(member.slug),
+      });
+      opponentEffectsRef.current = [];
+      setOpponentEffects([]);
+      addLog({
+        actor: "system",
+        actionType: "info",
+        result: `Opponent sends in ${member.name}!`,
+      });
+    }
+  }
+
+  /**
+   * Mode-aware replacement for Battle mode's plain HP<=0 check.
+   * - "ended": finishBattle already ran; caller does nothing more.
+   * - "handled": this mode owns the win-check (even with no winner yet this
+   *   turn) — caller skips the default HP check and goes straight to its
+   *   normal turn-continuation logic (extra turn / ghost / ai).
+   * - "passthrough": not a mode with its own win condition — caller runs the
+   *   original HP<=0 check exactly as Battle mode always has.
+   */
+  function resolveModeOutcome(
+    currentPlayerHp: number,
+    currentOppHp: number,
+  ): "ended" | "handled" | "passthrough" {
+    const mode = gameModeRef.current;
+    if (mode === "tugofwar") {
+      const winner = tugWinner(tugStateRef.current);
+      if (winner) {
+        finishBattle(winner === "player");
+        return "ended";
+      }
+      return "handled";
+    }
+    if (mode === "territory") {
+      const grid = territoryGridRef.current;
+      if (!grid.includes("empty")) {
+        const winner = territoryWinner(grid);
+        if (winner === "draw") {
+          // Tiebreak on correct-answer count; the vanishingly rare double-tie
+          // falls back to a disclosed coin flip rather than an arbitrary bias.
+          finishBattle(Math.random() < 0.5);
+        } else {
+          finishBattle(winner === "player");
+        }
+        return "ended";
+      }
+      return "handled";
+    }
+    if (mode === "draft") {
+      if (currentOppHp <= 0) {
+        const team = opponentDraftTeamRef.current;
+        const advanced = team ? advanceTeam(team) : null;
+        if (advanced && !teamDefeated(advanced)) {
+          swapInDraftMember("opponent", advanced);
+          return "handled";
+        }
+        finishBattle(true);
+        return "ended";
+      }
+      if (currentPlayerHp <= 0) {
+        const team = playerDraftTeamRef.current;
+        const advanced = team ? advanceTeam(team) : null;
+        if (advanced && !teamDefeated(advanced)) {
+          swapInDraftMember("player", advanced);
+          return "handled";
+        }
+        finishBattle(false);
+        return "ended";
+      }
+      return "passthrough";
+    }
+    return "passthrough";
+  }
+
+  /**
+   * Redirects an already-computed damage number onto the current mode's
+   * resource instead of (or alongside) HP: the Tug-of-War bar, or a banked
+   * Territory placement. No-op for Battle and Draft, which just use HP.
+   */
+  function applyModeHit(dealer: "player" | "opponent", dmg: number) {
+    const mode = gameModeRef.current;
+    if (mode === "tugofwar" && dmg > 0) {
+      const next = pushTug(tugStateRef.current, dealer, dmg);
+      tugStateRef.current = next;
+      setTugState(next);
+    } else if (mode === "territory" && dmg > 0) {
+      if (dealer === "player") {
+        // Bank it — the player picks the tile, so the turn loop pauses here.
+        pendingPlacementRef.current = { dmg };
+        setPhase("placing");
+      } else {
+        // Bot/ghost has no UI to wait on; resolve its placement immediately.
+        const target = chooseBotPlacement(territoryGridRef.current, "opponent");
+        if (target !== null) {
+          const { grid, flipped } = placeFlag(territoryGridRef.current, target, "opponent");
+          territoryGridRef.current = grid;
+          setTerritoryGrid(grid);
+          setTerritoryFlipped(flipped);
+        }
+      }
+    }
+  }
+
+  /**
+   * A wrong answer's self-inflicted damage. Distinct from applyModeHit
+   * because it must NOT trigger Territory's placement — "wrong answers cost
+   * you the round's placement entirely," not hand one to the other side.
+   */
+  function applyModeMiss(missedSide: "player" | "opponent", selfDmg: number) {
+    if (gameModeRef.current === "tugofwar" && selfDmg > 0) {
+      const other = missedSide === "player" ? "opponent" : "player";
+      const next = pushTug(tugStateRef.current, other, selfDmg);
+      tugStateRef.current = next;
+      setTugState(next);
+    }
+    // Territory: no grid change on a miss — the round's placement is simply lost.
+  }
+
+  /** Territory only: the player just tapped an open tile after a banked correct answer. */
+  const resolvePendingPlacement = useCallback(
+    (index: number) => {
+      if (!pendingPlacementRef.current) return;
+      const { grid, flipped } = placeFlag(territoryGridRef.current, index, "player");
+      territoryGridRef.current = grid;
+      setTerritoryGrid(grid);
+      setTerritoryFlipped(flipped);
+      pendingPlacementRef.current = null;
+
+      setTimeout(() => {
+        const outcome = resolveModeOutcome(playerRef.current.hp, opponentRef.current.hp);
+        if (outcome === "ended") {
+          return;
+        }
+        if (extraTurnRef.current) {
+          extraTurnRef.current = false;
+          addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
+          setPhase("select");
+        } else if (opponentTypeRef.current === "ghost") {
+          ghostTurn();
+        } else {
+          aiTurn();
+        }
+      }, 400);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [addLog],
+  );
+
   const handleAnswer = useCallback(
     (correct: boolean, timeSpent: number) => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -2480,6 +2715,7 @@ function BattleArena() {
           }
           const dmg = defendWithEffects(hit.damage + bonus, oppArchNow, opponentEffectsRef.current);
           setOpponent((prev) => ({ ...prev, hp: Math.max(0, prev.hp - dmg) }));
+          applyModeHit("player", dmg);
           const focusGain = FOCUS_GAIN[currentAction];
           if (focusGain > 0) {
             setPlayer((prev) => ({
@@ -2528,6 +2764,7 @@ function BattleArena() {
         const counterDmg = applyDefense(rollMissPenalty(), arch, copied);
         const { hpLoss, shieldLeft } = absorbWithShield(counterDmg, playerRef.current.shield ?? 0);
         setPlayer((prev) => ({ ...prev, hp: Math.max(0, prev.hp - hpLoss), shield: shieldLeft }));
+        applyModeMiss("player", hpLoss);
         setShowPlayerHit(true);
         const absorbedNote = hpLoss < counterDmg ? ` Shield absorbed ${counterDmg - hpLoss}.` : "";
         addLog({
@@ -2543,12 +2780,20 @@ function BattleArena() {
         setShowOpponentHit(false);
         setShowPlayerHeal(false);
 
+        if (pendingPlacementRef.current) {
+          // Territory: waiting on the player to tap a tile — resolvePendingPlacement continues the loop.
+          return;
+        }
+
         const curOpp = opponentRef.current;
         const curPlayer = playerRef.current;
+        const modeOutcome = resolveModeOutcome(curPlayer.hp, curOpp.hp);
 
-        if (curOpp.hp <= 0) {
+        if (modeOutcome === "ended") {
+          // finishBattle already ran.
+        } else if (modeOutcome === "passthrough" && curOpp.hp <= 0) {
           finishBattle(true);
-        } else if (curPlayer.hp <= 0) {
+        } else if (modeOutcome === "passthrough" && curPlayer.hp <= 0) {
           finishBattle(false);
         } else if (extraTurnRef.current) {
           // Time Fracture / Wheel of Fortune: act again without ceding the turn.
@@ -2893,11 +3138,14 @@ function BattleArena() {
           // The bot's ultimate goes through the same resolver, which commits
           // both sides itself — so this branch skips the local HP bookkeeping
           // and re-syncs from the refs afterwards.
+          const beforePlayerHp = playerRef.current.hp;
           castUltimate(oppUltimate, "opponent");
           newPlayerHp = playerRef.current.hp;
           newPlayerShield = playerRef.current.shield ?? 0;
           newOppHp = opponentRef.current.hp;
           ultimateHandled = true;
+          const ultDmg = Math.max(0, beforePlayerHp - newPlayerHp);
+          if (ultDmg > 0) applyModeHit("opponent", ultDmg);
         } else {
           const hit = damageWithEffects(
             oppArch,
@@ -2910,6 +3158,7 @@ function BattleArena() {
           }
           setOpponentEffects(opponentEffectsRef.current);
           const dmg = hitPlayer(hit.damage);
+          applyModeHit("opponent", dmg);
           const cost = ACTIONS[choice].focusCost;
           if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
           const gain = FOCUS_GAIN[choice];
@@ -2939,6 +3188,7 @@ function BattleArena() {
         nextOppMom = 0;
         const flub = applyDefense(Math.floor(Math.random() * 6) + 4, oppArch);
         newOppHp = Math.max(0, prevOpp.hp - flub);
+        applyModeMiss("opponent", flub);
         addLog({
           actor: "opponent",
           actionType: "miss",
@@ -2968,9 +3218,18 @@ function BattleArena() {
 
       setTimeout(() => {
         setShowPlayerHit(false);
-        if (newPlayerHp <= 0) {
+
+        if (pendingPlacementRef.current) {
+          // Territory: waiting on the player to tap a tile — resolvePendingPlacement continues the loop.
+          return;
+        }
+
+        const modeOutcome = resolveModeOutcome(newPlayerHp, newOppHp);
+        if (modeOutcome === "ended") {
+          // finishBattle already ran.
+        } else if (modeOutcome === "passthrough" && newPlayerHp <= 0) {
           finishBattle(false);
-        } else if (newOppHp <= 0) {
+        } else if (modeOutcome === "passthrough" && newOppHp <= 0) {
           finishBattle(true);
         } else {
           setPhase("select");
@@ -3017,6 +3276,7 @@ function BattleArena() {
         newPlayerShield = absorbed.shieldLeft;
         newPlayerHp = Math.max(0, prevPlayer.hp - absorbed.hpLoss);
         setShowPlayerHit(true);
+        applyModeHit("opponent", absorbed.hpLoss);
         addLog({
           actor: "opponent",
           actionType: "ghost",
@@ -3026,6 +3286,7 @@ function BattleArena() {
       } else {
         const flub = applyDefense(Math.floor(Math.random() * 6) + 3, oppArch);
         newOppHp = Math.max(0, prevOpp.hp - flub);
+        applyModeMiss("opponent", flub);
         addLog({
           actor: "opponent",
           actionType: "ghost",
@@ -3039,9 +3300,21 @@ function BattleArena() {
 
       setTimeout(() => {
         setShowPlayerHit(false);
-        if (newPlayerHp <= 0) finishBattle(false);
-        else if (newOppHp <= 0) finishBattle(true);
-        else setPhase("select");
+
+        if (pendingPlacementRef.current) {
+          return;
+        }
+
+        const modeOutcome = resolveModeOutcome(newPlayerHp, newOppHp);
+        if (modeOutcome === "ended") {
+          // finishBattle already ran.
+        } else if (modeOutcome === "passthrough" && newPlayerHp <= 0) {
+          finishBattle(false);
+        } else if (modeOutcome === "passthrough" && newOppHp <= 0) {
+          finishBattle(true);
+        } else {
+          setPhase("select");
+        }
       }, 600);
     }, delay);
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
@@ -3166,7 +3439,22 @@ function BattleArena() {
     rematchStartedRef.current = false;
     setLiveRematchState("idle");
 
-    // Run full Tier 1→2→3 matchmaking asynchronously
+    // Reset mode state. Draft's player team was already picked in DraftDialog
+    // and set on gameModeRef before this ran — everything else starts fresh.
+    tugStateRef.current = initialTugState();
+    setTugState(tugStateRef.current);
+    territoryGridRef.current = emptyGrid();
+    setTerritoryGrid(territoryGridRef.current);
+    setTerritoryFlipped([]);
+    pendingPlacementRef.current = null;
+    if (gameModeRef.current !== "draft") {
+      playerDraftTeamRef.current = null;
+    }
+    opponentDraftTeamRef.current = null;
+
+    // Run full Tier 1→2→3 matchmaking asynchronously. Non-Battle modes have
+    // no realtime sync (or, for Draft, no recorded ghost picks) yet, so they
+    // skip straight past the tiers they don't support — see GAME_MODES.
     void (async () => {
       try {
         const match: MatchResult = await findMatch(
@@ -3176,6 +3464,10 @@ function BattleArena() {
           (msg, tier) => {
             setMatchStatus(msg);
             setMatchTier(tier);
+          },
+          {
+            allowLive: gameModeRef.current === "battle",
+            allowGhost: gameModeRef.current !== "draft",
           },
         );
 
@@ -3205,6 +3497,15 @@ function BattleArena() {
               oppArchetype,
               match.ghostSession?.id ?? match.opponentUserId ?? oppName,
             )?.slug;
+        } else if (gameModeRef.current === "draft") {
+          // Draft Battle: the bot drafts its own team the same way the player
+          // just did; its first pick opens the match like any other bot fight.
+          const oppTeam = startingTeam(autoDraftTeam());
+          opponentDraftTeamRef.current = oppTeam;
+          const oppEclip = activeMember(oppTeam) ?? pickOpponent(cls);
+          oppArchetype = oppEclip.archetype;
+          oppName = oppEclip.name;
+          oppSlug = oppEclip.slug;
         } else {
           // Bot: pick a real ecliptar so the opponent has a coherent identity —
           // its creature, name, and sprite all match.
@@ -3302,7 +3603,21 @@ function BattleArena() {
     })();
   };
 
+  /** Draft Battle: the pre-match team was just picked in DraftDialog — kick
+   *  off an ordinary bot match with its first member, same as any other
+   *  archetype selection. Team-swap-on-KO takes over from there via
+   *  resolveModeOutcome. */
+  const startDraftBattle = (team: Ecliptar[]) => {
+    const draft = startingTeam(team);
+    playerDraftTeamRef.current = draft;
+    const first = activeMember(draft);
+    if (!first) return;
+    startBattle({ archetype: first.archetype, ecliptar: first });
+  };
+
   const reset = () => {
+    setGameMode("battle");
+    gameModeRef.current = "battle";
     setPhase("idle");
     setBattleStats(null);
     setKoBanner(null);
@@ -3435,6 +3750,8 @@ function BattleArena() {
           onClose={() => setShowPractice(false)}
           onBattle={() => {
             setShowPractice(false);
+            setGameMode("battle");
+            gameModeRef.current = "battle";
             setPhase("classSelect");
           }}
         />
@@ -3462,7 +3779,7 @@ function BattleArena() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <motion.button
-            onClick={() => setPhase("classSelect")}
+            onClick={() => setPhase("modeSelect")}
             className="btt-idle-cta btt-mono-text inline-flex items-center gap-3 px-10 py-4 font-bold text-[12px] tracking-widest"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
@@ -3480,6 +3797,24 @@ function BattleArena() {
         </div>
       </motion.div>
     );
+  }
+
+  // ── Mode Select ──
+  if (phase === "modeSelect") {
+    return (
+      <GameModeSelectDialog
+        onSelect={(mode) => {
+          setGameMode(mode);
+          gameModeRef.current = mode;
+          setPhase(mode === "draft" ? "draft" : "classSelect");
+        }}
+      />
+    );
+  }
+
+  // ── Draft ──
+  if (phase === "draft") {
+    return <DraftDialog onComplete={(team) => startDraftBattle(team)} />;
   }
 
   // ── Class Select ──
@@ -3518,8 +3853,10 @@ function BattleArena() {
     return (
       <BattleReport
         stats={battleStats}
-        onRematch={() => setPhase("classSelect")}
-        onContinueWithEcliptar={ecliptar ? () => startBattle({ archetype, ecliptar }) : undefined}
+        onRematch={() => setPhase(gameMode === "draft" ? "draft" : "classSelect")}
+        onContinueWithEcliptar={
+          ecliptar && gameMode !== "draft" ? () => startBattle({ archetype, ecliptar }) : undefined
+        }
         onBack={reset}
         ratingChange={ratingChange}
         opponentType={opponentType}
@@ -3685,17 +4022,45 @@ function BattleArena() {
       </AnimatePresence>
 
       {/* Forfeit / leave control — confirms, then counts as a loss by abandonment */}
-      {(phase === "select" || phase === "question" || phase === "animate") && !koBanner && (
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={() => setConfirmExit(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors"
-            title="Leave the battle (counts as a loss)"
-          >
-            <X className="w-3 h-3" /> Forfeit
-          </button>
-        </div>
-      )}
+      {(phase === "select" || phase === "question" || phase === "animate" || phase === "placing") &&
+        !koBanner && (
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={() => setConfirmExit(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors"
+              title="Leave the battle (counts as a loss)"
+            >
+              <X className="w-3 h-3" /> Forfeit
+            </button>
+          </div>
+        )}
+
+      {/* Tug-of-War: the shared bar sits above the fighter cards, alongside
+          HP rather than replacing it — stats/ultimates still change HP, the
+          bar is just what decides the match in this mode. */}
+      {gameMode === "tugofwar" &&
+        (phase === "select" || phase === "question" || phase === "animate") &&
+        !koBanner && (
+          <div className="mb-3">
+            <TugOfWarBar state={tugState} playerName={player.name} opponentName={opponent.name} />
+          </div>
+        )}
+
+      {gameMode === "territory" &&
+        (phase === "select" ||
+          phase === "question" ||
+          phase === "animate" ||
+          phase === "placing") &&
+        !koBanner && (
+          <div className="mb-3">
+            <TerritoryGridView
+              grid={territoryGrid}
+              awaitingPlacement={phase === "placing"}
+              onPlace={resolvePendingPlacement}
+              lastFlipped={territoryFlipped}
+            />
+          </div>
+        )}
 
       <div className="flex gap-3 mb-4">
         <FighterCard

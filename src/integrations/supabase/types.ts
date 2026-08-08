@@ -2135,6 +2135,10 @@ export type Database = {
         Args: { p_correct: number; p_total: number; p_won: boolean }
         Returns: number
       }
+      award_verified_battle_xp: {
+        Args: { p_challenge_ids: string[] }
+        Returns: number
+      }
       award_xp: { Args: { p_event: string }; Returns: number }
       check_ai_rate_limit: {
         Args: { p_max: number; p_user: string; p_window_secs: number }
@@ -2164,6 +2168,29 @@ export type Database = {
       }
       complete_pvp_battle: {
         Args: { p_battle_id: string; p_winner_id: string }
+        Returns: Json
+      }
+      complete_authoritative_pvp_battle: {
+        Args: { p_battle_id: string }
+        Returns: Json
+      }
+      issue_battle_question: {
+        Args: { p_battle_id?: string | null; p_difficulty: string }
+        Returns: Json
+      }
+      submit_battle_answer: {
+        Args: { p_answer: number; p_challenge_id: string }
+        Returns: Json
+      }
+      submit_authoritative_pvp_turn_action: {
+        Args: {
+          p_action: string
+          p_answer: number
+          p_battle_id: string
+          p_challenge_id: string
+          p_time_spent?: number
+          p_turn_number: number
+        }
         Returns: Json
       }
       contains_profanity: { Args: { t: string }; Returns: boolean }

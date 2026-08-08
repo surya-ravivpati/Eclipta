@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import type {
   Phase,
   Action,
+  Difficulty,
   ArchetypeId,
   Archetype,
   Fighter,
@@ -143,9 +144,9 @@ import { getDailyChallengeProgress } from "@/repositories/courses";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, type MatchResult, type OpponentType } from "@/lib/matchmaking";
-import { recordBattleSession, type GhostSession } from "@/lib/battle-replay";
+import { type GhostSession } from "@/lib/battle-replay";
 import { completeGhostBattle, fetchPlayerRating, ratingToTier } from "@/lib/rating";
-import { awardXp, awardBattleXp } from "@/lib/xp-service";
+import { awardXp, awardVerifiedBattleXp } from "@/lib/xp-service";
 import { toast } from "sonner";
 import "./Battles.css";
 
@@ -739,25 +740,21 @@ function QuestionOverlay({
   question: MathQuestion;
   timeLeft: number;
   maxTime: number;
-  onAnswer: (correct: boolean, timeSpent: number) => void;
+  onAnswer: (answer: number, timeSpent: number) => Promise<{ correct: boolean; answer?: number }>;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showReveal, setShowReveal] = useState(false);
+  const [result, setResult] = useState<{ correct: boolean; answer?: number } | null>(null);
   const startTimeRef = useRef(Date.now());
   const pct = (timeLeft / maxTime) * 100;
 
-  const handleSelect = (val: number) => {
+  const handleSelect = async (val: number) => {
     if (selected !== null) return;
     setSelected(val);
     const spent = (Date.now() - startTimeRef.current) / 1000;
-    const correct = val === question.answer;
-    if (correct) {
-      setTimeout(() => onAnswer(true, spent), 600);
-    } else {
-      // Show correct answer reveal for 1.5s before triggering damage
-      setTimeout(() => setShowReveal(true), 300);
-      setTimeout(() => onAnswer(false, spent), 1900);
-    }
+    const answerResult = await onAnswer(val, spent);
+    setResult(answerResult);
+    if (!answerResult.correct) setTimeout(() => setShowReveal(true), 300);
   };
 
   return (
@@ -806,7 +803,7 @@ function QuestionOverlay({
           {question.options.map((opt, i) => {
             let style = "border-white/[0.08] hover:border-white/[0.18] hover:bg-white/[0.03]";
             if (selected !== null) {
-              if (opt === question.answer)
+              if (result?.answer !== undefined && opt === result.answer)
                 style = "border-neon-cyan/60 bg-neon-cyan/8 text-neon-cyan";
               else if (opt === selected)
                 style = "border-neon-pink/60 bg-neon-pink/8 text-neon-pink";
@@ -841,7 +838,7 @@ function QuestionOverlay({
                 {question.topic.toUpperCase()} · CORRECT ANSWER
               </span>
               <span className="text-xl font-bold font-display text-neon-cyan">
-                {question.answer}
+                {result?.answer}
               </span>
             </motion.div>
           )}
@@ -1513,6 +1510,8 @@ function BattleArena() {
   const [opponentMomentum, setOpponentMomentum] = useState(0);
   const [currentAction, setCurrentAction] = useState<Action | null>(null);
   const [question, setQuestion] = useState<MathQuestion | null>(null);
+  const [questionChallengeId, setQuestionChallengeId] = useState<string | null>(null);
+  const answeredChallengeIdsRef = useRef<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
   const [maxTime, setMaxTime] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -1635,6 +1634,8 @@ function BattleArena() {
   const liveResolvingRef = useRef(false);
   const liveResolvedTurnsRef = useRef<Set<number>>(new Set());
   const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
+  const liveChallengeIdRef = useRef<string | null>(null);
+  const liveChallengeAnswerRef = useRef<number | null>(null);
   const liveResolutionRef = useRef<(actions: LiveTurnActionRow[], turnNumber: number) => void>(
     () => {},
   );
@@ -2273,6 +2274,8 @@ function BattleArena() {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
+            if (liveChallengeIdRef.current)
+              liveChallengeAnswerRef.current = Number.MIN_SAFE_INTEGER;
             handleAnswer(false, maxTime);
             return 0;
           }
@@ -2768,18 +2771,21 @@ function BattleArena() {
         void (async () => {
           const battleId = pvpBattleIdRef.current;
           if (!battleId) return;
-          const { data, error } = await supabase.rpc("submit_pvp_turn_action" as any, {
+          const challengeId = liveChallengeIdRef.current;
+          const answer = liveChallengeAnswerRef.current;
+          if (!challengeId || answer === null) {
+            liveActionLockedRef.current = false;
+            setLiveActionLocked(false);
+            toast.error("Missing secure battle challenge.");
+            return;
+          }
+          const { data, error } = await supabase.rpc("submit_authoritative_pvp_turn_action", {
             p_battle_id: battleId,
             p_turn_number: liveTurnNumberRef.current,
             p_action: currentAction,
-            p_correct: correct,
-            p_damage: damage,
-            p_self_damage: selfDamage,
-            p_heal: heal,
-            p_focus_delta: focusDelta,
-            p_momentum: nextMom,
+            p_challenge_id: challengeId,
+            p_answer: answer,
             p_time_spent: timeSpent,
-            p_question: { q: question.q, difficulty: question.difficulty, topic: question.topic },
           });
           if (error) {
             liveActionLockedRef.current = false;
@@ -3039,6 +3045,40 @@ function BattleArena() {
     ],
   );
 
+  const handleQuestionAnswer = useCallback(
+    async (answer: number, timeSpent: number): Promise<{ correct: boolean; answer?: number }> => {
+      const localCorrect = answer === question?.answer;
+      if (!questionChallengeId) {
+        const result =
+          question?.answer === undefined
+            ? { correct: localCorrect }
+            : { correct: localCorrect, answer: question.answer };
+        setTimeout(() => handleAnswer(result.correct, timeSpent), result.correct ? 600 : 1900);
+        return result;
+      }
+
+      if (opponentTypeRef.current === "live") {
+        liveChallengeAnswerRef.current = answer;
+        setTimeout(() => handleAnswer(false, timeSpent), 600);
+        return { correct: false };
+      }
+
+      const { data, error } = await supabase.rpc("submit_battle_answer", {
+        p_challenge_id: questionChallengeId,
+        p_answer: answer,
+      });
+      if (error || !data) {
+        toast.error("Couldn't verify that answer. Please try again.");
+        return { correct: false };
+      }
+      answeredChallengeIdsRef.current.push(questionChallengeId);
+      const correct = data.correct;
+      setTimeout(() => handleAnswer(correct, timeSpent), correct ? 600 : 1900);
+      return { correct, answer: data.answer };
+    },
+    [handleAnswer, question?.answer, questionChallengeId],
+  );
+
   const finishBattle = useCallback(
     (won: boolean) => {
       if (battleFinishedRef.current) return;
@@ -3055,16 +3095,15 @@ function BattleArena() {
         });
       }
 
-      // Mirror the server-side formula in award_battle_xp so the number we
-      // animate up to in the report matches what actually lands on the profile:
-      //   xp = min(1000, correct*15 + (won ? 50 : 0))
+      // The report mirrors the verified-question award path. Battle outcomes
+      // are presentation state; only server-checked answers earn XP.
       const finalRecords = recordsRef.current;
       const finalStreak = longestStreakRef.current;
       const finalFastest = fastestAnswerRef.current;
       const finalScore = totalScoreRef.current;
       const totalQuestions = finalRecords.length;
       const correctAnswers = finalRecords.filter((r) => r.correct).length;
-      const xp = Math.min(1000, correctAnswers * 15 + (won ? 50 : 0));
+      const xp = correctAnswers * 15;
       setBattleStats({
         totalQuestions,
         correctAnswers,
@@ -3113,7 +3152,7 @@ function BattleArena() {
           // Award XP here — at the guaranteed battle-end hook — rather than relying
           // on the result screen mounting (which a live rematch or an early exit can
           // skip). Server computes the amount from correct/total/won.
-          await awardBattleXp(correctAnswers, totalQuestions, won);
+          await awardVerifiedBattleXp(answeredChallengeIdsRef.current);
 
           // Count today toward the daily-practice streak (server-authoritative,
           // idempotent per day). Fires the milestone celebration when crossed.
@@ -3134,24 +3173,14 @@ function BattleArena() {
             window.dispatchEvent(new Event("daily-challenge-updated"));
           }
 
-          // Record session as ghost replay data for future opponents
-          const sessionId = await recordBattleSession({
-            archetype,
-            won,
-            rating: playerRatingRef.current,
-            records: finalRecords,
-            bestStreak: finalStreak,
-            opponentType: opponentTypeRef.current,
-            // Recorded so that when this run is served back as someone else's
-            // ghost, it fights with the creature it was actually fought with.
-            ecliptarSlug: ecliptarRef.current,
-          });
+          // Browser-reported battle sessions are not durable evidence. Ghost
+          // replay creation is withheld until it has a server-side resolver.
+          const sessionId = null;
 
           // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
           if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
-            const { data, error } = await supabase.rpc("complete_pvp_battle", {
+            const { data, error } = await supabase.rpc("complete_authoritative_pvp_battle", {
               p_battle_id: pvpBattleIdRef.current,
-              p_winner_id: winnerId,
             });
             if (error) {
               console.error("complete_pvp_battle failed", error);
@@ -3555,7 +3584,7 @@ function BattleArena() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
-  const selectAction = (action: Action) => {
+  const selectAction = async (action: Action) => {
     if (opponentTypeRef.current === "live" && liveActionLockedRef.current) {
       addLog({
         actor: "system",
@@ -3626,8 +3655,39 @@ function BattleArena() {
 
     const level = getActionDifficultyLevel(arch, action);
     const category = levelToCategory(level);
-    const q = generateQuestion(category);
+    let q = generateQuestion(category);
+    let challengeId: string | null = null;
+    liveChallengeIdRef.current = null;
+    liveChallengeAnswerRef.current = null;
+    {
+      const { data, error } = await supabase.rpc("issue_battle_question", {
+        p_difficulty: category,
+        p_battle_id: opponentTypeRef.current === "live" ? pvpBattleIdRef.current : null,
+      });
+      if (error || !data) {
+        if (cost > 0)
+          setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + cost) }));
+        toast.error("Couldn't prepare a secure battle question.");
+        return;
+      }
+      const challenge = data as {
+        challenge_id: string;
+        prompt: string;
+        options: number[];
+        topic: string;
+        difficulty: Difficulty;
+      };
+      q = {
+        q: challenge.prompt,
+        options: challenge.options,
+        topic: challenge.topic,
+        difficulty: challenge.difficulty,
+      };
+      challengeId = challenge.challenge_id;
+      if (opponentTypeRef.current === "live") liveChallengeIdRef.current = challengeId;
+    }
     setQuestion(q);
+    setQuestionChallengeId(challengeId);
     // Base clock, then Velocity Break's pin, then any delta an ultimate left on
     // us — floored so a stacked debuff can never make a question unanswerable.
     let t = nextTimerOverrideRef.current
@@ -3672,6 +3732,7 @@ function BattleArena() {
     pvpChannelRef.current = null;
     setPvpBattleId(null);
     battleFinishedRef.current = false;
+    answeredChallengeIdsRef.current = [];
     rematchStartedRef.current = false;
     setLiveRematchState("idle");
 
@@ -4736,7 +4797,7 @@ function BattleArena() {
             question={question}
             timeLeft={timeLeft}
             maxTime={maxTime}
-            onAnswer={handleAnswer}
+            onAnswer={handleQuestionAnswer}
           />
         )}
       </AnimatePresence>

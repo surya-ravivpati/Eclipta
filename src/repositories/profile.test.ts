@@ -12,6 +12,7 @@ import {
   adminGrantXpRpc,
   adminSetXpRpc,
   awardBattleXpRpc,
+  awardVerifiedBattleXpRpc,
   awardXpRpc,
   claimChestRpc,
   getClaimedChestNodeIds,
@@ -150,6 +151,17 @@ describe("awardBattleXpRpc", () => {
       p_correct: 8,
       p_total: 10,
       p_won: true,
+    });
+  });
+});
+
+describe("awardVerifiedBattleXpRpc", () => {
+  it("passes only challenge IDs to the server-authoritative award function", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 645, error: null } as never);
+
+    await expect(awardVerifiedBattleXpRpc(["challenge-1", "challenge-2"])).resolves.toBe(645);
+    expect(supabase.rpc).toHaveBeenCalledWith("award_verified_battle_xp", {
+      p_challenge_ids: ["challenge-1", "challenge-2"],
     });
   });
 });

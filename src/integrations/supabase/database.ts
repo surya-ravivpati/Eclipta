@@ -261,6 +261,42 @@ type PvpChallengeResponse =
  * rather than intersecting into `Json & {...}`.
  */
 type FunctionReturnOverrides = {
+  complete_authoritative_pvp_battle: {
+    Args: PublicSchema["Functions"]["complete_authoritative_pvp_battle"]["Args"];
+    Returns: {
+      already_completed: boolean;
+      winner_id: string;
+      challenger_rating_before: number | null;
+      opponent_rating_before: number | null;
+      challenger_rating_after: number | null;
+      opponent_rating_after: number | null;
+    };
+  };
+  issue_battle_question: {
+    Args: PublicSchema["Functions"]["issue_battle_question"]["Args"];
+    Returns: {
+      challenge_id: string;
+      prompt: string;
+      options: number[];
+      topic: string;
+      difficulty: "easy" | "medium" | "hard";
+      expires_at: string;
+    };
+  };
+  submit_battle_answer: {
+    Args: PublicSchema["Functions"]["submit_battle_answer"]["Args"];
+    Returns: {
+      correct: boolean;
+      answer: number;
+      topic: string;
+      difficulty: "easy" | "medium" | "hard";
+      battle_id: string | null;
+    };
+  };
+  submit_authoritative_pvp_turn_action: {
+    Args: PublicSchema["Functions"]["submit_authoritative_pvp_turn_action"]["Args"];
+    Returns: { ready: boolean; turn_number: number; actions: PvpTurnAction[] };
+  };
   /** Source: `20260617000000_claim-ecliptar-by-shape.sql`. */
   claim_ecliptar: {
     Args: PublicSchema["Functions"]["claim_ecliptar"]["Args"];

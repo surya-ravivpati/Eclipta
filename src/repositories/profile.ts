@@ -80,6 +80,15 @@ export async function awardBattleXpRpc(
   return data;
 }
 
+/** Awards battle XP solely from server-verified, one-time question challenges. */
+export async function awardVerifiedBattleXpRpc(challengeIds: string[]): Promise<number> {
+  const { data, error } = await supabase.rpc("award_verified_battle_xp", {
+    p_challenge_ids: challengeIds,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 /**
  * Claiming an already-claimed chest is an expected, routine outcome (a
  * double-click, a stale UI) rather than a real failure — the RPC's unique

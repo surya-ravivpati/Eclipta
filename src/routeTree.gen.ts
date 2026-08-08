@@ -12,8 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AboutRouteImport } from './routes/about'
-import { Route as LegalNoticesRouteImport } from './routes/legal.notices'
-import { Route as LegalDocRouteImport } from './routes/legal.$doc'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
@@ -34,6 +32,8 @@ import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStreakRouteImport } from './routes/_authenticated.streak'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as CoursesSlugRouteImport } from './routes/courses.$slug'
+import { Route as LegalDocRouteImport } from './routes/legal.$doc'
+import { Route as LegalNoticesRouteImport } from './routes/legal.notices'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AuthenticatedAdminForumRouteImport } from './routes/_authenticated.admin.forum'
@@ -56,16 +56,6 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LegalNoticesRoute = LegalNoticesRouteImport.update({
-  id: '/legal/notices',
-  path: '/legal/notices',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LegalDocRoute = LegalDocRouteImport.update({
-  id: '/legal/$doc',
-  path: '/legal/$doc',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesRoute = CoursesRouteImport.update({
@@ -171,6 +161,16 @@ const CoursesSlugRoute = CoursesSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => CoursesRoute,
 } as any)
+const LegalDocRoute = LegalDocRouteImport.update({
+  id: '/legal/$doc',
+  path: '/legal/$doc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalNoticesRoute = LegalNoticesRouteImport.update({
+  id: '/legal/notices',
+  path: '/legal/notices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TagsTagRoute = TagsTagRouteImport.update({
   id: '/tags/$tag',
   path: '/tags/$tag',
@@ -226,8 +226,6 @@ const AuthenticatedCoursesCourseIdEditRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/legal/notices': typeof LegalNoticesRoute
-  '/legal/$doc': typeof LegalDocRoute
   '/courses': typeof CoursesRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -248,6 +246,8 @@ export interface FileRoutesByFullPath {
   '/streak': typeof AuthenticatedStreakRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/courses/$slug': typeof CoursesSlugRoute
+  '/legal/$doc': typeof LegalDocRoute
+  '/legal/notices': typeof LegalNoticesRoute
   '/tags/$tag': typeof TagsTagRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/forum': typeof AuthenticatedAdminForumRoute
@@ -261,8 +261,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/legal/notices': typeof LegalNoticesRoute
-  '/legal/$doc': typeof LegalDocRoute
   '/courses': typeof CoursesRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -283,6 +281,8 @@ export interface FileRoutesByTo {
   '/streak': typeof AuthenticatedStreakRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/courses/$slug': typeof CoursesSlugRoute
+  '/legal/$doc': typeof LegalDocRoute
+  '/legal/notices': typeof LegalNoticesRoute
   '/tags/$tag': typeof TagsTagRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/forum': typeof AuthenticatedAdminForumRoute
@@ -298,8 +298,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/about': typeof AboutRoute
-  '/legal/notices': typeof LegalNoticesRoute
-  '/legal/$doc': typeof LegalDocRoute
   '/courses': typeof CoursesRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -320,6 +318,8 @@ export interface FileRoutesById {
   '/_authenticated/streak': typeof AuthenticatedStreakRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/courses/$slug': typeof CoursesSlugRoute
+  '/legal/$doc': typeof LegalDocRoute
+  '/legal/notices': typeof LegalNoticesRoute
   '/tags/$tag': typeof TagsTagRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/admin/forum': typeof AuthenticatedAdminForumRoute
@@ -335,8 +335,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/legal/notices'
-    | '/legal/$doc'
     | '/courses'
     | '/forgot-password'
     | '/login'
@@ -357,6 +355,8 @@ export interface FileRouteTypes {
     | '/streak'
     | '/auth/callback'
     | '/courses/$slug'
+    | '/legal/$doc'
+    | '/legal/notices'
     | '/tags/$tag'
     | '/u/$username'
     | '/admin/forum'
@@ -370,8 +370,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/legal/notices'
-    | '/legal/$doc'
     | '/courses'
     | '/forgot-password'
     | '/login'
@@ -392,6 +390,8 @@ export interface FileRouteTypes {
     | '/streak'
     | '/auth/callback'
     | '/courses/$slug'
+    | '/legal/$doc'
+    | '/legal/notices'
     | '/tags/$tag'
     | '/u/$username'
     | '/admin/forum'
@@ -406,8 +406,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/about'
-    | '/legal/notices'
-    | '/legal/$doc'
     | '/courses'
     | '/forgot-password'
     | '/login'
@@ -428,6 +426,8 @@ export interface FileRouteTypes {
     | '/_authenticated/streak'
     | '/auth/callback'
     | '/courses/$slug'
+    | '/legal/$doc'
+    | '/legal/notices'
     | '/tags/$tag'
     | '/u/$username'
     | '/_authenticated/admin/forum'
@@ -443,8 +443,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AboutRoute: typeof AboutRoute
-  LegalNoticesRoute: typeof LegalNoticesRoute
-  LegalDocRoute: typeof LegalDocRoute
   CoursesRoute: typeof CoursesRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
@@ -452,6 +450,8 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  LegalDocRoute: typeof LegalDocRoute
+  LegalNoticesRoute: typeof LegalNoticesRoute
   TagsTagRoute: typeof TagsTagRoute
   UUsernameRoute: typeof UUsernameRoute
 }
@@ -463,20 +463,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/legal/notices': {
-      id: '/legal/notices'
-      path: '/legal/notices'
-      fullPath: '/legal/notices'
-      preLoaderRoute: typeof LegalNoticesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/legal/$doc': {
-      id: '/legal/$doc'
-      path: '/legal/$doc'
-      fullPath: '/legal/$doc'
-      preLoaderRoute: typeof LegalDocRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -633,6 +619,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesSlugRouteImport
       parentRoute: typeof CoursesRoute
     }
+    '/legal/$doc': {
+      id: '/legal/$doc'
+      path: '/legal/$doc'
+      fullPath: '/legal/$doc'
+      preLoaderRoute: typeof LegalDocRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/notices': {
+      id: '/legal/notices'
+      path: '/legal/notices'
+      fullPath: '/legal/notices'
+      preLoaderRoute: typeof LegalNoticesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tags/$tag': {
       id: '/tags/$tag'
       path: '/tags/$tag'
@@ -787,8 +787,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AboutRoute: AboutRoute,
-  LegalNoticesRoute: LegalNoticesRoute,
-  LegalDocRoute: LegalDocRoute,
   CoursesRoute: CoursesRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
@@ -796,6 +794,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  LegalDocRoute: LegalDocRoute,
+  LegalNoticesRoute: LegalNoticesRoute,
   TagsTagRoute: TagsTagRoute,
   UUsernameRoute: UUsernameRoute,
 }

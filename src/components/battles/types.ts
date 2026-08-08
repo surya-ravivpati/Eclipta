@@ -21,7 +21,8 @@ export type ArchetypeId = MonsterArchetypeKey;
 
 export interface MathQuestion {
   q: string;
-  answer: number;
+  /** Omitted for server-issued challenges until the server has evaluated a submission. */
+  answer?: number;
   options: number[];
   difficulty: Difficulty;
   topic: string;

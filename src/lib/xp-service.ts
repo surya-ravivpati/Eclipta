@@ -9,6 +9,7 @@ import {
   adminGrantXpRpc,
   adminSetXpRpc,
   awardBattleXpRpc,
+  awardVerifiedBattleXpRpc,
   awardXpRpc,
   claimChestRpc,
   getClaimedChestNodeIds,
@@ -74,6 +75,26 @@ export async function awardBattleXp(
   const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
   fireMilestoneToasts(toasts);
 
+  return { lunaMessages, newXp: finalXp };
+}
+
+/** Credits XP from answers the database has evaluated, not client-reported totals. */
+export async function awardVerifiedBattleXp(
+  challengeIds: string[],
+): Promise<{ lunaMessages: string[]; newXp: number }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || challengeIds.length === 0) return { lunaMessages: [], newXp: 0 };
+
+  const prevXp = await getUserXp(user.id);
+  markExistingMilestones(prevXp);
+  const finalXp = await awardVerifiedBattleXpRpc(challengeIds).catch((error) => {
+    console.warn("awardVerifiedBattleXpRpc failed", error);
+    return prevXp;
+  });
+  const { toasts, lunaMessages } = checkMilestones(prevXp, finalXp);
+  fireMilestoneToasts(toasts);
   return { lunaMessages, newXp: finalXp };
 }
 

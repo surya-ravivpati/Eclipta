@@ -20,6 +20,14 @@ export default defineConfig({
     nitro({
       preset: "vercel",
       compatibilityDate: "2025-09-24",
+      routeRules: {
+        "/**": {
+          headers: {
+            "content-security-policy":
+              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev; media-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:",
+          },
+        },
+      },
     }),
     viteReact(),
   ],

@@ -19,6 +19,7 @@ function shuffled<T>(xs: readonly T[], rng: () => number): T[] {
     const j = Math.floor(rng() * (i + 1));
     const a = out[i];
     const b = out[j];
+    if (a === undefined || b === undefined) continue;
     out[i] = b;
     out[j] = a;
   }
@@ -64,7 +65,8 @@ export function autoDraftTeam(rng: () => number = Math.random): Ecliptar[] {
     if (team.length >= DRAFT_ROUNDS) break;
     const options = byArchetype.get(arch);
     if (!options || options.length === 0) continue;
-    team.push(options[Math.floor(rng() * options.length)]);
+    const selection = options[Math.floor(rng() * options.length)];
+    if (selection !== undefined) team.push(selection);
   }
   return team.slice(0, DRAFT_ROUNDS);
 }

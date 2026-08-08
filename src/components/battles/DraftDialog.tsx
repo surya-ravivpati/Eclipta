@@ -53,6 +53,7 @@ export function DraftDialog({ onComplete }: { onComplete: (team: Ecliptar[]) => 
     const next = [...drafted];
     const a = next[index];
     const b = next[target];
+    if (!a || !b) return;
     next[index] = b;
     next[target] = a;
     setDrafted(next);

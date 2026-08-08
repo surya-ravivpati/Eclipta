@@ -3481,6 +3481,10 @@ function BattleArena() {
     const idx = ghostTurnIndexRef.current % ghost.questionRecords.length;
     const record = ghost.questionRecords[idx];
     ghostTurnIndexRef.current += 1;
+    if (!record) {
+      aiTurn();
+      return;
+    }
 
     const oppArch = getArch(opponentArchetype);
     const delay = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
@@ -3546,6 +3550,9 @@ function BattleArena() {
         }
       }, 600);
     }, delay);
+    // Mode routing helpers read refs and stable setters; including their render-local
+    // identities would recreate the ghost replay callback every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
 
   const selectAction = (action: Action) => {
@@ -3790,7 +3797,7 @@ function BattleArena() {
           focus: baseArch.startFocus,
           maxFocus: baseArch.focusPool,
           icon: playerIcon,
-          sprite: eclip ? ecliptarSpriteUrl(eclip.slug) : undefined,
+          ...(eclip ? { sprite: ecliptarSpriteUrl(eclip.slug) } : {}),
         });
         setOpponent({
           name: oppName,
@@ -3799,7 +3806,7 @@ function BattleArena() {
           focus: oppArch.startFocus,
           maxFocus: oppArch.focusPool,
           icon: oppIcon,
-          sprite: oppSlug ? ecliptarSpriteUrl(oppSlug) : undefined,
+          ...(oppSlug ? { sprite: ecliptarSpriteUrl(oppSlug) } : {}),
         });
         setOpponentArchetype(oppArchetype);
         opponentEcliptarRef.current = oppSlug ?? null;
@@ -3916,7 +3923,7 @@ function BattleArena() {
         focus: baseArch.startFocus,
         maxFocus: baseArch.focusPool,
         icon: playerIcon,
-        sprite: ecliptar ? ecliptarSpriteUrl(ecliptar.slug) : undefined,
+        ...(ecliptar ? { sprite: ecliptarSpriteUrl(ecliptar.slug) } : {}),
       });
       setOpponent({
         name: opts.opponentName,
@@ -4088,13 +4095,13 @@ function BattleArena() {
       <BattleReport
         stats={battleStats}
         onRematch={() => setPhase(gameMode === "draft" ? "draft" : "classSelect")}
-        onContinueWithEcliptar={
-          ecliptar && gameMode !== "draft" ? () => startBattle({ archetype, ecliptar }) : undefined
-        }
+        {...(ecliptar && gameMode !== "draft"
+          ? { onContinueWithEcliptar: () => startBattle({ archetype, ecliptar }) }
+          : {})}
         onBack={reset}
         ratingChange={ratingChange}
         opponentType={opponentType}
-        onLiveRematch={opponentType === "live" ? handleLiveRematch : undefined}
+        {...(opponentType === "live" ? { onLiveRematch: () => void handleLiveRematch() } : {})}
         liveRematchState={liveRematchState}
       />
     );

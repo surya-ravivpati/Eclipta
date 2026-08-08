@@ -1,5 +1,7 @@
 // Luna AI streaming client
 import { Lightbulb, Eye, Sparkles, Coffee, BookOpen, type LucideIcon } from "lucide-react";
+import { z } from "zod";
+import { env } from "@/config/env";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Msg {
@@ -26,9 +28,15 @@ interface LunaContext {
   recentHistory?: Record<string, unknown>[] | null;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-chat`;
+const CHAT_URL = `${env.SUPABASE_URL}/functions/v1/luna-chat`;
 const TRANSIENT_STATUSES = new Set([502, 503, 504]);
 const STREAM_RETRY_DELAYS_MS = [600, 1400];
+const errorResponseSchema = z.object({ error: z.string().optional(), code: z.string().optional() });
+const streamDeltaSchema = z.object({
+  choices: z
+    .array(z.object({ delta: z.object({ content: z.string().optional() }).optional() }))
+    .optional(),
+});
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -39,7 +47,7 @@ async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Resp
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const token = session?.access_token ?? env.SUPABASE_PUBLISHABLE_KEY;
 
   for (let attempt = 0; attempt <= STREAM_RETRY_DELAYS_MS.length; attempt++) {
     const resp = await fetch(CHAT_URL, {
@@ -47,7 +55,7 @@ async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Resp
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        apikey: env.SUPABASE_PUBLISHABLE_KEY,
       },
       body,
       signal,
@@ -60,6 +68,16 @@ async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Resp
   }
 
   throw new Error("Luna is temporarily unavailable. Try again in a moment.");
+}
+
+function parseStreamDelta(json: string): string | null | undefined {
+  try {
+    const parsed = streamDeltaSchema.safeParse(JSON.parse(json));
+    if (!parsed.success) return undefined;
+    return parsed.data.choices?.[0]?.delta?.content ?? null;
+  } catch {
+    return undefined;
+  }
 }
 
 // Shared tag config so the mini panel and full session render the same way.
@@ -139,16 +157,17 @@ export async function streamLunaChat({
     );
 
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: "Request failed" }));
+      const result = errorResponseSchema.safeParse(await resp.json().catch(() => null));
+      const err = result.success ? result.data : {};
       // Surface 402/429 with explicit, user-readable messages so the UI can
       // toast them instead of dropping a raw "Error 429" into the chat bubble.
-      let msg = err.error || `Error ${resp.status}`;
+      let msg = err.error ?? `Error ${resp.status}`;
       // A per-user rate limit (code "rate_limited") carries its own friendly,
       // non-punitive copy; a gateway-side 429 is the "everyone at once" case.
       if (resp.status === 429) {
         msg =
           err.code === "rate_limited"
-            ? err.error || "You've hit the AI limit for now — try again in a few minutes."
+            ? (err.error ?? "You've hit the AI limit for now — try again in a few minutes.")
             : "Luna is getting a lot of questions right now. Try again in a moment.";
       } else if (resp.status === 402)
         msg = "Luna's AI credits ran out. Add more in Workspace → Usage.";
@@ -180,7 +199,7 @@ export async function streamLunaChat({
       idleTimer = setTimeout(() => {
         idleAborted = true;
         try {
-          reader.cancel();
+          void reader.cancel().catch(() => undefined);
         } catch {
           /* ignore */
         }
@@ -210,8 +229,8 @@ export async function streamLunaChat({
         }
 
         try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          const content = parseStreamDelta(jsonStr);
+          if (content === undefined) throw new Error("Incomplete stream event");
           if (content) onDelta(content);
         } catch {
           textBuffer = line + "\n" + textBuffer;
@@ -236,8 +255,7 @@ export async function streamLunaChat({
         const jsonStr = raw.slice(6).trim();
         if (jsonStr === "[DONE]") continue;
         try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          const content = parseStreamDelta(jsonStr);
           if (content) onDelta(content);
         } catch {
           /* ignore */
@@ -246,12 +264,12 @@ export async function streamLunaChat({
     }
 
     onDone();
-  } catch (e) {
-    if ((e as Error).name === "AbortError") {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
       onDone();
       return;
     }
-    onError?.((e as Error).message || "Connection failed");
+    onError?.(error instanceof Error ? error.message || "Connection failed" : "Connection failed");
     onDone();
   }
 }

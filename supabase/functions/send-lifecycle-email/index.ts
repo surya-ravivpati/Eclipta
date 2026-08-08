@@ -54,10 +54,12 @@ const APP_URL = Deno.env.get("APP_URL") ?? "https://ecliptalearning.vercel.app";
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const svc = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (serviceRoleKey === "" || req.headers.get("Authorization") !== `Bearer ${serviceRoleKey}`) {
+    return json({ error: "not authorized" }, 401);
+  }
+
+  const svc = createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceRoleKey);
 
   try {
     const payload = (await req.json()) as Payload;
@@ -106,9 +108,11 @@ serve(async (req) => {
 
     // ── 2. Preferences ──────────────────────────────────────────────────────
     const { data: prefs } = await svc.rpc("ensure_email_preferences", { p_user: userId });
-    const pref = prefs as
-      | { muted: string[]; unsubscribed_all: boolean; unsubscribe_token: string }
-      | null;
+    const pref = prefs as {
+      muted: string[];
+      unsubscribed_all: boolean;
+      unsubscribe_token: string;
+    } | null;
 
     if (pref?.unsubscribed_all) {
       await finish("skipped", "unsubscribed from all", "");

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { z } from "zod";
+import { env } from "@/config/env";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -17,8 +19,10 @@ import { supabase } from "@/integrations/supabase/client";
  * SpeechSynthesis voices.
  */
 
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-tts`;
-const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-stt`;
+const TTS_URL = `${env.SUPABASE_URL}/functions/v1/luna-tts`;
+const STT_URL = `${env.SUPABASE_URL}/functions/v1/luna-stt`;
+const transcriptionResponseSchema = z.object({ text: z.string().optional() });
+const errorResponseSchema = z.object({ error: z.string().optional() });
 
 /** Null on browsers without native dictation — callers fall back to MediaRecorder. */
 function getSpeechRecognition(): SpeechRecognitionConstructor | null {
@@ -125,14 +129,14 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const token = session?.access_token ?? env.SUPABASE_PUBLISHABLE_KEY;
       const fd = new FormData();
       fd.append("file", blob, `recording.${ext}`);
       const r = await fetch(STT_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: env.SUPABASE_PUBLISHABLE_KEY,
         },
         body: fd,
       });
@@ -143,14 +147,14 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
           );
           return;
         }
-        const data = await r.json().catch(() => ({}));
+        const data = errorResponseSchema.safeParse(await r.json().catch(() => null));
         setVoiceError(
-          typeof data?.error === "string" ? data.error : `Transcription failed (${r.status}).`,
+          data.success && data.data.error ? data.data.error : `Transcription failed (${r.status}).`,
         );
         return;
       }
-      const data = await r.json();
-      const text = typeof data?.text === "string" ? data.text.trim() : "";
+      const data = transcriptionResponseSchema.safeParse(await r.json());
+      const text = data.success ? (data.data.text?.trim() ?? "") : "";
       if (text) onTranscriptRef.current(text);
     } catch {
       setVoiceError("Transcription request failed. Check your connection.");
@@ -161,8 +165,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   const startRecorder = useCallback(async () => {
     if (
       typeof window === "undefined" ||
-      !navigator.mediaDevices ||
-      typeof navigator.mediaDevices.getUserMedia !== "function" ||
+      typeof navigator.mediaDevices?.getUserMedia !== "function" ||
       typeof MediaRecorder === "undefined"
     ) {
       setVoiceError("Voice input isn't supported in this browser.");
@@ -178,14 +181,14 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
       recorderRef.current = recorder;
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size) chunksRef.current.push(e.data);
+        if (e.data?.size) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
         if (maxTimerRef.current) {
           clearTimeout(maxTimerRef.current);
           maxTimerRef.current = null;
         }
-        const type = recorder.mimeType || mimeType || "audio/webm";
+        const type = recorder.mimeType ? recorder.mimeType : (mimeType ?? "audio/webm");
         const blob = new Blob(chunksRef.current, { type });
         releaseRecorder();
         setListening(false);
@@ -212,7 +215,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     } catch (err) {
       releaseRecorder();
       setListening(false);
-      const name = (err as { name?: string })?.name || "";
+      const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError")
         setVoiceError(
           "Microphone access denied. Allow mic permission in your browser settings and try again.",
@@ -233,7 +236,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     if (SR) {
       try {
         const rec = new SR();
-        rec.lang = (typeof navigator !== "undefined" && navigator.language) || "en-US";
+        rec.lang = typeof navigator !== "undefined" ? (navigator.language ?? "en-US") : "en-US";
         rec.interimResults = false;
         rec.continuous = false;
         rec.maxAlternatives = 1;
@@ -312,13 +315,13 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const token = session?.access_token ?? env.SUPABASE_PUBLISHABLE_KEY;
         const r = await fetch(TTS_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            apikey: env.SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ text: clean.slice(0, 1800) }),
           signal: ctrl.signal,

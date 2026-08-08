@@ -78,6 +78,7 @@ describe("getDashboard — happy path", () => {
     if (result.status === "ok") {
       expect(result.data).toEqual(rpcData);
     }
+    expect(supabase.rpc).toHaveBeenCalledWith("get_dashboard", {});
     expect(supabase.from).not.toHaveBeenCalled();
   });
 });

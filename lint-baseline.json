@@ -1,28 +1,27 @@
 {
-  "warnings": 536,
+  "warnings": 472,
   "counts": {
     "react-refresh/only-export-components": 11,
-    "@typescript-eslint/no-unsafe-assignment": 32,
-    "@typescript-eslint/no-floating-promises": 80,
-    "@typescript-eslint/prefer-nullish-coalescing": 111,
-    "no-restricted-syntax": 165,
+    "@typescript-eslint/no-unsafe-assignment": 14,
+    "@typescript-eslint/no-floating-promises": 79,
+    "@typescript-eslint/prefer-nullish-coalescing": 92,
+    "no-restricted-syntax": 156,
     "@typescript-eslint/no-unused-vars": 31,
     "@typescript-eslint/no-empty-function": 8,
     "@typescript-eslint/no-misused-promises": 10,
-    "@typescript-eslint/no-unsafe-member-access": 20,
+    "@typescript-eslint/no-unsafe-member-access": 10,
     "react-hooks/exhaustive-deps": 13,
     "@typescript-eslint/no-explicit-any": 15,
-    "@typescript-eslint/no-unsafe-argument": 6,
+    "@typescript-eslint/no-unsafe-argument": 2,
     "@typescript-eslint/no-unsafe-unary-minus": 1,
     "@typescript-eslint/consistent-type-imports": 1,
     "@typescript-eslint/no-base-to-string": 4,
-    "@typescript-eslint/restrict-template-expressions": 4,
-    "@typescript-eslint/no-unsafe-call": 1,
-    "@typescript-eslint/prefer-optional-chain": 4,
     "@typescript-eslint/only-throw-error": 14,
     "@typescript-eslint/no-unsafe-return": 3,
+    "@typescript-eslint/restrict-template-expressions": 3,
+    "@typescript-eslint/prefer-optional-chain": 3,
     "@typescript-eslint/no-unsafe-enum-comparison": 1,
     "@typescript-eslint/no-redundant-type-constituents": 1
   },
-  "updated": "2026-08-06"
+  "updated": "2026-08-08"
 }

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AI_AUDIO_URL, AI_AUDIO_API_KEY } from "../_shared/ai.ts";
+import { checkAiRateLimit } from "../_shared/ai-rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,15 +16,32 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     if (!token) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
     const { data: userData } = await sb.auth.getUser(token);
     if (!userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (!(await checkAiRateLimit(sb, userData.user.id))) {
+      return new Response(
+        JSON.stringify({
+          error: "You've hit the AI limit for now â€” try again in a few minutes.",
+          code: "rate_limited",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     if (!AI_AUDIO_API_KEY) throw new Error("Audio AI is not configured (set AI_AUDIO_API_KEY)");
@@ -31,7 +49,8 @@ serve(async (req) => {
     const ct = req.headers.get("content-type") || "";
     if (!ct.includes("multipart/form-data")) {
       return new Response(JSON.stringify({ error: "Expected multipart/form-data" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -39,12 +58,14 @@ serve(async (req) => {
     const file = inForm.get("file");
     if (!(file instanceof File) || file.size === 0) {
       return new Response(JSON.stringify({ error: "Missing or empty audio file" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (file.size > 20 * 1024 * 1024) {
       return new Response(JSON.stringify({ error: "Audio too large (max 20MB)" }), {
-        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -61,9 +82,12 @@ serve(async (req) => {
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => "");
       console.error("luna-stt upstream error", upstream.status, errText);
-      const msg = upstream.status === 429 ? "Rate limited — try again in a moment." :
-                  upstream.status === 402 ? "AI credits exhausted." :
-                  `Transcription failed (${upstream.status})`;
+      const msg =
+        upstream.status === 429
+          ? "Rate limited — try again in a moment."
+          : upstream.status === 402
+            ? "AI credits exhausted."
+            : `Transcription failed (${upstream.status})`;
       return new Response(JSON.stringify({ error: msg }), {
         status: upstream.status === 429 || upstream.status === 402 ? upstream.status : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -76,7 +100,8 @@ serve(async (req) => {
   } catch (e) {
     console.error("luna-stt error", e);
     return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

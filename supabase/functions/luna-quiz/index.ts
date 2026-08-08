@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
+import { checkAiRateLimit } from "../_shared/ai-rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -21,7 +21,7 @@ serve(async (req) => {
       });
     }
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: userData } = await sb.auth.getUser(token);
     if (!userData?.user) {
@@ -29,6 +29,18 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (!(await checkAiRateLimit(sb, userData.user.id))) {
+      return new Response(
+        JSON.stringify({
+          error: "You've hit the AI limit for now â€” try again in a few minutes.",
+          code: "rate_limited",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { topic, count = 3 } = await req.json();
@@ -39,45 +51,60 @@ serve(async (req) => {
       });
     }
     const n = Math.min(Math.max(parseInt(String(count), 10) || 3, 1), 5);
-    if (!AI_GATEWAY_API_KEY) throw new Error("AI gateway is not configured (set AI_GATEWAY_API_KEY)");
+    if (!AI_GATEWAY_API_KEY)
+      throw new Error("AI gateway is not configured (set AI_GATEWAY_API_KEY)");
 
     const r = await fetch(`${AI_GATEWAY_URL}/chat/completions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${AI_GATEWAY_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${AI_GATEWAY_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You generate concise multiple-choice quiz questions for learners. Always call the emit_quiz tool. 4 plausible choices each, exactly one correct, and a 1-sentence explanation." },
+          {
+            role: "system",
+            content:
+              "You generate concise multiple-choice quiz questions for learners. Always call the emit_quiz tool. 4 plausible choices each, exactly one correct, and a 1-sentence explanation.",
+          },
           { role: "user", content: `Generate ${n} quiz questions about: ${topic}` },
         ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "emit_quiz",
-            description: "Return the quiz questions.",
-            parameters: {
-              type: "object",
-              properties: {
-                questions: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      question: { type: "string" },
-                      choices: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-                      answer_index: { type: "integer", minimum: 0, maximum: 3 },
-                      explanation: { type: "string" },
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "emit_quiz",
+              description: "Return the quiz questions.",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { type: "string" },
+                        choices: {
+                          type: "array",
+                          items: { type: "string" },
+                          minItems: 4,
+                          maxItems: 4,
+                        },
+                        answer_index: { type: "integer", minimum: 0, maximum: 3 },
+                        explanation: { type: "string" },
+                      },
+                      required: ["question", "choices", "answer_index", "explanation"],
+                      additionalProperties: false,
                     },
-                    required: ["question", "choices", "answer_index", "explanation"],
-                    additionalProperties: false,
                   },
                 },
+                required: ["questions"],
+                additionalProperties: false,
               },
-              required: ["questions"],
-              additionalProperties: false,
             },
           },
-        }],
+        ],
         tool_choice: { type: "function", function: { name: "emit_quiz" } },
       }),
     });
@@ -86,35 +113,51 @@ serve(async (req) => {
       const t = await r.text();
       console.error("quiz gateway err", r.status, t);
       const status = r.status === 429 || r.status === 402 ? r.status : 500;
-      const error = r.status === 429
-        ? "Rate limited - try again shortly."
-        : r.status === 402
-          ? "AI credits exhausted."
-          : "Quiz generation failed.";
+      const error =
+        r.status === 429
+          ? "Rate limited - try again shortly."
+          : r.status === 402
+            ? "AI credits exhausted."
+            : "Quiz generation failed.";
       return new Response(JSON.stringify({ error }), {
-        status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const data = await r.json();
     const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) {
       return new Response(JSON.stringify({ error: "No quiz returned" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const parsed = JSON.parse(args) as {
-      questions: { question: string; choices: string[]; answer_index: number; explanation: string }[];
+      questions: {
+        question: string;
+        choices: string[];
+        answer_index: number;
+        explanation: string;
+      }[];
     };
-    const questions = (parsed.questions || []).filter(
-      q => q && Array.isArray(q.choices) && q.choices.length === 4 && q.answer_index >= 0 && q.answer_index <= 3,
-    ).slice(0, n);
+    const questions = (parsed.questions || [])
+      .filter(
+        (q) =>
+          q &&
+          Array.isArray(q.choices) &&
+          q.choices.length === 4 &&
+          q.answer_index >= 0 &&
+          q.answer_index <= 3,
+      )
+      .slice(0, n);
     return new Response(JSON.stringify({ questions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("luna-quiz err", e);
     return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

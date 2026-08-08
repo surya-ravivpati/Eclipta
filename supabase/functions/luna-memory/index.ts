@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
+import { checkAiRateLimit } from "../_shared/ai-rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const SYSTEM = `You are a memory extractor for Luna, an AI tutor.
@@ -29,7 +29,23 @@ serve(async (req) => {
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: userData } = await sb.auth.getUser(token);
     const user = userData?.user;
-    if (!user) return new Response(JSON.stringify({ ok: false, error: "no user" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!user)
+      return new Response(JSON.stringify({ ok: false, error: "no user" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    if (!(await checkAiRateLimit(sb, user.id))) {
+      return new Response(
+        JSON.stringify({
+          error: "You've hit the AI limit for now â€” try again in a few minutes.",
+          code: "rate_limited",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Read the user's OWN current memory server-side instead of trusting the
     // client snapshot. The client value is captured at page load and goes
@@ -43,35 +59,47 @@ serve(async (req) => {
       .select("weak_areas, strong_areas, luna_auto_notes")
       .eq("user_id", user.id)
       .maybeSingle();
-    const baseWeak: string[] = Array.isArray((prof as any)?.weak_areas) ? (prof as any).weak_areas : currentWeak;
-    const baseStrong: string[] = Array.isArray((prof as any)?.strong_areas) ? (prof as any).strong_areas : currentStrong;
+    const baseWeak: string[] = Array.isArray((prof as any)?.weak_areas)
+      ? (prof as any).weak_areas
+      : currentWeak;
+    const baseStrong: string[] = Array.isArray((prof as any)?.strong_areas)
+      ? (prof as any).strong_areas
+      : currentStrong;
 
     const r = await fetch(`${AI_GATEWAY_URL}/chat/completions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${AI_GATEWAY_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${AI_GATEWAY_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: SYSTEM },
-          { role: "user", content: `User said: ${userTurn}\n\nLuna replied: ${assistantTurn}\n\nCurrent weak: ${baseWeak.join(", ") || "(none)"}\nCurrent strong: ${baseStrong.join(", ") || "(none)"}` },
+          {
+            role: "user",
+            content: `User said: ${userTurn}\n\nLuna replied: ${assistantTurn}\n\nCurrent weak: ${baseWeak.join(", ") || "(none)"}\nCurrent strong: ${baseStrong.join(", ") || "(none)"}`,
+          },
         ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "update_memory",
-            description: "Update tutor memory about the user.",
-            parameters: {
-              type: "object",
-              properties: {
-                add_weak: { type: "array", items: { type: "string" } },
-                add_strong: { type: "array", items: { type: "string" } },
-                note: { type: "string" },
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "update_memory",
+              description: "Update tutor memory about the user.",
+              parameters: {
+                type: "object",
+                properties: {
+                  add_weak: { type: "array", items: { type: "string" } },
+                  add_strong: { type: "array", items: { type: "string" } },
+                  note: { type: "string" },
+                },
+                required: ["add_weak", "add_strong", "note"],
+                additionalProperties: false,
               },
-              required: ["add_weak", "add_strong", "note"],
-              additionalProperties: false,
             },
           },
-        }],
+        ],
         tool_choice: { type: "function", function: { name: "update_memory" } },
       }),
     });
@@ -79,11 +107,17 @@ serve(async (req) => {
     if (!r.ok) {
       const t = await r.text();
       console.error("memory ai err", r.status, t);
-      return new Response(JSON.stringify({ ok: false }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const data = await r.json();
     const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-    if (!args) return new Response(JSON.stringify({ ok: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!args)
+      return new Response(JSON.stringify({ ok: false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     const parsed = JSON.parse(args) as { add_weak: string[]; add_strong: string[]; note: string };
 
     // Merge — dedupe case-insensitively, cap at 12 each
@@ -101,7 +135,7 @@ serve(async (req) => {
     const newStrong = merge(baseStrong, (parsed.add_strong || []).filter(Boolean));
     // Remove anything from weak that just got promoted to strong
     const strongSet = new Set(newStrong.map(norm));
-    const weakFiltered = newWeak.filter(w => !strongSet.has(norm(w)));
+    const weakFiltered = newWeak.filter((w) => !strongSet.has(norm(w)));
 
     const updates: Record<string, unknown> = {
       weak_areas: weakFiltered,
@@ -118,9 +152,11 @@ serve(async (req) => {
       const categoryOf = (line: string): string | null => {
         const tt = line.toLowerCase().trim();
         if (/respond in\s+\w+/.test(tt)) return "language";
-        if (/\b(short|long|brief|concise|detailed|thorough)\b.*responses?/.test(tt)) return "length";
+        if (/\b(short|long|brief|concise|detailed|thorough)\b.*responses?/.test(tt))
+          return "length";
         if (/\b(short|brief|concise|detailed|thorough) responses?/.test(tt)) return "length";
-        if (/\b(fewer|less|more)\s+(words|sentences|paragraphs|details|steps)\b/.test(tt)) return "length";
+        if (/\b(fewer|less|more)\s+(words|sentences|paragraphs|details|steps)\b/.test(tt))
+          return "length";
         if (/analog/.test(tt)) return "analogies";
         if (/example/.test(tt)) return "examples";
         if (/\b(hint|hints)\b/.test(tt) || /get to concrete/.test(tt)) return "hints";
@@ -132,7 +168,10 @@ serve(async (req) => {
         return null;
       };
       const existing = ((prof as any)?.luna_auto_notes as string | null) || "";
-      const lines = existing.split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean);
+      const lines = existing
+        .split(/\r?\n/)
+        .map((l: string) => l.trim())
+        .filter(Boolean);
       const note = parsed.note.trim();
       const freshCat = categoryOf(note);
       const filtered = lines.filter((l: string) => {
@@ -146,9 +185,14 @@ serve(async (req) => {
 
     const { error } = await sb.from("user_profiles").update(updates).eq("user_id", user.id);
     if (error) console.error("memory update err", error);
-    return new Response(JSON.stringify({ ok: true, updates }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, updates }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("luna-memory err", e);
-    return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

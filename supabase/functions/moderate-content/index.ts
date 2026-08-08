@@ -27,6 +27,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
+import { checkAiRateLimit } from "../_shared/ai-rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,16 +67,6 @@ interface AiVerdict {
   confidence: number;
   self_harm: boolean;
   available: boolean; // false when the classifier could not be reached
-}
-
-const rateBucket = new Map<string, number[]>();
-function checkRate(userId: string, maxPerMinute = 60): boolean {
-  const now = Date.now();
-  const bucket = (rateBucket.get(userId) || []).filter((t) => now - t < 60_000);
-  if (bucket.length >= maxPerMinute) return false;
-  bucket.push(now);
-  rateBucket.set(userId, bucket);
-  return true;
 }
 
 async function classifyWithAi(
@@ -169,7 +160,15 @@ serve(async (req) => {
     const { data: userData } = await sb.auth.getUser(token);
     if (!userData?.user) return json({ error: "Unauthorized" }, 401);
     const userId = userData.user.id;
-    if (!checkRate(userId)) return json({ error: "Rate limit exceeded — slow down." }, 429);
+    if (!(await checkAiRateLimit(sb, userId))) {
+      return json(
+        {
+          error: "You've hit the AI limit for now — try again in a few minutes.",
+          code: "rate_limited",
+        },
+        429,
+      );
+    }
 
     const raw = await req.text();
     if (raw.length > 32 * 1024) return json({ error: "Request too large" }, 413);

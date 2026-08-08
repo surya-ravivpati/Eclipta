@@ -1673,7 +1673,7 @@ function BattleArena() {
     if (!pvpBattleId || opponentType !== "live") return;
 
     const channel = supabase.channel(`pvp-battle:${pvpBattleId}`, {
-      config: { broadcast: { self: false } },
+      config: { broadcast: { self: false }, private: true },
     });
 
     channel

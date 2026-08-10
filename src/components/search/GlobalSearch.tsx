@@ -26,6 +26,7 @@ import {
 import { useTranslation } from "@/i18n/use-translation";
 import { announce } from "@/lib/a11y";
 import { cn } from "@/lib/utils";
+import { formatShortcut } from "@/lib/platform";
 
 /**
  * Global search palette (⌘K / Ctrl+K).
@@ -56,6 +57,12 @@ export function GlobalSearch() {
   const [cursor, setCursor] = useState(0);
   const [recents, setRecents] = useState<string[]>([]);
   const [trending, setTrending] = useState<string[]>([]);
+  // Computed client-side only — the server has no OS to detect, and a
+  // hydration mismatch on <kbd> text is worse than a one-frame default.
+  const [shortcutLabel, setShortcutLabel] = useState("Ctrl+K");
+  useEffect(() => {
+    setShortcutLabel(formatShortcut("K"));
+  }, []);
 
   // ⌘K / Ctrl+K anywhere, and Escape to leave. Bound on the window so the
   // shortcut works regardless of where focus currently sits.
@@ -171,7 +178,7 @@ export function GlobalSearch() {
         <Search className="w-3.5 h-3.5" aria-hidden="true" />
         <span className="text-xs">{t("search.open")}</span>
         <kbd className="hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded border border-border">
-          ⌘K
+          {shortcutLabel}
         </kbd>
       </button>
     );
@@ -195,7 +202,10 @@ export function GlobalSearch() {
       <div className="relative w-full max-w-2xl glass-panel border border-border rounded-xl overflow-hidden shadow-2xl">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           {search.loading ? (
-            <Loader2 className="w-4 h-4 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
+            <Loader2
+              className="w-4 h-4 shrink-0 animate-spin text-muted-foreground"
+              aria-hidden="true"
+            />
           ) : (
             <Search className="w-4 h-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           )}

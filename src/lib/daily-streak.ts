@@ -32,7 +32,14 @@ export const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 180, 365] as const;
 
 /** Bonus XP the server grants when a milestone is newly crossed. */
 export const MILESTONE_REWARDS: Record<number, number> = {
-  3: 30, 7: 75, 14: 150, 30: 350, 60: 600, 100: 900, 180: 1000, 365: 1000,
+  3: 75,
+  7: 150,
+  14: 300,
+  30: 700,
+  60: 1200,
+  100: 1800,
+  180: 2500,
+  365: 4000,
 };
 export function milestoneReward(milestone: number): number {
   return MILESTONE_REWARDS[milestone] ?? 0;
@@ -44,7 +51,10 @@ export function todayUtc(now: Date = new Date()): string {
 }
 
 /** Has the user already practiced today? */
-export function practicedToday(state: Pick<StreakState, "lastPracticeDate">, now: Date = new Date()): boolean {
+export function practicedToday(
+  state: Pick<StreakState, "lastPracticeDate">,
+  now: Date = new Date(),
+): boolean {
   return !!state.lastPracticeDate && state.lastPracticeDate === todayUtc(now);
 }
 
@@ -114,7 +124,10 @@ export function weekdayLetter(iso: string): string {
  * The streak is "at risk" when there's an active streak but today hasn't been
  * practiced yet — the loss-aversion moment that drives the daily return.
  */
-export function isAtRisk(state: Pick<StreakState, "dailyStreak" | "lastPracticeDate">, now: Date = new Date()): boolean {
+export function isAtRisk(
+  state: Pick<StreakState, "dailyStreak" | "lastPracticeDate">,
+  now: Date = new Date(),
+): boolean {
   return state.dailyStreak > 0 && !practicedToday(state, now);
 }
 

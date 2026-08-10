@@ -42,9 +42,9 @@ export function TerritoryGridView({
       )}
       {score && (
         <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest">
-          <span className="text-neon-cyan">YOU {score.player}</span>
+          <span className="text-[color:var(--btt-you)]">YOU {score.player}</span>
           <span className="text-muted-foreground/50">·</span>
-          <span className="text-neon-pink">{score.opponent} OPP</span>
+          <span className="text-[color:var(--btt-foe)]">{score.opponent} OPP</span>
         </div>
       )}
       <div
@@ -69,8 +69,10 @@ export function TerritoryGridView({
               }
               className={cn(
                 "w-9 h-9 sm:w-11 sm:h-11 rounded-md border flex items-center justify-center transition-colors relative",
-                owner === "player" && "bg-neon-cyan/25 border-neon-cyan/60",
-                owner === "opponent" && "bg-neon-pink/25 border-neon-pink/60",
+                owner === "player" &&
+                  "bg-[color:var(--btt-you)]/25 border-[color:var(--btt-you)]/60",
+                owner === "opponent" &&
+                  "bg-[color:var(--btt-foe)]/25 border-[color:var(--btt-foe)]/60",
                 owner === "empty" && "border-border/50 bg-transparent",
                 i === CENTER_INDEX && owner === "empty" && "border-primary/50",
                 clickable && "cursor-pointer hover:bg-primary/20 hover:border-primary",
@@ -86,7 +88,9 @@ export function TerritoryGridView({
                   <Flag
                     className={cn(
                       "w-4 h-4 sm:w-5 sm:h-5",
-                      owner === "player" ? "text-neon-cyan" : "text-neon-pink",
+                      owner === "player"
+                        ? "text-[color:var(--btt-you)]"
+                        : "text-[color:var(--btt-foe)]",
                     )}
                     aria-hidden="true"
                   />

@@ -20,13 +20,13 @@ export function TugOfWarBar({
   return (
     <div className="w-full px-1">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-bold tracking-widest text-neon-cyan truncate max-w-[40%]">
+        <span className="text-[11px] font-bold tracking-widest text-[color:var(--btt-you)] truncate max-w-[40%]">
           {playerName}
         </span>
         <span className="text-[9px] font-mono tracking-widest text-muted-foreground uppercase">
           Tug-of-War
         </span>
-        <span className="text-[11px] font-bold tracking-widest text-neon-pink truncate max-w-[40%] text-right">
+        <span className="text-[11px] font-bold tracking-widest text-[color:var(--btt-foe)] truncate max-w-[40%] text-right">
           {opponentName}
         </span>
       </div>
@@ -39,12 +39,20 @@ export function TugOfWarBar({
         aria-valuetext={progressLabel(`${playerName} vs ${opponentName}`, pct, 100)}
       >
         <motion.div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-neon-cyan to-neon-cyan/70"
+          className="absolute inset-y-0 left-0"
+          style={{
+            background:
+              "linear-gradient(to right, var(--btt-you), color-mix(in oklch, var(--btt-you) 70%, transparent))",
+          }}
           animate={{ width: `${pct}%` }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
         />
         <motion.div
-          className="absolute inset-y-0 right-0 bg-gradient-to-l from-neon-pink to-neon-pink/70"
+          className="absolute inset-y-0 right-0"
+          style={{
+            background:
+              "linear-gradient(to left, var(--btt-foe), color-mix(in oklch, var(--btt-foe) 70%, transparent))",
+          }}
           animate={{ width: `${100 - pct}%` }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
         />

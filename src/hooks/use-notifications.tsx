@@ -44,19 +44,29 @@ export function useNotifications() {
       return;
     }
     setLoading(true);
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(60);
-    const rows = (data as Notification[] | null) ?? [];
-    setItems(rows);
-    if (rows.length > 0) {
-      mostRecentSeenAt.current = Math.max(mostRecentSeenAt.current, +new Date(rows[0].created_at));
+    try {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(60);
+      if (error) throw error;
+      const rows = (data as Notification[] | null) ?? [];
+      setItems(rows);
+      if (rows.length > 0) {
+        mostRecentSeenAt.current = Math.max(
+          mostRecentSeenAt.current,
+          +new Date(rows[0].created_at),
+        );
+      }
+      hasHydrated.current = true;
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+      toast.error("Couldn't load notifications. Retrying shortly.");
+    } finally {
+      setLoading(false);
     }
-    hasHydrated.current = true;
-    setLoading(false);
   }, [user]);
 
   // ── Hydrate + slow background poll ────────────────────────────────────

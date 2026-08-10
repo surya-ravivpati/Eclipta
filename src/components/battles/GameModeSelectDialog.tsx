@@ -2,10 +2,9 @@ import { motion } from "framer-motion";
 import { GAME_MODE_LIST, type GameModeId } from "@/lib/battle-modes/types";
 
 /**
- * Mode picker — the new first step of the pre-battle flow, sitting between
- * "Enter the Arena" and the existing archetype picker. Battle mode stays the
- * default the rest of the flow was built around, so it renders first and is
- * what "CHOOSE CLASS" always meant before this existed.
+ * Mode picker — the first step of the pre-battle flow, sitting between
+ * "Enter the Arena" and the archetype picker. Battle mode stays the default
+ * the rest of the flow was built around, so it renders first.
  *
  * There is no opponent-type toggle here because the player never chooses one —
  * `findMatch` runs a fixed Live → Ghost → Bot cascade and the actual opponent

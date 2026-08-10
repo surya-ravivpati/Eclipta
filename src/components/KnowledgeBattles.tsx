@@ -4075,7 +4075,7 @@ function BattleArena() {
         </motion.div>
         <h3 className="btt-shout text-5xl mb-3">Enter the Arena</h3>
         <p className="btt-mono-text text-[12px] text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
-          Choose your archetype. Solve equations under pressure.
+          Pick a format, choose your archetype, and solve equations under pressure.
           <br />
           Build combos. Destroy your opponent.
         </p>
@@ -4087,7 +4087,7 @@ function BattleArena() {
             whileTap={{ scale: 0.97 }}
           >
             <Zap className="w-4 h-4" />
-            CHOOSE CLASS
+            SELECT MODE
           </motion.button>
           <button
             onClick={() => setShowPractice(true)}

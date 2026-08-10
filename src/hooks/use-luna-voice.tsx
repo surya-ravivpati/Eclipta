@@ -14,9 +14,15 @@ import { supabase } from "@/integrations/supabase/client";
  *     function (Lovable AI → openai/gpt-4o-mini-transcribe). Used when the
  *     native API is unavailable (e.g. Firefox).
  *
- * Read-aloud: text goes to luna-tts → Lovable AI (openai/gpt-4o-mini-tts) for a
- * natural, conversational voice — far better than the robotic browser
- * SpeechSynthesis voices.
+ * Read-aloud (two paths, native preferred so it works with NO backend and NO
+ * cost):
+ *  1. Web Speech API (SpeechSynthesis) — built into every modern browser.
+ *     Voice quality is whatever the OS ships, but it's free and needs no
+ *     edge function or API key.
+ *  2. Fallback: luna-tts edge function (openai/gpt-4o-mini-tts) for a more
+ *     natural voice, used only when SpeechSynthesis is unavailable. This
+ *     path costs real money per call — see supabase/functions/_shared/ai.ts
+ *     — so it's opt-in via AI_AUDIO_* rather than the default.
  */
 
 const TTS_URL = `${env.SUPABASE_URL}/functions/v1/luna-tts`;
@@ -75,7 +81,9 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Read-aloud
+  // Read-aloud: native SpeechSynthesis path
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // Read-aloud: edge-function fallback path
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const ttsAbortRef = useRef<AbortController | null>(null);
@@ -107,6 +115,10 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
   }, []);
 
   const stopSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    utteranceRef.current = null;
     ttsAbortRef.current?.abort();
     ttsAbortRef.current = null;
     if (audioRef.current) {
@@ -309,6 +321,25 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
       const clean = cleanForSpeech(text);
       if (!clean) return;
       stopSpeaking();
+
+      // Preferred: native SpeechSynthesis — no edge function, no cost.
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        const utter = new SpeechSynthesisUtterance(clean.slice(0, 1800));
+        utter.lang = typeof navigator !== "undefined" ? (navigator.language ?? "en-US") : "en-US";
+        utter.onerror = (e) => {
+          if (e.error !== "canceled" && e.error !== "interrupted") {
+            setVoiceError("Read-aloud hit a snag. Try again.");
+          }
+          utteranceRef.current = null;
+        };
+        utter.onend = () => {
+          utteranceRef.current = null;
+        };
+        utteranceRef.current = utter;
+        window.speechSynthesis.speak(utter);
+        return;
+      }
+
       const ctrl = new AbortController();
       ttsAbortRef.current = ctrl;
       try {

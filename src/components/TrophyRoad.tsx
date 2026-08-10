@@ -12,7 +12,6 @@ import {
   Heart,
   Scale,
   TrendingUp,
-  Sparkles,
   Gift,
   Apple,
   Atom,
@@ -1006,117 +1005,6 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
   );
 }
 
-/* ── Final monsters ───────────────────────────────────────── */
-
-function FinalMonsters() {
-  return (
-    <div className="tr-final-wrap">
-      <div className="tr-section-head" style={{ position: "relative" }}>
-        <div className="tr-section-eyebrow">End of the Road</div>
-        <div className="tr-section-title">
-          The <em>final two</em>
-        </div>
-      </div>
-      <div className="tr-final-grid">
-        <motion.div
-          className="tr-final-card tr-final-card--newton"
-          initial={{ opacity: 0, x: -24 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="tr-final-head">
-            <div className="tr-final-glyph">
-              <Apple size={28} />
-            </div>
-            <div>
-              <div className="tr-final-name">Newton</div>
-              <div className="tr-final-sub">Divine · Cosmic Being</div>
-            </div>
-          </div>
-          <p className="tr-final-desc">
-            A divine, cosmic being holding an apple. Embodies gravity, intelligence, space, and
-            ultimate knowledge.
-          </p>
-          <div className="tr-final-pills">
-            <span className="tr-final-pill">48,000 XP</span>
-            <span className="tr-final-pill">Legendary</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="tr-final-card tr-final-card--ecliptadon"
-          initial={{ opacity: 0, x: 24 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="tr-final-head">
-            <div className="tr-final-glyph">
-              <Atom size={28} />
-            </div>
-            <div>
-              <div className="tr-final-name">Ecliptadon</div>
-              <div className="tr-final-sub">Celestial · Ancient Power</div>
-            </div>
-          </div>
-          <p className="tr-final-desc">
-            A massive celestial dinosaur in radiant armor. Ancient power, cosmic destruction
-            incarnate.
-          </p>
-          <div className="tr-final-pills">
-            <span className="tr-final-pill">50,000 XP</span>
-            <span className="tr-final-pill">Mythical</span>
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Archetype legend ──────────────────────────────────────── */
-
-function ArchetypeLegend() {
-  return (
-    <div className="tr-legend">
-      <div className="tr-section-head">
-        <div className="tr-section-eyebrow">Reference</div>
-        <div className="tr-section-title">
-          Ecliptar <em>archetypes</em>
-        </div>
-      </div>
-      <div className="tr-legend-grid">
-        {Object.values(ARCHETYPES).map((a) => (
-          <motion.div
-            key={a.id}
-            className={`tr-arc tr-arc--${a.id}`}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="tr-arc-head">
-              <span className="tr-arc-icon">
-                <a.icon size={16} />
-              </span>
-              <span className="tr-arc-name">{a.name}</span>
-            </div>
-            <div className="tr-arc-stats">
-              {Object.entries(a.stats).map(([k, v]) => (
-                <div key={k}>
-                  <div className="tr-arc-stat-key">{k.slice(0, 3)}</div>
-                  <div className="tr-arc-stat-val">{v}</div>
-                </div>
-              ))}
-            </div>
-            {a.special && <div className="tr-arc-special">✦ {a.special}</div>}
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ── Main ──────────────────────────────────────────────────── */
 
 export function TrophyRoad({ compact = false }: { compact?: boolean }) {
@@ -1254,36 +1142,6 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
           void refreshChests();
         }}
       />
-
-      <FinalMonsters />
-      <ArchetypeLegend />
-
-      <div
-        style={{
-          marginTop: 48,
-          padding: "20px 26px",
-          borderRadius: 12,
-          border: "1px solid var(--tr-line)",
-          background: "var(--tr-bg-panel)",
-          backdropFilter: "blur(14px)",
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-        }}
-      >
-        <Sparkles size={16} style={{ color: "var(--tr-unreal)" }} />
-        <span
-          style={{
-            fontFamily: "var(--tr-serif)",
-            fontStyle: "italic",
-            fontSize: 14,
-            color: "var(--tr-ink-dim)",
-          }}
-        >
-          Earn XP through battles, lessons, and tests. Every stop on the road is a question worth
-          asking yourself.
-        </span>
-      </div>
     </div>
   );
 }

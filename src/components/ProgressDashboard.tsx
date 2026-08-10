@@ -1,57 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
-import type { Variants } from "framer-motion";
-import {
-  BookOpen,
-  Target,
-  Flame,
-  Award,
-  Clock,
-  ChevronRight,
-  Lock,
-  Users,
-  Brain,
-  GitBranch,
-  Layers,
-} from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { BookOpen, Target, Flame, Award } from "lucide-react";
 import { TrophyRoad } from "@/components/TrophyRoad";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { listStudyRooms, type StudyRoom } from "@/lib/study-rooms";
 import { getEnrollmentsWithCount } from "@/repositories/courses";
 import "./Progress.css";
 
-// "Continue Learning" lives on the home dashboard (MissionControl) and on
-// /courses — it doesn't need a third copy here. This page's job is Trophy
-// Road, so that's what a visitor sees first, no tab-click required.
-const TABS = [
-  { id: "trophies", label: "Trophy Road" },
-  { id: "discover", label: "Discover" },
-] as const;
-type TabId = (typeof TABS)[number]["id"];
-
 /* ── Helpers ───────────────────────────────────────────────── */
-
-function useReveal<T extends Element = HTMLDivElement>() {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          (el as unknown as HTMLElement).classList.add("in");
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
 
 function AnimatedCounter({ to, suffix = "" }: { to: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -83,51 +39,9 @@ function AnimatedCounter({ to, suffix = "" }: { to: number; suffix?: string }) {
   );
 }
 
-/* ── Sub-components ────────────────────────────────────────── */
-
-function GroupCard({ room, delay = 0 }: { room: StudyRoom; delay?: number }) {
-  const ref = useReveal();
-  return (
-    <Link
-      to="/groups/$roomId"
-      params={{ roomId: room.id }}
-      ref={ref as React.Ref<HTMLAnchorElement>}
-      className="pg-reveal pg-group-card"
-      style={
-        {
-          "--rd": `${delay}ms`,
-          display: "block",
-          textDecoration: "none",
-          color: "inherit",
-        } as React.CSSProperties
-      }
-    >
-      <div className="pg-group-header">
-        <div className="pg-group-name">{room.name}</div>
-        <div
-          className={`pg-group-dot ${room.is_public ? "pg-group-dot--on" : "pg-group-dot--off"}`}
-        />
-      </div>
-      <div className="pg-group-topic">
-        {room.topic || (room.is_public ? "Public room" : "Private room")}
-      </div>
-      <div className="pg-group-footer">
-        <span>
-          <Users size={11} />
-          {room.member_count} members
-        </span>
-        <span className="pg-group-open">
-          {room.am_member ? "Open" : "Join"} <ChevronRight size={11} />
-        </span>
-      </div>
-    </Link>
-  );
-}
-
 /* ── Main Component ────────────────────────────────────────── */
 
 export function ProgressDashboard() {
-  const [activeTab, setActiveTab] = useState<TabId>("trophies");
   const { user } = useAuth();
   const [profile, setProfile] = useState<{
     best_streak: number;
@@ -137,11 +51,6 @@ export function ProgressDashboard() {
   } | null>(null);
   const [enrollCount, setEnrollCount] = useState(0);
   const [trophiesEarned, setTrophiesEarned] = useState(0);
-  const [studyRooms, setStudyRooms] = useState<StudyRoom[]>([]);
-
-  useEffect(() => {
-    void listStudyRooms().then(setStudyRooms);
-  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -206,12 +115,6 @@ export function ProgressDashboard() {
     },
   ];
 
-  const tabVariants: Variants = {
-    initial: { opacity: 0, y: 16 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
-    exit: { opacity: 0, y: -12, transition: { duration: 0.25, ease: "easeIn" } },
-  };
-
   return (
     <div className="pg-shell">
       <div className="pg-bg" aria-hidden="true">
@@ -234,9 +137,7 @@ export function ProgressDashboard() {
             <br />
             <em>Progress</em>
           </h1>
-          <p className="pg-hero-sub">
-            Every realm, rank, and reward on your climb — plus the rooms where you learn together.
-          </p>
+          <p className="pg-hero-sub">Every realm, rank, and reward on your climb.</p>
         </motion.div>
 
         {/* Stats */}
@@ -259,72 +160,14 @@ export function ProgressDashboard() {
           ))}
         </motion.div>
 
-        {/* Tab nav */}
         <motion.div
-          className="pg-tabs"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.22 }}
+          className="pg-trophy-wrap"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut", delay: 0.18 }}
         >
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`pg-tab${activeTab === tab.id ? " pg-tab--active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-              {activeTab === tab.id && <motion.div className="pg-tab-bar" layoutId="pg-tab-bar" />}
-            </button>
-          ))}
+          <TrophyRoad />
         </motion.div>
-
-        {/* Tab panels */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            className="pg-tab-panel"
-            variants={tabVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-          >
-            {activeTab === "trophies" && (
-              <div className="pg-trophy-wrap">
-                <TrophyRoad />
-              </div>
-            )}
-
-            {activeTab === "discover" && (
-              <div>
-                <div className="pg-sec-head">
-                  <div className="pg-sec-title">
-                    Study <em>rooms</em>
-                  </div>
-                  <div className="pg-sec-desc">
-                    Learn together — join a public room or start your own.
-                  </div>
-                </div>
-                <div className="pg-groups-grid">
-                  {studyRooms.slice(0, 5).map((r, i) => (
-                    <GroupCard key={r.id} room={r} delay={i * 60} />
-                  ))}
-                  <Link
-                    to="/groups"
-                    className="pg-add-card"
-                    style={{ minHeight: "160px", textDecoration: "none" }}
-                  >
-                    <span className="pg-add-card-icon">
-                      <Users size={24} />
-                    </span>
-                    <span className="pg-add-card-lbl">
-                      {studyRooms.length ? "Browse all rooms" : "Create Study Room"}
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
       </div>
     </div>
   );

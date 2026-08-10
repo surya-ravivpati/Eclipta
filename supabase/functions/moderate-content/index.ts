@@ -26,7 +26,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
+import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY, AI_GATEWAY_MODEL } from "../_shared/ai.ts";
 import { checkAiRateLimit } from "../_shared/ai-rate-limit.ts";
 
 const corsHeaders = {
@@ -87,7 +87,7 @@ async function classifyWithAi(
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: AI_GATEWAY_MODEL,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {

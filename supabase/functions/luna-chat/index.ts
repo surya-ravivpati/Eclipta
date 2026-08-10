@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
+import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY, AI_GATEWAY_MODEL } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -421,7 +421,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: AI_GATEWAY_MODEL,
         // Low temperature keeps a fast model factual and on task — high
         // temperature is a big driver of the wandering/hallucination here.
         // Reasoning requests manage their own sampling, so only set it when

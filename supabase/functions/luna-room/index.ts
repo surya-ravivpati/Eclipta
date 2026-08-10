@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY } from "../_shared/ai.ts";
+import { AI_GATEWAY_URL, AI_GATEWAY_API_KEY, AI_GATEWAY_MODEL } from "../_shared/ai.ts";
 import { checkAiRateLimit } from "../_shared/ai-rate-limit.ts";
 
 /**
@@ -19,7 +19,7 @@ const corsHeaders = {
 };
 
 const GATEWAY = `${AI_GATEWAY_URL}/chat/completions`;
-const MODEL = "google/gemini-2.5-flash";
+const MODEL = AI_GATEWAY_MODEL;
 
 async function callLuna(system: string, user: string, key: string): Promise<string> {
   const r = await fetch(GATEWAY, {

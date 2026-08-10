@@ -32,7 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/hooks/use-notifications";
 import { BrandLockup } from "@/components/BrandLockup";
-import { useLogoPresent } from "@/components/BrandPresent";
 
 /**
  * Nav structure holds translation KEYS, not text. The uppercase styling of the
@@ -85,7 +84,6 @@ export function Navbar() {
   const themeNext = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { onLogoClick, present } = useLogoPresent();
   const { t, formatNumber } = useTranslation();
 
   const isGroupActive = (group: (typeof NAV_GROUPS)[number]) =>
@@ -103,7 +101,7 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-9 min-w-0">
-          <Link to="/" className="shrink-0" aria-label={t("nav.eclipteHome")} onClick={onLogoClick}>
+          <Link to="/" className="shrink-0" aria-label={t("nav.eclipteHome")}>
             <BrandLockup size="sm" />
           </Link>
           <div className="hidden lg:flex gap-1">
@@ -364,8 +362,6 @@ export function Navbar() {
           </div>
         </div>
       )}
-
-      {present}
     </nav>
   );
 }

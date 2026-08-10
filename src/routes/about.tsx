@@ -511,17 +511,6 @@ function AboutPage() {
             <motion.div className="ab-signoff" {...reveal}>
               <p className="ab-sign">The Eclipta Team</p>
             </motion.div>
-
-            <motion.div className="ab-ps" {...reveal}>
-              <p>
-                <span className="ab-ps-tag">PS</span>
-                Thanks for reading all this. We have a present for you. Click the{" "}
-                <span className="ab-hint-logo" aria-hidden="true">
-                  <img src="/eclipta-logo.png" alt="" width={18} height={18} draggable={false} />
-                </span>{" "}
-                <b>logo in the top-left 5 times, quickly</b>, to get it.
-              </p>
-            </motion.div>
           </div>
         </section>
 

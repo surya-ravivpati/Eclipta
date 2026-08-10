@@ -1,10 +1,10 @@
 {
-  "warnings": 460,
+  "warnings": 458,
   "counts": {
     "@typescript-eslint/no-unsafe-assignment": 13,
     "@typescript-eslint/no-floating-promises": 79,
     "@typescript-eslint/prefer-nullish-coalescing": 91,
-    "no-restricted-syntax": 157,
+    "no-restricted-syntax": 155,
     "@typescript-eslint/no-unused-vars": 25,
     "@typescript-eslint/no-empty-function": 8,
     "@typescript-eslint/no-misused-promises": 10,

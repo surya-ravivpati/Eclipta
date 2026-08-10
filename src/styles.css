@@ -310,12 +310,15 @@
   .glass-panel {
     /* A crafted pane: a defined surface with a crisp hairline and a single lit
        top edge, on a lighter frost. Reads as physical glass, not the heavy
-       "frosted-glass-everywhere" template blur. */
-    background: oklch(1 0 0 / 4.5%);
+       "frosted-glass-everywhere" template blur. 4.5% used to leave panels
+       nearly indistinguishable from the page behind them, especially over
+       busier backgrounds (auroras, imagery) — raised so the surface itself
+       carries some of the definition instead of relying on the border alone. */
+    background: oklch(1 0 0 / 8%);
     backdrop-filter: blur(16px);
-    border: 1px solid oklch(1 0 0 / 10%);
+    border: 1px solid oklch(1 0 0 / 12%);
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 6%),
+      inset 0 1px 0 oklch(1 0 0 / 8%),
       var(--elevation-2);
   }
 

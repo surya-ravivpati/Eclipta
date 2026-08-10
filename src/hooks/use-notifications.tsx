@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useId } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -36,6 +36,15 @@ export function useNotifications() {
   // fire on hydration of historical rows.
   const mostRecentSeenAt = useRef<number>(0);
   const hasHydrated = useRef(false);
+  // Multiple components call this hook at once (Navbar's bell + the
+  // notifications page, at minimum). Supabase's realtime client keys
+  // channels by topic and reuses the existing one for a repeated topic, so
+  // two hook instances subscribing to the same `notifications:${userId}`
+  // topic collide: the second `.on()` call throws "cannot add
+  // postgres_changes callbacks ... after subscribe()", which crashes
+  // whichever component mounts second. A per-instance id keeps every
+  // hook call on its own channel.
+  const instanceId = useId();
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -84,7 +93,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`notifications:${user.id}`)
+      .channel(`notifications:${user.id}:${instanceId}`)
       .on(
         "postgres_changes",
         {
@@ -143,7 +152,7 @@ export function useNotifications() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, instanceId]);
 
   const unread = items.filter((n) => !n.read).length;
 

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { createPvpChallengeRpc } from "@/repositories/battles";
 import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
 import { toast } from "sonner";
@@ -89,11 +90,7 @@ export function UserSearchDialog({
     }
     setBusyId(target.user_id);
     try {
-      const { error } = await supabase.rpc("create_pvp_challenge", {
-        p_challenged_id: target.user_id,
-        p_archetype: archetype,
-      });
-      if (error) throw error;
+      await createPvpChallengeRpc(target.user_id, archetype);
       toast.success(`Challenge sent to ${target.username}`);
       onOpenChange(false);
     } catch (e: unknown) {

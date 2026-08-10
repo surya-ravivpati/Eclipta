@@ -60,6 +60,18 @@ export async function enqueuePvpRpc(archetype: ArchetypeId): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** Sends a direct PvP challenge to another player. */
+export async function createPvpChallengeRpc(
+  challengedId: string,
+  archetype: ArchetypeId,
+): Promise<void> {
+  const { error } = await supabase.rpc("create_pvp_challenge", {
+    p_challenged_id: challengedId,
+    p_archetype: archetype,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function leavePvpQueue(userId: string): Promise<void> {
   const { error } = await supabase.from("pvp_queue").delete().eq("user_id", userId);
   if (error) throw new Error(error.message);

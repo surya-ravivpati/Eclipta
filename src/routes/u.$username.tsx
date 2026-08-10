@@ -15,6 +15,7 @@ import {
   Swords,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { createPvpChallengeRpc } from "@/repositories/battles";
 import { ECLIPTARS } from "@/lib/ecliptars";
 import { ARCHETYPES } from "@/components/battles/archetypes";
 import { cn } from "@/lib/utils";
@@ -156,11 +157,7 @@ function PublicProfilePage() {
     if (user.id === profile.user_id) return;
     setChallengeBusy(true);
     try {
-      const { error } = await supabase.rpc("create_pvp_challenge", {
-        p_challenged_id: profile.user_id,
-        p_archetype: challengeArch,
-      });
-      if (error) throw error;
+      await createPvpChallengeRpc(profile.user_id, challengeArch);
       toast.success(`Challenge sent to ${profile.username}`);
     } catch (e: unknown) {
       toast.error((e as Error)?.message ?? "Couldn't send challenge.");

@@ -23,10 +23,10 @@ export type LockupVariant = "full" | "mark" | "mono-light" | "mono-dark";
 export const MIN_MARK = 18;
 
 const SIZES: Record<LockupSize, { mark: number; text: string; gap: string }> = {
-  sm: { mark: 22, text: "text-xs",   gap: "gap-2.5" },
-  md: { mark: 30, text: "text-sm",   gap: "gap-3" },
+  sm: { mark: 22, text: "text-xs", gap: "gap-2.5" },
+  md: { mark: 30, text: "text-sm", gap: "gap-3" },
   lg: { mark: 44, text: "text-base", gap: "gap-3.5" },
-  xl: { mark: 72, text: "text-xl",   gap: "gap-4" },
+  xl: { mark: 72, text: "text-xl", gap: "gap-4" },
 };
 
 export interface BrandLockupProps {
@@ -79,7 +79,7 @@ export function BrandLockup({
       {showWord && (
         <span
           className={cn(
-            "font-mono uppercase tracking-[0.3em] leading-none",
+            "font-mono uppercase tracking-[0.3em] leading-none relative -top-[0.15em]",
             s.text,
             wordTone,
           )}

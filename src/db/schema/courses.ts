@@ -204,7 +204,7 @@ export const conceptMastery = pgTable(
 );
 
 /**
- * One row per (user, UTC calendar day) tracking Knowledge Battles wins
+ * One row per (user, UTC calendar day) tracking Battles wins
  * toward that day's bonus.
  * Source: 20260418024225_bcd74b9d-412e-448e-9bec-831170af536e.sql.
  */

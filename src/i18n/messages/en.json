@@ -46,7 +46,6 @@
     "community": "Community",
     "buildCourse": "Build a Course",
     "lunaTutor": "Luna Tutor",
-    "knowledgeBattles": "Knowledge Battles",
     "trophyRoad": "Trophy Road",
     "studyRooms": "Study Rooms",
     "about": "About",
@@ -65,7 +64,7 @@
   },
   "pages": {
     "home": "Home",
-    "battles": "Knowledge Battles",
+    "battles": "Battles",
     "courses": "Courses",
     "certified": "Certified courses",
     "forum": "Forum",

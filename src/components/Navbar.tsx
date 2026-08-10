@@ -51,7 +51,7 @@ const NAV_GROUPS = [
   {
     labelKey: "nav.practice",
     items: [
-      { to: "/battles", labelKey: "nav.knowledgeBattles", descKey: "nav.descBattles" },
+      { to: "/battles", labelKey: "nav.battles", descKey: "nav.descBattles" },
       { to: "/progress", labelKey: "nav.trophyRoad", descKey: "nav.descProgress" },
       { to: "/collection", labelKey: "nav.collection", descKey: "nav.descCollection" },
     ],

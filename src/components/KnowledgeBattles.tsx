@@ -5344,7 +5344,7 @@ export function KnowledgeBattles() {
           <DialogHeader>
             <DialogTitle className="font-display text-2xl flex items-center gap-2">
               <Info className="w-5 h-5 text-neon-purple" />
-              How Knowledge Battles work
+              How Battles work
             </DialogTitle>
             <DialogDescription>
               Everything you need to know — opponents, combat, and rewards.

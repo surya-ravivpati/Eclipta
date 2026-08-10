@@ -15,7 +15,7 @@ const FOOTER_GROUPS = [
   {
     label: "PRACTICE",
     links: [
-      { to: "/battles", label: "Knowledge Battles" },
+      { to: "/battles", label: "Battles" },
       { to: "/progress", label: "Trophy Road" },
     ],
   },

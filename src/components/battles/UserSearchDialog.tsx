@@ -116,7 +116,7 @@ export function UserSearchDialog({
             <Search className="w-4 h-4 text-neon-cyan" /> Find a player
           </DialogTitle>
           <DialogDescription>
-            Search by username, then send a direct Knowledge Battle challenge.
+            Search by username, then send a direct Battle challenge.
           </DialogDescription>
         </DialogHeader>
 

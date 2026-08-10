@@ -21,6 +21,7 @@ import {
   Monitor,
   Bell,
   Flame,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -144,15 +145,37 @@ export function Navbar() {
           {/* ⌘K is global, but a visible affordance matters: most users never
               discover a keyboard-only entry point. */}
           {isAuthenticated && <GlobalSearch />}
-          <LanguageSelector className="hidden sm:flex" />
-          <button
-            onClick={cycleTheme}
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-            title={t("nav.themeSwitch", { current: theme, next: themeNext })}
-            aria-label={t("nav.themeSwitch", { current: theme, next: themeNext })}
-          >
-            <ThemeIcon className="w-4 h-4" aria-hidden="true" />
-          </button>
+          {/* Language + theme used to be two always-visible controls; folded
+              into one menu to cut down on navbar icon clutter. This also
+              fixes a pre-existing gap where the language picker was hidden
+              below the `sm` breakpoint with no mobile equivalent. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={t("common.settings")}
+              title={t("common.settings")}
+            >
+              <Settings className="w-4 h-4" aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-background/95 backdrop-blur-xl border-border min-w-56 p-2"
+            >
+              <div className="px-1 py-1.5">
+                <LanguageSelector />
+              </div>
+              <div className="my-1 h-px bg-border" />
+              <DropdownMenuItem
+                onClick={cycleTheme}
+                className="cursor-pointer flex items-center gap-2 focus:bg-secondary/80 focus:text-foreground"
+              >
+                <ThemeIcon className="w-4 h-4" aria-hidden="true" />
+                <span className="text-sm">
+                  {t("nav.themeSwitch", { current: theme, next: themeNext })}
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {isAuthenticated ? (
             <>
               <Link

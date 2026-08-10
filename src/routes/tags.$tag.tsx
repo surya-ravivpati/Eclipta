@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { Tag, Loader2, MessageCircle, ArrowLeft, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { timeAgo } from "@/lib/time";
 
 export const Route = createFileRoute("/tags/$tag")({
   head: ({ params }) => ({
@@ -25,15 +26,6 @@ interface Thread {
   author_name: string;
   created_at: string;
   solved: boolean;
-}
-
-function timeAgo(iso: string): string {
-  const m = Math.floor((Date.now() - +new Date(iso)) / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
 }
 
 function TagPage() {

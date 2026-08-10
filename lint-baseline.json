@@ -1,7 +1,6 @@
 {
-  "warnings": 461,
+  "warnings": 460,
   "counts": {
-    "react-refresh/only-export-components": 11,
     "@typescript-eslint/no-unsafe-assignment": 13,
     "@typescript-eslint/no-floating-promises": 79,
     "@typescript-eslint/prefer-nullish-coalescing": 91,
@@ -14,6 +13,7 @@
     "@typescript-eslint/no-explicit-any": 14,
     "@typescript-eslint/no-unsafe-argument": 1,
     "@typescript-eslint/no-unsafe-unary-minus": 1,
+    "react-refresh/only-export-components": 10,
     "@typescript-eslint/consistent-type-imports": 1,
     "@typescript-eslint/no-base-to-string": 4,
     "@typescript-eslint/only-throw-error": 14,

@@ -17,7 +17,6 @@ import {
   Monitor,
   Settings,
   Check,
-  Lock,
   ExternalLink,
   AlertTriangle,
   Camera,
@@ -31,8 +30,7 @@ import {
   Brain,
 } from "lucide-react";
 import { ARCHETYPES } from "@/components/battles/archetypes";
-import { ECLIPTARS, getEcliptarsByArchetype } from "@/lib/ecliptars";
-import { useOwnedEcliptars } from "@/hooks/use-player-xp";
+import { ECLIPTARS } from "@/lib/ecliptars";
 import { useTheme } from "@/hooks/use-theme";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -41,7 +39,6 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
 
@@ -266,9 +263,8 @@ function ProfilePage() {
             </div>
           ) : (
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-3 mb-6 h-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="companions">Ecliptars</TabsTrigger>
                 <TabsTrigger value="creator">Creator</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
@@ -406,21 +402,13 @@ function ProfilePage() {
                         }
                       />
                     ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Open the Ecliptars tab to equip one ↑
-                      </p>
+                      <Link to="/collection" className="text-xs text-neon-purple hover:underline">
+                        Manage your collection →
+                      </Link>
                     )}
                   </Card>
                   <FollowingFeedCard userId={user.id} />
                 </div>
-              </TabsContent>
-
-              <TabsContent value="companions" className="mt-0">
-                <CollectionSection
-                  equippedSlug={profile?.equipped_ecliptar ?? null}
-                  userId={user.id}
-                  onEquipped={reload}
-                />
               </TabsContent>
 
               <TabsContent value="creator" className="mt-0 space-y-4">
@@ -1099,163 +1087,6 @@ function AvatarUploader({
           disabled={uploading}
         />
       </label>
-    </div>
-  );
-}
-
-/* =================== Embedded Collection (click-to-equip) =================== */
-
-function CollectionSection({
-  equippedSlug,
-  userId,
-  onEquipped,
-}: {
-  equippedSlug: string | null;
-  userId: string;
-  onEquipped: () => void;
-}) {
-  const { slugs, loading } = useOwnedEcliptars();
-  const total = ECLIPTARS.length;
-  const owned = ECLIPTARS.filter((e) => slugs.has(e.slug)).length;
-  const archetypeKeys = Object.keys(ARCHETYPES) as MonsterArchetypeKey[];
-
-  const equip = async (slug: string) => {
-    if (!slugs.has(slug)) return;
-    const next = equippedSlug === slug ? null : slug;
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({ equipped_ecliptar: next })
-      .eq("user_id", userId);
-    if (error) return toast.error(error.message);
-    toast.success(next ? "Ecliptar equipped" : "Ecliptar unequipped");
-    onEquipped();
-  };
-
-  return (
-    <div className="mt-10">
-      <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 border border-neon-purple/30 bg-neon-purple/10 text-neon-purple text-[10px] font-bold tracking-widest mb-2">
-            <Sparkles className="w-3 h-3" />
-            ECLIPTAR COLLECTION
-          </div>
-          <h2 className="text-3xl font-bold font-display tracking-tight">My Ecliptars</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Click any owned ecliptar to equip it as your public avatar.
-          </p>
-        </div>
-        <p className="text-sm font-bold tracking-widest text-neon-purple">
-          {owned} / {total} COLLECTED
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="text-center text-muted-foreground py-10">Loading collection…</div>
-      ) : (
-        <div className="space-y-8">
-          {archetypeKeys.map((archKey) => {
-            const arch = ARCHETYPES[archKey];
-            const eclips = getEcliptarsByArchetype(archKey);
-            const ownedCount = eclips.filter((e) => slugs.has(e.slug)).length;
-
-            return (
-              <div key={archKey}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <arch.icon className={cn("w-6 h-6", arch.color)} />
-                    <div>
-                      <h3 className={cn("text-base font-bold font-display", arch.color)}>
-                        {arch.name}
-                      </h3>
-                      <p className="text-[10px] font-bold tracking-widest text-muted-foreground">
-                        {arch.passive}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[10px] font-bold tracking-widest px-2 py-1 rounded-full border",
-                      ownedCount === eclips.length
-                        ? "border-primary/50 text-primary"
-                        : "border-border text-muted-foreground",
-                    )}
-                  >
-                    {ownedCount}/{eclips.length}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {eclips.map((e) => {
-                    const isOwned = slugs.has(e.slug);
-                    const isEquipped = equippedSlug === e.slug;
-                    return (
-                      <button
-                        key={e.slug}
-                        type="button"
-                        onClick={() => equip(e.slug)}
-                        disabled={!isOwned}
-                        title={
-                          !isOwned
-                            ? "Locked — claim on the Expedition"
-                            : isEquipped
-                              ? "Click to unequip"
-                              : "Click to equip as avatar"
-                        }
-                        className={cn(
-                          "glass-panel p-4 border text-center relative overflow-hidden transition-all",
-                          isOwned
-                            ? `${arch.borderColor} hover:scale-[1.03] cursor-pointer`
-                            : "border-border/30 opacity-60 cursor-not-allowed",
-                          isEquipped &&
-                            "ring-2 ring-neon-purple ring-offset-2 ring-offset-background shadow-[0_0_24px_rgba(168,85,247,0.55)] bg-neon-purple/15 scale-[1.02]",
-                        )}
-                      >
-                        {!isOwned && (
-                          <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                            <Lock className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                        )}
-                        {isEquipped && (
-                          <div className="absolute top-1 right-1 z-10 bg-neon-purple text-primary-foreground text-[9px] font-bold tracking-widest px-2 py-0.5 inline-flex items-center gap-1 shadow-md">
-                            <Check className="w-2.5 h-2.5" />
-                            EQUIPPED
-                          </div>
-                        )}
-                        <e.icon
-                          className={cn(
-                            "w-10 h-10 mx-auto mb-2",
-                            isOwned ? arch.color : "text-muted-foreground",
-                            isEquipped && "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]",
-                          )}
-                        />
-                        <div
-                          className={cn(
-                            "text-sm font-bold font-display",
-                            isOwned ? arch.color : "text-muted-foreground",
-                          )}
-                        >
-                          {e.name}
-                        </div>
-                        <div className="text-[9px] tracking-widest text-muted-foreground mt-1">
-                          {arch.name.toUpperCase()}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="text-center mt-10">
-        <Link
-          to="/progress"
-          className="inline-block px-6 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity"
-        >
-          UNLOCK MORE ON THE TROPHY ROAD
-        </Link>
-      </div>
     </div>
   );
 }

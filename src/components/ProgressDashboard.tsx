@@ -19,14 +19,13 @@ import { TrophyRoad } from "@/components/TrophyRoad";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { listStudyRooms, type StudyRoom } from "@/lib/study-rooms";
-import { CERTIFIED_COURSES } from "@/lib/certified-courses";
 import { getEnrollmentsWithCount } from "@/repositories/courses";
 import "./Progress.css";
 
-const CERTIFIED_SLUGS = new Set(CERTIFIED_COURSES.map((c) => c.slug));
-
+// "Continue Learning" lives on the home dashboard (MissionControl) and on
+// /courses — it doesn't need a third copy here. This page's job is Trophy
+// Road, so that's what a visitor sees first, no tab-click required.
 const TABS = [
-  { id: "overview", label: "Continue Learning" },
   { id: "trophies", label: "Trophy Road" },
   { id: "discover", label: "Discover" },
 ] as const;
@@ -128,7 +127,7 @@ function GroupCard({ room, delay = 0 }: { room: StudyRoom; delay?: number }) {
 /* ── Main Component ────────────────────────────────────────── */
 
 export function ProgressDashboard() {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [activeTab, setActiveTab] = useState<TabId>("trophies");
   const { user } = useAuth();
   const [profile, setProfile] = useState<{
     best_streak: number;
@@ -137,7 +136,6 @@ export function ProgressDashboard() {
     xp: number;
   } | null>(null);
   const [enrollCount, setEnrollCount] = useState(0);
-  const [enrolled, setEnrolled] = useState<{ course_slug: string; course_title: string }[]>([]);
   const [trophiesEarned, setTrophiesEarned] = useState(0);
   const [studyRooms, setStudyRooms] = useState<StudyRoom[]>([]);
 
@@ -164,7 +162,6 @@ export function ProgressDashboard() {
       if (cancelled) return;
       if (p.data) setProfile(p.data);
       setEnrollCount(e.count);
-      setEnrolled(e.rows);
       setTrophiesEarned(t.count ?? 0);
     })();
     return () => {
@@ -238,8 +235,7 @@ export function ProgressDashboard() {
             <em>Progress</em>
           </h1>
           <p className="pg-hero-sub">
-            Pick up where you left off. Everything you're learning, your structured paths, and your
-            rank — all in one place.
+            Every realm, rank, and reward on your climb — plus the rooms where you learn together.
           </p>
         </motion.div>
 
@@ -292,60 +288,6 @@ export function ProgressDashboard() {
             animate="animate"
             exit="exit"
           >
-            {activeTab === "overview" && (
-              <div>
-                <div className="pg-sec-head">
-                  <div className="pg-sec-title">
-                    Active <em>courses</em>
-                  </div>
-                  <div className="pg-sec-desc">Jump back in where you left off.</div>
-                </div>
-                {enrolled.length === 0 ? (
-                  <div className="pg-add-card" style={{ minHeight: 150 }}>
-                    <span className="pg-add-card-icon">
-                      <BookOpen size={26} />
-                    </span>
-                    <span className="pg-add-card-lbl">No courses yet</span>
-                    <span
-                      className="pg-add-card-sub"
-                      style={{ display: "flex", gap: 16, marginTop: 6 }}
-                    >
-                      <Link to="/courses" className="pg-group-open">
-                        Browse courses <ChevronRight size={12} />
-                      </Link>
-                    </span>
-                  </div>
-                ) : (
-                  <div className="pg-course-grid">
-                    {enrolled.map((c) => {
-                      const isCert = CERTIFIED_SLUGS.has(c.course_slug);
-                      return (
-                        <Link
-                          key={c.course_slug}
-                          to={isCert ? "/certified/$slug" : "/courses/$slug"}
-                          params={{ slug: c.course_slug }}
-                          className="pg-reveal pg-group-card"
-                          style={{ display: "block", textDecoration: "none", color: "inherit" }}
-                        >
-                          <div className="pg-group-header">
-                            <div className="pg-group-name">{c.course_title}</div>
-                          </div>
-                          <div className="pg-group-footer">
-                            <span>
-                              <BookOpen size={11} /> {isCert ? "Certified" : "Community"}
-                            </span>
-                            <span className="pg-group-open">
-                              Continue <ChevronRight size={11} />
-                            </span>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
             {activeTab === "trophies" && (
               <div className="pg-trophy-wrap">
                 <TrophyRoad />

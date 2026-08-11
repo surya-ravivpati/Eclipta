@@ -385,7 +385,7 @@ function CollectionPage() {
         <div className="mt-10 text-center">
           <Link
             to="/progress"
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.68_0.12_70)] px-5 py-2.5 text-sm font-bold text-[#0B1020] hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.68_0.12_70)] px-5 py-2.5 text-sm font-bold text-[color:var(--brand-bg)] hover:opacity-90 transition-opacity"
           >
             <Zap className="w-4 h-4" /> Claim more on the Trophy Road
           </Link>

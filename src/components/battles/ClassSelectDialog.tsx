@@ -134,7 +134,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
               ["charge", Zap, "Charge"],
             ] as const
           ).map(([key, Icon, label]) => (
-            <div key={key} className="glass-panel rounded-md p-3">
+            <div key={key} className="glass-panel p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <Icon className={cn("w-3.5 h-3.5", arch.color)} />
                 <span className="text-[10px] font-bold tracking-widest text-foreground">

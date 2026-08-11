@@ -3,8 +3,16 @@ import { Flame, Snowflake, Trophy, ArrowRight, ShieldCheck, AlertTriangle } from
 import { Link } from "@tanstack/react-router";
 import { useDailyStreak } from "@/hooks/use-daily-streak";
 import {
-  practicedToday, isAtRisk, riskMessage, nextMilestone, flameTierLabel,
-  milestoneReward, lastNDays, weekdayLetter, todayUtc, STREAK_MILESTONES,
+  practicedToday,
+  isAtRisk,
+  riskMessage,
+  nextMilestone,
+  flameTierLabel,
+  milestoneReward,
+  lastNDays,
+  weekdayLetter,
+  todayUtc,
+  STREAK_MILESTONES,
 } from "@/lib/daily-streak";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +28,13 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
   const atRisk = isAtRisk(streak);
   const next = nextMilestone(streak.dailyStreak);
   const reward = next ? milestoneReward(next) : 0;
-  const prevMs = next ? [0, ...STREAK_MILESTONES].filter((m) => m < next).pop() ?? 0 : streak.dailyStreak;
-  const progress = next && next > prevMs
-    ? Math.max(0, Math.min(1, (streak.dailyStreak - prevMs) / (next - prevMs)))
-    : 1;
+  const prevMs = next
+    ? ([0, ...STREAK_MILESTONES].filter((m) => m < next).pop() ?? 0)
+    : streak.dailyStreak;
+  const progress =
+    next && next > prevMs
+      ? Math.max(0, Math.min(1, (streak.dailyStreak - prevMs) / (next - prevMs)))
+      : 1;
 
   const days = lastNDays(compact ? 7 : 14);
   const practiced = new Set(streak.practiceDates);
@@ -35,22 +46,39 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
       {streak.dailyStreak > 0 && (
         <div
           className="absolute -top-16 -left-10 w-56 h-56 rounded-full pointer-events-none opacity-40"
-          style={{ background: "radial-gradient(circle, oklch(0.78 0.13 88 / 0.20), transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, oklch(0.78 0.13 88 / 0.20), transparent 70%)",
+          }}
         />
       )}
 
       <div className="relative flex items-center gap-5">
         <div className="flex flex-col items-center justify-center shrink-0 w-20">
           <motion.div
-            animate={done ? { scale: [1, 1.09, 1] } : atRisk ? { scale: [1, 1.04, 1], rotate: [0, -3, 3, 0] } : {}}
+            animate={
+              done
+                ? { scale: [1, 1.09, 1] }
+                : atRisk
+                  ? { scale: [1, 1.04, 1], rotate: [0, -3, 3, 0] }
+                  : {}
+            }
             transition={{ repeat: Infinity, duration: atRisk ? 1.4 : 2.6, ease: "easeInOut" }}
           >
             <Flame
-              className={cn("w-14 h-14", streak.dailyStreak > 0 ? "text-primary" : "text-muted-foreground/40")}
-              style={streak.dailyStreak > 0 ? { filter: "drop-shadow(0 0 18px oklch(0.78 0.13 88 / 0.6))" } : undefined}
+              className={cn(
+                "w-14 h-14",
+                streak.dailyStreak > 0 ? "text-primary" : "text-muted-foreground/40",
+              )}
+              style={
+                streak.dailyStreak > 0
+                  ? { filter: "drop-shadow(0 0 18px oklch(0.78 0.13 88 / 0.6))" }
+                  : undefined
+              }
             />
           </motion.div>
-          <span className="font-display text-4xl leading-none mt-1 tabular-nums">{streak.dailyStreak}</span>
+          <span className="font-display text-4xl leading-none mt-1 tabular-nums">
+            {streak.dailyStreak}
+          </span>
           <span className="font-mono text-[8.5px] tracking-[0.22em] text-muted-foreground uppercase mt-1">
             Day Streak
           </span>
@@ -84,7 +112,7 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
                     className={cn(
                       "w-full aspect-square max-w-[26px] rounded-md flex items-center justify-center",
                       on
-                        ? "bg-primary/90 text-[#0B1020]"
+                        ? "bg-primary/90 text-[color:var(--brand-bg)]"
                         : isToday
                           ? "border-2 border-dashed border-primary/60 bg-primary/5"
                           : "border border-white/10 bg-white/[0.02]",
@@ -92,10 +120,12 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
                   >
                     {on && <Flame className="w-3 h-3" />}
                   </motion.div>
-                  <span className={cn(
-                    "font-mono text-[8px] uppercase",
-                    isToday ? "text-primary" : "text-muted-foreground/60",
-                  )}>
+                  <span
+                    className={cn(
+                      "font-mono text-[8px] uppercase",
+                      isToday ? "text-primary" : "text-muted-foreground/60",
+                    )}
+                  >
                     {weekdayLetter(d)}
                   </span>
                 </div>
@@ -114,7 +144,9 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
               <ShieldCheck className="w-3.5 h-3.5" /> Practiced today — streak secured
             </p>
           ) : (
-            <p className="text-[11px] text-muted-foreground mb-2">Start your streak today — one session is all it takes.</p>
+            <p className="text-[11px] text-muted-foreground mb-2">
+              Start your streak today — one session is all it takes.
+            </p>
           )}
 
           {/* Next milestone + reward */}
@@ -125,7 +157,9 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
                   <Trophy className="w-3 h-3 text-primary" /> {next}-day milestone
                   {reward > 0 && <span className="text-primary font-bold ml-1">+{reward} XP</span>}
                 </span>
-                <span className="tabular-nums">{streak.dailyStreak}/{next}</span>
+                <span className="tabular-nums">
+                  {streak.dailyStreak}/{next}
+                </span>
               </div>
               <div className="h-2 rounded-full bg-white/8 overflow-hidden">
                 <motion.div
@@ -142,7 +176,7 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
           {!done && (
             <Link
               to="/battles"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.68_0.12_70)] px-4 py-2 text-xs font-bold text-[#0B1020] hover:opacity-90 transition-opacity"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.68_0.12_70)] px-4 py-2 text-xs font-bold text-[color:var(--brand-bg)] hover:opacity-90 transition-opacity"
             >
               {atRisk ? "Save my streak" : "Practice now"} <ArrowRight className="w-3.5 h-3.5" />
             </Link>

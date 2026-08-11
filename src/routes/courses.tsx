@@ -359,7 +359,7 @@ function CoursesHub() {
                           key={s}
                           onClick={() => setSubject(s)}
                           disabled={n === 0}
-                          className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-md glass-panel text-sm transition-colors hover:border-primary/50 disabled:opacity-40 disabled:cursor-default"
+                          className="group inline-flex items-center gap-2 px-4 py-2.5 glass-panel text-sm transition-colors hover:border-primary/50 disabled:opacity-40 disabled:cursor-default"
                         >
                           <span className="font-medium">{s}</span>
                           <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
@@ -480,7 +480,7 @@ function CourseCard({ c, wide }: { c: UnifiedCourse; wide?: boolean }) {
   return (
     <DetailLink
       c={c}
-      className={`glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start ${wide ? "min-w-[280px] sm:min-w-[300px]" : ""}`}
+      className={`glass-panel p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start ${wide ? "min-w-[280px] sm:min-w-[300px]" : ""}`}
     >
       {c.cover && (
         <img
@@ -551,7 +551,7 @@ function ContinueCard({ c }: { c: ContinueItem }) {
     <Link
       to="/certified/$slug/learn"
       params={{ slug: c.slug }}
-      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]"
+      className="glass-panel p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]"
     >
       {inner}
     </Link>
@@ -559,7 +559,7 @@ function ContinueCard({ c }: { c: ContinueItem }) {
     <Link
       to="/courses/$slug"
       params={{ slug: c.slug }}
-      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]"
+      className="glass-panel p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[260px] sm:min-w-[280px]"
     >
       {inner}
     </Link>
@@ -572,7 +572,7 @@ function RecCard({ rec }: { rec: Recommendation }) {
   return (
     <DetailLink
       c={course}
-      className="glass-panel rounded-md p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[280px] sm:min-w-[300px]"
+      className="glass-panel p-5 flex flex-col gap-3 group transition-colors hover:border-primary/50 snap-start min-w-[280px] sm:min-w-[300px]"
     >
       <div className="flex items-center justify-between gap-2">
         <SourceBadge source={course.source} />
@@ -665,7 +665,7 @@ function PathNode({ step }: { step: PathStep }) {
 
 function EmptyResults({ query }: { query: string }) {
   return (
-    <div className="glass-panel rounded-md p-12 text-center">
+    <div className="glass-panel p-12 text-center">
       <GraduationCap className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
       <p className="text-sm text-muted-foreground mb-4">
         No courses match {query ? `“${query}”` : "that filter"} yet.

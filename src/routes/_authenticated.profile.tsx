@@ -35,6 +35,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FollowingFeedCard } from "@/components/profile/FollowingFeedCard";
+import { AvatarCropDialog } from "@/components/profile/AvatarCropDialog";
+import { AVATAR_FILE_EXTENSION, AVATAR_MIME_TYPE } from "@/components/profile/avatar-crop";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -1024,26 +1026,43 @@ function AvatarUploader({
   onUploaded: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const equipped = equippedSlug ? ECLIPTARS.find((e) => e.slug === equippedSlug) : null;
   const equippedArch = equipped ? ARCHETYPES[equipped.archetype] : null;
   const FallbackIcon = equipped?.icon ?? User;
 
-  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Clearing the input is what lets the same file be picked twice in a row;
+    // without it the second pick fires no change event and nothing happens.
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return toast.error("Max 2 MB");
-    if (!file.type.startsWith("image/")) return toast.error("Image files only");
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Max 2 MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Image files only");
+      return;
+    }
+    setPendingPhoto(file);
+  };
+
+  const uploadCropped = async (cropped: Blob) => {
+    setPendingPhoto(null);
     setUploading(true);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const path = `${userId}/avatar-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+    // The extension and content type describe what the crop canvas encoded, not
+    // what the user picked — a cropped PNG comes back as JPEG.
+    const path = `${userId}/avatar-${Date.now()}.${AVATAR_FILE_EXTENSION}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, cropped, {
       cacheControl: "3600",
       upsert: true,
-      contentType: file.type,
+      contentType: AVATAR_MIME_TYPE,
     });
     if (upErr) {
       setUploading(false);
-      return toast.error(upErr.message);
+      toast.error(upErr.message);
+      return;
     }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const { error: dbErr } = await supabase
@@ -1051,7 +1070,10 @@ function AvatarUploader({
       .update({ avatar_url: pub.publicUrl })
       .eq("user_id", userId);
     setUploading(false);
-    if (dbErr) return toast.error(dbErr.message);
+    if (dbErr) {
+      toast.error(dbErr.message);
+      return;
+    }
     toast.success("Profile picture updated");
     onUploaded();
   };
@@ -1087,6 +1109,13 @@ function AvatarUploader({
           disabled={uploading}
         />
       </label>
+      {pendingPhoto && (
+        <AvatarCropDialog
+          file={pendingPhoto}
+          onCancel={() => setPendingPhoto(null)}
+          onConfirm={uploadCropped}
+        />
+      )}
     </div>
   );
 }

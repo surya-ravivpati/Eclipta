@@ -18,7 +18,6 @@ import {
   Info,
   FastForward,
   Users,
-  Radio,
   TrendingUp,
   TrendingDown,
   MessageSquare,
@@ -1495,12 +1494,12 @@ function BattleArena() {
     icon: User,
   });
   const [opponent, setOpponent] = useState<Fighter>({
-    name: "AI Nemesis",
+    name: "Opponent",
     hp: 100,
     maxHp: 100,
     focus: 20,
     maxFocus: 100,
-    icon: Bot,
+    icon: HelpCircle,
   });
   const [momentum, setMomentum] = useState(0);
   const [opponentMomentum, setOpponentMomentum] = useState(0);
@@ -1604,7 +1603,6 @@ function BattleArena() {
   const [opponentType, setOpponentType] = useState<OpponentType>("bot");
   const [confirmExit, setConfirmExit] = useState(false);
   const [matchStatus, setMatchStatus] = useState("Finding opponent…");
-  const [matchTier, setMatchTier] = useState<OpponentType>("live");
   const [pvpBattleId, setPvpBattleId] = useState<string | null>(null);
   const [playerRating, setPlayerRating] = useState(1000);
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
@@ -3654,10 +3652,7 @@ function BattleArena() {
           cls,
           playerRatingRef.current,
           playerUsername,
-          (msg, tier) => {
-            setMatchStatus(msg);
-            setMatchTier(tier);
-          },
+          (msg) => setMatchStatus(msg),
           { allowLive: gameModeRef.current === "battle" },
         );
 
@@ -3687,11 +3682,14 @@ function BattleArena() {
           oppName = oppEclip.name;
           oppSlug = oppEclip.slug;
         } else {
-          // Bot: pick a real ecliptar so the opponent has a coherent identity —
-          // its creature, name, and sprite all match.
+          // Bot: pick a real ecliptar for the creature, sprite and archetype,
+          // but show the *handle* matchmaking chose rather than the creature's
+          // name. A real opponent is displayed as a username, so naming a bot
+          // "Vulpix" while the player next to it is "quanta_47" would announce
+          // which is which through the name alone.
           const oppEclip = pickOpponent(cls);
           oppArchetype = oppEclip.archetype;
-          oppName = oppEclip.name;
+          oppName = match.opponentName;
           oppSlug = oppEclip.slug;
         }
         // Always use the archetype's icon so bot / live opponents visually
@@ -3762,11 +3760,10 @@ function BattleArena() {
           setPhase("gamblerReveal");
         } else {
           setPhase("select");
-          const typeTag = match.type === "live" ? "LIVE" : "BOT";
           addLog({
             actor: "system",
             actionType: "info",
-            result: `${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name}) · ${typeTag}`,
+            result: `${playerName} (${baseArch.name}) vs ${oppName} (${oppArch.name})`,
           });
         }
       } catch (error) {
@@ -3997,7 +3994,7 @@ function BattleArena() {
   if (phase === "searching") {
     // Cinematic "Eclipse Alignment" intro (docs/battle-redesign loading redesign).
     // Original spinner-style loader is in git history prior to the Eclipse Alignment redesign.
-    return <BattleIntro archetype={archetype} matchTier={matchTier} matchStatus={matchStatus} />;
+    return <BattleIntro archetype={archetype} matchStatus={matchStatus} />;
   }
 
   // ── Gambler Reveal ──
@@ -4260,23 +4257,6 @@ function BattleArena() {
             <Swords className="w-6 h-6 text-neon-pink" />
           </motion.div>
           <span className="text-[10px] font-bold tracking-widest text-muted-foreground">VS</span>
-          {/* Opponent type badge */}
-          {opponentType === "live" && (
-            <motion.div
-              className="flex items-center gap-0.5 px-1.5 py-0.5 border border-neon-cyan/50 bg-neon-cyan/10 text-neon-cyan"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ repeat: Infinity, duration: 1.4 }}
-            >
-              <Radio className="w-2.5 h-2.5" />
-              <span className="text-[8px] font-bold tracking-widest">LIVE</span>
-            </motion.div>
-          )}
-          {opponentType === "bot" && (
-            <div className="flex items-center gap-0.5 px-1.5 py-0.5 border border-border/50 text-muted-foreground/50">
-              <Bot className="w-2.5 h-2.5" />
-              <span className="text-[8px] font-bold tracking-widest">BOT</span>
-            </div>
-          )}
         </div>
         <FighterCard
           fighter={opponent}
@@ -5226,14 +5206,22 @@ export function KnowledgeBattles() {
                   head-to-head in real time via a live channel. Rating is at stake.
                 </li>
                 <li>
-                  <span className="text-muted-foreground font-bold">AI Bot</span> — if nobody is in
-                  queue after 8 seconds, you are matched with a bot instead of being left waiting.
-                  Bot battles still count: full XP, your W/L record, and a smaller rating change
-                  than ranked play.
+                  <span className="text-muted-foreground font-bold">AI OPPONENT</span> — if nobody
+                  is in queue after 8 seconds, you are matched with an AI opponent rather than left
+                  waiting. These earn full XP, but they do not move your rating or your W/L record.
                 </li>
                 <li>
-                  Priority is always <span className="text-foreground font-bold">Live → Bot</span>.
-                  You will never be matched with a bot while a real player is available.
+                  Priority is always <span className="text-foreground font-bold">Live → AI</span>.
+                  You are never given an AI opponent while a real player is available.
+                </li>
+                <li>
+                  <span className="text-foreground font-bold">
+                    We don&apos;t label which one you got.
+                  </span>{" "}
+                  A match doesn&apos;t tell you whether the name across from you is a person or an
+                  AI — playing differently against each is its own kind of spoiler. That&apos;s why
+                  it&apos;s written here instead: you always know AI opponents exist and roughly how
+                  often you&apos;ll see one, just not which is which in the moment.
                 </li>
               </ul>
             </section>

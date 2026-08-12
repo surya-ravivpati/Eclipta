@@ -12,8 +12,6 @@ import {
   Star,
   TrendingUp,
   TrendingDown,
-  Radio,
-  Bot,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ARCHETYPES } from "./archetypes";
@@ -259,13 +257,7 @@ export function BattleReport({
               )}
               {ratingChange >= 0 ? `+${ratingChange}` : ratingChange}
             </motion.div>
-            <div className="text-[10px] tracking-widest text-muted-foreground flex items-center gap-0.5 justify-center">
-              {opponentType === "live" && (
-                <>
-                  <Radio className="w-2.5 h-2.5" /> LIVE RATING
-                </>
-              )}
-            </div>
+            <div className="text-[10px] tracking-widest text-muted-foreground">RATING</div>
           </div>
         )}
       </div>

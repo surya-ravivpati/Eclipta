@@ -3,7 +3,6 @@ import { HelpCircle } from "lucide-react";
 import { EASING } from "@/config/motion";
 import { ARCHETYPES } from "./archetypes";
 import type { ArchetypeId } from "./types";
-import type { OpponentType } from "@/lib/matchmaking";
 import "./BattleIntro.css";
 
 /**
@@ -35,21 +34,15 @@ const PARTICLES = Array.from({ length: 22 }, (_, i) => {
   };
 });
 
-const TIERS = ["live", "bot"] as const;
-const TIER_LABEL: Record<OpponentType, string> = { live: "Live", bot: "AI" };
-
 export function BattleIntro({
   archetype,
-  matchTier,
   matchStatus,
 }: {
   archetype: ArchetypeId;
-  matchTier: OpponentType;
   matchStatus: string;
 }) {
   const arch = ARCHETYPES[archetype];
   const PlayerIcon = arch.icon;
-  const tierIdx = TIERS.indexOf(matchTier);
 
   return (
     <div className="bi" role="status" aria-label="Entering the arena">
@@ -113,16 +106,6 @@ export function BattleIntro({
       >
         <p className="bi-kicker">The arena is opening</p>
         <h2 className="btt-shout bi-title">Entering Battle</h2>
-        <div className="bi-tiers" aria-hidden="true">
-          {TIERS.map((t, i) => (
-            <span
-              key={t}
-              className={`bi-tier${matchTier === t ? " is-active" : ""}${tierIdx > i ? " is-passed" : ""}`}
-            >
-              {TIER_LABEL[t]}
-            </span>
-          ))}
-        </div>
         <p className="bi-status">{matchStatus}</p>
       </motion.div>
     </div>

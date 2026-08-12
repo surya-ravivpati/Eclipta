@@ -4,6 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { ArchetypeId } from "@/components/battles/types";
+import { pickBotOpponent } from "./bots/roster";
 import {
   enqueuePvpRpc,
   findActivePvpBattleForUser,
@@ -136,7 +137,7 @@ export async function findMatch(
 
   // ── Tier 1: Live PvP ─────────────────────────────────────────────────
   if (user && allowLive) {
-    onStatus("Scanning for live opponents…", "live");
+    onStatus("Scanning for an opponent…", "live");
     await joinQueue(archetype, playerRating, username);
 
     const deadline = Date.now() + QUEUE_TIMEOUT_MS;
@@ -145,7 +146,7 @@ export async function findMatch(
 
       const liveMatch = await tryLiveMatch(archetype, playerRating);
       if (liveMatch) {
-        onStatus(`Live match found — ${liveMatch.opponentName}`, "live");
+        onStatus(`Opponent found — ${liveMatch.opponentName}`, "live");
         return liveMatch;
       }
 
@@ -157,11 +158,19 @@ export async function findMatch(
   }
 
   // ── Tier 2: Bot (last resort) ────────────────────────────────────────
-  onStatus("Matched with AI bot", "bot");
+  //
+  // The status line and the opponent's name deliberately read exactly as the
+  // live tier's do. Which kind of opponent a given match found is disclosed in
+  // the "how battles work" panel as a general property of matchmaking, not
+  // stamped on the match itself — see src/lib/bots/roster.ts. The `type` field
+  // is still "bot", so every rule that depends on the distinction (rating
+  // weight, W/L accounting) keeps working; it just isn't rendered.
+  const bot = pickBotOpponent(playerRating);
+  onStatus(`Opponent found — ${bot.username}`, "bot");
   return {
     type: "bot",
-    opponentName: "AI Nemesis",
+    opponentName: bot.username,
     opponentArchetype: null,
-    opponentRating: playerRating,
+    opponentRating: bot.rating,
   };
 }

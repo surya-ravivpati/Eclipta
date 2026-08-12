@@ -9,10 +9,15 @@ import type { ArchetypeId } from "@/components/battles/types";
  *
  * Two commitments, both enforced by the data rather than by convention:
  *
- *   1. **Every bot is flagged as a bot.** `isBot` is on the generated record and
- *      `is_bot` is on the row, so the UI can always label them. A ladder where
- *      the player cannot tell who is real is a worse product — the fun of
- *      beating a rival depends on knowing which rivals are real.
+ *   1. **Every bot is flagged as a bot in the data.** `isBot` is on the
+ *      generated record and `is_bot` is on the row. Note what changed on
+ *      2026-08-12: the *battle* UI no longer surfaces that flag while you are
+ *      queueing or fighting, so a single match does not announce which kind of
+ *      opponent it found. The flag itself is never dropped — it still drives
+ *      the ladder's labelling, and it is what lets the "how battles work"
+ *      panel disclose that bots exist at all. The product decision is that the
+ *      practice is disclosed once, in general, rather than stamped on each
+ *      match; it is not that the distinction stops being recorded.
  *   2. **Generation is deterministic.** A seeded PRNG means the same seed always
  *      produces the same roster, so the ladder is reproducible across
  *      environments and a bot's history never silently changes between runs.
@@ -191,8 +196,10 @@ export const PERSONALITIES: Record<PersonalityId, Personality> = {
 
 // ── Names ────────────────────────────────────────────────────────────────────
 // Handle-style rather than realistic personal names, deliberately: a bot called
-// "Sarah Chen" invites a user to believe a specific person exists. A handle
-// reads as a screen name and sits honestly next to a BOT label.
+// "Sarah Chen" invites a user to believe a specific person exists, which is a
+// claim about the world. A handle is a screen name — the same kind of thing
+// every real account here has — so it sits in a match without either announcing
+// itself as synthetic or impersonating somebody.
 
 const HANDLE_HEADS = [
   "quanta",
@@ -424,6 +431,46 @@ export function generateRoster(count = 300, seed = 20260801): BotProfile[] {
   const r = rng(seed);
   const used = new Set<string>();
   return Array.from({ length: count }, (_, i) => makeBot(r, used, i + 1));
+}
+
+/**
+ * The shared roster, built once per session.
+ *
+ * Matchmaking asks for an opponent on every battle, and generating 300
+ * simulated histories each time would be work done to throw away.
+ */
+let sharedRoster: BotProfile[] | null = null;
+export function defaultRoster(): BotProfile[] {
+  sharedRoster ??= generateRoster();
+  return sharedRoster;
+}
+
+/**
+ * Pick the bot a player at `rating` should face.
+ *
+ * Rating proximity first, then "is this one plausibly awake right now" — the
+ * same schedule `isActiveAt` uses for challenges, for the same reason. The
+ * window widens rather than failing: an opponent slightly off your rating beats
+ * no opponent, and the caller has no fallback to offer.
+ */
+export function pickBotOpponent(
+  rating: number,
+  r: () => number = Math.random,
+  hour: number = new Date().getHours(),
+  roster: BotProfile[] = defaultRoster(),
+): BotProfile {
+  if (roster.length === 0) throw new Error("pickBotOpponent called with an empty roster");
+
+  for (const window of [120, 250, 500, Infinity]) {
+    const near = roster.filter((b) => Math.abs(b.rating - rating) <= window);
+    if (near.length === 0) continue;
+    // Prefer someone whose schedule says they'd be online, but never let an
+    // empty schedule slice send us to a wildly mismatched rating.
+    const awake = near.filter((b) => isActiveAt(b, hour));
+    const pool = awake.length > 0 ? awake : near;
+    return pick(r, pool);
+  }
+  return pick(r, roster);
 }
 
 // ── Behaviour ────────────────────────────────────────────────────────────────

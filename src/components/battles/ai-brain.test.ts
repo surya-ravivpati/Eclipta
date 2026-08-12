@@ -9,6 +9,10 @@ import {
   pickAiAction,
   updateBattleMemoryAiTurn,
   updateBattleMemoryPlayerTurn,
+  ratingSkillAdjustment,
+  botThinkDelayMs,
+  BOT_PACING,
+  SKILL_ADJUSTMENT_LIMIT,
   type BattleMemory,
 } from "./ai-brain";
 
@@ -322,5 +326,130 @@ describe("getPressureLogLine", () => {
     mockRandomSequence([0.1, 0.1]);
     const line = getPressureLogLine(memory, AI_PERSONALITIES.tank, "Rival", 0.9, false);
     expect(line).toMatch(/Rival/);
+  });
+});
+
+// ─── Rating-matched difficulty ───────────────────────────────────────────────
+
+describe("ratingSkillAdjustment", () => {
+  it("is zero for an evenly matched pair", () => {
+    expect(ratingSkillAdjustment(1200, 1200)).toBe(0);
+  });
+
+  it("favours the bot when the bot is rated higher, and vice versa", () => {
+    expect(ratingSkillAdjustment(1000, 1400)).toBeGreaterThan(0);
+    expect(ratingSkillAdjustment(1400, 1000)).toBeLessThan(0);
+  });
+
+  it("is symmetric around an equal gap", () => {
+    expect(ratingSkillAdjustment(1000, 1400)).toBeCloseTo(-ratingSkillAdjustment(1400, 1000), 10);
+  });
+
+  it("stays inside the budget no matter how absurd the gap", () => {
+    // The clamp is the whole safety property: difficulty is meant to come from
+    // decision quality, so no rating gap may turn the bot into a wall.
+    const gaps: [number, number][] = [
+      [100, 4000],
+      [4000, 100],
+      [0, 99999],
+      [99999, 0],
+    ];
+    for (const [p, b] of gaps) {
+      const adj = ratingSkillAdjustment(p, b);
+      expect(Math.abs(adj)).toBeLessThanOrEqual(SKILL_ADJUSTMENT_LIMIT);
+    }
+  });
+
+  it("returns 0 rather than NaN for missing ratings", () => {
+    expect(ratingSkillAdjustment(NaN, 1200)).toBe(0);
+    expect(ratingSkillAdjustment(1200, Infinity)).toBe(0);
+  });
+});
+
+describe("computeAiAccuracy with a skill adjustment", () => {
+  const arch = archetype();
+  const memory = createBattleMemory();
+
+  it("defaults to the previous behaviour when no adjustment is given", () => {
+    const withoutArg = computeAiAccuracy(arch, AI_PERSONALITIES.tank, memory, 0.9, 0.9);
+    const withZero = computeAiAccuracy(arch, AI_PERSONALITIES.tank, memory, 0.9, 0.9, 0);
+    expect(withoutArg).toBe(withZero);
+  });
+
+  it("moves accuracy in the direction of the adjustment", () => {
+    const even = computeAiAccuracy(arch, AI_PERSONALITIES.tank, memory, 0.9, 0.9, 0);
+    const stronger = computeAiAccuracy(arch, AI_PERSONALITIES.tank, memory, 0.9, 0.9, 0.1);
+    const weaker = computeAiAccuracy(arch, AI_PERSONALITIES.tank, memory, 0.9, 0.9, -0.1);
+    expect(stronger).toBeGreaterThan(even);
+    expect(weaker).toBeLessThan(even);
+  });
+
+  it("never escapes the global accuracy envelope", () => {
+    const high = computeAiAccuracy(arch, AI_PERSONALITIES.god, memory, 0.1, 0.9, 0.1);
+    const low = computeAiAccuracy(arch, AI_PERSONALITIES.tank, memory, 0.9, 0.9, -0.1);
+    expect(high).toBeLessThanOrEqual(0.92);
+    expect(low).toBeGreaterThanOrEqual(0.42);
+  });
+
+  it("still eases off when the player is nearly dead, without erasing the opponent's skill", () => {
+    // Anti-frustration caps the stacking bonuses, but a strong opponent should
+    // stay a strong opponent rather than visibly pulling its punches.
+    const strongDying = computeAiAccuracy(arch, AI_PERSONALITIES.god, memory, 0.1, 0.1, 0.1);
+    const evenDying = computeAiAccuracy(arch, AI_PERSONALITIES.god, memory, 0.1, 0.1, 0);
+    expect(strongDying).toBeGreaterThan(evenDying);
+  });
+});
+
+// ─── Pacing ──────────────────────────────────────────────────────────────────
+
+describe("botThinkDelayMs", () => {
+  /** Cycles a fixed sequence, so a "random" delay is reproducible. */
+  function seq(values: number[]): () => number {
+    let i = 0;
+    return () => {
+      const v = values[i % values.length];
+      i += 1;
+      return v ?? 0.5;
+    };
+  }
+
+  it("always lands inside the playable bounds", () => {
+    for (const v of [0, 0.001, 0.25, 0.5, 0.75, 0.999, 1]) {
+      for (const turn of [0, 1, 5, 20, 200]) {
+        const ms = botThinkDelayMs(turn, seq([v]));
+        expect(ms).toBeGreaterThanOrEqual(BOT_PACING.floorMs);
+        expect(ms).toBeLessThanOrEqual(BOT_PACING.ceilingMs);
+      }
+    }
+  });
+
+  it("is never the same value twice running — the point of the whole function", () => {
+    // A flat delay is what gave the old bot away, so variation is the property
+    // under test, not an implementation detail.
+    const seen = new Set(
+      Array.from({ length: 60 }, (_, i) => botThinkDelayMs(3, seq([i / 60, 0.4, 0.7, 0.9]))),
+    );
+    expect(seen.size).toBeGreaterThan(5);
+  });
+
+  it("is right-skewed: the median sits well below the ceiling", () => {
+    const samples = Array.from({ length: 400 }, () => botThinkDelayMs(3)).sort((a, b) => a - b);
+    const median = samples[Math.floor(samples.length / 2)] ?? 0;
+    expect(median).toBeLessThan(BOT_PACING.baseMs * 1.4);
+    // ...and the tail genuinely reaches further than the median.
+    expect(Math.max(...samples)).toBeGreaterThan(median);
+  });
+
+  it("speeds up as the match goes on", () => {
+    // Same rng draw, different turn numbers: only the warm-up term differs.
+    const early = botThinkDelayMs(0, seq([0.5]));
+    const late = botThinkDelayMs(30, seq([0.5]));
+    expect(late).toBeLessThanOrEqual(early);
+  });
+
+  it("never returns an instant or a hang", () => {
+    const samples = Array.from({ length: 300 }, () => botThinkDelayMs(5));
+    expect(Math.min(...samples)).toBeGreaterThanOrEqual(BOT_PACING.floorMs);
+    expect(Math.max(...samples)).toBeLessThanOrEqual(BOT_PACING.ceilingMs);
   });
 });

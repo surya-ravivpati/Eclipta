@@ -422,9 +422,15 @@ export function computeAiAccuracy(
   memory: BattleMemory,
   oppHpPct: number,
   playerHpPct: number,
+  /**
+   * Accuracy shift from the rating gap between the two fighters, from
+   * `ratingSkillAdjustment`. Optional and defaulted to 0 so an unrated context
+   * (or a caller that predates matchmaking) behaves exactly as before.
+   */
+  skillAdjustment = 0,
 ): number {
   const base = botAccuracy(arch);
-  let acc = base;
+  let acc = base + skillAdjustment;
 
   // Clutch factor
   if (oppHpPct < 0.35) acc += personality.clutchFactor;
@@ -445,12 +451,100 @@ export function computeAiAccuracy(
     acc += Math.min(memory.turnNumber * 0.016, 0.096);
   }
 
-  // Anti-frustration: ease off if player is almost dead anyway
+  // Anti-frustration: ease off if player is almost dead anyway. The cap is
+  // relative to this opponent's own baseline rather than the archetype's, so
+  // mercy means "stop stacking bonuses", not "become a weaker opponent
+  // mid-match" — which would read as the AI visibly pulling its punches.
   if (playerHpPct < 0.15) {
-    acc = Math.min(acc, base + 0.04);
+    acc = Math.min(acc, base + skillAdjustment + 0.04);
   }
 
   return Math.max(0.42, Math.min(0.92, acc));
+}
+
+/**
+ * Accuracy shift from the rating gap between the player and their opponent.
+ *
+ * Without this the bot's difficulty comes from its archetype alone, so a 2000
+ * and a 700 player meet the same opponent and exactly one of them has a real
+ * match. Rating is the only skill estimate available at match time, and
+ * matchmaking already picks a bot near the player's, so the gap is usually
+ * small and this usually does very little — which is the point. It corrects
+ * the mismatch at the edges instead of rescaling every fight.
+ *
+ * Deliberately bounded well inside the [0.42, 0.92] envelope: difficulty in
+ * this design comes from decision quality, and a bot that answers 92% of
+ * questions correctly is not a hard opponent, it is an unbeatable one.
+ */
+export const SKILL_ADJUSTMENT_LIMIT = 0.1;
+
+export function ratingSkillAdjustment(playerRating: number, botRating: number): number {
+  if (!Number.isFinite(playerRating) || !Number.isFinite(botRating)) return 0;
+  // 400 Elo is the classic "one class stronger" gap, mapped to most of the
+  // budget so a genuinely mismatched opponent feels different without the
+  // curve going vertical.
+  const raw = ((botRating - playerRating) / 400) * 0.08;
+  return Math.max(-SKILL_ADJUSTMENT_LIMIT, Math.min(SKILL_ADJUSTMENT_LIMIT, raw));
+}
+
+// ─── Pacing ──────────────────────────────────────────────────────────────────
+
+/**
+ * Tuning for how long an opponent appears to think.
+ *
+ * The old delay was a flat 400ms on every single turn. Nothing else gives a bot
+ * away as fast: people are never metronomes, and a perfectly regular cadence is
+ * legible within about three turns even to someone not looking for it.
+ */
+export const BOT_PACING = {
+  /** Never so fast it reads as machine-instant. */
+  floorMs: 650,
+  /** Never so slow the player thinks the game has hung. */
+  ceilingMs: 4200,
+  /** Typical time to settle on an action. */
+  baseMs: 1150,
+  /** Someone glancing away, re-reading the question, or second-guessing. */
+  hesitationChance: 0.12,
+  hesitationMinMs: 800,
+  hesitationMaxMs: 2000,
+} as const;
+
+/**
+ * How long the opponent should appear to think before its turn resolves.
+ *
+ * Three properties, each chosen because its absence is a tell:
+ *
+ *   - **Right-skewed, not symmetric.** Real response times have a long tail —
+ *     mostly quick with occasional slow ones — so the jitter is exponential
+ *     over a roughly normal draw rather than a uniform ± band, which would
+ *     produce an obviously bounded spread.
+ *   - **Warms up.** People speed up slightly as they settle into a match.
+ *   - **Occasionally hesitates.** A rare long pause is what a distracted human
+ *     looks like; without it the tail is too clean.
+ *
+ * Bounded at both ends because this is still a game someone is waiting on.
+ * Pure and rng-injectable so the distribution can actually be tested.
+ *
+ * Note what this deliberately does NOT vary on: the action being taken. The
+ * delay is spent before the opponent has chosen one, and weighting it by the
+ * choice would mean either restructuring the turn resolution around a cosmetic
+ * detail or shipping a knob nothing turns.
+ */
+export function botThinkDelayMs(turnNumber: number, r: () => number = Math.random): number {
+  // Settles by ~25% over the first dozen turns, then holds.
+  const warmUp = Math.max(0.75, 1 - Math.max(0, turnNumber) * 0.02);
+  // Sum of three uniforms ≈ normal (central limit, cheaply); exp of it gives a
+  // lognormal with a median near 1 and a long right tail.
+  const draw = r() + r() + r() - 1.5;
+  const jitter = Math.exp(draw * 0.55);
+
+  let ms = BOT_PACING.baseMs * warmUp * jitter;
+  if (r() < BOT_PACING.hesitationChance) {
+    const span = BOT_PACING.hesitationMaxMs - BOT_PACING.hesitationMinMs;
+    ms += BOT_PACING.hesitationMinMs + r() * span;
+  }
+
+  return Math.round(Math.max(BOT_PACING.floorMs, Math.min(BOT_PACING.ceilingMs, ms)));
 }
 
 // ─── Narrative Pressure Messages ─────────────────────────────────────────────

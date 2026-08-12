@@ -122,6 +122,8 @@ import {
   pickAiAction,
   computeAiAccuracy,
   getPressureLogLine,
+  ratingSkillAdjustment,
+  botThinkDelayMs,
   type BattleMemory,
 } from "./battles/ai-brain";
 import { ARCHETYPES, rollGamblerStats } from "./battles/archetypes";
@@ -3251,230 +3253,247 @@ function BattleArena() {
     const personality = AI_PERSONALITIES[opponentArchetype];
     const memory = battleMemoryRef.current;
 
-    setTimeout(() => {
-      // Poison/regen/freeze resolve before the bot chooses — a frozen turn is
-      // skipped outright, and a poison that kills ends the match here.
-      const oppTick = runEffectTick("opponent");
-      if (oppTick.died) {
-        finishBattle(true);
-        return;
-      }
-      if (oppTick.frozen) {
-        setTimeout(() => setPhase("select"), 600);
-        return;
-      }
-
-      actingSideRef.current = "opponent";
-      const prevOpp = opponentRef.current;
-      const prevPlayer = playerRef.current;
-      // In a bar/grid mode these describe the bot's standing on the rope or the
-      // board rather than a health bar that never moves, so the AI brain keeps
-      // reading a meaningful "how am I doing" without being changed at all.
-      const oppHpPct = modeStanding("opponent", prevOpp);
-      const playerHpPct = modeStanding("player", prevPlayer);
-      const mem = memory ?? createBattleMemory();
-
-      const oppUltimate = getUltimate(opponentEcliptarRef.current);
-      const oppUltimateReady =
-        Boolean(oppUltimate) && opponentChargeRef.current >= 1 && opponentCooldownRef.current <= 0;
-
-      const choice = pickAiAction(
-        mem,
-        personality,
-        {
-          hp: Math.round(oppHpPct * prevOpp.maxHp),
-          maxHp: prevOpp.maxHp,
-          focus: prevOpp.focus,
-          maxFocus: prevOpp.maxFocus,
-          canHeal: oppArch.healAmount !== null,
-          ultimateReady: oppUltimateReady,
-        },
-        {
-          hp: Math.round(playerHpPct * prevPlayer.maxHp),
-          maxHp: prevPlayer.maxHp,
-          momentum: opponentMomentum,
-        },
-      );
-
-      const success =
-        Math.random() < computeAiAccuracy(oppArch, personality, mem, oppHpPct, playerHpPct);
-
-      // Narrative pressure line — appears at meaningful moments only
-      const hasData = mem.playerTurnCount >= 4;
-      const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
-      const pressureLine = getPressureLogLine(
-        mem,
-        personality,
-        prevOpp.name,
-        oppHpPct,
-        hasData && strongPattern,
-      );
-      if (pressureLine) addLog({ actor: "system", actionType: "info", result: pressureLine });
-
-      let newPlayerHp = prevPlayer.hp;
-      let newPlayerShield = prevPlayer.shield ?? 0;
-      let newOppHp = prevOpp.hp;
-      let newOppFocus = prevOpp.focus;
-      let nextOppMom = opponentMomentum;
-
-      const playerArch = getArch(archetypeRef.current);
-      /** True while the resolver already committed both sides (bot ultimate). */
-      let ultimateHandled = false;
-      /**
-       * Route incoming damage through the player's DEF and any damageReduction
-       * effect, then their shield, then pay back a reflect share.
-       */
-      const hitPlayer = (raw: number): number => {
-        const after = defendWithEffects(
-          raw,
-          playerArch,
-          playerEffectsRef.current,
-          copiedPassiveRef.current,
-        );
-        const { hpLoss, shieldLeft } = absorbWithShield(after, newPlayerShield);
-        newPlayerShield = shieldLeft;
-        // DEF and the shield have already shrunk this number; spendDamage only
-        // decides where what is left goes, and returns 0 outside an HP mode.
-        newPlayerHp = Math.max(0, newPlayerHp - spendDamage("opponent", hpLoss));
-        const reflect = totalOf(playerEffectsRef.current, "reflect");
-        if (reflect > 0 && after > 0) {
-          const back = Math.max(1, Math.floor(after * reflect));
-          newOppHp = Math.max(0, newOppHp - spendDamage("player", back));
-          addLog({
-            actor: "player",
-            actionType: "attack",
-            result: `Reflected ${modeDamageLabel(back)} back.`,
-            value: back,
-          });
+    setTimeout(
+      () => {
+        // Poison/regen/freeze resolve before the bot chooses — a frozen turn is
+        // skipped outright, and a poison that kills ends the match here.
+        const oppTick = runEffectTick("opponent");
+        if (oppTick.died) {
+          finishBattle(true);
+          return;
         }
-        return hpLoss;
-      };
-
-      if (success) {
-        nextOppMom = opponentMomentum + 1;
-        // The bot's correct-answer count drives its Accelerator ramp / God heal.
-        const oppCorrect = mem.turnNumber;
-
-        if (choice === "defend") {
-          newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
-          if (oppArch.healAmount !== null) {
-            newOppHp = Math.min(
-              prevOpp.maxHp,
-              prevOpp.hp + spendHeal("opponent", oppArch.healAmount),
-            );
-            addLog({
-              actor: "opponent",
-              actionType: "heal",
-              result: `${prevOpp.name} heals: ${modeRestoreLabel(oppArch.healAmount)}, +${FOCUS_GAIN.defend} Focus.`,
-              value: oppArch.healAmount,
-            });
-          } else {
-            addLog({
-              actor: "opponent",
-              actionType: "heal",
-              result: `${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`,
-              value: FOCUS_GAIN.defend,
-            });
-          }
-        } else if (choice === "ultimate" && oppUltimate) {
-          // The bot's ultimate goes through the same resolver, which commits
-          // both sides itself — including routing its damage to whatever this
-          // mode is fought over — so this branch skips the local bookkeeping.
-          castUltimate(oppUltimate, "opponent");
-          newPlayerHp = playerRef.current.hp;
-          newPlayerShield = playerRef.current.shield ?? 0;
-          newOppHp = opponentRef.current.hp;
-          ultimateHandled = true;
-        } else {
-          const hit = damageWithEffects(
-            oppArch,
-            opponentEffectsRef.current,
-            opponentBonusDamageRef.current,
-            { action: choice, correctCount: oppCorrect, currentHp: prevOpp.hp },
-          );
-          for (const kind of hit.consumed) {
-            opponentEffectsRef.current = consumeUse(opponentEffectsRef.current, kind);
-          }
-          setOpponentEffects(opponentEffectsRef.current);
-          const dmg = hitPlayer(hit.damage);
-          const cost = ACTIONS[choice].focusCost;
-          if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
-          const gain = FOCUS_GAIN[choice];
-          if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
-          setShowPlayerHit(true);
-          const critNote = hit.crit ? " CRIT!" : "";
-          addLog({
-            actor: "opponent",
-            actionType: choice,
-            result: `${prevOpp.name} ${ACTIONS[choice].label}: ${modeDamageLabel(dmg)}.${critNote}`,
-            value: dmg,
-          });
-        }
-
-        // The opponent's own every-third-answer restore (God, or a Fulcrum bot).
-        const oppDivine = getStreakHeal(oppArch, oppCorrect + 1);
-        if (oppDivine > 0) {
-          newOppHp = Math.min(prevOpp.maxHp, newOppHp + spendHeal("opponent", oppDivine));
-          addLog({
-            actor: "opponent",
-            actionType: "heal",
-            result: `${prevOpp.name}'s passive: ${modeRestoreLabel(oppDivine)}.`,
-            value: oppDivine,
-          });
-        }
-      } else {
-        nextOppMom = 0;
-        const flub = applyDefense(Math.floor(Math.random() * 6) + 4, oppArch);
-        newOppHp = Math.max(0, prevOpp.hp - spendMiss("opponent", flub));
-        addLog({
-          actor: "opponent",
-          actionType: "miss",
-          result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}${modeUsesHp() ? `: -${flub} HP` : ""}.`,
-          value: flub,
-        });
-      }
-
-      if (memory) updateBattleMemoryAiTurn(memory, success);
-      if (success) opponentCorrectRef.current += 1;
-      modeTurnsRef.current += 1;
-      setOpponentMomentum(nextOppMom);
-      if (!ultimateHandled) {
-        setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
-        setOpponent((o) => ({ ...o, hp: newOppHp, focus: newOppFocus }));
-      } else {
-        setOpponent((o) => ({ ...o, focus: newOppFocus }));
-      }
-      // A correct bot answer builds its ultimate charge the same way ours does.
-      if (success) {
-        const nextCharge = Math.min(
-          1,
-          opponentChargeRef.current + ULTIMATE_TUNING.chargePerCorrectAnswer,
-        );
-        opponentChargeRef.current = nextCharge;
-        setOpponentCharge(nextCharge);
-      }
-      if (opponentCooldownRef.current > 0) opponentCooldownRef.current -= 1;
-
-      setTimeout(() => {
-        setShowPlayerHit(false);
-
-        if (pendingPlacementRef.current) {
-          // Territory: waiting on the player to tap a tile — resolvePendingPlacement continues the loop.
+        if (oppTick.frozen) {
+          setTimeout(() => setPhase("select"), 600);
           return;
         }
 
-        const modeOutcome = resolveModeOutcome(newPlayerHp, newOppHp);
-        if (modeOutcome === "ended") {
-          // finishBattle already ran.
-        } else if (modeOutcome === "passthrough" && newPlayerHp <= 0) {
-          finishBattle(false);
-        } else if (modeOutcome === "passthrough" && newOppHp <= 0) {
-          finishBattle(true);
+        actingSideRef.current = "opponent";
+        const prevOpp = opponentRef.current;
+        const prevPlayer = playerRef.current;
+        // In a bar/grid mode these describe the bot's standing on the rope or the
+        // board rather than a health bar that never moves, so the AI brain keeps
+        // reading a meaningful "how am I doing" without being changed at all.
+        const oppHpPct = modeStanding("opponent", prevOpp);
+        const playerHpPct = modeStanding("player", prevPlayer);
+        const mem = memory ?? createBattleMemory();
+
+        const oppUltimate = getUltimate(opponentEcliptarRef.current);
+        const oppUltimateReady =
+          Boolean(oppUltimate) &&
+          opponentChargeRef.current >= 1 &&
+          opponentCooldownRef.current <= 0;
+
+        const choice = pickAiAction(
+          mem,
+          personality,
+          {
+            hp: Math.round(oppHpPct * prevOpp.maxHp),
+            maxHp: prevOpp.maxHp,
+            focus: prevOpp.focus,
+            maxFocus: prevOpp.maxFocus,
+            canHeal: oppArch.healAmount !== null,
+            ultimateReady: oppUltimateReady,
+          },
+          {
+            hp: Math.round(playerHpPct * prevPlayer.maxHp),
+            maxHp: prevPlayer.maxHp,
+            momentum: opponentMomentum,
+          },
+        );
+
+        const success =
+          Math.random() <
+          computeAiAccuracy(
+            oppArch,
+            personality,
+            mem,
+            oppHpPct,
+            playerHpPct,
+            ratingSkillAdjustment(playerRatingRef.current, opponentRatingRef.current),
+          );
+
+        // Narrative pressure line — appears at meaningful moments only
+        const hasData = mem.playerTurnCount >= 4;
+        const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
+        const pressureLine = getPressureLogLine(
+          mem,
+          personality,
+          prevOpp.name,
+          oppHpPct,
+          hasData && strongPattern,
+        );
+        if (pressureLine) addLog({ actor: "system", actionType: "info", result: pressureLine });
+
+        let newPlayerHp = prevPlayer.hp;
+        let newPlayerShield = prevPlayer.shield ?? 0;
+        let newOppHp = prevOpp.hp;
+        let newOppFocus = prevOpp.focus;
+        let nextOppMom = opponentMomentum;
+
+        const playerArch = getArch(archetypeRef.current);
+        /** True while the resolver already committed both sides (bot ultimate). */
+        let ultimateHandled = false;
+        /**
+         * Route incoming damage through the player's DEF and any damageReduction
+         * effect, then their shield, then pay back a reflect share.
+         */
+        const hitPlayer = (raw: number): number => {
+          const after = defendWithEffects(
+            raw,
+            playerArch,
+            playerEffectsRef.current,
+            copiedPassiveRef.current,
+          );
+          const { hpLoss, shieldLeft } = absorbWithShield(after, newPlayerShield);
+          newPlayerShield = shieldLeft;
+          // DEF and the shield have already shrunk this number; spendDamage only
+          // decides where what is left goes, and returns 0 outside an HP mode.
+          newPlayerHp = Math.max(0, newPlayerHp - spendDamage("opponent", hpLoss));
+          const reflect = totalOf(playerEffectsRef.current, "reflect");
+          if (reflect > 0 && after > 0) {
+            const back = Math.max(1, Math.floor(after * reflect));
+            newOppHp = Math.max(0, newOppHp - spendDamage("player", back));
+            addLog({
+              actor: "player",
+              actionType: "attack",
+              result: `Reflected ${modeDamageLabel(back)} back.`,
+              value: back,
+            });
+          }
+          return hpLoss;
+        };
+
+        if (success) {
+          nextOppMom = opponentMomentum + 1;
+          // The bot's correct-answer count drives its Accelerator ramp / God heal.
+          const oppCorrect = mem.turnNumber;
+
+          if (choice === "defend") {
+            newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
+            if (oppArch.healAmount !== null) {
+              newOppHp = Math.min(
+                prevOpp.maxHp,
+                prevOpp.hp + spendHeal("opponent", oppArch.healAmount),
+              );
+              addLog({
+                actor: "opponent",
+                actionType: "heal",
+                result: `${prevOpp.name} heals: ${modeRestoreLabel(oppArch.healAmount)}, +${FOCUS_GAIN.defend} Focus.`,
+                value: oppArch.healAmount,
+              });
+            } else {
+              addLog({
+                actor: "opponent",
+                actionType: "heal",
+                result: `${prevOpp.name} defends: +${FOCUS_GAIN.defend} Focus.`,
+                value: FOCUS_GAIN.defend,
+              });
+            }
+          } else if (choice === "ultimate" && oppUltimate) {
+            // The bot's ultimate goes through the same resolver, which commits
+            // both sides itself — including routing its damage to whatever this
+            // mode is fought over — so this branch skips the local bookkeeping.
+            castUltimate(oppUltimate, "opponent");
+            newPlayerHp = playerRef.current.hp;
+            newPlayerShield = playerRef.current.shield ?? 0;
+            newOppHp = opponentRef.current.hp;
+            ultimateHandled = true;
+          } else {
+            const hit = damageWithEffects(
+              oppArch,
+              opponentEffectsRef.current,
+              opponentBonusDamageRef.current,
+              { action: choice, correctCount: oppCorrect, currentHp: prevOpp.hp },
+            );
+            for (const kind of hit.consumed) {
+              opponentEffectsRef.current = consumeUse(opponentEffectsRef.current, kind);
+            }
+            setOpponentEffects(opponentEffectsRef.current);
+            const dmg = hitPlayer(hit.damage);
+            const cost = ACTIONS[choice].focusCost;
+            if (cost > 0) newOppFocus = Math.max(0, prevOpp.focus - cost);
+            const gain = FOCUS_GAIN[choice];
+            if (gain > 0) newOppFocus = Math.min(prevOpp.maxFocus, newOppFocus + gain);
+            setShowPlayerHit(true);
+            const critNote = hit.crit ? " CRIT!" : "";
+            addLog({
+              actor: "opponent",
+              actionType: choice,
+              result: `${prevOpp.name} ${ACTIONS[choice].label}: ${modeDamageLabel(dmg)}.${critNote}`,
+              value: dmg,
+            });
+          }
+
+          // The opponent's own every-third-answer restore (God, or a Fulcrum bot).
+          const oppDivine = getStreakHeal(oppArch, oppCorrect + 1);
+          if (oppDivine > 0) {
+            newOppHp = Math.min(prevOpp.maxHp, newOppHp + spendHeal("opponent", oppDivine));
+            addLog({
+              actor: "opponent",
+              actionType: "heal",
+              result: `${prevOpp.name}'s passive: ${modeRestoreLabel(oppDivine)}.`,
+              value: oppDivine,
+            });
+          }
         } else {
-          setPhase("select");
+          nextOppMom = 0;
+          const flub = applyDefense(Math.floor(Math.random() * 6) + 4, oppArch);
+          newOppHp = Math.max(0, prevOpp.hp - spendMiss("opponent", flub));
+          addLog({
+            actor: "opponent",
+            actionType: "miss",
+            result: `${prevOpp.name} fluffs ${ACTIONS[choice].label}${modeUsesHp() ? `: -${flub} HP` : ""}.`,
+            value: flub,
+          });
         }
-      }, 600);
-    }, 400);
+
+        if (memory) updateBattleMemoryAiTurn(memory, success);
+        if (success) opponentCorrectRef.current += 1;
+        modeTurnsRef.current += 1;
+        setOpponentMomentum(nextOppMom);
+        if (!ultimateHandled) {
+          setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
+          setOpponent((o) => ({ ...o, hp: newOppHp, focus: newOppFocus }));
+        } else {
+          setOpponent((o) => ({ ...o, focus: newOppFocus }));
+        }
+        // A correct bot answer builds its ultimate charge the same way ours does.
+        if (success) {
+          const nextCharge = Math.min(
+            1,
+            opponentChargeRef.current + ULTIMATE_TUNING.chargePerCorrectAnswer,
+          );
+          opponentChargeRef.current = nextCharge;
+          setOpponentCharge(nextCharge);
+        }
+        if (opponentCooldownRef.current > 0) opponentCooldownRef.current -= 1;
+
+        setTimeout(() => {
+          setShowPlayerHit(false);
+
+          if (pendingPlacementRef.current) {
+            // Territory: waiting on the player to tap a tile — resolvePendingPlacement continues the loop.
+            return;
+          }
+
+          const modeOutcome = resolveModeOutcome(newPlayerHp, newOppHp);
+          if (modeOutcome === "ended") {
+            // finishBattle already ran.
+          } else if (modeOutcome === "passthrough" && newPlayerHp <= 0) {
+            finishBattle(false);
+          } else if (modeOutcome === "passthrough" && newOppHp <= 0) {
+            finishBattle(true);
+          } else {
+            setPhase("select");
+          }
+        }, 600);
+        // Variable, right-skewed, and occasionally hesitant — see botThinkDelayMs.
+        // A flat delay here was the loudest remaining tell: nothing else in the
+        // match is metronomic, so a perfectly regular opponent stands out inside
+        // a few turns.
+      },
+      botThinkDelayMs(battleMemoryRef.current?.turnNumber ?? 0),
+    );
   }, [addLog, finishBattle, opponentArchetype, opponentMomentum, getArch]);
 
   const selectAction = async (action: Action) => {

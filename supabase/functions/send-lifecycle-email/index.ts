@@ -19,6 +19,7 @@ import {
   dailyDigest,
   eventNotification,
   guardianReport,
+  reEngagement,
   streakSaver,
   weeklyReport,
   type Rendered,
@@ -33,6 +34,7 @@ type Category =
   | "daily_digest"
   | "weekly_report"
   | "streak_saver"
+  | "re_engagement"
   | "battle"
   | "forum"
   | "group"
@@ -107,18 +109,29 @@ serve(async (req) => {
     };
 
     // ── 2. Preferences ──────────────────────────────────────────────────────
-    const { data: prefs } = await svc.rpc("ensure_email_preferences", { p_user: userId });
+    const { data: prefs, error: prefError } = await svc.rpc("ensure_email_preferences", {
+      p_user: userId,
+    });
     const pref = prefs as {
       muted: string[];
       unsubscribed_all: boolean;
       unsubscribe_token: string;
     } | null;
 
-    if (pref?.unsubscribed_all) {
+    // Fail closed. An unreadable preferences row means we cannot know the user
+    // consented, and cannot mint the token the unsubscribe footer needs — so
+    // sending anyway would produce mail nobody can opt out of. Every other
+    // failure here is recoverable; that one is not.
+    if (prefError || !pref) {
+      await finish("skipped", `preferences unavailable: ${prefError?.message ?? "no row"}`, "");
+      return json({ skipped: true, reason: "preferences_unavailable" }, 503);
+    }
+
+    if (pref.unsubscribed_all) {
       await finish("skipped", "unsubscribed from all", "");
       return json({ skipped: true, reason: "unsubscribed" });
     }
-    if (pref?.muted?.includes(category)) {
+    if (pref.muted?.includes(category)) {
       await finish("skipped", `muted: ${category}`, "");
       return json({ skipped: true, reason: "muted" });
     }
@@ -158,7 +171,7 @@ serve(async (req) => {
     }
 
     // ── 4. Render ───────────────────────────────────────────────────────────
-    const unsub = pref?.unsubscribe_token
+    const unsub = pref.unsubscribe_token
       ? unsubscribeUrl(APP_URL, pref.unsubscribe_token, category)
       : undefined;
     const ctx = { appUrl: APP_URL, name: learnerName, unsubscribeUrl: unsub };
@@ -174,6 +187,9 @@ serve(async (req) => {
         break;
       case "streak_saver":
         rendered = streakSaver(ctx, d);
+        break;
+      case "re_engagement":
+        rendered = reEngagement(ctx, d);
         break;
       case "ai_followup":
         rendered = aiFollowUp(ctx, d);

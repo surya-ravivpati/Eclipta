@@ -117,7 +117,9 @@ export function dailyDigest(ctx: Ctx, d: DigestData): Rendered {
       `Lessons completed: ${d.lessonsCompleted}`,
       `Battles: ${d.battles.won} won of ${d.battles.played}`,
       `Streak: ${pluralDays(d.dailyStreak)}`,
-      d.leaderboard ? `Leaderboard: #${d.leaderboard.rank} (${d.leaderboard.delta >= 0 ? "+" : ""}${d.leaderboard.delta})` : "",
+      d.leaderboard
+        ? `Leaderboard: #${d.leaderboard.rank} (${d.leaderboard.delta >= 0 ? "+" : ""}${d.leaderboard.delta})`
+        : "",
       "",
       ...d.friendActivity.map((f) => `- ${f}`),
       ...d.recommendations.map((r) => `- ${r}`),
@@ -246,10 +248,7 @@ export function weeklyReport(ctx: Ctx, d: WeeklyData): Rendered {
  * user really can prevent it. Deliberately short — a long email defeats a
  * message whose entire point is "do one small thing now".
  */
-export function streakSaver(
-  ctx: Ctx,
-  d: { streakDays: number; hoursLeft: number },
-): Rendered {
+export function streakSaver(ctx: Ctx, d: { streakDays: number; hoursLeft: number }): Rendered {
   const body = [
     heading(
       `Your ${pluralDays(d.streakDays)} streak ends soon`,
@@ -258,9 +257,7 @@ export function streakSaver(
     // Straight into the app on the shortest possible path — a streak-saver that
     // lands on a dashboard has already lost.
     button("Continue learning", `${ctx.appUrl}/courses?resume=1`),
-    paragraph(
-      `One lesson is enough. It usually takes about five minutes.`,
-    ),
+    paragraph(`One lesson is enough. It usually takes about five minutes.`),
     spacer(),
   ].join("");
 
@@ -278,6 +275,57 @@ export function streakSaver(
   };
 }
 
+// ─── Re-engagement ───────────────────────────────────────────────────────────
+
+/**
+ * Sent to someone who has been away a while and has no streak left to save.
+ *
+ * The temptation here is loss framing — "you've lost your streak", "your
+ * progress is slipping". It is exactly wrong: the reason people don't come back
+ * is the imagined pile of catching-up waiting for them, and a reminder of what
+ * they broke makes that pile bigger. So the whole message is the opposite
+ * promise — nothing to rebuild, start anywhere.
+ */
+export function reEngagement(ctx: Ctx, d: { daysAway: number; topic: string | null }): Rendered {
+  const away = d.daysAway < 14 ? pluralDays(d.daysAway) : `${Math.round(d.daysAway / 7)} weeks`;
+
+  const body = [
+    heading("Still here whenever you are", `It's been ${away}.`),
+    d.topic
+      ? insight(`Last time, you were working through ${esc(d.topic)}. It's still waiting.`)
+      : "",
+    paragraph(
+      "There's nothing to catch up on. No backlog, no streak to rebuild — Eclipta picks up from wherever you actually are, and one short session is a perfectly good place to start.",
+    ),
+    button("Start where you like", `${ctx.appUrl}/courses`),
+    spacer(),
+  ].join("");
+
+  return {
+    subject: d.topic ? `${d.topic}, whenever you're ready` : "Whenever you're ready",
+    html: renderEmail({
+      preheader: "Nothing to catch up on — start anywhere.",
+      title: "Still here whenever you are",
+      bodyHtml: body,
+      unsubscribeUrl: ctx.unsubscribeUrl,
+      categoryLabel: "occasional reminders",
+      appUrl: ctx.appUrl,
+    }),
+    text: [
+      "Still here whenever you are",
+      "",
+      `It's been ${away}.`,
+      d.topic ? `Last time, you were working through ${d.topic}. It's still waiting.` : "",
+      "",
+      "There's nothing to catch up on. No backlog, no streak to rebuild — Eclipta picks up from wherever you actually are.",
+      "",
+      `Start where you like: ${ctx.appUrl}/courses`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
 // ─── Event notifications (battle / forum / group) ─────────────────────────────
 
 export type EventKind =
@@ -291,7 +339,10 @@ export type EventKind =
   | "group_resource";
 
 const EVENT_COPY: Record<EventKind, { title: (a: string) => string; cta: string }> = {
-  battle_challenge: { title: (a) => `${a} challenged you to a battle`, cta: "Accept the challenge" },
+  battle_challenge: {
+    title: (a) => `${a} challenged you to a battle`,
+    cta: "Accept the challenge",
+  },
   battle_promotion: { title: () => "You're one win from promotion", cta: "Play a ranked battle" },
   forum_reply: { title: (a) => `${a} replied to your thread`, cta: "Read the reply" },
   forum_mention: { title: (a) => `${a} mentioned you`, cta: "See the mention" },
@@ -344,7 +395,10 @@ export function aiFollowUp(
     paragraph(
       `Sometimes a concept just needs a different angle. Luna can walk through ${esc(d.concept)} again — a fresh explanation, at your pace, as many times as you want.`,
     ),
-    button("Ask Luna about this", `${ctx.appUrl}${d.threadLink ?? `/luna?topic=${encodeURIComponent(d.concept)}`}`),
+    button(
+      "Ask Luna about this",
+      `${ctx.appUrl}${d.threadLink ?? `/luna?topic=${encodeURIComponent(d.concept)}`}`,
+    ),
     spacer(),
   ].join("");
 

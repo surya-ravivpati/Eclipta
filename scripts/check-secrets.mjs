@@ -47,13 +47,24 @@ const addedLines = stagedDiff()
   .split("\n")
   .filter((l) => l.startsWith("+") && !l.startsWith("+++"));
 
+// Ordered roughly by how likely this project is to encounter each one. The
+// providers Eclipta actually uses come first: a scanner that misses the key
+// you are most likely to be holding is worse than no scanner, because it
+// invites the belief that the commit was checked.
 const TOKEN_PATTERNS = [
+  [/\bre_[A-Za-z0-9]{20,}\b/, "a Resend API key (re_...) — the email sender"],
+  [/\bsk-or-v1-[A-Za-z0-9]{20,}\b/, "an OpenRouter key (sk-or-v1-...) — the AI gateway"],
+  [/\bsb_secret_[A-Za-z0-9]{10,}\b/, "a Supabase secret key (sb_secret_...)"],
+  [/\bsbp_[a-f0-9]{40,}\b/, "a Supabase personal access token (sbp_...) — full account access"],
+  [/_authToken\s*=\s*\S{8,}/, "an npm auth token (_authToken=), e.g. in a committed .npmrc"],
   [/sk-(ant|proj)-[A-Za-z0-9_-]{10,}/, "an Anthropic/OpenAI-style secret key (sk-...)"],
   [/\bAIza[0-9A-Za-z_-]{30,}\b/, "a Google API key (AIza...)"],
   [/\bgh[pousr]_[A-Za-z0-9]{30,}\b/, "a GitHub token (ghp_/gho_/ghu_/ghs_/ghr_...)"],
   [/\bAKIA[0-9A-Z]{16}\b/, "an AWS access key ID (AKIA...)"],
   [/\bASIA[0-9A-Z]{16}\b/, "an AWS temporary access key ID (ASIA...)"],
-  [/\bsb_secret_[A-Za-z0-9]{10,}\b/, "a Supabase secret key (sb_secret_...)"],
+  [/\bSG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/, "a SendGrid key (SG....)"],
+  [/\b(sk|rk)_live_[A-Za-z0-9]{20,}\b/, "a Stripe live key (sk_live_/rk_live_...)"],
+  [/\bglpat-[A-Za-z0-9_-]{20,}\b/, "a GitLab token (glpat-...)"],
   [/xox[bpar]-[A-Za-z0-9-]{10,}/, "a Slack token (xox...)"],
   [/-----BEGIN (RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----/, "a private key (PEM block)"],
 ];

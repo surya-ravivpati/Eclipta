@@ -26,10 +26,20 @@ id_ed25519*
 *service-account*.json
 *secrets*.yml
 *secrets*.yaml
-.npmrc
 .netrc
 *.tfstate
 *.tfstate.*
+
+# `.npmrc` is secret-shaped — it's where `npm login` writes `_authToken`. But
+# this repo's own root .npmrc holds nothing but pnpm resolution settings and is
+# meant to be shared, so it is negated explicitly rather than left as a file
+# that is "ignored" while actually being tracked (a tracked file ignores
+# .gitignore entirely, so the rule was buying no safety at all). Any *other*
+# .npmrc in the tree — including the user-level one a login would write — stays
+# ignored, and check-secrets.mjs greps for `_authToken` so a credential added
+# to the tracked file is still caught before it can be committed.
+.npmrc
+!/.npmrc
 
 # Supabase CLI local state (project ref, pooler url, version cache, access token).
 supabase/.temp/

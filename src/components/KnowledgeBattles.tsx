@@ -1094,6 +1094,8 @@ function BattleChat({
           <button
             onClick={() => setShowPanel((v) => !v)}
             title="Quick chat"
+            aria-label="Quick chat"
+            aria-expanded={showPanel}
             className={`p-1.5 border text-[10px] font-bold transition-colors ${
               showPanel
                 ? "border-neon-purple/60 text-neon-purple bg-neon-purple/10"
@@ -1105,6 +1107,8 @@ function BattleChat({
           <button
             onClick={() => setMuted((v) => !v)}
             title={muted ? "Unmute opponent" : "Mute opponent"}
+            aria-label={muted ? "Unmute opponent" : "Mute opponent"}
+            aria-pressed={muted}
             className={`p-1.5 border text-[10px] font-bold transition-colors ${
               muted
                 ? "border-neon-pink/60 text-neon-pink bg-neon-pink/10"
@@ -4077,6 +4081,7 @@ function BattleArena() {
           <motion.div
             key="impact-left"
             aria-hidden
+            data-decorative="motion"
             className="btt-impact-flash btt-impact-flash--left"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -4088,6 +4093,7 @@ function BattleArena() {
           <motion.div
             key="impact-right"
             aria-hidden
+            data-decorative="motion"
             className="btt-impact-flash btt-impact-flash--right"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -510,7 +510,6 @@
 }
 .ab-input:focus,
 .ab-textarea:focus {
-  outline: none;
   border-color: var(--ab-accent);
   background: rgba(255, 255, 255, 0.05);
 }

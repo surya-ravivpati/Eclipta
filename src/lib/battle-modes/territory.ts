@@ -265,10 +265,7 @@ const CORNERS = [0, GRID_SIZE - 1, GRID_SIZE * (GRID_SIZE - 1), GRID_SIZE * GRID
 const CORNER_ADJACENT = new Set(CORNERS.flatMap((c) => neighbors(c)));
 
 /**
- * Placement heuristic for a bot — and, for want of any recorded spatial choice,
- * for a ghost's correct turns too (a ghost session logged only
- * action/correct/timeSpent from a linear Battle-mode run, so it has no
- * placement to replay in a mode that did not exist when it was recorded).
+ * Placement heuristic for a bot.
  *
  * Scores every open tile on what it flips plus positional value: corners are
  * unflippable and so worth most, the weighted center next, and the tiles that

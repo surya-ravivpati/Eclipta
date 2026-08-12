@@ -6,7 +6,7 @@ import type { ArchetypeId } from "./types";
  * Ultimates are declarative (see ultimates.ts): each one is a list of ops, and
  * the ones that outlast their turn land here as `ActiveEffect`s. Keeping them a
  * flat, serialisable list (rather than a bag of booleans on the fighter) is what
- * lets the same code drive the player, the bot, a ghost replay and live PvP, and
+ * lets the same code drive the player, the bot and live PvP, and
  * lets the UI render "what is currently true about this fighter" generically.
  *
  * Durations come in two flavours, because the spec uses both:

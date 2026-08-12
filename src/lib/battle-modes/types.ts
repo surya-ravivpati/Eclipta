@@ -45,16 +45,12 @@ export interface GameModeDef {
   effects: string[];
   resource: BattleResource;
   /**
-   * Which opponent types this mode currently supports. Tug-of-War and
-   * Territory need a spatial/positional choice each turn, and a `ghost` is a
-   * flat log of past action/correct/timeSpent — it never recorded a placement
-   * decision because the mode didn't exist yet. Rather than fabricate replay
-   * data, both use a shared bot-style heuristic for ghost opponents too, so
-   * "ghost" stays in this list — it degrades gracefully instead of being
-   * unsupported. `live` is the one left out everywhere but Battle: syncing
-   * tug/grid/draft state over the realtime channel is new schema and new
-   * wire-format work with no way to exercise a realtime channel from here, so
-   * it is out of scope for this pass rather than shipped untested.
+   * Which opponent types this mode currently supports. `live` is left out
+   * everywhere but Battle: syncing tug/grid/draft state over the realtime
+   * channel is new schema and new wire-format work with no way to exercise a
+   * realtime channel from here, so it is out of scope rather than shipped
+   * untested. Every mode supports `bot`, which is what those modes fall back
+   * to when no live opponent is available.
    */
   supports: OpponentType[];
 }
@@ -69,7 +65,7 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
       "The original format. Every wrong answer hurts you, every correct answer keeps you alive.",
     effects: ["Rewards instinct and mastery.", "Great for ranked climbing."],
     resource: "hp",
-    supports: ["bot", "ghost", "live"],
+    supports: ["bot", "live"],
   },
   tugofwar: {
     id: "tugofwar",
@@ -80,7 +76,7 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
       "A single shared bar between you. Correct answers pull it toward you; wrong answers give ground. First to drag it all the way to their side wins.",
     effects: ["Visually satisfying.", "Easy to understand.", "Easy leaderboard mode."],
     resource: "bar",
-    supports: ["bot", "ghost"],
+    supports: ["bot"],
   },
   draft: {
     id: "draft",
@@ -106,7 +102,7 @@ export const GAME_MODES: Record<GameModeId, GameModeDef> = {
       "Corners can never be flipped. The centre counts double.",
     ],
     resource: "grid",
-    supports: ["bot", "ghost"],
+    supports: ["bot"],
   },
 };
 

@@ -1,46 +1,25 @@
 /**
- * Battle session recording and ghost replay retrieval.
+ * Battle session recording.
  *
- * Every completed battle is stored in battle_sessions so future players
- * can be matched against real human traces (Ghost PvP tier).
+ * Every completed battle is stored in `battle_sessions`. Nothing replays those
+ * rows any more — Ghost PvP was removed — but the record is still the source of
+ * the weekly report's battle figures and the per-question history a post-battle
+ * review needs, so it is written exactly as before.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { QuestionRecord } from "@/components/battles/types";
 import type { ArchetypeId } from "@/components/battles/types";
-import { getGhostSessionRpc, recordBattleSessionRpc } from "@/repositories/battles";
+import { recordBattleSessionRpc } from "@/repositories/battles";
 
-export interface GhostSession {
-  id: string;
-  archetype: ArchetypeId;
-  won: boolean;
-  rating: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  bestStreak: number;
-  /** Original player's username, when available. */
-  username: string | null;
-  /**
-   * Ecliptar the original player fought with. NULL for sessions recorded before
-   * this was captured — the caller derives a stable stand-in in that case.
-   */
-  ecliptarSlug: string | null;
-  /** Ordered records — action chosen, outcome, and time taken per turn. */
-  questionRecords: {
-    action: string;
-    correct: boolean;
-    timeSpent: number;
-  }[];
-}
-
-/** Persist a completed battle so it becomes available as ghost replay data. */
+/** Persist a completed battle. */
 export async function recordBattleSession(params: {
   archetype: ArchetypeId;
   won: boolean;
   rating: number;
   records: QuestionRecord[];
   bestStreak: number;
-  opponentType?: "live" | "ghost" | "bot";
-  /** So this run replays as a ghost with the creature it was actually fought with. */
+  opponentType?: "live" | "bot";
+  /** Which creature this run was actually fought with. */
   ecliptarSlug?: string | null;
 }): Promise<string | null> {
   const {
@@ -65,38 +44,4 @@ export async function recordBattleSession(params: {
     })),
     p_opponent_type: params.opponentType ?? "unknown",
   });
-}
-
-/**
- * Fetch a real-player ghost session within ±200 rating of the player.
- * Returns null if no usable session exists OR if the row's question_records
- * is empty — we'd rather drop to the bot tier than fake a "ghost" with no
- * actual recorded behaviour to replay.
- */
-export async function fetchGhostSession(playerRating: number): Promise<GhostSession | null> {
-  const data = await getGhostSessionRpc(playerRating);
-  if (!data) return null;
-
-  // question_records stays `unknown` in the repository — it's a free-form
-  // jsonb column, so this is the one field that genuinely needs narrowing.
-  const records = (data.question_records ?? []) as GhostSession["questionRecords"];
-  if (!Array.isArray(records) || records.length === 0) {
-    // Authenticity guard: an empty record set isn't a ghost, it's a stub.
-    // Refusing it here drops us cleanly through the matchmaker to the bot
-    // tier instead of silently substituting AI moves under a ghost label.
-    return null;
-  }
-
-  return {
-    id: data.id,
-    archetype: data.archetype as ArchetypeId,
-    won: data.won,
-    rating: data.rating,
-    totalQuestions: data.total_questions,
-    correctAnswers: data.correct_answers,
-    bestStreak: data.best_streak,
-    username: data.username ?? null,
-    ecliptarSlug: data.ecliptar_slug ?? null,
-    questionRecords: records,
-  };
 }

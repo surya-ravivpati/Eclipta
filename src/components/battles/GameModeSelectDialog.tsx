@@ -7,7 +7,7 @@ import { GAME_MODE_LIST, type GameModeId } from "@/lib/battle-modes/types";
  * the rest of the flow was built around, so it renders first.
  *
  * There is no opponent-type toggle here because the player never chooses one —
- * `findMatch` runs a fixed Live → Ghost → Bot cascade and the actual opponent
+ * `findMatch` runs a fixed Live → Bot cascade and the actual opponent
  * is only known once it resolves. Picking a mode that does not support a live
  * opponent (everything but Battle, for now) tells matchmaking to skip that
  * tier rather than disabling anything up front — see `startBattle`.
@@ -57,7 +57,7 @@ export function GameModeSelectDialog({ onSelect }: { onSelect: (mode: GameModeId
               </ul>
               {mode.id !== "battle" && (
                 <p className="mt-2 text-[9px] tracking-widest uppercase text-muted-foreground/60">
-                  Bot &amp; ghost opponents only, for now
+                  Bot opponents only, for now
                 </p>
               )}
             </motion.button>

@@ -3,7 +3,7 @@
  * under src/db/schema/ and re-export it here as each vertical slice lands —
  * see AGENTS.md's "Database" and "Tuning" sections for the plan.
  *
- * Currently covers: battles (archetype mastery, solo/bot/ghost sessions, live
+ * Currently covers: battles (archetype mastery, solo/bot sessions, live
  * PvP, player ratings), profile (account XP/streaks, claimed Ecliptars,
  * claimed chests), and courses (community courses and content, enrollment
  * and progress, proposals, concept mastery, daily challenge). The remaining

@@ -12,7 +12,7 @@ import {
 import { sql } from "drizzle-orm";
 
 /**
- * Battles domain: solo/bot/ghost play, live PvP, and the mastery + rating
+ * Battles domain: solo/bot play, live PvP, and the mastery + rating
  * numbers that carry across matches.
  *
  * Column shapes are transcribed from src/integrations/supabase/types.ts,
@@ -57,9 +57,9 @@ export interface StoredQuestionRecord {
 }
 
 /**
- * A completed battle replay. Source data for Ghost PvP — a real player's
- * recorded session, matched to a new opponent when no live player is
- * available. Source: 20260510000006_pvp-architecture.sql.
+ * A completed battle's record: the result, the rating movement, and the
+ * question-by-question trace. Read by the weekly report's battle figures and
+ * by post-battle review. Source: 20260510000006_pvp-architecture.sql.
  */
 export const battleSessions = pgTable("battle_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -71,7 +71,7 @@ export const battleSessions = pgTable("battle_sessions", {
   correct_answers: integer("correct_answers").notNull().default(0),
   best_streak: integer("best_streak").notNull().default(0),
   question_records: jsonb("question_records").$type<StoredQuestionRecord[]>().notNull().default([]),
-  /** Set once a Ghost or bot completion is folded into the player's rating; never revisited after. */
+  /** Set once a completion is folded into the player's rating; never revisited after. */
   rating_applied: boolean("rating_applied").notNull().default(false),
   rating_before: integer("rating_before"),
   rating_after: integer("rating_after"),
@@ -103,7 +103,7 @@ export const battleQuestionRecords = pgTable("battle_question_records", {
     .defaultNow(),
 });
 
-/** ELO-style competitive rating. Bots never affect it — only live and ghost matches do. */
+/** ELO-style competitive rating. Bots never affect it — only live matches do. */
 export const playerRatings = pgTable("player_ratings", {
   user_id: uuid("user_id").primaryKey(),
   rating: integer("rating").notNull().default(1000),

@@ -35,8 +35,8 @@ const PARTICLES = Array.from({ length: 22 }, (_, i) => {
   };
 });
 
-const TIERS = ["live", "ghost", "bot"] as const;
-const TIER_LABEL: Record<OpponentType, string> = { live: "Live", ghost: "Ghost", bot: "AI" };
+const TIERS = ["live", "bot"] as const;
+const TIER_LABEL: Record<OpponentType, string> = { live: "Live", bot: "AI" };
 
 export function BattleIntro({
   archetype,

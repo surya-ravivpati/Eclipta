@@ -90,12 +90,11 @@ export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
 /**
  * Pick a stable Ecliptar for an archetype from an arbitrary key.
  *
- * Used for opponents whose own Ecliptar is unknown — ghost replays recorded
- * before the slug was stored, and live opponents whose profile we have not
- * fetched. Keying on the session or user id rather than `Math.random()` matters:
- * the same ghost must bring the same creature every time it is replayed, or its
- * sprite and its ultimate change between encounters and it stops reading as a
- * specific opponent.
+ * Used for opponents whose own Ecliptar is unknown — a bot, or a live opponent
+ * whose profile we have not fetched. Keying on the user or match id rather than
+ * `Math.random()` matters: the same opponent must bring the same creature every
+ * time, or its sprite and its ultimate change between encounters and it stops
+ * reading as a specific opponent.
  */
 export function ecliptarForArchetype(
   archetype: MonsterArchetypeKey,

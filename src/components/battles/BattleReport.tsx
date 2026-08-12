@@ -13,7 +13,6 @@ import {
   TrendingUp,
   TrendingDown,
   Radio,
-  Ghost,
   Bot,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -264,11 +263,6 @@ export function BattleReport({
               {opponentType === "live" && (
                 <>
                   <Radio className="w-2.5 h-2.5" /> LIVE RATING
-                </>
-              )}
-              {opponentType === "ghost" && (
-                <>
-                  <Ghost className="w-2.5 h-2.5" /> GHOST RATING
                 </>
               )}
             </div>

@@ -179,8 +179,8 @@ type FunctionArgOverrides = {
 // ── jsonb payloads ───────────────────────────────────────────────────────
 
 /**
- * Result of applying a single player's rating change. Shared verbatim by
- * the ghost and bot completion functions.
+ * Result of applying a single player's rating change, as returned by the bot
+ * completion function.
  *
  * The rating fields are nullable only on the `already_completed` path,
  * where they are read back from a `battle_sessions` row whose columns
@@ -302,11 +302,6 @@ type FunctionReturnOverrides = {
     Args: PublicSchema["Functions"]["claim_ecliptar"]["Args"];
     Returns: { already_claimed: boolean; slug: string };
   };
-  /** Source: `20260516044300_e9c63e3f-f2c0-4693-a3ea-76a4b3726dac.sql`. */
-  complete_ghost_battle: {
-    Args: PublicSchema["Functions"]["complete_ghost_battle"]["Args"];
-    Returns: RatingApplication;
-  };
   /** Source: `20260516150706_pvp-status-leaderboard-rematch-fix.sql`. */
   complete_pvp_battle: {
     Args: PublicSchema["Functions"]["complete_pvp_battle"]["Args"];
@@ -323,24 +318,6 @@ type FunctionReturnOverrides = {
   find_pvp_match: {
     Args: PublicSchema["Functions"]["find_pvp_match"]["Args"];
     Returns: PvpMatchAttempt;
-  };
-  /**
-   * Null when no eligible ghost exists near the player's rating.
-   * Source: `20260517201543_notifications-and-ghost-polish.sql`.
-   */
-  get_ghost_session: {
-    Args: PublicSchema["Functions"]["get_ghost_session"]["Args"];
-    Returns: {
-      id: string;
-      archetype: string;
-      won: boolean;
-      rating: number;
-      total_questions: number;
-      correct_answers: number;
-      best_streak: number;
-      question_records: Json;
-      username: string | null;
-    } | null;
   };
   /** Source: `20260515002226_4246b7d5-17be-4c5a-aa37-16cebf33223e.sql`. */
   get_pvp_turn_resolution: {

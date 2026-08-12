@@ -12,7 +12,6 @@ import {
   enqueuePvpRpc,
   findActivePvpBattleForUser,
   findPvpMatchRpc,
-  getGhostSessionRpc,
   leavePvpQueue,
   recordBattleSessionRpc,
   type RecordBattleSessionPayload,
@@ -99,11 +98,9 @@ describe("findActivePvpBattleForUser", () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnValue({
         or: vi.fn().mockReturnValue({
-          eq: vi
-            .fn()
-            .mockReturnValue({
-              gte: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit }) }),
-            }),
+          eq: vi.fn().mockReturnValue({
+            gte: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit }) }),
+          }),
         }),
       }),
     } as never);
@@ -124,11 +121,9 @@ describe("findActivePvpBattleForUser", () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnValue({
         or: vi.fn().mockReturnValue({
-          eq: vi
-            .fn()
-            .mockReturnValue({
-              gte: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit }) }),
-            }),
+          eq: vi.fn().mockReturnValue({
+            gte: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit }) }),
+          }),
         }),
       }),
     } as never);
@@ -168,20 +163,5 @@ describe("recordBattleSessionRpc", () => {
       p_opponent_type: "bot",
     };
     await expect(recordBattleSessionRpc(payload)).resolves.toBeNull();
-  });
-});
-
-describe("getGhostSessionRpc", () => {
-  it("calls get_ghost_session with the player's rating", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null } as never);
-
-    await getGhostSessionRpc(1200);
-
-    expect(supabase.rpc).toHaveBeenCalledWith("get_ghost_session", { p_player_rating: 1200 });
-  });
-
-  it("returns null rather than throwing when the RPC fails", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: { message: "boom" } } as never);
-    await expect(getGhostSessionRpc(1200)).resolves.toBeNull();
   });
 });

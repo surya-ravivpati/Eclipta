@@ -8,12 +8,19 @@ the ELO `player_ratings` ladder (`supabase/.../pvp-architecture.sql`,
 Bronze→God), Ecliptars, and the cosmic Eclipta brand (eclipse, Luna, Newton,
 Ecliptadon).
 
+> **Superseded in part (2026-08-12): Ghost PvP no longer exists.** Matchmaking
+> is now `Live → Bot`; `get_ghost_session` and `complete_ghost_battle` were
+> dropped in `20260812000000_remove-ghost-pvp.sql`. Every recommendation below
+> that leans on ghost replays — ghost-only onboarding, ghost-based tilt
+> protection, the ghost matchmaking window — needs a bot-based equivalent
+> instead. `battle_sessions` itself is untouched and still records every match.
+
 ---
 
 ## 1. The principle
 
 Today Eclipta conflates two things under one Bronze→God vocabulary: the XP
-track *looks* like a competitive ladder but is earned by **time/activity**, and
+track _looks_ like a competitive ladder but is earned by **time/activity**, and
 the real skill signal (ELO) is hidden. That's the exact mistake the request
 names — when a rank can be reached by grinding, **the rank stops meaning
 "skilled."**
@@ -21,18 +28,18 @@ names — when a rank can be reached by grinding, **the rank stops meaning
 The fix is not to tune one ladder. It's to run **two loops that never share a
 currency**:
 
-| | **Ranked Mode** (skill) | **The Expedition** (discovery) |
-| --- | --- | --- |
-| Job | Prove mastery | Go on a journey |
-| Earned by | Ranked **wins** vs real opponents | **XP** from any learning/battle |
-| Movement | Up *and* down | Forward only (never lost) |
-| Resets | **Seasonal** | **Never** |
-| Names | Competitive tiers | Themed **Realms** (no Bronze→Gold) |
-| Reward | Status, prestige cosmetics, leaderboard | Unlocks, Ecliptars, narrative, themes |
-| Emotion | Tension, pride | Wonder, anticipation |
-| Psych driver | Competence + status signaling | Autonomy + curiosity + collection |
+|              | **Ranked Mode** (skill)                 | **The Expedition** (discovery)        |
+| ------------ | --------------------------------------- | ------------------------------------- |
+| Job          | Prove mastery                           | Go on a journey                       |
+| Earned by    | Ranked **wins** vs real opponents       | **XP** from any learning/battle       |
+| Movement     | Up _and_ down                           | Forward only (never lost)             |
+| Resets       | **Seasonal**                            | **Never**                             |
+| Names        | Competitive tiers                       | Themed **Realms** (no Bronze→Gold)    |
+| Reward       | Status, prestige cosmetics, leaderboard | Unlocks, Ecliptars, narrative, themes |
+| Emotion      | Tension, pride                          | Wonder, anticipation                  |
+| Psych driver | Competence + status signaling           | Autonomy + curiosity + collection     |
 
-A player should pursue **both at once**: "I'm climbing to prove I'm good" *and*
+A player should pursue **both at once**: "I'm climbing to prove I'm good" _and_
 "I'm exploring to see what's next." Neither can be bought with the other's
 effort — that's what protects rank integrity.
 
@@ -43,14 +50,16 @@ effort — that's what protects rank integrity.
 Built on the existing ELO `player_ratings` engine, surfaced Brawl-Stars-style.
 
 ### 2.1 Two numbers, clean jobs
-- **Hidden MMR** = the existing ELO `rating` (K=32→16). Decides *matchmaking*
-  and *how fast you climb*. Players never see it directly.
+
+- **Hidden MMR** = the existing ELO `rating` (K=32→16). Decides _matchmaking_
+  and _how fast you climb_. Players never see it directly.
 - **Rank Points (RP)** = the visible ladder. **Win → +RP. Loss → −RP.** MMR
   shapes the magnitude (under-ranked players gain more) so you converge to your
   true rank, but RP is what's shown and what defines your tier.
 
-### 2.2 The ladder (replaces nothing on the Expedition — these names now live *only* here)
-Recognizable competitive tiers so a high rank is *instantly* read as skill,
+### 2.2 The ladder (replaces nothing on the Expedition — these names now live _only_ here)
+
+Recognizable competitive tiers so a high rank is _instantly_ read as skill,
 capped by a brand-specific apex:
 
 `Initiate → Bronze → Silver → Gold → Diamond → Mythic → Legendary → Eclipse`
@@ -58,28 +67,30 @@ capped by a brand-specific apex:
 - Each tier has 3 divisions (e.g. Gold III→II→I). RP fills a division; full →
   promote.
 - **Promotion is sticky early, brutal late.** Below Diamond, you can't demote
-  out of a *tier* you've reached this season (floors — protects casual ranked
+  out of a _tier_ you've reached this season (floors — protects casual ranked
   players). Diamond+ has no floor: every match matters (skill filter).
 - **Eclipse** is a single, season-scarce apex with a **global numbered
   leaderboard** (#1 … #500). This is the aspirational seat — visible, contested,
   unattainable by grinding because RP only comes from beating real opponents.
 
 ### 2.3 RP math (keeps grind out)
+
 - Base ±25 RP/match. **Knowledge-weighted** (Eclipta-specific): a win's RP
   scales with answer accuracy (`0.7 + 0.6×accuracy`), so you climb fastest by
-  *actually knowing the material* — you cannot brute-force rank by spamming
+  _actually knowing the material_ — you cannot brute-force rank by spamming
   matches. (Mirrors the accuracy-weighting in the trophy-road doc.)
 - **Placement:** 5 placement matches each season seed you near last season's
   MMR, so good players don't re-grind from zero.
 - **Bots earn no RP.** Unlike the Expedition (where bots grant a small rating
   nudge per the recent change), **Ranked Mode is real-opponents-only** (live +
-  ghost). This is the line that keeps ranks honest. *(Note: this means the
+  ghost). This is the line that keeps ranks honest. _(Note: this means the
   current bot-rating change should apply to a casual rating, not Ranked RP — see
-  §6 reconciliation.)*
+  §6 reconciliation.)_
 
 ### 2.4 Seasons, prestige, status
+
 - **~4-week seasons.** Soft reset above Diamond: `new = floor + (peak − floor) ×
-  0.5` (keeps identity, restores the climb). MMR doesn't reset.
+0.5` (keeps identity, restores the climb). MMR doesn't reset.
 - **End-of-season rewards by peak tier** (not final — anti-tilt): a seasonal
   banner/title, an exclusive **animated Ecliptar skin**, and a permanent
   season medallion ("S3 — Mythic").
@@ -89,6 +100,7 @@ capped by a brand-specific apex:
   integrity).
 
 ### 2.5 Anti-abuse
+
 Real-opponents-only RP + accuracy weighting + MMR-based matchmaking + decay
 above Legendary (anti-camping) + win-trade detection on `pvp_battles`. Detailed
 in the trophy-road doc §8.
@@ -101,8 +113,9 @@ The request's instinct is right: stop using Bronze→Gold for progression. But I
 want to challenge the proposed replacement too.
 
 ### 3.1 Why plain linear "Worlds" is only a half-fix
-"World 1 → World 5" fixes the *naming* problem (no more fake ranks) but keeps
-the *structural* one: it's still a **single linear corridor**, just reskinned.
+
+"World 1 → World 5" fixes the _naming_ problem (no more fake ranks) but keeps
+the _structural_ one: it's still a **single linear corridor**, just reskinned.
 It doesn't add the things that actually drive discovery motivation —
 **autonomy, branching, anticipation, and collection**. Renaming Bronze→Gold to
 World 1→5 is lipstick on the same ladder.
@@ -111,26 +124,26 @@ To genuinely raise motivation, anticipation, memorability, reward delivery,
 retention, and expandability, the framework needs four properties a linear
 World track lacks:
 
-1. **A map, not a corridor** — a sense of *place* you move through and can see
+1. **A map, not a corridor** — a sense of _place_ you move through and can see
    ahead, with the next destination visible and enticing (anticipation).
 2. **Light branching / optional detours** — choice creates autonomy (SDT) and
    replay; not everyone takes the same path.
-3. **Per-chapter identity** — each chapter introduces a *new mechanic + reward
-   category + collectible set + narrative beat*, so each is memorable and
+3. **Per-chapter identity** — each chapter introduces a _new mechanic + reward
+   category + collectible set + narrative beat_, so each is memorable and
    un-skippable in feel (not "same track, new color").
 4. **Infinite, non-invalidating expansion** — new chapters can be appended each
    season without resetting or cheapening past ones.
 
 ### 3.2 Framework comparison
 
-| Framework | Discovery | Branching/autonomy | Narrative | Expandability | On-brand (cosmic) | Verdict |
-| --- | --- | --- | --- | --- | --- | --- |
-| Linear Worlds | med | low | med | high | med | reskinned ladder |
-| Regions/Realms **on a map** | high | med-high | high | high | high | **strong** |
-| Story Chapters | med | low | **high** | high | med | great narrative, weak autonomy |
-| Skill-Mastery Paths | med | high | low | high | low | good for *learning* but abstract |
-| Collection-based | high | high | low | **very high** | med | great *meta*, weak spine |
-| Planetary/Star systems | high | med-high | high | **very high** | **very high** | **strong + on-brand** |
+| Framework                   | Discovery | Branching/autonomy | Narrative | Expandability | On-brand (cosmic) | Verdict                          |
+| --------------------------- | --------- | ------------------ | --------- | ------------- | ----------------- | -------------------------------- |
+| Linear Worlds               | med       | low                | med       | high          | med               | reskinned ladder                 |
+| Regions/Realms **on a map** | high      | med-high           | high      | high          | high              | **strong**                       |
+| Story Chapters              | med       | low                | **high**  | high          | med               | great narrative, weak autonomy   |
+| Skill-Mastery Paths         | med       | high               | low       | high          | low               | good for _learning_ but abstract |
+| Collection-based            | high      | high               | low       | **very high** | med               | great _meta_, weak spine         |
+| Planetary/Star systems      | high      | med-high           | high      | **very high** | **very high**     | **strong + on-brand**            |
 
 ### 3.3 Recommendation: **The Expedition — a celestial Atlas of Realms**
 
@@ -139,7 +152,7 @@ brand (the eclipse, Luna the moon, Newton, Ecliptadon). Lean all the way in:
 
 > The Trophy Road becomes **The Expedition**: a journey across the Eclipta
 > cosmos, rendered as an **Atlas** of **Realms** (star systems / regions). You
-> chart it node by node, but the *Atlas view* shows realms ahead glowing on the
+> chart it node by node, but the _Atlas view_ shows realms ahead glowing on the
 > horizon. Each Realm is a self-contained chapter with its own sky, mechanic,
 > Ecliptar set, and story beat. A short **guided critical path** runs through
 > every realm; **optional side-expeditions** branch off for collectors.
@@ -149,18 +162,19 @@ Planetary/star systems) with a **collection meta** layered on top — beating
 plain Worlds on every criterion the request listed.
 
 ### 3.4 The Realms (re-theming the existing 8 tiers / 5 bands / 58 nodes)
+
 The current `trophy-road-data.ts` has 5 thematic bands and 58 XP nodes — perfect
 raw material. Re-skin them into ~7 Realms, each with a distinct identity:
 
-| # | Realm | Was (band/tier) | Theme | Introduces | Ecliptar set | Narrative beat |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | **The Observatory** | Training / Bronze | Dawn, learning to read the stars | basics, first archetype | Speedster, Tank | "You wake under the eclipse." |
-| 2 | **The Tidelock Belt** | Training / Silver | Ocean-moons, asteroid drift | momentum & combos | Chud | First rival appears |
-| 3 | **Ember Wastes** | Trials / Gold–Diamond | Scorched world | pressure / the timer | Gambler | The heat of real trials |
-| 4 | **The Resonance** | Ascension / Platinum | Crystalline, harmonic | accuracy & streaks | Healer, Fulcrum | Patterns become instinct |
-| 5 | **The Long Drift** | Mastery / Champion–Unreal | Deep space, endurance | long-form mastery | Accelerator | Solitude of the expert |
-| 6 | **Celestial Nexus** | Summit / God I–II | Convergence point | boss gauntlet | God archetype | All paths meet |
-| 7 | **The Eclipse** | Summit / God III + finals | The threshold | the finale | **Newton, Ecliptadon** | The cosmos resolves |
+| #   | Realm                 | Was (band/tier)           | Theme                            | Introduces              | Ecliptar set           | Narrative beat                |
+| --- | --------------------- | ------------------------- | -------------------------------- | ----------------------- | ---------------------- | ----------------------------- |
+| 1   | **The Observatory**   | Training / Bronze         | Dawn, learning to read the stars | basics, first archetype | Speedster, Tank        | "You wake under the eclipse." |
+| 2   | **The Tidelock Belt** | Training / Silver         | Ocean-moons, asteroid drift      | momentum & combos       | Chud                   | First rival appears           |
+| 3   | **Ember Wastes**      | Trials / Gold–Diamond     | Scorched world                   | pressure / the timer    | Gambler                | The heat of real trials       |
+| 4   | **The Resonance**     | Ascension / Platinum      | Crystalline, harmonic            | accuracy & streaks      | Healer, Fulcrum        | Patterns become instinct      |
+| 5   | **The Long Drift**    | Mastery / Champion–Unreal | Deep space, endurance            | long-form mastery       | Accelerator            | Solitude of the expert        |
+| 6   | **Celestial Nexus**   | Summit / God I–II         | Convergence point                | boss gauntlet           | God archetype          | All paths meet                |
+| 7   | **The Eclipse**       | Summit / God III + finals | The threshold                    | the finale              | **Newton, Ecliptadon** | The cosmos resolves           |
 
 Each Realm: a unique sky/palette (the `CinemaRoad` already does per-tier color +
 scene-cut — reuse it), an introduced mechanic/archetype, a **collectible set**
@@ -168,12 +182,13 @@ scene-cut — reuse it), an introduced mechanic/archetype, a **collectible set**
 card. Side-expeditions = optional node clusters with bonus collectibles.
 
 ### 3.5 Why this beats both Bronze→Gold and linear Worlds
-- **Motivation:** each realm is a *new experience*, not a higher number.
+
+- **Motivation:** each realm is a _new experience_, not a higher number.
 - **Anticipation:** the Atlas shows the next realm glowing ahead — "what's in
   the Resonance?" (curiosity gap).
 - **Memorability:** "I unlocked the Ember Wastes" sticks; "I hit Gold III"
   doesn't.
-- **Reward delivery:** rewards are *themed to the realm* (a realm's Ecliptar set,
+- **Reward delivery:** rewards are _themed to the realm_ (a realm's Ecliptar set,
   relic, sky) — categorical, not numeric, so they don't habituate.
 - **Retention:** collection completion per realm + a narrative spine pulls
   forward; nothing resets, so effort is permanent.
@@ -184,18 +199,18 @@ card. Side-expeditions = optional node clusters with bonus collectibles.
 
 ## 4. Two loops, one player — how they reinforce without coupling
 
-They must *complement*, never *substitute*:
+They must _complement_, never _substitute_:
 
 - **Skill unlocks discovery, gently.** Ranked performance can grant **Expedition
-  XP boosts** and unlock *cosmetic* realm flair — but never advances the
-  Expedition *for* you, and never the reverse. You still travel the realms
+  XP boosts** and unlock _cosmetic_ realm flair — but never advances the
+  Expedition _for_ you, and never the reverse. You still travel the realms
   yourself.
 - **Discovery equips you for skill.** The Expedition unlocks **Ecliptars and
   archetypes** (tools) — which are **sidegrades, not power** — so exploring
-  gives you *options* to express skill in Ranked, without making exploration a
+  gives you _options_ to express skill in Ranked, without making exploration a
   pay-to-win shortcut.
 - **The daily streak feeds both** (the cadence layer from
-  `docs/daily-practice-streak.md`): a day's practice can be a ranked match *or*
+  `docs/daily-practice-streak.md`): a day's practice can be a ranked match _or_
   an expedition step.
 - **Shared surface, separate meaning:** the profile shows **Rank** (this season,
   skill) next to **Expedition progress** (lifetime, journey) — two badges that
@@ -206,16 +221,16 @@ They must *complement*, never *substitute*:
 ## 5. Psychology (why the split works)
 
 - **Competence vs autonomy (SDT):** Ranked serves competence + status; the
-  Expedition serves autonomy + curiosity. Splitting them lets each be *pure*,
+  Expedition serves autonomy + curiosity. Splitting them lets each be _pure_,
   so neither dilutes the other.
 - **Loss aversion, quarantined:** Ranked can fall (productive tension); the
-  Expedition never falls (safe, especially important for a *learning* product —
+  Expedition never falls (safe, especially important for a _learning_ product —
   failed learning must never feel like losing ground).
 - **Status signaling done honestly:** because Ranked RP is win-only and
   accuracy-weighted, a high rank is unforgeable proof of skill — the request's
   core requirement.
 - **Collection + narrative (the Expedition):** completion psychology + a story
-  spine are the strongest *non-competitive* retention drivers, and they're
+  spine are the strongest _non-competitive_ retention drivers, and they're
   immune to the "I lost my rank, I quit" churn.
 
 ---
@@ -223,7 +238,7 @@ They must *complement*, never *substitute*:
 ## 6. Reconciliation with what's already shipped
 
 - The recent change made **bot battles affect rating** (`complete_bot_battle`).
-  Under this design, that belongs to a **casual rating**, *not* Ranked RP —
+  Under this design, that belongs to a **casual rating**, _not_ Ranked RP —
   Ranked is real-opponents-only. Cleanest path: keep `player_ratings` as the
   casual/MMR layer (bots ok), and introduce a separate **`ranked_points`** layer
   that only live/ghost ranked matches move.
@@ -259,7 +274,7 @@ They must *complement*, never *substitute*:
 > numbered seat. **The Trophy Road becomes The Expedition** — a celestial Atlas
 > of themed Realms you chart forever, each a new sky, mechanic, Ecliptar set,
 > and story beat, never lost, infinitely expandable. Skill and discovery run as
-> two pure, parallel loops that *equip* and *celebrate* each other but never
+> two pure, parallel loops that _equip_ and _celebrate_ each other but never
 > substitute — so every player is at once **proving they're good** and
 > **finding out what's next.**
 

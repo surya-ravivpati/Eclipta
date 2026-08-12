@@ -14,11 +14,6 @@ import type { ArchetypeMastery } from "@/lib/archetype-mastery";
 
 export type PlayerRatingRow = InferSelectModel<typeof playerRatings>;
 
-export interface CompleteGhostBattleResult {
-  ratingAfter: number;
-  ratingDelta: number;
-}
-
 /** A player who has never completed a rated match has no row yet — not an error. */
 export async function getPlayerRating(userId: string): Promise<PlayerRatingRow | null> {
   const { data, error } = await supabase
@@ -29,23 +24,6 @@ export async function getPlayerRating(userId: string): Promise<PlayerRatingRow |
 
   if (error) throw new Error(error.message);
   return data;
-}
-
-/** Applies a completed Ghost PvP battle's rating change exactly once, server-side. */
-export async function completeGhostBattleRpc(
-  sessionId: string,
-  opponentRating: number,
-): Promise<CompleteGhostBattleResult> {
-  const { data, error } = await supabase.rpc("complete_ghost_battle", {
-    p_session_id: sessionId,
-    p_opponent_rating: opponentRating,
-  });
-
-  if (error) throw new Error(error.message);
-  return {
-    ratingAfter: data?.rating_after ?? 1000,
-    ratingDelta: data?.rating_delta ?? 0,
-  };
 }
 
 // ── Matchmaking ─────────────────────────────────────────────────────────────
@@ -121,7 +99,7 @@ export async function findActivePvpBattleForUser(userId: string): Promise<Active
   return data?.[0] ?? null;
 }
 
-// ── Battle session recording and Ghost replay ───────────────────────────────
+// ── Battle session recording ────────────────────────────────────────────────
 
 export interface RecordBattleSessionPayload {
   p_archetype: ArchetypeId;
@@ -137,12 +115,11 @@ export interface RecordBattleSessionPayload {
 }
 
 /**
- * Persists a completed battle so it becomes available as Ghost replay data.
- * The server-side RPC validates and clamps every field — a client can't
- * fabricate a rating or correct-answer count that bypasses the matchmaking
- * pipeline. Returns null (rather than throwing) on failure: recording a
- * finished battle for future ghosts is best-effort and must never block the
- * player from seeing their own result.
+ * Persists a completed battle. The server-side RPC validates and clamps every
+ * field — a client can't fabricate a rating or correct-answer count that
+ * bypasses the matchmaking pipeline. Returns null (rather than throwing) on
+ * failure: recording is best-effort and must never block the player from
+ * seeing their own result.
  */
 export async function recordBattleSessionRpc(
   payload: RecordBattleSessionPayload,
@@ -180,38 +157,6 @@ export async function insertBattleQuestionRecords(
 ): Promise<void> {
   const { error } = await supabase.from("battle_question_records").insert(rows);
   if (error) throw new Error(error.message);
-}
-
-/** The raw ghost session row shape the RPC returns, before src/lib/battle-replay.ts reshapes it. */
-export interface RawGhostSession {
-  id: string;
-  archetype: string;
-  won: boolean;
-  rating: number;
-  total_questions: number;
-  correct_answers: number;
-  best_streak: number;
-  username: string | null;
-  question_records: unknown;
-  /** NULL for sessions recorded before the slug was captured. */
-  ecliptar_slug?: string | null;
-}
-
-/**
- * Fetches a real-player Ghost session within ±200 rating of the given
- * rating. Returns null (rather than throwing) on failure — no ghost is
- * available is an ordinary outcome the matchmaker falls back from, not an
- * error condition.
- */
-export async function getGhostSessionRpc(playerRating: number): Promise<RawGhostSession | null> {
-  const { data, error } = await supabase.rpc("get_ghost_session", {
-    p_player_rating: playerRating,
-  });
-  if (error) {
-    console.warn("fetchGhostSession failed", error);
-    return null;
-  }
-  return data;
 }
 
 // ── Archetype mastery ────────────────────────────────────────────────────────

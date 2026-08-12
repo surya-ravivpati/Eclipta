@@ -14,7 +14,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { supabase } from "@/integrations/supabase/client";
-import { completeGhostBattleRpc, getPlayerRating, insertBattleQuestionRecords } from "./battles";
+import { getPlayerRating, insertBattleQuestionRecords } from "./battles";
 
 function mockFrom(result: { data: unknown; error: unknown }) {
   const maybeSingle = vi.fn().mockResolvedValue(result);
@@ -73,49 +73,6 @@ describe("getPlayerRating", () => {
     mockFrom({ data: null, error: { message: "connection reset" } });
 
     await expect(getPlayerRating("u1")).rejects.toThrow("connection reset");
-  });
-});
-
-describe("completeGhostBattleRpc", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("calls the RPC with the session and opponent rating", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: { rating_after: 1210, rating_delta: 10 },
-      error: null,
-    } as never);
-
-    await completeGhostBattleRpc("session-1", 1150);
-
-    expect(supabase.rpc).toHaveBeenCalledWith("complete_ghost_battle", {
-      p_session_id: "session-1",
-      p_opponent_rating: 1150,
-    });
-  });
-
-  it("returns the server's authoritative rating result", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: { rating_after: 1210, rating_delta: 10 },
-      error: null,
-    } as never);
-
-    await expect(completeGhostBattleRpc("session-1", 1150)).resolves.toEqual({
-      ratingAfter: 1210,
-      ratingDelta: 10,
-    });
-  });
-
-  it("throws on RPC failure rather than returning a fabricated rating", async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({
-      data: null,
-      error: { message: "session already applied" },
-    } as never);
-
-    await expect(completeGhostBattleRpc("session-1", 1150)).rejects.toThrow(
-      "session already applied",
-    );
   });
 });
 

@@ -1,9 +1,8 @@
 /**
- * Tiered matchmaking: Live PvP → Ghost PvP → Bot (last resort).
- * Priority is strictly enforced — bots are never preferred over real data.
+ * Tiered matchmaking: Live PvP → Bot (last resort).
+ * Priority is strictly enforced — a bot is never preferred over a real player.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { fetchGhostSession, type GhostSession } from "./battle-replay";
 import type { ArchetypeId } from "@/components/battles/types";
 import {
   enqueuePvpRpc,
@@ -14,7 +13,7 @@ import {
 } from "@/repositories/battles";
 import { getUsername } from "@/repositories/profile";
 
-export type OpponentType = "live" | "ghost" | "bot";
+export type OpponentType = "live" | "bot";
 
 export interface MatchResult {
   type: OpponentType;
@@ -28,7 +27,6 @@ export interface MatchResult {
   pvpBattleId?: string;
   /** True when the local player created the pvp_battles row (challenger). Drives initial turn order. */
   iAmChallenger?: boolean;
-  ghostSession?: GhostSession;
 }
 
 const QUEUE_TIMEOUT_MS = 8_000;
@@ -116,7 +114,7 @@ async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<Mat
 // ── Main matchmaking entry point ─────────────────────────────────────────
 
 /**
- * Runs the full Tier 1 → 2 → 3 matchmaking sequence.
+ * Runs the full Tier 1 → 2 matchmaking sequence.
  *
  * @param onStatus - callback that receives human-readable status strings
  *                   so the searching UI can update in real time.
@@ -129,12 +127,9 @@ export async function findMatch(
   opts?: {
     /** Non-Battle modes with no realtime sync yet skip straight past the live queue. */
     allowLive?: boolean;
-    /** Draft Battle has no ghost-recorded draft picks, so it skips to bot. */
-    allowGhost?: boolean;
   },
 ): Promise<MatchResult> {
   const allowLive = opts?.allowLive ?? true;
-  const allowGhost = opts?.allowGhost ?? true;
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -161,24 +156,7 @@ export async function findMatch(
     await leaveQueue();
   }
 
-  // ── Tier 2: Ghost PvP ─────────────────────────────────────────────────
-  if (user && allowGhost) {
-    onStatus("No live opponent — loading ghost replay…", "ghost");
-    const ghost = await fetchGhostSession(playerRating);
-    if (ghost) {
-      const ghostLabel = `${ghost.username?.trim() || "Anonymous"} — Ghost`;
-      onStatus(`Ghost match loaded — ${ghostLabel}`, "ghost");
-      return {
-        type: "ghost",
-        opponentName: ghostLabel,
-        opponentArchetype: ghost.archetype,
-        opponentRating: ghost.rating,
-        ghostSession: ghost,
-      };
-    }
-  }
-
-  // ── Tier 3: Bot (last resort) ────────────────────────────────────────
+  // ── Tier 2: Bot (last resort) ────────────────────────────────────────
   onStatus("Matched with AI bot", "bot");
   return {
     type: "bot",

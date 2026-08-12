@@ -102,11 +102,11 @@ const VARIANTS: DailyChallenge[] = [
   {
     id: "pvp-1",
     title: "Real Rivals",
-    goal: "Win 1 live or ghost PvP battle",
+    goal: "Win 1 live PvP battle",
     target: 1,
     reward: "+100 XP",
     unit: "wins",
-    modifier: "Only live and ghost matches count toward this challenge.",
+    modifier: "Only live matches count toward this challenge.",
   },
   {
     id: "pvp-3",

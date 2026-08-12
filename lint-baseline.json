@@ -1,9 +1,9 @@
 {
-  "warnings": 457,
+  "warnings": 456,
   "counts": {
     "@typescript-eslint/no-unsafe-assignment": 13,
     "@typescript-eslint/no-floating-promises": 79,
-    "@typescript-eslint/prefer-nullish-coalescing": 90,
+    "@typescript-eslint/prefer-nullish-coalescing": 89,
     "no-restricted-syntax": 155,
     "@typescript-eslint/no-unused-vars": 25,
     "@typescript-eslint/no-empty-function": 8,
@@ -23,5 +23,5 @@
     "@typescript-eslint/no-unsafe-enum-comparison": 1,
     "@typescript-eslint/no-redundant-type-constituents": 1
   },
-  "updated": "2026-08-11"
+  "updated": "2026-08-12"
 }

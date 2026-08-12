@@ -116,8 +116,7 @@ export type LogActionType =
   | "miss" // wrong answer or timeout
   | "combo" // streak milestone reached
   | "separator" // turn-start indicator
-  | "info" // match start, pressure lines, warnings
-  | "ghost"; // ghost-replay opponent action
+  | "info"; // match start, pressure lines, warnings
 
 export interface LogEntry {
   id: number; // monotonically increasing — stable React key, never reordered
@@ -138,6 +137,6 @@ export interface BattleStats {
   won: boolean;
   score: number;
   xp: number;
-  opponentType?: "live" | "ghost" | "bot";
+  opponentType?: "live" | "bot";
   ratingChange?: number | null;
 }

@@ -1,9 +1,9 @@
 /**
  * ELO-style player rating system for competitive battles.
- * Only live and ghost matches affect rating — bots never do.
+ * Only live matches affect rating — bots never do.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { completeGhostBattleRpc, getPlayerRating } from "@/repositories/battles";
+import { getPlayerRating } from "@/repositories/battles";
 import { RATING_LEAGUES, type RatingLeague } from "@/config/battle-tuning";
 
 export type { RatingLeague };
@@ -32,14 +32,6 @@ export async function fetchPlayerRating(): Promise<PlayerRating> {
     wins: row.wins,
     losses: row.losses,
   };
-}
-
-/** Complete a recorded Ghost PvP battle exactly once and return the authoritative rating result. */
-export async function completeGhostBattle(
-  sessionId: string,
-  opponentRating: number,
-): Promise<{ ratingAfter: number; ratingDelta: number }> {
-  return completeGhostBattleRpc(sessionId, opponentRating);
 }
 
 /** Human-readable tier name for a given ELO rating. */

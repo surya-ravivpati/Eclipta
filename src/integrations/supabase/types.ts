@@ -2162,10 +2162,6 @@ export type Database = {
         Returns: Json
       }
       cleanup_abandoned_rooms: { Args: never; Returns: number }
-      complete_ghost_battle: {
-        Args: { p_opponent_rating: number; p_session_id: string }
-        Returns: Json
-      }
       complete_pvp_battle: {
         Args: { p_battle_id: string; p_winner_id: string }
         Returns: Json
@@ -2275,7 +2271,6 @@ export type Database = {
         Args: { p_user?: string }
         Returns: Json
       }
-      get_ghost_session: { Args: { p_player_rating: number }; Returns: Json }
       get_leaderboard: {
         Args: { p_limit?: number }
         Returns: {

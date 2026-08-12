@@ -18,7 +18,6 @@ import {
   Info,
   FastForward,
   Users,
-  Ghost,
   Radio,
   TrendingUp,
   TrendingDown,
@@ -105,7 +104,6 @@ import {
   levelToCategory,
   getActionDifficultyLevel,
   getQuestionTime,
-  getEffectiveDamage,
   applyDefense,
   absorbWithShield,
   getHealShield,
@@ -144,8 +142,7 @@ import { getDailyChallengeProgress } from "@/repositories/courses";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, type MatchResult, type OpponentType } from "@/lib/matchmaking";
-import { type GhostSession } from "@/lib/battle-replay";
-import { completeGhostBattle, fetchPlayerRating, ratingToTier } from "@/lib/rating";
+import { fetchPlayerRating, ratingToTier } from "@/lib/rating";
 import { awardXp, awardVerifiedBattleXp } from "@/lib/xp-service";
 import { toast } from "sonner";
 import "./Battles.css";
@@ -553,7 +550,7 @@ function FighterCard({
   const showSprite = !!fighter.sprite && !spriteFailed;
 
   // Floating combat numbers — derived from HP deltas so every damage source
-  // (bot, ghost, live PvP, wild events, heals) produces one automatically.
+  // (bot, live PvP, wild events, heals) produces one automatically.
   const prevHpRef = useRef(fighter.hp);
   const floatIdRef = useRef(0);
   const [floats, setFloats] = useState<{ id: number; delta: number }[]>([]);
@@ -877,7 +874,6 @@ function BattleLog({ logs }: { logs: LogEntry[] }) {
     // opponent
     if (e.actionType === "miss") return "text-muted-foreground";
     if (e.actionType === "heal") return "text-neon-cyan";
-    if (e.actionType === "ghost") return "text-neon-purple/70";
     return "text-neon-pink";
   }
 
@@ -991,7 +987,7 @@ function EffectChips({ effects, side }: { effects: ActiveEffect[]; side: "left" 
 // ─── Battle Chat + Emoji Reactions ───────────────────────────────────
 // Issue 2: lightweight preset-only expression system. No free-text, no
 // gameplay interruption. 3-second cooldown between sends prevents spam.
-// Works one-sided for bot/ghost (local display only, no broadcast).
+// Works one-sided for a bot (local display only, no broadcast).
 
 let _chatIdCounter = 0;
 
@@ -1523,7 +1519,7 @@ function BattleArena() {
   // ── Ultimate & status-effect state ──────────────────────────────────
   // Charge is a 0–1 meter filled by correct answers; effects are the flat,
   // serialisable status lists from battles/effects.ts. Each has a ref twin
-  // because the async turn callbacks (bot, ghost, PvP resolution) read them
+  // because the async turn callbacks (bot, PvP resolution) read them
   // outside React's render cycle.
   const [ultimateCharge, setUltimateCharge] = useState(0);
   const [opponentCharge, setOpponentCharge] = useState(0);
@@ -1587,7 +1583,7 @@ function BattleArena() {
   const logCounterRef = useRef(0);
   const pendingLogsRef = useRef<LogEntry[]>([]);
 
-  // Issue 1: snapshot refs so aiTurn/ghostTurn can read current HP without
+  // Issue 1: snapshot refs so aiTurn can read current HP without
   // calling setState inside another setState's updater function.
   const playerRef = useRef(player);
   const opponentRef = useRef(opponent);
@@ -1622,8 +1618,6 @@ function BattleArena() {
 
   // Refs for async-safe access inside callbacks
   const pvpChannelRef = useRef<RealtimeChannel | null>(null);
-  const ghostSessionRef = useRef<GhostSession | null>(null);
-  const ghostTurnIndexRef = useRef(0);
   const playerRatingRef = useRef(1000);
   const opponentRatingRef = useRef(1000);
   const opponentTypeRef = useRef<OpponentType>("bot");
@@ -2396,8 +2390,7 @@ function BattleArena() {
    * the stat sheet onto the board. The player's is banked and the turn loop
    * parks in the "placing" phase until they tap a tile — placement is the
    * decision this mode is built around, so it is never auto-resolved for them.
-   * Bots and ghosts resolve immediately against the shared heuristic; a ghost
-   * recorded no spatial choice to replay.
+   * A bot resolves immediately against the shared heuristic.
    */
   function grantFlag(side: "player" | "opponent", amount: number) {
     if (!territoryGridRef.current.includes("empty")) return; // board is full
@@ -2488,7 +2481,7 @@ function BattleArena() {
    * - "ended": finishBattle already ran; caller does nothing more.
    * - "handled": this mode owns the win-check (even with no winner yet this
    *   turn) — caller skips the default HP check and goes straight to its
-   *   normal turn-continuation logic (extra turn / ghost / ai).
+   *   normal turn-continuation logic (extra turn / ai).
    * - "passthrough": not a mode with its own win condition — caller runs the
    *   original HP<=0 check exactly as Battle mode always has.
    */
@@ -2611,8 +2604,6 @@ function BattleArena() {
           extraTurnRef.current = false;
           addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
           setPhase("select");
-        } else if (opponentTypeRef.current === "ghost") {
-          ghostTurn();
         } else {
           aiTurn();
         }
@@ -3024,8 +3015,6 @@ function BattleArena() {
           extraTurnRef.current = false;
           addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
           setPhase("select");
-        } else if (opponentTypeRef.current === "ghost") {
-          ghostTurn();
         } else {
           aiTurn();
         }
@@ -3173,11 +3162,12 @@ function BattleArena() {
             window.dispatchEvent(new Event("daily-challenge-updated"));
           }
 
-          // Browser-reported battle sessions are not durable evidence. Ghost
-          // replay creation is withheld until it has a server-side resolver.
+          // Browser-reported battle sessions are not durable evidence, so no
+          // session id is minted client-side and the bot branch below stays
+          // inert until it has a server-side resolver.
           const sessionId = null;
 
-          // Update competitive rating. Live PvP completes on the server once per battle; ghosts use local ELO.
+          // Update competitive rating. Live PvP completes on the server once per battle.
           if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
             const { data, error } = await supabase.rpc("complete_authoritative_pvp_battle", {
               p_battle_id: pvpBattleIdRef.current,
@@ -3196,12 +3186,6 @@ function BattleArena() {
                 window.dispatchEvent(new Event("pvp-leaderboard-updated"));
               }
             }
-          } else if (opponentTypeRef.current === "ghost" && sessionId) {
-            const result = await completeGhostBattle(sessionId, opponentRatingRef.current);
-            setRatingChange(result.ratingDelta);
-            setPlayerRating(result.ratingAfter);
-            playerRatingRef.current = result.ratingAfter;
-            window.dispatchEvent(new Event("pvp-leaderboard-updated"));
           } else if (opponentTypeRef.current === "bot" && sessionId) {
             // Bot battles count too, at a reduced rating change (server-enforced),
             // and update the W/L record via the same applied-session truth model.
@@ -3495,95 +3479,6 @@ function BattleArena() {
     }, 400);
   }, [addLog, finishBattle, opponentArchetype, opponentMomentum, getArch]);
 
-  /**
-   * Ghost turn: replays actions from a real player's recorded session.
-   * Accuracy and timing come from the stored question_records — no procedural AI.
-   */
-  const ghostTurn = useCallback(() => {
-    const ghost = ghostSessionRef.current;
-    if (!ghost || ghost.questionRecords.length === 0) {
-      // Degenerate case: fall back to AI if ghost data is empty
-      aiTurn();
-      return;
-    }
-
-    const idx = ghostTurnIndexRef.current % ghost.questionRecords.length;
-    const record = ghost.questionRecords[idx];
-    ghostTurnIndexRef.current += 1;
-    if (!record) {
-      aiTurn();
-      return;
-    }
-
-    const oppArch = getArch(opponentArchetype);
-    const delay = 300 + Math.min(record.timeSpent * 400, 1200); // realistic pacing
-
-    setTimeout(() => {
-      actingSideRef.current = "opponent";
-      const prevOpp = opponentRef.current;
-      const prevPlayer = playerRef.current;
-      let newPlayerHp = prevPlayer.hp;
-      let newPlayerShield = prevPlayer.shield ?? 0;
-      let newOppHp = prevOpp.hp;
-
-      if (record.correct) {
-        const hit = getEffectiveDamage(oppArch, {
-          action: record.action as Action,
-          correctCount: ghostTurnIndexRef.current,
-          currentHp: prevOpp.hp,
-        });
-        const playerArch = getArch(archetypeRef.current);
-        const after = applyDefense(hit.damage, playerArch, copiedPassiveRef.current);
-        const absorbed = absorbWithShield(after, newPlayerShield);
-        newPlayerShield = absorbed.shieldLeft;
-        newPlayerHp = Math.max(0, prevPlayer.hp - spendDamage("opponent", absorbed.hpLoss));
-        setShowPlayerHit(true);
-        addLog({
-          actor: "opponent",
-          actionType: "ghost",
-          result: `${prevOpp.name}: ${modeDamageLabel(absorbed.hpLoss)} (ghost replay)${hit.crit ? " CRIT!" : ""}`,
-          value: absorbed.hpLoss,
-        });
-      } else {
-        const flub = applyDefense(Math.floor(Math.random() * 6) + 3, oppArch);
-        newOppHp = Math.max(0, prevOpp.hp - spendMiss("opponent", flub));
-        addLog({
-          actor: "opponent",
-          actionType: "ghost",
-          result: `${prevOpp.name} missed${modeUsesHp() ? ` (-${flub} self)` : ""}`,
-          value: flub,
-        });
-      }
-
-      if (record.correct) opponentCorrectRef.current += 1;
-      modeTurnsRef.current += 1;
-      setPlayer((p) => ({ ...p, hp: newPlayerHp, shield: newPlayerShield }));
-      setOpponent((o) => ({ ...o, hp: newOppHp }));
-
-      setTimeout(() => {
-        setShowPlayerHit(false);
-
-        if (pendingPlacementRef.current) {
-          return;
-        }
-
-        const modeOutcome = resolveModeOutcome(newPlayerHp, newOppHp);
-        if (modeOutcome === "ended") {
-          // finishBattle already ran.
-        } else if (modeOutcome === "passthrough" && newPlayerHp <= 0) {
-          finishBattle(false);
-        } else if (modeOutcome === "passthrough" && newOppHp <= 0) {
-          finishBattle(true);
-        } else {
-          setPhase("select");
-        }
-      }, 600);
-    }, delay);
-    // Mode routing helpers read refs and stable setters; including their render-local
-    // identities would recreate the ghost replay callback every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addLog, aiTurn, finishBattle, opponentArchetype, getArch]);
-
   const selectAction = async (action: Action) => {
     if (opponentTypeRef.current === "live" && liveActionLockedRef.current) {
       addLog({
@@ -3608,8 +3503,7 @@ function BattleArena() {
         result: `You are frozen — the turn is skipped.`,
       });
       setTimeout(() => {
-        if (opponentTypeRef.current === "ghost") ghostTurn();
-        else aiTurn();
+        aiTurn();
       }, 700);
       return;
     }
@@ -3726,9 +3620,6 @@ function BattleArena() {
     setKoBanner(null);
     setPhase("searching");
 
-    // Reset ghost state
-    ghostSessionRef.current = null;
-    ghostTurnIndexRef.current = 0;
     pvpChannelRef.current = null;
     setPvpBattleId(null);
     battleFinishedRef.current = false;
@@ -3754,9 +3645,9 @@ function BattleArena() {
     }
     opponentDraftTeamRef.current = null;
 
-    // Run full Tier 1→2→3 matchmaking asynchronously. Non-Battle modes have
-    // no realtime sync (or, for Draft, no recorded ghost picks) yet, so they
-    // skip straight past the tiers they don't support — see GAME_MODES.
+    // Run full Tier 1→2 matchmaking asynchronously. Non-Battle modes have no
+    // realtime sync yet, so they skip straight past the live tier they don't
+    // support — see GAME_MODES.
     void (async () => {
       try {
         const match: MatchResult = await findMatch(
@@ -3767,10 +3658,7 @@ function BattleArena() {
             setMatchStatus(msg);
             setMatchTier(tier);
           },
-          {
-            allowLive: gameModeRef.current === "battle",
-            allowGhost: gameModeRef.current !== "draft",
-          },
+          { allowLive: gameModeRef.current === "battle" },
         );
 
         // Resolve opponent from match result
@@ -3782,23 +3670,13 @@ function BattleArena() {
           oppArchetype = match.opponentArchetype;
           oppName = match.opponentName;
 
-          // Ghost and live opponents arrive as an archetype, so they previously
-          // fought with no Ecliptar at all — no sprite, and no ultimate, since
-          // ultimates are keyed by Ecliptar slug. That made them strictly weaker
-          // than a bot. Equip one for them:
-          //   - a ghost replays with the creature the original player actually
-          //     used, when the session recorded it;
-          //   - otherwise derive a stable stand-in from the archetype, keyed on
-          //     the opponent's identity so the same ghost or rival always brings
-          //     the same creature rather than a new one each encounter.
-          const recorded =
-            match.type === "ghost" ? (match.ghostSession?.ecliptarSlug ?? null) : null;
-          oppSlug =
-            recorded ??
-            ecliptarForArchetype(
-              oppArchetype,
-              match.ghostSession?.id ?? match.opponentUserId ?? oppName,
-            )?.slug;
+          // A live opponent arrives as an archetype, so it would otherwise
+          // fight with no Ecliptar at all — no sprite, and no ultimate, since
+          // ultimates are keyed by Ecliptar slug. That would make it strictly
+          // weaker than a bot, so derive a stable stand-in from the archetype,
+          // keyed on the opponent's identity so the same rival always brings the
+          // same creature rather than a new one each encounter.
+          oppSlug = ecliptarForArchetype(oppArchetype, match.opponentUserId ?? oppName)?.slug;
         } else if (gameModeRef.current === "draft") {
           // Draft Battle: the bot drafts its own team the same way the player
           // just did; its first pick opens the match like any other bot fight.
@@ -3816,15 +3694,9 @@ function BattleArena() {
           oppName = oppEclip.name;
           oppSlug = oppEclip.slug;
         }
-        // Always use the archetype's icon so ghost / bot / live opponents
-        // visually reflect their build instead of a generic robot.
+        // Always use the archetype's icon so bot / live opponents visually
+        // reflect their build instead of a generic robot.
         const oppIcon = ARCHETYPES[oppArchetype].icon;
-
-        // Ghost: prime the replay buffer
-        if (match.type === "ghost" && match.ghostSession) {
-          ghostSessionRef.current = match.ghostSession;
-          ghostTurnIndexRef.current = 0;
-        }
 
         // Live: store battle ID so the Realtime useEffect subscribes
         if (match.type === "live" && match.pvpBattleId) {
@@ -3890,7 +3762,7 @@ function BattleArena() {
           setPhase("gamblerReveal");
         } else {
           setPhase("select");
-          const typeTag = match.type === "live" ? "LIVE" : match.type === "ghost" ? "GHOST" : "BOT";
+          const typeTag = match.type === "live" ? "LIVE" : "BOT";
           addLog({
             actor: "system",
             actionType: "info",
@@ -3926,7 +3798,6 @@ function BattleArena() {
     setPvpBattleId(null);
     setOpponentType("bot");
     setRatingChange(null);
-    ghostSessionRef.current = null;
     pvpChannelRef.current = null;
     battleFinishedRef.current = false;
     rematchStartedRef.current = false;
@@ -3953,8 +3824,6 @@ function BattleArena() {
       battleFinishedRef.current = false;
       rematchStartedRef.current = false;
       setLiveRematchState("idle");
-      ghostSessionRef.current = null;
-      ghostTurnIndexRef.current = 0;
       pvpChannelRef.current = null;
       const rolledGambler = opts.myArchetype === "gambler" ? rollGamblerStats() : null;
       setGamblerStats(rolledGambler);
@@ -4401,12 +4270,6 @@ function BattleArena() {
               <Radio className="w-2.5 h-2.5" />
               <span className="text-[8px] font-bold tracking-widest">LIVE</span>
             </motion.div>
-          )}
-          {opponentType === "ghost" && (
-            <div className="flex items-center gap-0.5 px-1.5 py-0.5 border border-neon-purple/50 bg-neon-purple/10 text-neon-purple">
-              <Ghost className="w-2.5 h-2.5" />
-              <span className="text-[8px] font-bold tracking-widest">GHOST</span>
-            </div>
           )}
           {opponentType === "bot" && (
             <div className="flex items-center gap-0.5 px-1.5 py-0.5 border border-border/50 text-muted-foreground/50">
@@ -5029,7 +4892,7 @@ function LeaderboardCard() {
           <p className="btt-shout text-2xl mb-1">The throne is empty</p>
           <p className="text-[11px] text-muted-foreground leading-relaxed max-w-xs mx-auto">
             {tab === "rating"
-              ? "Finish a live or ghost battle to claim the first spot on the rating ladder."
+              ? "Finish a live battle to claim the first spot on the rating ladder."
               : "Win battles and earn XP to etch your name into the board first."}
           </p>
         </div>
@@ -5363,20 +5226,14 @@ export function KnowledgeBattles() {
                   head-to-head in real time via a live channel. Rating is at stake.
                 </li>
                 <li>
-                  <span className="text-neon-purple font-bold">GHOST PvP</span> — if no live
-                  opponent is found in 8 seconds, you face a replay of a real player's past session.
-                  Their actions, timing, and accuracy are replayed authentically. Rating still
-                  applies.
+                  <span className="text-muted-foreground font-bold">AI Bot</span> — if nobody is in
+                  queue after 8 seconds, you are matched with a bot instead of being left waiting.
+                  Bot battles still count: full XP, your W/L record, and a smaller rating change
+                  than ranked play.
                 </li>
                 <li>
-                  <span className="text-muted-foreground font-bold">AI Bot</span> — last resort
-                  only, when no real player data exists at your rating range. Bot battles still
-                  count: full XP, your W/L record, and a smaller rating change than ranked play.
-                </li>
-                <li>
-                  Priority is always{" "}
-                  <span className="text-foreground font-bold">Live → Ghost → Bot</span>. You will
-                  never be matched with a bot when real player data is available.
+                  Priority is always <span className="text-foreground font-bold">Live → Bot</span>.
+                  You will never be matched with a bot while a real player is available.
                 </li>
               </ul>
             </section>

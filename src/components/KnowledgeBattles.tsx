@@ -1449,6 +1449,8 @@ function BattleArena() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [showPractice, setShowPractice] = useState(false);
+  /** Concept to drop straight into when Practice is opened from a battle report. */
+  const [practiceConcept, setPracticeConcept] = useState<string | null>(null);
   // ── Game mode ─────────────────────────────────────────────────────────
   // Modes never touch stat-mechanics/resolve-ultimate/effects — they only
   // redirect what an already-computed dmg/heal number is spent on. `gameMode`
@@ -3934,9 +3936,14 @@ function BattleArena() {
     if (showPractice) {
       return (
         <WeakSpotPractice
-          onClose={() => setShowPractice(false)}
+          initialConcept={practiceConcept}
+          onClose={() => {
+            setShowPractice(false);
+            setPracticeConcept(null);
+          }}
           onBattle={() => {
             setShowPractice(false);
+            setPracticeConcept(null);
             setGameMode("battle");
             gameModeRef.current = "battle";
             setPhase("classSelect");
@@ -4049,6 +4056,13 @@ function BattleArena() {
         opponentType={opponentType}
         {...(opponentType === "live" ? { onLiveRematch: () => void handleLiveRematch() } : {})}
         liveRematchState={liveRematchState}
+        onPracticeWeakSpots={(topic) => {
+          // Practice lives on the idle screen, so returning there is what makes
+          // "Back to arena" land somewhere sensible afterwards.
+          setPracticeConcept(topic);
+          setShowPractice(true);
+          reset();
+        }}
       />
     );
   }

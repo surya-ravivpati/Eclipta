@@ -40,13 +40,24 @@ const STATE_LABEL: Record<MasteryState, string> = {
 export function WeakSpotPractice({
   onClose,
   onBattle,
+  initialConcept = null,
 }: {
   onClose: () => void;
   onBattle: () => void;
+  /**
+   * Skip the picker and drop straight into reps on this concept.
+   *
+   * Set when arriving from a battle report, where the learner has just been
+   * shown the topic they missed most — asking them to pick it out of a list
+   * again would be busywork. It is passed from the battle's own records rather
+   * than read back from `concept_mastery`, so it works even though that write
+   * is best-effort and may not have landed yet.
+   */
+  initialConcept?: string | null;
 }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [weak, setWeak] = useState<WeakConcept[] | null>(null);
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(initialConcept);
 
   useEffect(() => {
     (async () => {

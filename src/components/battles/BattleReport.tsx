@@ -8,7 +8,7 @@ import {
   Flame,
   AlertTriangle,
   BookOpen,
-  RotateCcw,
+  Brain,
   Star,
   TrendingUp,
   TrendingDown,
@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ARCHETYPES } from "./archetypes";
 import type { BattleStats, Difficulty } from "./types";
+import { rankWeakTopics, tallyTopics } from "./weak-spot";
 import {
   recordBattleMastery,
   fetchMastery,
@@ -35,6 +36,7 @@ export function BattleReport({
   opponentType,
   onLiveRematch,
   liveRematchState,
+  onPracticeWeakSpots,
 }: {
   stats: BattleStats;
   onRematch: () => void;
@@ -46,6 +48,11 @@ export function BattleReport({
   onLiveRematch?: () => void;
   /** Drives the rematch button label: idle → "QUICK REMATCH", waiting → "WAITING FOR OPPONENT…", starting → "STARTING…". */
   liveRematchState?: "idle" | "waiting" | "starting";
+  /**
+   * Open Practice Weak Spots on the topic this battle exposed. Receives the
+   * weakest topic, or null when the learner missed nothing worth drilling.
+   */
+  onPracticeWeakSpots?: (topic: string | null) => void;
 }) {
   const xpSavedRef = useRef(false);
   const [xpCount, setXpCount] = useState(0);
@@ -186,16 +193,11 @@ export function BattleReport({
       .filter(([, v]) => v.total > 0)
       .sort((a, b) => b[1].wrong / b[1].total - a[1].wrong / a[1].total)[0]?.[0] || "medium";
 
-  // Find weakest topic
-  const topicCounts: Record<string, { total: number; wrong: number }> = {};
-  stats.records.forEach((r) => {
-    if (!topicCounts[r.question.topic]) topicCounts[r.question.topic] = { total: 0, wrong: 0 };
-    topicCounts[r.question.topic].total++;
-    if (!r.correct) topicCounts[r.question.topic].wrong++;
-  });
-  const weakestTopic = Object.entries(topicCounts)
-    .filter(([, v]) => v.wrong > 0)
-    .sort((a, b) => b[1].wrong / b[1].total - a[1].wrong / a[1].total)[0]?.[0];
+  // Topics worth drilling, worst first. Shared with the Practice button below
+  // so the panel and the button can never name different topics.
+  const allTopics = [...tallyTopics(stats.records).values()];
+  const weakTopics = rankWeakTopics(stats.records);
+  const weakestTopic = weakTopics[0]?.topic;
 
   return (
     <motion.div
@@ -305,26 +307,26 @@ export function BattleReport({
               MATH DOMAINS THIS BATTLE
             </p>
             <div className="space-y-2">
-              {Object.entries(topicCounts)
-                .sort((a, b) => b[1].total - a[1].total)
-                .map(([topic, data]) => {
-                  const correct = data.total - data.wrong;
-                  const fillPct = Math.round((correct / data.total) * 100);
+              {allTopics
+                .sort((a, b) => b.total - a.total)
+                .map((t) => {
+                  const correct = t.total - t.wrong;
+                  const fillPct = Math.round((correct / t.total) * 100);
                   const diffColor =
-                    data.wrong === 0
+                    t.wrong === 0
                       ? "bg-neon-cyan"
-                      : data.wrong / data.total >= 0.5
+                      : t.missRate >= 0.5
                         ? "bg-neon-pink"
                         : "bg-neon-purple";
                   return (
-                    <div key={topic}>
+                    <div key={t.topic}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-foreground">{topic}</span>
+                        <span className="text-xs font-bold text-foreground">{t.topic}</span>
                         <span
-                          className={`text-[10px] font-bold tabular-nums ${data.wrong === 0 ? "text-neon-cyan" : "text-muted-foreground"}`}
+                          className={`text-[10px] font-bold tabular-nums ${t.wrong === 0 ? "text-neon-cyan" : "text-muted-foreground"}`}
                         >
-                          {correct}/{data.total}
-                          {data.wrong > 0 ? ` · ${data.wrong} missed` : " · perfect"}
+                          {correct}/{t.total}
+                          {t.wrong > 0 ? ` · ${t.wrong} missed` : " · perfect"}
                         </span>
                       </div>
                       <div className="h-1.5 bg-secondary/50 overflow-hidden">
@@ -540,18 +542,12 @@ export function BattleReport({
                 <span className="text-xs font-bold tracking-widest">RECOMMENDED</span>
               </div>
               <div className="space-y-2">
-                {Object.entries(topicCounts)
-                  .filter(([, v]) => v.wrong > 0)
-                  .sort((a, b) => b[1].wrong - a[1].wrong)
-                  .slice(0, 3)
-                  .map(([topic, data]) => (
-                    <div key={topic} className="flex items-center justify-between">
-                      <span className="text-xs text-foreground">{topic}</span>
-                      <span className="text-[10px] text-neon-pink font-bold">
-                        {data.wrong} missed
-                      </span>
-                    </div>
-                  ))}
+                {weakTopics.slice(0, 3).map((t) => (
+                  <div key={t.topic} className="flex items-center justify-between">
+                    <span className="text-xs text-foreground">{t.topic}</span>
+                    <span className="text-[10px] text-neon-pink font-bold">{t.wrong} missed</span>
+                  </div>
+                ))}
                 {missed.length === 0 && (
                   <p className="text-xs text-muted-foreground">
                     No weak areas found. Try harder difficulty!
@@ -560,15 +556,20 @@ export function BattleReport({
               </div>
             </div>
 
+            {/* This used to call onRematch — it said "practice weak spots" and
+                started an ordinary battle, which is the opposite of practice.
+                It now opens the coaching mode on the topic just missed. */}
             <motion.button
-              onClick={onRematch}
+              onClick={() =>
+                onPracticeWeakSpots ? onPracticeWeakSpots(weakestTopic ?? null) : onRematch()
+              }
               className="w-full glass-panel p-3 border border-neon-cyan/20 flex items-center justify-center gap-2 hover:bg-neon-cyan/5 transition-colors"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
             >
-              <RotateCcw className="w-4 h-4 text-neon-cyan" />
+              <Brain className="w-4 h-4 text-neon-cyan" />
               <span className="text-xs font-bold tracking-widest text-neon-cyan">
-                PRACTICE WEAK SPOTS
+                {weakestTopic ? `DRILL ${weakestTopic.toUpperCase()}` : "PRACTICE WEAK SPOTS"}
               </span>
             </motion.button>
           </div>

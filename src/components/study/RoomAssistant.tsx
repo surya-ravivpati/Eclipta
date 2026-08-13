@@ -1,15 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { Lock, Send, Loader2, HelpCircle, ListChecks, Copy, X, Sparkles, Check } from "lucide-react";
+import {
+  Lock,
+  Send,
+  Loader2,
+  HelpCircle,
+  ListChecks,
+  Copy,
+  X,
+  Sparkles,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
 import { streamLunaChat } from "@/lib/luna-api";
 import {
-  createStuckRequest, resolveStuckHuman, generateRecap, gatherRecapEvents,
-  type StuckRequest, type RecapEvent,
+  createStuckRequest,
+  resolveStuckHuman,
+  generateRecap,
+  gatherRecapEvents,
+  type StuckRequest,
+  type RecapEvent,
 } from "@/lib/study-luna";
 import type { TeachBackRound } from "@/lib/study-teachback";
 import { MessageMenu } from "@/components/study/RoomSafety";
 
-/* ── Ask: private, personal help. Ephemeral, client-only — never broadcast. ── */
+/* -- Ask: private, personal help. Ephemeral, client-only - never broadcast. -- */
 export function AskLuna() {
   const [q, setQ] = useState("");
   const [answer, setAnswer] = useState("");
@@ -29,7 +43,10 @@ export function AskLuna() {
       signal: ctrl.signal,
       onDelta: (t) => setAnswer((a) => a + t),
       onDone: () => setBusy(false),
-      onError: (e) => { setAnswer(e); setBusy(false); },
+      onError: (e) => {
+        setAnswer(e);
+        setBusy(false);
+      },
     });
   };
 
@@ -42,15 +59,22 @@ export function AskLuna() {
       {answer && (
         <div className="sr-ask-answer">
           {answer}
-          <button className="sr-ask-clear" onClick={() => setAnswer("")} aria-label="Clear"><X size={12} /></button>
+          <button className="sr-ask-clear" onClick={() => setAnswer("")} aria-label="Clear">
+            <X size={12} />
+          </button>
         </div>
       )}
       <div className="sr-ask-input">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void ask(); } }}
-          placeholder="Hint, explanation, check my reasoning…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              void ask();
+            }
+          }}
+          placeholder="Hint, explanation, check my reasoning..."
           maxLength={1000}
         />
         <button className="sr-ask-send" onClick={ask} disabled={busy || !q.trim()}>
@@ -61,7 +85,7 @@ export function AskLuna() {
   );
 }
 
-/* ── Stuck launcher: posts a public card with an optional note. ── */
+/* -- Stuck launcher: posts a public card with an optional note. -- */
 export function StuckLauncher({ roomId }: { roomId: string }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -71,8 +95,12 @@ export function StuckLauncher({ roomId }: { roomId: string }) {
     setBusy(true);
     const err = await createStuckRequest(roomId, note.trim());
     setBusy(false);
-    if (err) { toast.error("Couldn't post", { description: err }); return; }
-    setNote(""); setOpen(false);
+    if (err) {
+      toast.error("Couldn't post", { description: err });
+      return;
+    }
+    setNote("");
+    setOpen(false);
   };
 
   if (!open) {
@@ -85,21 +113,46 @@ export function StuckLauncher({ roomId }: { roomId: string }) {
   return (
     <div className="sr-stuck-launch">
       <input
-        autoFocus value={note} maxLength={200}
+        autoFocus
+        value={note}
+        maxLength={200}
         placeholder="What are you stuck on? (optional)"
         onChange={(e) => setNote(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void post(); } if (e.key === "Escape") setOpen(false); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void post();
+          }
+          if (e.key === "Escape") setOpen(false);
+        }}
       />
       <button className="sr-toolbtn sr-toolbtn--go" onClick={post} disabled={busy}>
         {busy ? <Loader2 size={13} className="animate-spin" /> : "Ask the room"}
       </button>
-      <button className="sr-toolbtn" onClick={() => { setOpen(false); setNote(""); }} aria-label="Cancel"><X size={13} /></button>
+      <button
+        className="sr-toolbtn"
+        onClick={() => {
+          setOpen(false);
+          setNote("");
+        }}
+        aria-label="Cancel"
+      >
+        <X size={13} />
+      </button>
     </div>
   );
 }
 
-/* ── Stuck card: visible to the room, ticking countdown, human resolution. ── */
-export function StuckCard({ stuck, meId, roomId }: { stuck: StuckRequest; meId: string | null; roomId: string }) {
+/* -- Stuck card: visible to the room, ticking countdown, human resolution. -- */
+export function StuckCard({
+  stuck,
+  meId,
+  roomId,
+}: {
+  stuck: StuckRequest;
+  meId: string | null;
+  roomId: string;
+}) {
   const [now, setNow] = useState(Date.now());
   const [resolving, setResolving] = useState(false);
   useEffect(() => {
@@ -120,42 +173,63 @@ export function StuckCard({ stuck, meId, roomId }: { stuck: StuckRequest; meId: 
   };
 
   return (
-    <div className={`sr-stuck sr-stuck--${stuck.status}`} role="group"
-      aria-label={`Stuck help request from ${who}${stuck.note ? ` about ${stuck.note}` : ""}`}>
+    <div
+      className={`sr-stuck sr-stuck--${stuck.status}`}
+      role="group"
+      aria-label={`Stuck help request from ${who}${stuck.note ? ` about ${stuck.note}` : ""}`}
+    >
       <div className="sr-stuck-head">
         <HelpCircle size={14} className="sr-stuck-ico" aria-hidden="true" />
-        <span><b>{who}</b> is stuck{stuck.note ? ` on "${stuck.note}"` : ""} — anyone?</span>
+        <span>
+          <b>{who}</b> is stuck{stuck.note ? ` on "${stuck.note}"` : ""} - anyone?
+        </span>
       </div>
 
       {stuck.status === "open" && (
         <div className="sr-stuck-foot">
-          <span className="sr-stuck-count">Luna jumps in in <b>{secsLeft}s</b> if no one answers</span>
+          <span className="sr-stuck-count">
+            Luna jumps in in <b>{secsLeft}s</b> if no one answers
+          </span>
           {!isAsker && (
             <button className="sr-stuck-take" onClick={takeIt} disabled={resolving}>
-              {resolving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} I've got this
+              {resolving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}{" "}
+              I've got this
             </button>
           )}
         </div>
       )}
 
       {stuck.status === "resolving" && (
-        <div className="sr-stuck-foot"><Loader2 size={12} className="animate-spin" /> Luna is writing a hint…</div>
+        <div className="sr-stuck-foot">
+          <Loader2 size={12} className="animate-spin" /> Luna is writing a hint...
+        </div>
       )}
 
       {stuck.status === "resolved" && (
         <div className="sr-stuck-resolved">
           <div className="sr-stuck-by">
-            {stuck.resolved_by === "ai"
-              ? <><Sparkles size={12} /> Luna stepped in</>
-              : <><Check size={12} /> {stuck.resolver_name || "A member"} has this</>}
+            {stuck.resolved_by === "ai" ? (
+              <>
+                <Sparkles size={12} /> Luna stepped in
+              </>
+            ) : (
+              <>
+                <Check size={12} /> {stuck.resolver_name || "A member"} has this
+              </>
+            )}
           </div>
           {stuck.resolved_by === "ai" && stuck.resolution_summary && (
             <div className="sr-stuck-ai">
               {stuck.resolution_summary}
-              {/* AI answers can be wrong/harmful too — quiet report, no block. */}
+              {/* AI answers can be wrong/harmful too - quiet report, no block. */}
               <MessageMenu
-                roomId={roomId} authorKind="ai" reportedUserId={null} authorName="Luna"
-                snapshot={stuck.resolution_summary} canBlock={false} onBlock={() => {}}
+                roomId={roomId}
+                authorKind="ai"
+                reportedUserId={null}
+                authorName="Luna"
+                snapshot={stuck.resolution_summary}
+                canBlock={false}
+                onBlock={() => {}}
               />
             </div>
           )}
@@ -165,43 +239,81 @@ export function StuckCard({ stuck, meId, roomId }: { stuck: StuckRequest; meId: 
   );
 }
 
-/* ── Recap: structured-event-only summary; copyable artifact. ── */
-export function RecapPanel({ stuck, rounds = [], goalText }: { stuck: StuckRequest[]; rounds?: TeachBackRound[]; goalText: string | null }) {
+/* -- Recap: structured-event-only summary; copyable artifact. -- */
+export function RecapPanel({
+  stuck,
+  rounds = [],
+  goalText,
+}: {
+  stuck: StuckRequest[];
+  rounds?: TeachBackRound[];
+  goalText: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
 
   const run = async () => {
-    setOpen(true); setText(null); setEmpty(false);
+    setOpen(true);
+    setText(null);
+    setEmpty(false);
     const events: RecapEvent[] = gatherRecapEvents(stuck, rounds);
-    if (events.length === 0) { setEmpty(true); return; }   // hard guard: never call the model with no events
+    if (events.length === 0) {
+      setEmpty(true);
+      return;
+    } // hard guard: never call the model with no events
     setLoading(true);
     const { text: out, error } = await generateRecap(events, goalText);
     setLoading(false);
-    if (error) { toast.error("Couldn't build the recap", { description: error }); setOpen(false); return; }
+    if (error) {
+      toast.error("Couldn't build the recap", { description: error });
+      setOpen(false);
+      return;
+    }
     setText(out ?? "");
   };
 
-  const copy = () => { if (text) { navigator.clipboard?.writeText(text); toast.success("Recap copied"); } };
+  const copy = () => {
+    if (text) {
+      navigator.clipboard?.writeText(text);
+      toast.success("Recap copied");
+    }
+  };
 
   return (
     <>
-      <button className="sr-toolbtn" onClick={run}><ListChecks size={13} /> Recap so far</button>
+      <button className="sr-toolbtn" onClick={run}>
+        <ListChecks size={13} /> Recap so far
+      </button>
       {open && (
         <div className="sr-modal-bg" onClick={() => setOpen(false)}>
           <div className="sr-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="sr-back" onClick={() => setOpen(false)} style={{ float: "right" }}><X size={16} /></button>
+            <button className="sr-back" onClick={() => setOpen(false)} style={{ float: "right" }}>
+              <X size={16} />
+            </button>
             <h3>Session recap</h3>
             {empty ? (
-              <p className="sr-modal-sub">Nothing to recap yet — this builds up as you go (resolved "stuck" questions, check-ins).</p>
+              <p className="sr-modal-sub">
+                Nothing to recap yet - this builds up as you go (resolved "stuck" questions,
+                check-ins).
+              </p>
             ) : loading ? (
-              <p className="sr-modal-sub"><Loader2 size={14} className="animate-spin" style={{ display: "inline", marginRight: 6 }} /> Building from this session's events…</p>
+              <p className="sr-modal-sub">
+                <Loader2
+                  size={14}
+                  className="animate-spin"
+                  style={{ display: "inline", marginRight: 6 }}
+                />{" "}
+                Building from this session's events...
+              </p>
             ) : (
               <>
-                <pre className="sr-recap-text">{text}</pre>
+                <pre className="sr-recap-text whitespace-pre-wrap">{text}</pre>
                 <div className="sr-modal-actions">
-                  <button className="sr-toolbtn" onClick={copy}><Copy size={13} /> Copy</button>
+                  <button className="sr-toolbtn" onClick={copy}>
+                    <Copy size={13} /> Copy
+                  </button>
                 </div>
               </>
             )}

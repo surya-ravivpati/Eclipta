@@ -2,7 +2,7 @@
  * Cookie / storage consent state.
  *
  * Split from the banner component so that file exports a component and nothing
- * else — React Fast Refresh cannot preserve state across edits in a module that
+ * else - React Fast Refresh cannot preserve state across edits in a module that
  * mixes component and non-component exports.
  */
 

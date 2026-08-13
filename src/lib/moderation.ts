@@ -3,7 +3,7 @@
  * moderation RPCs.
  *
  * The forum composer flow is:
- *   1. (Optional) Local pre-check with isCleanForumContent — instant feedback
+ *   1. (Optional) Local pre-check with isCleanForumContent - instant feedback
  *      for the obvious cases.
  *   2. Call moderateContent() before INSERT. If verdict === 'block', refuse
  *      to submit. Otherwise insert the row normally.
@@ -12,7 +12,7 @@
  *      what actually drives whether the post shows up publicly).
  *
  * Splitting the call in two means a slow LLM doesn't block the user's
- * "Posted!" confirmation — the post lands immediately, and within a second
+ * "Posted!" confirmation - the post lands immediately, and within a second
  * or two its visibility flips if the AI decides to hide it.
  */
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,7 @@ export interface ModerationResult {
   category: string;
   score: number;
   reason: string;
-  /** Author expressed self-harm/crisis — surface supportive resources. */
+  /** Author expressed self-harm/crisis - surface supportive resources. */
   selfHarm?: boolean;
 }
 
@@ -33,7 +33,7 @@ const SAFE_FALLBACK: ModerationResult = {
   verdict: "pending",
   category: "unknown",
   score: 50,
-  reason: "Moderation service unavailable — your post will be reviewed.",
+  reason: "Moderation service unavailable - your post will be reviewed.",
 };
 
 export async function moderateContent(
@@ -57,7 +57,7 @@ export async function moderateContent(
     }
     const result = data as Partial<ModerationResult> & { selfHarm?: boolean };
     return {
-      verdict: (result.verdict!) ?? "pending",
+      verdict: result.verdict! ?? "pending",
       category: result.category ?? "unknown",
       score: typeof result.score === "number" ? result.score : 0,
       reason: result.reason ?? "",
@@ -84,34 +84,39 @@ export async function moderateAfterInsert(
       body: { text, targetType, targetId, mode: "record" },
     });
   } catch (e) {
-    // Don't surface to the user — the trigger already gated obvious bad
+    // Don't surface to the user - the trigger already gated obvious bad
     // content; this is the contextual second pass.
     console.warn("moderateAfterInsert failed", e);
   }
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
- * Unified pipeline entry — moderate(content, surface, author_context).
+/* ---------------------------------------------------------------------------
+ * Unified pipeline entry - moderate(content, surface, author_context).
  * One call for usernames and chat (single, authoritative 'record' pass). Forum
- * keeps its two-step check→record flow above. Also the on-demand re-scan entry.
- * ─────────────────────────────────────────────────────────────────────────── */
+ * keeps its two-step check->record flow above. Also the on-demand re-scan entry.
+ * --------------------------------------------------------------------------- */
 export type ModerationDecision = "allow" | "flag" | "block";
 
 export interface ModerationOutcome {
   decision: ModerationDecision;
   category: string;
   confidence: number;
-  /** Author expressed self-harm/crisis about themselves — surface supportive
+  /** Author expressed self-harm/crisis about themselves - surface supportive
    *  resources. NOT a moderation consequence; can co-occur with a violation. */
   selfHarm: boolean;
   /** Repeat-offender soft pause applied (temporary, pending human review). */
   paused: boolean;
-  /** True when decision === 'block' — content must not be saved/sent. */
+  /** True when decision === 'block' - content must not be saved/sent. */
   blocked: boolean;
 }
 
 const SAFE_OUTCOME: ModerationOutcome = {
-  decision: "allow", category: "none", confidence: 0, selfHarm: false, paused: false, blocked: false,
+  decision: "allow",
+  category: "none",
+  confidence: 0,
+  selfHarm: false,
+  paused: false,
+  blocked: false,
 };
 
 /**
@@ -123,7 +128,7 @@ const SAFE_OUTCOME: ModerationOutcome = {
  * Wire shape of the `moderate-content` edge function's response.
  *
  * Every field is optional because this crosses a network boundary the
- * schema types don't cover — the caller must guard each one rather than
+ * schema types don't cover - the caller must guard each one rather than
  * trust the payload.
  */
 interface ModerationResponsePayload {
@@ -142,7 +147,9 @@ export async function moderate(
   try {
     const { data, error } = await supabase.functions.invoke<ModerationResponsePayload>(
       "moderate-content",
-      { body: { text, targetType, targetId: opts?.targetId ?? null, mode: opts?.mode ?? "record" } },
+      {
+        body: { text, targetType, targetId: opts?.targetId ?? null, mode: opts?.mode ?? "record" },
+      },
     );
     if (error || !data || typeof data !== "object") return SAFE_OUTCOME;
     const decision: ModerationDecision =
@@ -162,19 +169,27 @@ export async function moderate(
   }
 }
 
-/** Calm, non-accusatory block copy — states the category, nothing more.
+/** Calm, non-accusatory block copy - states the category, nothing more.
  *  Never attributed to Luna or any persona. */
 export function calmBlockMessage(category: string): string {
-  const c = (category && category !== "none") ? category.replace(/_/g, " ") : "our guidelines";
-  return `This couldn't be posted — it was flagged as ${c}.`;
+  const c = category && category !== "none" ? category.replace(/_/g, " ") : "our guidelines";
+  return `This couldn't be posted - it was flagged as ${c}.`;
 }
 
 /** Supportive crisis resources surfaced to a user whose own content reads as
- *  self-harm/distress. Supportive tone — this is NOT a moderation action. */
+ *  self-harm/distress. Supportive tone - this is NOT a moderation action. */
 export const SELF_HARM_RESOURCES: { label: string; detail: string; href?: string }[] = [
-  { label: "988 Suicide & Crisis Lifeline", detail: "Call or text 988 (US, 24/7)", href: "tel:988" },
+  {
+    label: "988 Suicide & Crisis Lifeline",
+    detail: "Call or text 988 (US, 24/7)",
+    href: "tel:988",
+  },
   { label: "Crisis Text Line", detail: "Text HOME to 741741 (US/Canada)", href: "sms:741741" },
-  { label: "Find a helpline", detail: "International directory of crisis lines", href: "https://findahelpline.com" },
+  {
+    label: "Find a helpline",
+    detail: "International directory of crisis lines",
+    href: "https://findahelpline.com",
+  },
 ];
 
 /**
@@ -185,7 +200,10 @@ export async function submitForumReport(
   targetType: "thread" | "answer" | "comment",
   targetId: string,
   reason: string,
-): Promise<{ ok: true; deduplicated?: boolean; autoHidden?: boolean; reportCount?: number } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; deduplicated?: boolean; autoHidden?: boolean; reportCount?: number }
+  | { ok: false; error: string }
+> {
   const { data, error } = await supabase.rpc("submit_forum_report", {
     p_target_type: targetType,
     p_target_id: targetId,
@@ -222,7 +240,7 @@ export async function setModerationStatus(
 /**
  * Human-friendly placeholder rendered in place of removed content. Centralised
  * so every surface (thread list, thread detail, comments, search) uses the
- * exact same string — making it obvious to users that the system is active.
+ * exact same string - making it obvious to users that the system is active.
  */
 export const REMOVED_PLACEHOLDER = "Removed by moderator";
 

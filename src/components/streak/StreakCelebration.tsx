@@ -3,9 +3,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Flame, Sparkles, X } from "lucide-react";
 import { flameTierLabel } from "@/lib/daily-streak";
 
-interface Celebration { milestone: number; reward: number; streak: number; }
+interface Celebration {
+  milestone: number;
+  reward: number;
+  streak: number;
+}
 
-// Deterministic-ish confetti spread (no Math.random at module load — varied by index).
+// Deterministic-ish confetti spread (no Math.random at module load - varied by index).
 const CONFETTI = Array.from({ length: 44 }, (_, i) => {
   const angle = (i / 44) * Math.PI * 2;
   const dist = 120 + ((i * 53) % 180);
@@ -22,7 +26,7 @@ const CONFETTI = Array.from({ length: 44 }, (_, i) => {
 /**
  * Mounts once at the app root and listens for the global streak-milestone
  * event. When a milestone is newly crossed anywhere (battle finish, lesson,
- * Luna, etc.), it bursts a celebration overlay — the dopamine payoff that makes
+ * Luna, etc.), it bursts a celebration overlay - the dopamine payoff that makes
  * the streak worth protecting.
  */
 export function StreakCelebrationListener() {
@@ -62,11 +66,18 @@ export function StreakCelebrationListener() {
                 key={i}
                 className="absolute rounded-[2px]"
                 style={{
-                  width: c.size, height: c.size * 1.6,
+                  width: c.size,
+                  height: c.size * 1.6,
                   background: c.gold ? "oklch(0.82 0.14 88)" : "oklch(0.70 0.14 245)",
                 }}
                 initial={{ x: 0, y: 0, opacity: 0, rotate: 0, scale: 1 }}
-                animate={{ x: c.x, y: [c.y, c.y + 260], opacity: [1, 1, 0], rotate: c.rot, scale: 0.6 }}
+                animate={{
+                  x: c.x,
+                  y: [c.y, c.y + 260],
+                  opacity: [1, 1, 0],
+                  rotate: c.rot,
+                  scale: 0.6,
+                }}
                 transition={{ duration: 2.2, delay: c.delay, ease: "easeOut" }}
               />
             ))}
@@ -74,7 +85,9 @@ export function StreakCelebrationListener() {
 
           <motion.div
             className="relative rounded-3xl border border-primary/30 bg-[#121831] px-8 py-9 text-center max-w-sm w-full"
-            style={{ boxShadow: "0 40px 120px rgba(0,0,0,0.7), 0 0 70px oklch(0.78 0.13 88 / 0.22)" }}
+            style={{
+              boxShadow: "0 40px 120px rgba(0,0,0,0.7), 0 0 70px oklch(0.78 0.13 88 / 0.22)",
+            }}
             initial={{ scale: 0.6, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -103,11 +116,15 @@ export function StreakCelebrationListener() {
             <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-primary mt-3">
               {flameTierLabel(active.streak)} unlocked
             </p>
-            <h2 className="font-display text-5xl font-bold tabular-nums mt-1">{active.milestone}</h2>
-            <p className="font-mono text-[11px] tracking-[0.24em] uppercase text-muted-foreground">Day Streak</p>
+            <h2 className="font-display text-5xl font-bold tabular-nums mt-1">
+              {active.milestone}
+            </h2>
+            <p className="font-mono text-[11px] tracking-[0.24em] uppercase text-muted-foreground">
+              Day Streak
+            </p>
 
             <p className="text-sm text-foreground/90 mt-4 leading-snug">
-              {active.milestone} days in a row. This is the habit compounding — keep showing up.
+              {active.milestone} days in a row. This is the habit compounding - keep showing up.
             </p>
 
             {active.reward > 0 && (

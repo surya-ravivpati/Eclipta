@@ -49,10 +49,10 @@ import {
 export const Route = createFileRoute("/_authenticated/courses/$courseId/edit")({
   head: () => ({
     meta: [
-      { title: "Course Editor – Eclipta" },
+      { title: "Course Editor - Eclipta" },
       {
         name: "description",
-        content: "Build out your course modules — lessons, videos, images, and quizzes.",
+        content: "Build out your course modules - lessons, videos, images, and quizzes.",
       },
     ],
   }),
@@ -160,7 +160,7 @@ function CourseEditor() {
     const next = course.status === "published" ? "draft" : "published";
     await updateCourseField({ status: next });
     toast.success(
-      next === "published" ? "Course published — visible to everyone" : "Course unpublished",
+      next === "published" ? "Course published - visible to everyone" : "Course unpublished",
     );
   };
 
@@ -271,7 +271,7 @@ function CourseEditor() {
                 value={course.summary || ""}
                 onChange={(e) => setCourse({ ...course, summary: e.target.value })}
                 onBlur={(e) => updateCourseField({ summary: e.target.value })}
-                placeholder="Short summary that learners see on the course card…"
+                placeholder="Short summary that learners see on the course card..."
                 rows={2}
                 className="w-full mt-2 bg-transparent text-sm text-muted-foreground focus:outline-none focus:bg-secondary/30 px-1 -mx-1 resize-none"
               />
@@ -527,7 +527,7 @@ function TextBlockEditor({
       value={text}
       onChange={(e) => setText(e.target.value)}
       onBlur={() => text !== data.text && onChange({ ...data, text })}
-      placeholder="Write your lesson… Markdown-friendly. Use **bold**, _italic_, and line breaks for emphasis."
+      placeholder="Write your lesson... Markdown-friendly. Use **bold**, _italic_, and line breaks for emphasis."
       rows={6}
       className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-y"
     />
@@ -550,7 +550,7 @@ function YouTubeBlockEditor({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         onBlur={() => url !== data.url && onChange({ ...data, url })}
-        placeholder="Paste YouTube URL or video ID…"
+        placeholder="Paste YouTube URL or video ID..."
         className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
       />
       {id ? (
@@ -572,7 +572,7 @@ function YouTubeBlockEditor({
         value={caption}
         onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== data.caption && onChange({ ...data, caption })}
-        placeholder="Optional caption…"
+        placeholder="Optional caption..."
         className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
       />
     </div>
@@ -633,7 +633,7 @@ function ImageBlockEditor({
             <ImageIcon className="w-6 h-6 text-muted-foreground" />
           )}
           <span className="text-xs font-bold tracking-widest text-muted-foreground">
-            {uploading ? "UPLOADING…" : "CLICK TO UPLOAD IMAGE"}
+            {uploading ? "UPLOADING..." : "CLICK TO UPLOAD IMAGE"}
           </span>
           <span className="text-[10px] text-muted-foreground">PNG, JPG, WEBP up to 4 MB</span>
           <input
@@ -649,7 +649,7 @@ function ImageBlockEditor({
         value={caption}
         onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== data.caption && onChange({ ...data, caption })}
-        placeholder="Optional caption…"
+        placeholder="Optional caption..."
         className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
       />
     </div>
@@ -684,7 +684,7 @@ function QuizBlockEditor({
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
         onBlur={() => question !== data.question && commit({ question })}
-        placeholder="Question…"
+        placeholder="Question..."
         className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus:outline-none focus:ring-1 focus:ring-neon-purple"
       />
       <div className="space-y-2">

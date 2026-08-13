@@ -46,13 +46,13 @@ import {
 export const Route = createFileRoute("/courses")({
   head: () => ({
     meta: [
-      { title: "Courses – Eclipta" },
+      { title: "Courses - Eclipta" },
       {
         name: "description",
         content:
-          "One library. Everything you're learning, and what to learn next — official and community courses, personalized to you.",
+          "One library. Everything you're learning, and what to learn next - official and community courses, personalized to you.",
       },
-      { property: "og:title", content: "Courses – Eclipta" },
+      { property: "og:title", content: "Courses - Eclipta" },
       { property: "og:description", content: "One unified learning library, personalized to you." },
     ],
   }),
@@ -61,7 +61,7 @@ export const Route = createFileRoute("/courses")({
 
 const EASE = EASING.soft;
 
-/* Progress (best-effort — course_progress may not exist yet; we fall back to
+/* Progress (best-effort - course_progress may not exist yet; we fall back to
    enrollments). Keyed by course_slug. */
 interface Progress {
   percent: number;
@@ -154,7 +154,7 @@ function CoursesHub() {
     return m;
   }, [allCourses]);
 
-  // Continue Learning — enrolled courses, most-recently-opened first.
+  // Continue Learning - enrolled courses, most-recently-opened first.
   const continueItems = useMemo<ContinueItem[]>(() => {
     if (!isAuthenticated) return [];
     const items: ContinueItem[] = [];
@@ -167,7 +167,7 @@ function CoursesHub() {
     return items.sort((a, b) => (b.lastOpened > a.lastOpened ? 1 : -1));
   }, [isAuthenticated, enrolledSlugs, bySlug, progress]);
 
-  // Popular picks (Phase-1 stand-in for the personalized engine) — not enrolled,
+  // Popular picks (Phase-1 stand-in for the personalized engine) - not enrolled,
   // a mix of high-rated official + most-enrolled community.
   const popular = useMemo<UnifiedCourse[]>(() => {
     const pool = allCourses.filter((c) => !enrolledSlugs.has(c.slug));
@@ -181,7 +181,7 @@ function CoursesHub() {
       .slice(0, 6);
   }, [allCourses, enrolledSlugs]);
 
-  // ── Phase 2: personalized recommendations + learning path ──────────────
+  // -- Phase 2: personalized recommendations + learning path --------------
   const completedSlugs = useMemo(() => {
     const s = new Set<string>();
     for (const [slug, p] of Object.entries(progress)) {
@@ -220,7 +220,7 @@ function CoursesHub() {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <div className="max-w-7xl mx-auto px-6 pt-24 pb-24">
-        {/* ── Header ─────────────────────────────────────────────── */}
+        {/* -- Header ----------------------------------------------- */}
         <motion.header
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,7 +245,7 @@ function CoursesHub() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search courses, topics, skills…"
+                  placeholder="Search courses, topics, skills..."
                   className="w-full pl-10 pr-9 py-2.5 rounded-md bg-secondary/30 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                   aria-label="Search courses"
                 />
@@ -303,7 +303,7 @@ function CoursesHub() {
               </Section>
             ) : (
               <>
-                {/* ── Continue Learning ───────────────────────────── */}
+                {/* -- Continue Learning ----------------------------- */}
                 {continueItems.length > 0 && (
                   <Section title="Continue learning">
                     <Rail>
@@ -314,11 +314,11 @@ function CoursesHub() {
                   </Section>
                 )}
 
-                {/* ── Recommended Next (personalized) or Popular (cold start) ── */}
+                {/* -- Recommended Next (personalized) or Popular (cold start) -- */}
                 {recommendations.length > 0 ? (
                   <Section
                     title="Recommended next"
-                    subtitle="Chosen from what you've learned — every pick has a reason"
+                    subtitle="Chosen from what you've learned - every pick has a reason"
                   >
                     <Rail>
                       {recommendations.map((r) => (
@@ -339,17 +339,17 @@ function CoursesHub() {
                   </Section>
                 ) : null}
 
-                {/* ── Your learning path (the progression spine) ──── */}
+                {/* -- Your learning path (the progression spine) ---- */}
                 {isAuthenticated && path.length > 0 && (
                   <Section
                     title="Your learning path"
-                    subtitle={`${pathSubject} — where you are and what's next`}
+                    subtitle={`${pathSubject} - where you are and what's next`}
                   >
                     <LearningPathView steps={path} />
                   </Section>
                 )}
 
-                {/* ── Browse by subject ───────────────────────────── */}
+                {/* -- Browse by subject ----------------------------- */}
                 <Section title="Browse">
                   <div className="flex flex-wrap gap-2.5">
                     {SUBJECTS.map((s) => {
@@ -371,7 +371,7 @@ function CoursesHub() {
                   </div>
                 </Section>
 
-                {/* ── Full library ────────────────────────────────── */}
+                {/* -- Full library ---------------------------------- */}
                 <Section title="All courses" count={allCourses.length}>
                   <Grid>
                     {allCourses.map((c) => (
@@ -388,7 +388,7 @@ function CoursesHub() {
   );
 }
 
-/* ── Layout primitives ─────────────────────────────────────────────────── */
+/* -- Layout primitives --------------------------------------------------- */
 
 function Section({
   title,
@@ -441,7 +441,7 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{children}</div>;
 }
 
-/* ── Cards ─────────────────────────────────────────────────────────────── */
+/* -- Cards --------------------------------------------------------------- */
 
 function SourceBadge({ source }: { source: UnifiedCourse["source"] }) {
   return source === "official" ? (
@@ -668,7 +668,7 @@ function EmptyResults({ query }: { query: string }) {
     <div className="glass-panel p-12 text-center">
       <GraduationCap className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
       <p className="text-sm text-muted-foreground mb-4">
-        No courses match {query ? `“${query}”` : "that filter"} yet.
+        No courses match {query ? `"${query}"` : "that filter"} yet.
       </p>
       <Link
         to="/build-course"

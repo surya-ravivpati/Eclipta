@@ -70,7 +70,7 @@ function cast(
   });
 }
 
-// ─── Registry integrity ──────────────────────────────────────────────────────
+// --- Registry integrity ------------------------------------------------------
 
 describe("ULTIMATES registry", () => {
   it("defines exactly one ultimate for every Ecliptar in the roster", () => {
@@ -151,7 +151,7 @@ describe("ULTIMATES registry", () => {
   });
 });
 
-// ─── Effect engine ───────────────────────────────────────────────────────────
+// --- Effect engine -----------------------------------------------------------
 
 describe("tickEffects", () => {
   it("deals poison damage and counts the turn down", () => {
@@ -265,18 +265,18 @@ describe("clearDebuffs", () => {
 
 describe("labelFor", () => {
   it("renders turn-based and use-based durations differently", () => {
-    expect(labelFor({ kind: "poison", magnitude: 10, turnsLeft: 3 })).toBe("POISON 10 · 3T");
-    expect(labelFor({ kind: "damageBuff", magnitude: 12, usesLeft: 2 })).toBe("DMG +12 · 2×");
+    expect(labelFor({ kind: "poison", magnitude: 10, turnsLeft: 3 })).toBe("POISON 10 | 3T");
+    expect(labelFor({ kind: "damageBuff", magnitude: 12, usesLeft: 2 })).toBe("DMG +12 | 2x");
   });
 
   it("renders fractional kinds as percentages", () => {
     expect(labelFor({ kind: "damageReduction", magnitude: 0.6, turnsLeft: 3 })).toBe(
-      "ARMOUR 60% · 3T",
+      "ARMOUR 60% | 3T",
     );
   });
 });
 
-// ─── Individual ultimates ────────────────────────────────────────────────────
+// --- Individual ultimates ----------------------------------------------------
 
 describe("damage ultimates", () => {
   it("Newton's true damage bypasses the target's DEF entirely", () => {
@@ -320,7 +320,7 @@ describe("damage ultimates", () => {
       hpHistory: [],
       rng: () => 0.99,
     });
-    // 30 × 1.2 crit = 36, twice.
+    // 30 x 1.2 crit = 36, twice.
     expect(out.damageDealt).toBe(72);
   });
 

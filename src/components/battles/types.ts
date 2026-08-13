@@ -56,25 +56,25 @@ export interface Archetype {
   borderColor: string;
   description: string;
   passive: string;
-  /** Direct mechanical values — no more 0-4 abstraction */
+  /** Direct mechanical values - no more 0-4 abstraction */
   maxHp: number;
   baseDamage: number;
-  /** Incoming-damage reduction, 0–1 (0.20 = takes 20% less). Replaces the old
-   *  maxHp-derived self-damage curve — durability is now one explicit stat. */
+  /** Incoming-damage reduction, 0-1 (0.20 = takes 20% less). Replaces the old
+   *  maxHp-derived self-damage curve - durability is now one explicit stat. */
   defense: number;
-  /** Extra damage on a crit, 0–1 (0.25 = +25%). Crit *chance* is a flat
+  /** Extra damage on a crit, 0-1 (0.25 = +25%). Crit *chance* is a flat
    *  CRIT_CHANCE for every archetype; classes differ in how hard crits land. */
   critBonus: number;
   healAmount: number | null; // null = cannot heal (Tank)
-  /** Absolute seconds on the clock per question — no longer a multiplier over
+  /** Absolute seconds on the clock per question - no longer a multiplier over
    *  a per-difficulty base, so the sheet value is what the player actually sees. */
   timeSeconds: number;
-  diffMin: number; // min difficulty level 1–10
-  diffMax: number; // max difficulty level 1–10
+  diffMin: number; // min difficulty level 1-10
+  diffMax: number; // max difficulty level 1-10
   focusPool: number;
   startFocus: number;
   /** Speedster: clock varies by question tier across [min, max] instead of a
-   *  flat `timeSeconds` (easy → min, hard → max). */
+   *  flat `timeSeconds` (easy -> min, hard -> max). */
   timeSecondsRange?: [number, number];
   damageIsTimeScaled?: boolean; // Speedster: bonus damage for fast answers
   damageRamps?: boolean; // Accelerator: +2 DMG and +2% score per correct answer
@@ -103,10 +103,10 @@ export interface ActionConfig {
   desc: string;
 }
 
-// ─── Battle Log ──────────────────────────────────────────────────────
+// --- Battle Log ------------------------------------------------------
 // Structured event type so every log entry maps 1:1 to a resolved combat
 // action with a stable ID, actor, action type, result string, and optional
-// numeric value. The ID is monotonically increasing — never reordered.
+// numeric value. The ID is monotonically increasing - never reordered.
 export type LogActor = "player" | "opponent" | "system";
 export type LogActionType =
   | "attack" // deal damage (Attack action)
@@ -119,14 +119,14 @@ export type LogActionType =
   | "info"; // match start, pressure lines, warnings
 
 export interface LogEntry {
-  id: number; // monotonically increasing — stable React key, never reordered
+  id: number; // monotonically increasing - stable React key, never reordered
   actor: LogActor;
   actionType: LogActionType;
   result: string; // human-readable description
   value?: number; // primary numeric value (damage / heal amount)
 }
 
-// ─── Battle Stats ────────────────────────────────────────────────────
+// --- Battle Stats ----------------------------------------------------
 export interface BattleStats {
   totalQuestions: number;
   correctAnswers: number;

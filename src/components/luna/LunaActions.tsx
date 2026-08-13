@@ -48,14 +48,14 @@ export function LunaActions({ actions, onSendBack }: Props) {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-neon-pink">
                   <Sparkles className="w-3 h-3" />
-                  QUICK CHECK · {a.topic.toUpperCase()}
+                  QUICK CHECK | {a.topic.toUpperCase()}
                 </div>
                 {openQuiz !== key && (
                   <button
                     onClick={() => setOpenQuiz(key)}
                     className="text-[10px] font-bold tracking-widest text-neon-pink hover:text-neon-purple"
                   >
-                    START →
+                    START -&gt;
                   </button>
                 )}
               </div>

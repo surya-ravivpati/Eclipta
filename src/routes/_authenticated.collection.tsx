@@ -23,10 +23,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/collection")({
   head: () => ({
     meta: [
-      { title: "Collection – Eclipta" },
+      { title: "Collection - Eclipta" },
       {
         name: "description",
-        content: "Your Ecliptar collection — every creature you've claimed across the Trophy Road.",
+        content: "Your Ecliptar collection - every creature you've claimed across the Trophy Road.",
       },
     ],
   }),
@@ -358,9 +358,9 @@ function CollectionPage() {
                       <ArchStat label="DMG" value={meta.baseDamage} />
                       <ArchStat label="DEF" value={`${Math.round(meta.defense * 100)}%`} />
                       <ArchStat label="CRIT" value={`+${Math.round(meta.critBonus * 100)}%`} />
-                      <ArchStat label="HEAL" value={meta.healAmount ?? "—"} />
+                      <ArchStat label="HEAL" value={meta.healAmount ?? "-"} />
                       <ArchStat label="TIME" value={`${meta.timeSeconds}s`} />
-                      <ArchStat label="DIFF" value={`${meta.diffMin}–${meta.diffMax}`} />
+                      <ArchStat label="DIFF" value={`${meta.diffMin}-${meta.diffMax}`} />
                     </div>
                   </motion.div>
                 )}

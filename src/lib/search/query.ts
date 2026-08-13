@@ -26,7 +26,7 @@ export const ALL_KINDS: SearchKind[] = [
 
 /**
  * Words that name a kind. Matching one in the query both filters the results and
- * removes the word from the needle — searching "physics battles" for the literal
+ * removes the word from the needle - searching "physics battles" for the literal
  * string "battles" would rank a thread titled "battles" above every physics
  * battle, which is the opposite of what was asked.
  */
@@ -164,11 +164,11 @@ export interface ParsedQuery {
 /**
  * Parse a raw query.
  *
- * "physics battles"          → needle "physics", kinds [battle]
- * "integration lesson"       → needle "integration", kinds [lesson], + integral/integrals/calculus
- * "AI explained vectors"     → needle "vectors",  kinds [note],   + vector/linear algebra
- * "friends studying chemistry" → needle "chemistry", kinds [user], no expansion
- *   (SYNONYMS only maps "chem" → "chemistry", not the reverse, so a query
+ * "physics battles"          -> needle "physics", kinds [battle]
+ * "integration lesson"       -> needle "integration", kinds [lesson], + integral/integrals/calculus
+ * "AI explained vectors"     -> needle "vectors",  kinds [note],   + vector/linear algebra
+ * "friends studying chemistry" -> needle "chemistry", kinds [user], no expansion
+ *   (SYNONYMS only maps "chem" -> "chemistry", not the reverse, so a query
  *   that already says the full word gets no synonym boost - by design, see
  *   the SYNONYMS comment below, but worth knowing this example doesn't
  *   expand even though it looks like it should)
@@ -191,7 +191,7 @@ export function parseQuery(raw: string, explicitKinds: SearchKind[] = []): Parse
   for (const [kind, word] of entries) {
     const pattern = new RegExp(`\\s${escapeRegex(word)}\\s`, "g");
     if (pattern.test(remaining)) {
-      // Only infer when an explicit chip has not already decided the scope —
+      // Only infer when an explicit chip has not already decided the scope -
       // a chosen filter is a stronger signal than a guessed one.
       if (explicitKinds.length === 0) {
         kinds.add(kind);
@@ -232,7 +232,7 @@ function escapeRegex(s: string): string {
 /**
  * Split a string into matched and unmatched runs for highlighting.
  *
- * Returns segments rather than HTML so the caller renders real elements — never
+ * Returns segments rather than HTML so the caller renders real elements - never
  * `dangerouslySetInnerHTML`, which would make every searchable title (thread
  * bodies, usernames, course summaries) an XSS vector.
  */

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/streak")({
   head: () => ({
     meta: [
-      { title: "Your Streak – Eclipta" },
+      { title: "Your Streak - Eclipta" },
       { name: "description", content: "Your daily-practice streak, calendar, and milestones." },
     ],
   }),
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/streak")({
 function Heatmap({ practiced }: { practiced: Set<string> }) {
   const window = lastNDays(56); // 8-week cap
   // Trimming to the earliest practiced day avoids padding the grid with
-  // weeks that predate the user's first session — those cells can only ever
+  // weeks that predate the user's first session - those cells can only ever
   // be empty, so they're not "gap" information, just dead space.
   const earliest = practiced.size > 0 ? [...practiced].sort()[0] : null;
   const days = earliest ? window.filter((d) => d >= earliest) : window.slice(-7);
@@ -82,11 +82,11 @@ function StreakPage() {
           </p>
           <h1 className="font-display text-4xl sm:text-5xl font-bold leading-none">
             {streak.dailyStreak > 0
-              ? `${flameTierLabel(streak.dailyStreak)} · ${streak.dailyStreak} days`
+              ? `${flameTierLabel(streak.dailyStreak)} | ${streak.dailyStreak} days`
               : "Build your streak"}
           </h1>
           <p className="text-muted-foreground text-sm mt-2 max-w-prose">
-            Show up once a day — a battle, a lesson, a Luna session — and your streak grows. Miss a
+            Show up once a day - a battle, a lesson, a Luna session - and your streak grows. Miss a
             day and a freeze saves you (you earn one every week). Hit a milestone for bonus XP.
           </p>
         </header>
@@ -108,7 +108,7 @@ function StreakPage() {
               <s.Icon className="w-4 h-4 text-primary mb-2" />
               <div className="font-display text-2xl font-bold tabular-nums">{s.value}</div>
               <div className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground">
-                {s.label} · {s.sub}
+                {s.label} | {s.sub}
               </div>
             </motion.div>
           ))}
@@ -162,7 +162,7 @@ function StreakPage() {
                     <div className="font-display font-bold text-base">{m}-day streak</div>
                     <div className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">
                       {flameTierLabel(m)}
-                      {current ? " · next up" : ""}
+                      {current ? " | next up" : ""}
                     </div>
                   </div>
                   <div

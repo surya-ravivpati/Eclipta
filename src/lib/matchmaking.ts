@@ -1,6 +1,6 @@
 /**
- * Tiered matchmaking: Live PvP → Bot (last resort).
- * Priority is strictly enforced — a bot is never preferred over a real player.
+ * Tiered matchmaking: Live PvP -> Bot (last resort).
+ * Priority is strictly enforced - a bot is never preferred over a real player.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { ArchetypeId } from "@/components/battles/types";
@@ -20,7 +20,7 @@ export interface MatchResult {
   type: OpponentType;
   opponentName: string;
   opponentUserId?: string;
-  /** null only for bot — caller picks archetype via pickOpponent() */
+  /** null only for bot - caller picks archetype via pickOpponent() */
   opponentArchetype: ArchetypeId | null;
   opponentRating: number;
   /** Supabase Realtime channel name for live battles */
@@ -33,7 +33,7 @@ export interface MatchResult {
 const QUEUE_TIMEOUT_MS = 8_000;
 const POLL_INTERVAL_MS = 800;
 
-// ── Queue management ─────────────────────────────────────────────────────
+// -- Queue management -----------------------------------------------------
 
 export async function joinQueue(
   archetype: ArchetypeId,
@@ -57,7 +57,7 @@ export async function leaveQueue(): Promise<void> {
   await leavePvpQueue(user.id);
 }
 
-// ── Live match attempt ───────────────────────────────────────────────────
+// -- Live match attempt ---------------------------------------------------
 
 async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<MatchResult | null> {
   const {
@@ -100,7 +100,7 @@ async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<Mat
       type: "live",
       opponentName: oppUsername ?? `Player_${oppId.slice(0, 6)}`,
       opponentUserId: oppId,
-      // Written by this client on enqueue — see the note in Case 1.
+      // Written by this client on enqueue - see the note in Case 1.
       opponentArchetype: oppArch as ArchetypeId,
       opponentRating: oppRating?.rating ?? 1000,
       pvpBattleId: b.id,
@@ -112,10 +112,10 @@ async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<Mat
   return null;
 }
 
-// ── Main matchmaking entry point ─────────────────────────────────────────
+// -- Main matchmaking entry point -----------------------------------------
 
 /**
- * Runs the full Tier 1 → 2 matchmaking sequence.
+ * Runs the full Tier 1 -> 2 matchmaking sequence.
  *
  * @param onStatus - callback that receives human-readable status strings
  *                   so the searching UI can update in real time.
@@ -135,9 +135,9 @@ export async function findMatch(
     data: { user },
   } = await supabase.auth.getUser();
 
-  // ── Tier 1: Live PvP ─────────────────────────────────────────────────
+  // -- Tier 1: Live PvP -------------------------------------------------
   if (user && allowLive) {
-    onStatus("Scanning for an opponent…", "live");
+    onStatus("Scanning for an opponent...", "live");
     await joinQueue(archetype, playerRating, username);
 
     const deadline = Date.now() + QUEUE_TIMEOUT_MS;
@@ -146,27 +146,27 @@ export async function findMatch(
 
       const liveMatch = await tryLiveMatch(archetype, playerRating);
       if (liveMatch) {
-        onStatus(`Opponent found — ${liveMatch.opponentName}`, "live");
+        onStatus(`Opponent found - ${liveMatch.opponentName}`, "live");
         return liveMatch;
       }
 
       const remaining = Math.ceil((deadline - Date.now()) / 1000);
-      onStatus(`Searching… ${remaining}s`, "live");
+      onStatus(`Searching... ${remaining}s`, "live");
     }
 
     await leaveQueue();
   }
 
-  // ── Tier 2: Bot (last resort) ────────────────────────────────────────
+  // -- Tier 2: Bot (last resort) ----------------------------------------
   //
   // The status line and the opponent's name deliberately read exactly as the
   // live tier's do. Which kind of opponent a given match found is disclosed in
   // the "how battles work" panel as a general property of matchmaking, not
-  // stamped on the match itself — see src/lib/bots/roster.ts. The `type` field
+  // stamped on the match itself - see src/lib/bots/roster.ts. The `type` field
   // is still "bot", so every rule that depends on the distinction (rating
   // weight, W/L accounting) keeps working; it just isn't rendered.
   const bot = pickBotOpponent(playerRating);
-  onStatus(`Opponent found — ${bot.username}`, "bot");
+  onStatus(`Opponent found - ${bot.username}`, "bot");
   return {
     type: "bot",
     opponentName: bot.username,

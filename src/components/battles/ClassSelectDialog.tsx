@@ -36,18 +36,18 @@ function ArchStatGrid({
   const dmgVal = rnd
     ? "???"
     : arch.damageRamps
-      ? `${arch.baseDamage}→${arch.baseDamage + DAMAGE_TUNING.accelerator.damageCap}`
+      ? `${arch.baseDamage}->${arch.baseDamage + DAMAGE_TUNING.accelerator.damageCap}`
       : arch.damageIsTimeScaled
-        ? `${arch.baseDamage}–${arch.baseDamage + DAMAGE_TUNING.speedster.maxSpeedBonus}`
+        ? `${arch.baseDamage}-${arch.baseDamage + DAMAGE_TUNING.speedster.maxSpeedBonus}`
         : String(arch.baseDamage);
   const defVal = rnd ? "???" : `${Math.round(arch.defense * 100)}%`;
   const critVal = rnd ? "???" : `${Math.round(arch.critBonus * 100)}%`;
   const healVal = rnd ? "???" : arch.healAmount === null ? "NONE" : String(arch.healAmount);
-  const diffVal = rnd ? "???" : `${arch.diffMin}–${arch.diffMax}`;
+  const diffVal = rnd ? "???" : `${arch.diffMin}-${arch.diffMax}`;
   const timeVal = rnd
     ? "???"
     : arch.timeSecondsRange
-      ? `${arch.timeSecondsRange[0]}–${arch.timeSecondsRange[1]}s`
+      ? `${arch.timeSecondsRange[0]}-${arch.timeSecondsRange[1]}s`
       : `${arch.timeSeconds}s`;
   const hpVal = rnd ? "???" : String(arch.maxHp);
   return (
@@ -125,7 +125,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
           </div>
         </div>
 
-        {/* Ability identity — how this archetype wants to be played */}
+        {/* Ability identity - how this archetype wants to be played */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
           {(
             [
@@ -237,7 +237,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
             <div className="font-display font-bold text-base">
               {equipped.name}{" "}
               <span className={cn("text-xs font-normal", equippedArch.color)}>
-                · {equippedArch.name}
+                | {equippedArch.name}
               </span>
             </div>
           </div>
@@ -316,7 +316,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
               <p className="text-xs text-muted-foreground mb-3">{arch.description}</p>
               <ArchStatGrid arch={arch} isUnlocked={isUnlocked} />
 
-              {/* Mastery rank — only for unlocked archetypes with at least one battle */}
+              {/* Mastery rank - only for unlocked archetypes with at least one battle */}
               {isUnlocked &&
                 (() => {
                   const m = mastery[arch.id];
@@ -327,11 +327,11 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
                     <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
                       <span className={cn("text-[9px] font-bold tracking-widest", rank.color)}>
                         {rank.level > 0
-                          ? `${["", "I", "II", "III", "IV", "V"][rank.level]} · ${rank.label}`
+                          ? `${["", "I", "II", "III", "IV", "V"][rank.level]} | ${rank.label}`
                           : "UNRANKED"}
                       </span>
                       <span className="text-[9px] text-muted-foreground tabular-nums">
-                        {m.battles_played}B · {winRate}%W
+                        {m.battles_played}B | {winRate}%W
                       </span>
                     </div>
                   );

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications – Eclipta" },
+      { title: "Notifications - Eclipta" },
       {
         name: "description",
         content: "Replies, mentions, follows, challenges, and accepted answers.",
@@ -81,7 +81,7 @@ function NotificationsPage() {
                 <div key={bucket}>
                   <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2 px-1">
                     {bucket}
-                    <span className="ml-2 text-muted-foreground/60">· {rows.length}</span>
+                    <span className="ml-2 text-muted-foreground/60">| {rows.length}</span>
                   </p>
                   <ul className="space-y-2">
                     {rows.map((n) => (
@@ -103,7 +103,7 @@ function NotificationsPage() {
   );
 }
 
-// ─── Header ──────────────────────────────────────────────────────────
+// --- Header ----------------------------------------------------------
 
 function Header({ unread, onMarkAllRead }: { unread: number; onMarkAllRead: () => void }) {
   return (
@@ -134,7 +134,7 @@ function Header({ unread, onMarkAllRead }: { unread: number; onMarkAllRead: () =
   );
 }
 
-// ─── Filter chips ────────────────────────────────────────────────────
+// --- Filter chips ----------------------------------------------------
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
@@ -185,7 +185,7 @@ function FilterChips({
   );
 }
 
-// ─── Row ─────────────────────────────────────────────────────────────
+// --- Row -------------------------------------------------------------
 
 function NotificationRow({
   notification,
@@ -202,7 +202,7 @@ function NotificationRow({
   const link = notification.link ?? meta.fallbackLink?.(notification.meta ?? {}) ?? null;
 
   // Navigation needs to handle three things that broke the old click handler:
-  //   * Links with query strings like /battles?challenge=<id> — TanStack
+  //   * Links with query strings like /battles?challenge=<id> - TanStack
   //     navigate() rejects the cast-as-never `to` string when search
   //     params are bundled in.
   //   * Param routes like /u/<username> that don't match the typed
@@ -219,9 +219,10 @@ function NotificationRow({
       // path assembled at runtime can never satisfy. Widening it once, here,
       // keeps the opt-out to a single named line instead of spreading `any`
       // across the call.
-      const navigateToDynamicPath = navigate as unknown as (
-        options: { to: string; search?: Record<string, string> },
-      ) => void;
+      const navigateToDynamicPath = navigate as unknown as (options: {
+        to: string;
+        search?: Record<string, string>;
+      }) => void;
       navigateToDynamicPath({ to: url.pathname, ...(search ? { search } : {}) });
     } catch {
       window.location.assign(href);
@@ -302,7 +303,7 @@ function NotificationRow({
   return <li>{body}</li>;
 }
 
-// ─── Empty state ─────────────────────────────────────────────────────
+// --- Empty state -----------------------------------------------------
 
 function EmptyState({ filter }: { filter: Filter }) {
   const isCategory = filter !== "all" && filter !== "unread";

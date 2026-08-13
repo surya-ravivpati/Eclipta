@@ -62,7 +62,7 @@ function LegalPage() {
           >
             <AlertTriangle className="w-5 h-5 shrink-0 text-primary mt-0.5" aria-hidden="true" />
             <div>
-              <p className="text-sm font-bold text-foreground mb-1">Draft — pending legal review</p>
+              <p className="text-sm font-bold text-foreground mb-1">Draft - pending legal review</p>
               <p className="text-sm text-muted-foreground">
                 This document has been prepared to describe how Eclipta actually works, but it has
                 not yet been reviewed by qualified counsel and should not be relied on as a final

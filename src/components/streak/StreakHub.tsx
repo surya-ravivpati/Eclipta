@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * StreakHub — the compelling daily-practice surface. Shows the live streak, a
+ * StreakHub - the compelling daily-practice surface. Shows the live streak, a
  * 7-day calendar "chain", loss-aversion urgency when the streak's on the line,
  * the next milestone + its XP reward, and freeze shields. Strictly blue / navy
  * / gold. Used on the battles page and the /streak page.
@@ -141,11 +141,11 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
             </div>
           ) : done ? (
             <p className="font-mono text-[10px] tracking-widest text-primary uppercase mb-2 inline-flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" /> Practiced today — streak secured
+              <ShieldCheck className="w-3.5 h-3.5" /> Practiced today - streak secured
             </p>
           ) : (
             <p className="text-[11px] text-muted-foreground mb-2">
-              Start your streak today — one session is all it takes.
+              Start your streak today - one session is all it takes.
             </p>
           )}
 

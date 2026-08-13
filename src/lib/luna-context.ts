@@ -13,7 +13,7 @@ export interface LunaLearningContext {
   totalQuestions: number;
   correctAnswers: number;
   /** Epoch ms when the current active period started. Resets whenever the
-   * session is paused (paused → activeStartTime = null) so accumulatedMs +
+   * session is paused (paused -> activeStartTime = null) so accumulatedMs +
    * (now - activeStartTime) is always the true elapsed time. */
   sessionStartTime: number;
   /** Time accumulated across previous active periods, in ms. Stays put
@@ -68,8 +68,12 @@ function emitFatigueIfChanged() {
   const level = detectFatigue();
   if (level === lastEmittedFatigue) return;
   lastEmittedFatigue = level;
-  fatigueListeners.forEach(l => {
-    try { l(level, context); } catch { /* ignore listener errors */ }
+  fatigueListeners.forEach((l) => {
+    try {
+      l(level, context);
+    } catch {
+      /* ignore listener errors */
+    }
   });
 }
 
@@ -120,8 +124,7 @@ export function recordAnswer(correct: boolean, responseTimeMs: number) {
 
   // Rolling average response time
   const n = context.totalQuestions;
-  context.avgResponseTime =
-    (context.avgResponseTime * (n - 1) + responseTimeMs / 1000) / n;
+  context.avgResponseTime = (context.avgResponseTime * (n - 1) + responseTimeMs / 1000) / n;
 
   emitFatigueIfChanged();
 }
@@ -133,7 +136,7 @@ export function detectFatigue(): "none" | "mild" | "severe" {
   return "none";
 }
 
-// ── Session duration ───────────────────────────────────────────────────
+// -- Session duration ---------------------------------------------------
 //
 // We measure elapsed time as
 //     accumulatedMs + (activeStartTime ? now - activeStartTime : 0)
@@ -144,7 +147,9 @@ export function detectFatigue(): "none" | "mild" | "severe" {
 
 /** Elapsed session time in milliseconds, honouring pause/resume. */
 export function getSessionElapsedMs(): number {
-  return context.accumulatedMs + (context.activeStartTime ? Date.now() - context.activeStartTime : 0);
+  return (
+    context.accumulatedMs + (context.activeStartTime ? Date.now() - context.activeStartTime : 0)
+  );
 }
 
 /** Elapsed session time in minutes (fractional). */

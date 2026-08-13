@@ -12,7 +12,7 @@ export const COPYABLE_PASSIVES: ArchetypeId[] = [
   "god",
 ];
 
-/** Map a numeric difficulty level (1–10) to an easy/medium/hard question category. */
+/** Map a numeric difficulty level (1-10) to an easy/medium/hard question category. */
 export function levelToCategory(level: number): Difficulty {
   if (level <= 3) return "easy";
   if (level <= 7) return "medium";
@@ -20,11 +20,11 @@ export function levelToCategory(level: number): Difficulty {
 }
 
 /**
- * Pick a difficulty level (1–10) for the given action based on the archetype's range.
- * - Defend  → diffMin  (easiest question — rewards safe play)
- * - Attack  → midpoint (balanced question)
- * - Charge   → diffMax  (hardest question — high risk, high reward)
- * - Ultimate → midpoint (a committed play, not a difficulty gamble)
+ * Pick a difficulty level (1-10) for the given action based on the archetype's range.
+ * - Defend  -> diffMin  (easiest question - rewards safe play)
+ * - Attack  -> midpoint (balanced question)
+ * - Charge   -> diffMax  (hardest question - high risk, high reward)
+ * - Ultimate -> midpoint (a committed play, not a difficulty gamble)
  */
 export function getActionDifficultyLevel(arch: Archetype, action: Action): number {
   const { diffMin, diffMax } = arch;
@@ -41,7 +41,7 @@ export function getActionDifficultyLevel(arch: Archetype, action: Action): numbe
 }
 
 /**
- * Seconds on the clock for a question. Absolute per archetype — classes with a
+ * Seconds on the clock for a question. Absolute per archetype - classes with a
  * `timeSecondsRange` (Speedster) stretch it across the question tier instead.
  */
 export function getQuestionTime(arch: Archetype, category: Difficulty): number {
@@ -92,21 +92,21 @@ function strength(source: "own" | "copied"): number {
 /**
  * Damage for an action, before the defender's DEF is applied.
  *
- * Order: base → Accelerator ramp → Speedster speed bonus → Apex rage →
- * Charge → crit. Streak plays no part; see `getScoreMultiplier`.
+ * Order: base -> Accelerator ramp -> Speedster speed bonus -> Apex rage ->
+ * Charge -> crit. Streak plays no part; see `getScoreMultiplier`.
  */
 export function getEffectiveDamage(arch: Archetype, opts: DamageContext): DamageResult {
   const { copied } = opts;
   let base = arch.baseDamage;
 
-  // Accelerator: +2 per correct answer, capped at +16 (14 → 30).
+  // Accelerator: +2 per correct answer, capped at +16 (14 -> 30).
   const ramp = hasPassive(arch, "damageRamps", copied, "accelerator");
   if (ramp && opts.correctCount !== undefined) {
     const { damagePerAnswer, damageCap } = DAMAGE_TUNING.accelerator;
     base += Math.min(opts.correctCount * damagePerAnswer, damageCap) * strength(ramp);
   }
 
-  // Speedster: full bonus at an instant answer, nothing at the buzzer (16 → 26).
+  // Speedster: full bonus at an instant answer, nothing at the buzzer (16 -> 26).
   const speed = hasPassive(arch, "damageIsTimeScaled", copied, "speedster");
   if (speed && opts.timeSpent !== undefined && opts.maxTime && opts.maxTime > 0) {
     const remaining = Math.max(0, 1 - opts.timeSpent / opts.maxTime);
@@ -130,7 +130,7 @@ export function getEffectiveDamage(arch: Archetype, opts: DamageContext): Damage
 
 /**
  * Incoming damage after the defender's DEF. This replaced the maxHp-derived
- * self-damage curve — durability is one explicit stat now, and it applies the
+ * self-damage curve - durability is one explicit stat now, and it applies the
  * same way to attacks, wild events and miss penalties.
  */
 export function applyDefense(
@@ -187,7 +187,7 @@ export function getStreakHeal(
 
 /**
  * Score multiplier for a resolved action: the shared streak bonus plus the
- * Accelerator's own ramp. Damage is deliberately untouched by both — this is
+ * Accelerator's own ramp. Damage is deliberately untouched by both - this is
  * the only place momentum pays out.
  */
 export function getScoreMultiplier(

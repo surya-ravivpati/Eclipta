@@ -2,7 +2,7 @@
  * Battle session recording.
  *
  * Every completed battle is stored in `battle_sessions`. Nothing replays those
- * rows any more — Ghost PvP was removed — but the record is still the source of
+ * rows any more - Ghost PvP was removed - but the record is still the source of
  * the weekly report's battle figures and the per-question history a post-battle
  * review needs, so it is written exactly as before.
  */

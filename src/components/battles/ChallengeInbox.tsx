@@ -142,7 +142,7 @@ export function ChallengeInbox() {
                 .maybeSingle();
               oppName = prof?.username ?? oppName;
             }
-            toast.success(`${oppName} accepted! Starting battle…`);
+            toast.success(`${oppName} accepted! Starting battle...`);
             dispatchDirectBattle({
               battleId: row.battle_id,
               myArchetype: row.challenger_archetype,
@@ -217,7 +217,7 @@ export function ChallengeInbox() {
                   {c.challenger_username ?? "Challenger"}
                 </p>
                 <p className="text-[10px] text-muted-foreground tracking-widest uppercase">
-                  {ARCHETYPES[c.challenger_archetype]?.name ?? c.challenger_archetype} · expires
+                  {ARCHETYPES[c.challenger_archetype]?.name ?? c.challenger_archetype} | expires
                   soon
                 </p>
               </div>

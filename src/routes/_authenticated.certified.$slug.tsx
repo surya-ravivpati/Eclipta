@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/certified/$slug")({
   notFoundComponent: () => (
     <div className="min-h-screen flex items-center justify-center">
       <Link to="/courses" className="text-neon-purple">
-        ← Back to courses
+        &lt;- Back to courses
       </Link>
     </div>
   ),

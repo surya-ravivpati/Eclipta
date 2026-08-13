@@ -218,11 +218,11 @@ function NewThreadDialog({
     if (title.trim().length < 8) return toast.error("Title must be at least 8 characters");
     if (body.trim().length < 20) return toast.error("Body must be at least 20 characters");
 
-    // 1. Local instant-feedback profanity check — same dictionary the server
+    // 1. Local instant-feedback profanity check - same dictionary the server
     //    trigger uses, so users don't even pay for a round trip on the
     //    obvious cases.
     const dirty = findProfanity(title) || findProfanity(body) || findProfanity(tagsInput);
-    if (dirty) return toast.error("Please rephrase — your post contains language we don't allow.");
+    if (dirty) return toast.error("Please rephrase - your post contains language we don't allow.");
 
     setSubmitting(true);
 
@@ -230,7 +230,7 @@ function NewThreadDialog({
     //    the full context. If verdict is 'block' we never write the row.
     const fullText = `${title.trim()}\n\n${body.trim()}\n\nTags: ${tagsInput}`;
     const verdict = await moderateContent(fullText, "thread");
-    // Self-harm is its own supportive path — show resources, never a block.
+    // Self-harm is its own supportive path - show resources, never a block.
     if (verdict.selfHarm) setShowCrisis(true);
     if (verdict.verdict === "block") {
       setSubmitting(false);
@@ -282,14 +282,14 @@ function NewThreadDialog({
     if (error) {
       // Trigger rejection comes through as a check_violation error.
       const msg = /check_violation|moderation/i.test(error.message)
-        ? "Post rejected by moderation — please rephrase."
+        ? "Post rejected by moderation - please rephrase."
         : error.message;
       toast.error(msg);
       return;
     }
 
     if (verdict.verdict === "hide") {
-      toast.message("Posted — held for review", {
+      toast.message("Posted - held for review", {
         description: "Your post will appear publicly once a moderator clears it.",
       });
     } else {
@@ -378,7 +378,7 @@ function NewThreadDialog({
               onChange={(e) => setBody(e.target.value)}
               maxLength={4000}
               rows={6}
-              placeholder="Provide context, what you've tried, and where you got stuck. Markdown supported — ```code```, $math$, and @username pings."
+              placeholder="Provide context, what you've tried, and where you got stuck. Markdown supported - ```code```, $math$, and @username pings."
               className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
             />
             <p className="text-[10px] text-muted-foreground mt-1">{body.length}/4000</p>
@@ -692,7 +692,7 @@ export function Forum({
                 <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
                 <p className="text-sm mb-4">
                   {threads.length === 0
-                    ? "No threads yet — be the first to start a discussion."
+                    ? "No threads yet - be the first to start a discussion."
                     : "No threads match your filters."}
                 </p>
                 {isAuthenticated && threads.length === 0 && (
@@ -755,7 +755,7 @@ export function Forum({
             </div>
             <div className="flex-1 text-center md:text-left">
               <h3 className="font-bold font-display text-lg tracking-tight mb-1">
-                Study Rooms — learn together, live
+                Study Rooms - learn together, live
               </h3>
               <p className="text-sm text-muted-foreground">
                 Take it real-time: join a public room or start a private one with friends, chat as

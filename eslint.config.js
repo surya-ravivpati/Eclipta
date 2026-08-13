@@ -4,6 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
+import vibesafe from "eslint-plugin-vibesafe";
 
 /** Files TypeScript owns but a human never edits, so linting them is noise. */
 const GENERATED = ["src/routeTree.gen.ts", "src/integrations/supabase/types.ts"];
@@ -204,6 +205,18 @@ export default tseslint.config(
     },
   },
 
+  // Nitro server routes are TypeScript but live outside src/, so they need
+  // their own parser block - without one they are parsed as plain JavaScript
+  // and every type annotation is a syntax error.
+  {
+    files: ["server/**/*.ts"],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: { ...globals.node },
+    },
+  },
+
   // Supabase Edge Functions run on Deno, outside the app's tsconfig project,
   // so they get syntax-level rules only — type-aware rules need a project.
   {
@@ -217,6 +230,117 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     },
+  },
+
+  // ── vibesafe ────────────────────────────────────────────────────────────
+  // Deterministic guardrails for AI-written TypeScript: comment discipline,
+  // mobile overflow, interactive states, theme-aware colour, static a11y.
+  //
+  // The plugin's own `core` preset is deliberately NOT extended. It bundles
+  // ~60 base-ESLint rules alongside its own, which would silently override the
+  // hand-tuned decisions above (this config switches several of those off on
+  // purpose, with reasons). Only the `vibesafe/*` rules are adopted, at the
+  // levels the preset sets them.
+  {
+    files: ["src/**/*.{ts,tsx}", "server/**/*.ts"],
+    ignores: GENERATED,
+    plugins: { vibesafe },
+    rules: {
+      // Off, and not because the goal is wrong. The rule wants
+      // noUncheckedIndexedAccess switched on in tsconfig.json; the repo already
+      // wants that, and pursues it through tsconfig.strict.json plus
+      // scripts/typecheck-ratchet.mjs, which counts the remaining violations
+      // (254 today) and refuses to let the number rise. Flipping the flag in
+      // the main tsconfig would turn those 254 into build errors overnight and
+      // replace a converging plan with a blocked one.
+      "vibesafe/strict-tsconfig": "off",
+      "vibesafe/no-viewport-width-overflow": "error",
+      "vibesafe/no-unresponsive-fixed-width": "error",
+      "vibesafe/wide-content-needs-scroll-container": "error",
+      "vibesafe/no-bare-nowrap": "error",
+      // ── Staged adoption ───────────────────────────────────────────────
+      // These three land as warnings, not errors, and that is a deliberate
+      // sequencing choice rather than a soft opinion of them. Between them
+      // they flag 341 sites, and unlike the ASCII pass none can be fixed by
+      // substitution: each needs a judgement about what the right hover state,
+      // focus ring or themed colour actually is. Shipping them as errors today
+      // would mean either 341 rushed guesses in one commit or a red gate for
+      // however long the careful version takes.
+      //
+      // The warning ratchet holds the line meanwhile: the count may fall and
+      // may never rise, so no new violations get in while the backlog drains.
+      // Each rule is promoted to "error" as it reaches zero.
+      "vibesafe/interactive-states": "warn",
+      "vibesafe/no-unfocusable-outline": "warn",
+      "vibesafe/theme-aware-colors": "warn",
+      "vibesafe/responsive-grid-columns": "warn",
+      // Comment style: this codebase's convention is long explanatory block
+      // comments, which these two rules exist to prevent. Left off rather than
+      // silently rewriting every explanation in the repo.
+      "vibesafe/no-multiline-comments": "off",
+      "vibesafe/comment-max-length": "off",
+    },
+  },
+
+  // ── vibesafe/ascii-only ─────────────────────────────────────────────────
+  // Scoped, because the rule has no options and this codebase has non-ASCII
+  // that carries meaning rather than decoration:
+  //
+  //   src/content/**   legal copy, including the (c) sign
+  //   src/i18n/**      eight locales, most of them not Latin at all
+  //   questions.ts     mathematical notation in a maths product
+  //
+  // Everywhere else it applies: em-dashes, box-drawing banners, arrows and
+  // ellipses in comments and UI chrome are decoration, and models emit them
+  // by habit, which is the drift the rule exists to stop.
+  {
+    files: ["src/**/*.{ts,tsx}", "server/**/*.ts"],
+    ignores: [
+      ...GENERATED,
+      // Non-ASCII here is meaning, not decoration. Converting it would be a
+      // product regression, not a cleanup.
+      "src/content/**", // legal copy, (c)
+      "src/i18n/**", // eight locales, most not Latin
+      "src/components/battles/questions.ts", // mathematical notation
+      "src/lib/platform.ts", // the Mac command glyph in the shortcut hint
+      "src/components/Navbar.tsx", // renders that hint
+      "src/components/search/GlobalSearch.tsx", // and so does this
+      "src/components/Luna.tsx", // Luna's moon, which is the brand
+      "src/config/battle-tuning.ts", // reward emoji shown on the Trophy Road
+      "src/lib/bots/seed-content.ts", // maths inside seeded forum posts
+      // The rest, found by running the rule and reading every hit. Each keeps
+      // non-ASCII because converting it would change meaning, not formatting:
+      // homoglyph ranges in the profanity filter (Cyrillic and Greek lookalikes
+      // are the thing it detects), reward and brand emoji, mathematical
+      // notation, and the (c) sign. Anything NOT on this list is still held to
+      // ASCII, which is what stops the drift the rule exists to catch.
+      "src/components/KnowledgeBattles.tsx",
+      "src/components/SiteFooter.tsx",
+      "src/components/auth/AuthForm.tsx",
+      "src/components/battles/ai-brain.ts",
+      "src/components/battles/weak-spot.ts",
+      "src/components/landing/CinematicFilm.tsx",
+      "src/components/luna/LunaChatPanel.tsx",
+      "src/components/luna/LunaFullSession.tsx",
+      "src/components/luna/LunaMark.tsx",
+      "src/components/study/RoomSafety.tsx",
+      "src/hooks/use-luna-conversation.tsx",
+      "src/hooks/use-luna-voice.tsx",
+      "src/lib/bots/roster.ts",
+      "src/lib/luna-calibration.ts",
+      "src/lib/milestones.ts",
+      "src/lib/pressure/metrics.ts",
+      "src/lib/profanity.test.ts",
+      "src/lib/profanity.ts",
+      "src/lib/study-luna.ts",
+      "src/routes/_authenticated.battles.tsx",
+      "src/routes/_authenticated.groups_.$roomId.tsx",
+      "src/routes/_authenticated.profile.tsx",
+      "src/routes/courses.$slug.tsx",
+      "src/routes/legal.notices.tsx",
+    ],
+    plugins: { vibesafe },
+    rules: { "vibesafe/ascii-only": "error" },
   },
 
   // Must stay last: switches off every rule Prettier already decides.

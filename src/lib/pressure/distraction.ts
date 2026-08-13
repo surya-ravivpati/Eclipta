@@ -7,7 +7,7 @@ import { prefersReducedMotion } from "@/lib/a11y";
  * a room-tone loop long enough not to sound looped is megabytes; synthesis
  * randomises so it never repeats identically; and it needs no asset pipeline or
  * licensing. The trade-off is that these are impressions of a room rather than
- * field recordings — which is the right trade for a distraction that must sit
+ * field recordings - which is the right trade for a distraction that must sit
  * *under* the task, not become the task.
  *
  * Everything here is opt-in and instantly stoppable. Two guardrails:
@@ -22,7 +22,7 @@ export type DistractionKind = "classroom" | "typing" | "clock" | "announcements"
 
 export interface DistractionConfig {
   kinds: DistractionKind[];
-  /** 0–1, scaled internally to a ceiling that never masks UI audio. */
+  /** 0-1, scaled internally to a ceiling that never masks UI audio. */
   intensity: number;
 }
 
@@ -91,7 +91,7 @@ export class DistractionEngine {
   /**
    * Room tone: filtered brown noise. Brown rather than white because white noise
    * reads as a hiss or a fault, while brown sits low and reads as "a room with
-   * people in it" — which is what an exam hall actually sounds like.
+   * people in it" - which is what an exam hall actually sounds like.
    */
   private roomTone(): void {
     const ctx = this.ctx;
@@ -130,7 +130,7 @@ export class DistractionEngine {
     const tick = () => {
       if (!this.running) return;
       this.click(1400 + Math.random() * 900, 0.012, 0.5);
-      // 60–260ms gaps, plus occasional longer pauses for thinking.
+      // 60-260ms gaps, plus occasional longer pauses for thinking.
       const gap = Math.random() < 0.12 ? 700 + Math.random() * 1400 : 60 + Math.random() * 200;
       this.timers.push(setTimeout(tick, gap / Math.max(0.3, intensity)));
     };
@@ -154,14 +154,16 @@ export class DistractionEngine {
   /**
    * Distant announcement: a muffled two-tone chime rather than speech. Synthetic
    * speech would be intelligible, and an intelligible sentence is not a
-   * distraction — it is a second task.
+   * distraction - it is a second task.
    */
   private announcements(intensity: number): void {
     const fire = () => {
       if (!this.running) return;
       this.chime();
-      // Every 45–150s, so it stays startling rather than expected.
-      this.timers.push(setTimeout(fire, (45_000 + Math.random() * 105_000) / Math.max(0.4, intensity)));
+      // Every 45-150s, so it stays startling rather than expected.
+      this.timers.push(
+        setTimeout(fire, (45_000 + Math.random() * 105_000) / Math.max(0.4, intensity)),
+      );
     };
     this.timers.push(setTimeout(fire, 30_000));
   }
@@ -206,7 +208,7 @@ export class DistractionEngine {
 }
 
 /**
- * Scheduled interruptions — "pencils down", an invigilator walking past.
+ * Scheduled interruptions - "pencils down", an invigilator walking past.
  *
  * Returns the delays rather than firing them, so the session owns the timing and
  * a paused or finished session cannot be interrupted by a stale timer. Never in

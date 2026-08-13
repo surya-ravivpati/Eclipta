@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * three times, then set the order they'll fight in.
  *
  * Candidates are drawn only from what the player owns, and a round offers
- * fewer than three when fewer than three remain undrafted — never a padded
+ * fewer than three when fewer than three remain undrafted - never a padded
  * fake choice. A player who owns nothing yet is told so plainly rather than
  * shown an empty grid.
  */
@@ -66,7 +66,7 @@ export function DraftDialog({ onComplete }: { onComplete: (team: Ecliptar[]) => 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        <p className="text-sm text-muted-foreground">Loading your collection…</p>
+        <p className="text-sm text-muted-foreground">Loading your collection...</p>
       </motion.div>
     );
   }
@@ -165,7 +165,7 @@ export function DraftDialog({ onComplete }: { onComplete: (team: Ecliptar[]) => 
           >
             <h3 className="text-xl font-bold font-display text-center mb-1">Set Your Order</h3>
             <p className="text-xs text-muted-foreground text-center mb-6">
-              Your team fights in this order — lose one, and the next steps in.
+              Your team fights in this order - lose one, and the next steps in.
             </p>
             <ul className="space-y-2 max-w-sm mx-auto mb-6">
               {drafted.map((e, i) => {

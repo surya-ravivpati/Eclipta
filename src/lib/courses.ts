@@ -1,5 +1,5 @@
 /**
- * Unified course model — the single shape the Courses hub, cards, search, and
+ * Unified course model - the single shape the Courses hub, cards, search, and
  * (later) recommendations are written against. Both the static "official"
  * catalog (src/lib/certified-courses.ts) and DB-backed "community" courses
  * (user_courses) normalize into `UnifiedCourse`, so the hub never branches on
@@ -50,22 +50,146 @@ export interface CommunityCourseRow {
   cover_image_url: string | null;
 }
 
-/* ── Subject categorization ──────────────────────────────────────────────
+/* -- Subject categorization ----------------------------------------------
    Courses don't carry a subject column yet, so we infer one from title + tags
    + summary by keyword. Best-match wins; ties break by SUBJECTS order. This is
-   a Phase-1 heuristic — once courses get a real `subject` field it goes away. */
+   a Phase-1 heuristic - once courses get a real `subject` field it goes away. */
 const SUBJECT_KEYWORDS: Record<Subject, string[]> = {
-  Mathematics: ["math", "algebra", "calculus", "geometry", "trigonometry", "statistic", "probability", "linear algebra", "number theory", "discrete"],
-  Science: ["physics", "chemistry", "biology", "quantum", "genetics", "cell", "astronomy", "neuroscience", "science", "molecular", "ecology"],
-  "Computer Science": ["python", "java", "javascript", "programming", "coding", "code", "algorithm", "data structure", "machine learning", "deep learning", "computing", "software", "web dev", "database", "cybersecurity", "security", "systems design", "distributed", "artificial intelligence"],
-  Engineering: ["engineering", "robotics", "mechanical", "electrical", "civil engineering", "circuits", "control systems", "aerospace"],
-  Humanities: ["history", "philosophy", "psychology", "literature", "writing", "english", "sociology", "ethics", "political", "anthropology"],
-  Business: ["business", "economics", "marketing", "management", "entrepreneur", "accounting", "strategy", "leadership"],
-  Languages: ["spanish", "french", "german", "mandarin", "chinese", "japanese", "language", "grammar", "vocabulary", "linguistics"],
-  "Test Prep": ["sat", "act", "gre", "gmat", "mcat", "lsat", "ap exam", "test prep", "exam prep", "ielts", "toefl"],
-  Arts: ["art", "music", "design", "drawing", "painting", "photography", "film", "theater", "sculpture"],
-  Health: ["health", "medicine", "anatomy", "nutrition", "fitness", "medical", "physiology", "wellness", "psychology of health"],
-  "Personal Finance": ["personal finance", "investing", "budgeting", "stocks", "retirement", "taxes", "money management", "credit"],
+  Mathematics: [
+    "math",
+    "algebra",
+    "calculus",
+    "geometry",
+    "trigonometry",
+    "statistic",
+    "probability",
+    "linear algebra",
+    "number theory",
+    "discrete",
+  ],
+  Science: [
+    "physics",
+    "chemistry",
+    "biology",
+    "quantum",
+    "genetics",
+    "cell",
+    "astronomy",
+    "neuroscience",
+    "science",
+    "molecular",
+    "ecology",
+  ],
+  "Computer Science": [
+    "python",
+    "java",
+    "javascript",
+    "programming",
+    "coding",
+    "code",
+    "algorithm",
+    "data structure",
+    "machine learning",
+    "deep learning",
+    "computing",
+    "software",
+    "web dev",
+    "database",
+    "cybersecurity",
+    "security",
+    "systems design",
+    "distributed",
+    "artificial intelligence",
+  ],
+  Engineering: [
+    "engineering",
+    "robotics",
+    "mechanical",
+    "electrical",
+    "civil engineering",
+    "circuits",
+    "control systems",
+    "aerospace",
+  ],
+  Humanities: [
+    "history",
+    "philosophy",
+    "psychology",
+    "literature",
+    "writing",
+    "english",
+    "sociology",
+    "ethics",
+    "political",
+    "anthropology",
+  ],
+  Business: [
+    "business",
+    "economics",
+    "marketing",
+    "management",
+    "entrepreneur",
+    "accounting",
+    "strategy",
+    "leadership",
+  ],
+  Languages: [
+    "spanish",
+    "french",
+    "german",
+    "mandarin",
+    "chinese",
+    "japanese",
+    "language",
+    "grammar",
+    "vocabulary",
+    "linguistics",
+  ],
+  "Test Prep": [
+    "sat",
+    "act",
+    "gre",
+    "gmat",
+    "mcat",
+    "lsat",
+    "ap exam",
+    "test prep",
+    "exam prep",
+    "ielts",
+    "toefl",
+  ],
+  Arts: [
+    "art",
+    "music",
+    "design",
+    "drawing",
+    "painting",
+    "photography",
+    "film",
+    "theater",
+    "sculpture",
+  ],
+  Health: [
+    "health",
+    "medicine",
+    "anatomy",
+    "nutrition",
+    "fitness",
+    "medical",
+    "physiology",
+    "wellness",
+    "psychology of health",
+  ],
+  "Personal Finance": [
+    "personal finance",
+    "investing",
+    "budgeting",
+    "stocks",
+    "retirement",
+    "taxes",
+    "money management",
+    "credit",
+  ],
 };
 
 export function categorize(text: string): Subject {
@@ -85,7 +209,7 @@ export function categorize(text: string): Subject {
   return best;
 }
 
-/* ── Normalizers ─────────────────────────────────────────────────────────── */
+/* -- Normalizers ----------------------------------------------------------- */
 
 export function certifiedToUnified(): UnifiedCourse[] {
   return CERTIFIED_COURSES.map((c) => ({
@@ -115,13 +239,13 @@ export function communityToUnified(rows: CommunityCourseRow[]): UnifiedCourse[] 
   }));
 }
 
-/* ── Lightweight, typo-tolerant search scoring (Phase-1, client-side) ──────
-   Not a full fuzzy index — a fast substring + token-prefix scorer that handles
+/* -- Lightweight, typo-tolerant search scoring (Phase-1, client-side) ------
+   Not a full fuzzy index - a fast substring + token-prefix scorer that handles
    partial words and is good enough for hundreds of courses. Returns 0 for no
    match, higher = better, so callers can sort. */
 export function searchScore(course: UnifiedCourse, queryRaw: string): number {
   const q = queryRaw.trim().toLowerCase();
-  if (!q) return 1; // empty query → everything passes, neutral score
+  if (!q) return 1; // empty query -> everything passes, neutral score
   const hay = [course.title, course.summary, course.subject, course.level, course.tags.join(" ")]
     .join(" ")
     .toLowerCase();

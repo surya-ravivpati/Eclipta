@@ -1,5 +1,5 @@
 /**
- * Shared concept-mastery store access (docs/battle-redesign.md §17).
+ * Shared concept-mastery store access (docs/battle-redesign.md section 17).
  *
  * Battles WRITE here (every answered question is an observation); Practice Weak
  * Spots READS here (struggling/developing concepts become coaching targets).

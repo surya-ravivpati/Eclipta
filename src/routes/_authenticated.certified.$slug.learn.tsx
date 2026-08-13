@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/certified/$slug/learn")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `Learn: ${loaderData?.course.title ?? "Course"} – Eclipta` },
+      { title: `Learn: ${loaderData?.course.title ?? "Course"} - Eclipta` },
       {
         name: "description",
         content: `Course player for ${loaderData?.course.title ?? "this course"}.`,
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/certified/$slug/learn")({
   notFoundComponent: () => (
     <div className="min-h-screen flex items-center justify-center">
       <Link to="/courses" className="text-neon-purple">
-        ← Back to courses
+        &lt;- Back to courses
       </Link>
     </div>
   ),
@@ -263,7 +263,7 @@ function CoursePlayer() {
               {course.syllabus.map((mod: { title: string; lessons: string[] }, mi: number) => (
                 <div key={mod.title}>
                   <p className="text-[10px] font-bold tracking-widest text-neon-purple/80 mb-1.5">
-                    {String(mi + 1).padStart(2, "0")} · {mod.title.toUpperCase()}
+                    {String(mi + 1).padStart(2, "0")} | {mod.title.toUpperCase()}
                   </p>
                   <ul className="space-y-0.5">
                     {mod.lessons.map((title: string, li: number) => {
@@ -310,7 +310,7 @@ function CoursePlayer() {
             transition={{ duration: 0.25 }}
           >
             <p className="text-[10px] font-bold tracking-widest text-neon-purple/70 mb-2">
-              MODULE {String(lesson.moduleIdx + 1).padStart(2, "0")} · LESSON{" "}
+              MODULE {String(lesson.moduleIdx + 1).padStart(2, "0")} | LESSON{" "}
               {String(lesson.lessonIdx + 1).padStart(2, "0")}
             </p>
             <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight leading-tight mb-1">
@@ -318,7 +318,7 @@ function CoursePlayer() {
             </h1>
             <p className="text-sm text-muted-foreground mb-8">{lesson.moduleTitle}</p>
 
-            {/* "Video" placeholder — represents the lesson stage */}
+            {/* "Video" placeholder - represents the lesson stage */}
             <div className="aspect-video w-full glass-panel mb-8 flex items-center justify-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 via-transparent to-neon-pink/10" />
               <div className="relative text-center px-6">
@@ -327,7 +327,7 @@ function CoursePlayer() {
                   Written Lesson
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  An auto-generated study outline for "{lesson.lessonTitle}" — read it below. Video
+                  An auto-generated study outline for "{lesson.lessonTitle}" - read it below. Video
                   walkthroughs aren't available yet.
                 </p>
               </div>

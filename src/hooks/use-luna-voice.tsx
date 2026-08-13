@@ -7,22 +7,22 @@ import { supabase } from "@/integrations/supabase/client";
  * Voice I/O for Luna.
  *
  * Dictation (two paths, native preferred so it works with NO backend):
- *  1. Web Speech API (SpeechRecognition / webkitSpeechRecognition) — built into
+ *  1. Web Speech API (SpeechRecognition / webkitSpeechRecognition) - built into
  *     Chrome, Edge, and Safari. Needs no edge function, so the mic works even
  *     before luna-stt is deployed.
  *  2. Fallback: MediaRecorder captures a clip and POSTs it to the luna-stt edge
- *     function (Lovable AI → openai/gpt-4o-mini-transcribe). Used when the
+ *     function (Lovable AI -> openai/gpt-4o-mini-transcribe). Used when the
  *     native API is unavailable (e.g. Firefox).
  *
  * Read-aloud (two paths, native preferred so it works with NO backend and NO
  * cost):
- *  1. Web Speech API (SpeechSynthesis) — built into every modern browser.
+ *  1. Web Speech API (SpeechSynthesis) - built into every modern browser.
  *     Voice quality is whatever the OS ships, but it's free and needs no
  *     edge function or API key.
  *  2. Fallback: luna-tts edge function (openai/gpt-4o-mini-tts) for a more
  *     natural voice, used only when SpeechSynthesis is unavailable. This
- *     path costs real money per call — see supabase/functions/_shared/ai.ts
- *     — so it's opt-in via AI_AUDIO_* rather than the default.
+ *     path costs real money per call - see supabase/functions/_shared/ai.ts
+ *     - so it's opt-in via AI_AUDIO_* rather than the default.
  */
 
 const TTS_URL = `${env.SUPABASE_URL}/functions/v1/luna-tts`;
@@ -30,7 +30,7 @@ const STT_URL = `${env.SUPABASE_URL}/functions/v1/luna-stt`;
 const transcriptionResponseSchema = z.object({ text: z.string().optional() });
 const errorResponseSchema = z.object({ error: z.string().optional() });
 
-/** Null on browsers without native dictation — callers fall back to MediaRecorder. */
+/** Null on browsers without native dictation - callers fall back to MediaRecorder. */
 function getSpeechRecognition(): SpeechRecognitionConstructor | null {
   if (typeof window === "undefined") return null;
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
@@ -205,7 +205,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
         releaseRecorder();
         setListening(false);
         if (blob.size < 1024) {
-          setVoiceError("That recording was too short — try again.");
+          setVoiceError("That recording was too short - try again.");
           return;
         }
         const ext = type.includes("mp4") ? "mp4" : type.includes("mpeg") ? "mp3" : "webm";
@@ -243,7 +243,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
     if (listening) return;
     setVoiceError(null);
 
-    // Preferred: native Web Speech API — no edge function required.
+    // Preferred: native Web Speech API - no edge function required.
     const SR = getSpeechRecognition();
     if (SR) {
       try {
@@ -266,7 +266,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
             setVoiceError(
               "Microphone access denied. Allow mic permission in your browser settings and try again.",
             );
-          else if (err === "no-speech") setVoiceError("Didn't catch that — try again.");
+          else if (err === "no-speech") setVoiceError("Didn't catch that - try again.");
           else if (err === "audio-capture")
             setVoiceError("No microphone found. Plug one in and try again.");
           else if (err && err !== "aborted") setVoiceError("Voice input hit a snag. Try again.");
@@ -322,7 +322,7 @@ export function useLunaVoice(opts: { onTranscript: (text: string) => void }) {
       if (!clean) return;
       stopSpeaking();
 
-      // Preferred: native SpeechSynthesis — no edge function, no cost.
+      // Preferred: native SpeechSynthesis - no edge function, no cost.
       if (typeof window !== "undefined" && window.speechSynthesis) {
         const utter = new SpeechSynthesisUtterance(clean.slice(0, 1800));
         utter.lang = typeof navigator !== "undefined" ? (navigator.language ?? "en-US") : "en-US";

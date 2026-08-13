@@ -1,5 +1,5 @@
 /**
- * Ecliptars — claimable monsters tied to archetypes.
+ * Ecliptars - claimable monsters tied to archetypes.
  * Two claimable per archetype (named creatures), unlocked via the matching
  * trophy-road monster node. ECLIPTAR_NAMES holds the full roster per archetype.
  */
@@ -90,7 +90,7 @@ export function getEcliptarBySlug(slug: string): Ecliptar | undefined {
 /**
  * Pick a stable Ecliptar for an archetype from an arbitrary key.
  *
- * Used for opponents whose own Ecliptar is unknown — a bot, or a live opponent
+ * Used for opponents whose own Ecliptar is unknown - a bot, or a live opponent
  * whose profile we have not fetched. Keying on the user or match id rather than
  * `Math.random()` matters: the same opponent must bring the same creature every
  * time, or its sprite and its ultimate change between encounters and it stops
@@ -113,7 +113,7 @@ export function ecliptarForArchetype(
 
 /**
  * URL of an Ecliptar's in-battle sprite, served from public/ecliptars/<slug>.png.
- * Only some sprites exist yet — consumers render this in an <img> that falls
+ * Only some sprites exist yet - consumers render this in an <img> that falls
  * back to the Ecliptar's Lucide icon on error, so slugs without art degrade
  * gracefully and light up automatically as more sprites are added.
  */
@@ -124,7 +124,7 @@ export function ecliptarSpriteUrl(slug: string): string {
 /**
  * Grant one Ecliptar to a user via the SECURITY DEFINER RPC, which is the
  * only valid server path (direct INSERTs are no longer allowed by RLS).
- * A unique violation (23505) means it's already owned — treated as success.
+ * A unique violation (23505) means it's already owned - treated as success.
  */
 async function grantEcliptar(
   ec: Ecliptar,
@@ -187,7 +187,7 @@ export async function claimEcliptarsBySlugs(
     if (ok) granted.push(e);
     else if (!firstError) firstError = error;
   }
-  // Only report an error when nothing landed — a partial success still counts.
+  // Only report an error when nothing landed - a partial success still counts.
   return { granted, error: granted.length === 0 ? (firstError ?? "Claim failed.") : null };
 }
 

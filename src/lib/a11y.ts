@@ -44,14 +44,14 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-// ─── Screen-reader announcements ─────────────────────────────────────────────
+// --- Screen-reader announcements ---------------------------------------------
 
 /**
  * Announce a message in the shell's live region.
  *
  * `polite` waits for the reader to finish its current sentence and is right for
  * almost everything (XP gained, a saved draft). `assertive` interrupts and is
- * reserved for things the user must hear immediately — a battle ending, an
+ * reserved for things the user must hear immediately - a battle ending, an
  * error that blocks them. Over-using assertive makes an app unusable with a
  * screen reader, so the default is polite.
  */
@@ -75,8 +75,8 @@ export function announce(message: string, politeness: Politeness = "polite"): vo
 }
 
 /**
- * Format a progress value for a screen reader. A bare "70%" is ambiguous —
- * progress toward what? — so the label always carries the subject.
+ * Format a progress value for a screen reader. A bare "70%" is ambiguous -
+ * progress toward what? - so the label always carries the subject.
  */
 export function progressLabel(subject: string, current: number, max: number): string {
   const pct = max > 0 ? Math.round((current / max) * 100) : 0;

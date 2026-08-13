@@ -47,7 +47,7 @@ import { moderate, calmBlockMessage } from "@/lib/moderation";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Your Profile – Eclipta" },
+      { title: "Your Profile - Eclipta" },
       { name: "description", content: "Settings, XP, ecliptars, courses, and forum activity." },
     ],
   }),
@@ -324,7 +324,7 @@ function ProfilePage() {
                         text="No courses enrolled."
                         cta={
                           <Link to="/courses" className="text-neon-cyan hover:underline">
-                            Browse courses →
+                            Browse courses -&gt;
                           </Link>
                         }
                       />
@@ -355,7 +355,7 @@ function ProfilePage() {
                         text="No threads posted."
                         cta={
                           <Link to="/forum" className="text-neon-pink hover:underline">
-                            Start a discussion →
+                            Start a discussion -&gt;
                           </Link>
                         }
                       />
@@ -399,13 +399,13 @@ function ProfilePage() {
                         text="No Ecliptars yet."
                         cta={
                           <Link to="/progress" className="text-neon-purple hover:underline">
-                            Begin your expedition →
+                            Begin your expedition -&gt;
                           </Link>
                         }
                       />
                     ) : (
                       <Link to="/collection" className="text-xs text-neon-purple hover:underline">
-                        Manage your collection →
+                        Manage your collection -&gt;
                       </Link>
                     )}
                   </Card>
@@ -424,7 +424,7 @@ function ProfilePage() {
                       text="No courses yet."
                       cta={
                         <Link to="/build-course" className="text-neon-purple hover:underline">
-                          Build a course →
+                          Build a course -&gt;
                         </Link>
                       }
                     />
@@ -488,7 +488,7 @@ function ProfilePage() {
                             to="/build-course"
                             className="text-[10px] font-bold tracking-widest text-neon-purple hover:underline mt-1 inline-block"
                           >
-                            REVISE & RESUBMIT →
+                            REVISE & RESUBMIT -&gt;
                           </Link>
                         </li>
                       ))}
@@ -579,7 +579,7 @@ function SettingsPanel({
   const saveUsername = async () => {
     const trimmed = username.trim();
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
-      return toast.error("Username must be 3–20 chars: letters, numbers, underscores");
+      return toast.error("Username must be 3-20 chars: letters, numbers, underscores");
     }
     if (containsProfanity(trimmed)) {
       return toast.error("That username contains language we don't allow.");
@@ -587,7 +587,7 @@ function SettingsPanel({
     if (trimmed === profile?.username) return;
     if (availability === "taken") return toast.error("That username is already taken");
     setSaving(true);
-    // Unified moderation — every username change goes through the same pipeline.
+    // Unified moderation - every username change goes through the same pipeline.
     const modVerdict = await moderate(trimmed, "username");
     if (modVerdict.blocked) {
       setSaving(false);
@@ -602,7 +602,7 @@ function SettingsPanel({
       if (error.code === "23505") return toast.error("That username is already taken");
       return toast.error(error.message);
     }
-    toast.success("Username updated — visible publicly");
+    toast.success("Username updated - visible publicly");
     onSaved();
   };
 
@@ -642,7 +642,7 @@ function SettingsPanel({
   const saveBio = async () => {
     const trimmed = bio.trim();
     if (containsProfanity(trimmed))
-      return toast.error("Please rephrase — your bio contains language we don't allow.");
+      return toast.error("Please rephrase - your bio contains language we don't allow.");
     setSavingBio(true);
     const { error } = await supabase
       .from("user_profiles")
@@ -650,7 +650,7 @@ function SettingsPanel({
       .eq("user_id", userId);
     setSavingBio(false);
     if (error) return toast.error(error.message);
-    toast.success("Bio updated — visible on your public profile");
+    toast.success("Bio updated - visible on your public profile");
     onSaved();
   };
 
@@ -733,12 +733,12 @@ function SettingsPanel({
                 "text-muted-foreground",
             )}
           >
-            {availability === "checking" && "CHECKING…"}
+            {availability === "checking" && "CHECKING..."}
             {availability === "available" && "✓ AVAILABLE"}
             {availability === "taken" && "✗ ALREADY TAKEN"}
-            {availability === "invalid" && "INVALID — 3–20 chars, letters/numbers/underscore"}
+            {availability === "invalid" && "INVALID - 3-20 chars, letters/numbers/underscore"}
             {(availability === "idle" || availability === "current") &&
-              "3–20 chars. Letters, numbers, underscores only."}
+              "3-20 chars. Letters, numbers, underscores only."}
           </p>
         </div>
 
@@ -830,7 +830,7 @@ function SettingsPanel({
                     },
                     {
                       name: "Normal",
-                      desc: "Balanced — Luna explains, then asks. Default for most learners.",
+                      desc: "Balanced - Luna explains, then asks. Default for most learners.",
                     },
                     {
                       name: "Fast",
@@ -907,7 +907,7 @@ function SettingsPanel({
                 options={[
                   {
                     name: "What this is",
-                    desc: "Your own free-form notes that Luna reads on every reply. Use it for things the dropdowns don't cover — 'answer in Spanish', 'avoid sports analogies', 'I'm prepping for the SAT'.",
+                    desc: "Your own free-form notes that Luna reads on every reply. Use it for things the dropdowns don't cover - 'answer in Spanish', 'avoid sports analogies', 'I'm prepping for the SAT'.",
                   },
                   {
                     name: "Auto-learning is separate",
@@ -1004,7 +1004,7 @@ function SettingsPanel({
                 : "border-destructive/40 text-destructive hover:bg-destructive/10",
             )}
           >
-            {confirmDelete ? "CONFIRM — CLEAR & SIGN OUT" : "CLEAR ACCOUNT DATA"}
+            {confirmDelete ? "CONFIRM - CLEAR & SIGN OUT" : "CLEAR ACCOUNT DATA"}
           </button>
         </div>
       </div>
@@ -1052,7 +1052,7 @@ function AvatarUploader({
     setPendingPhoto(null);
     setUploading(true);
     // The extension and content type describe what the crop canvas encoded, not
-    // what the user picked — a cropped PNG comes back as JPEG.
+    // what the user picked - a cropped PNG comes back as JPEG.
     const path = `${userId}/avatar-${Date.now()}.${AVATAR_FILE_EXTENSION}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, cropped, {
       cacheControl: "3600",

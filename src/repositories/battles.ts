@@ -1,6 +1,6 @@
 /**
  * The battles domain's one door into the database. Nothing outside this
- * file calls `supabase.from()` or `supabase.rpc()` for these tables — see
+ * file calls `supabase.from()` or `supabase.rpc()` for these tables - see
  * AGENTS.md's "Database" section. Queries still go through the Supabase
  * client rather than a direct Postgres connection, so Row Level Security
  * keeps applying; Drizzle (src/db/schema/battles.ts) supplies the row types.
@@ -14,7 +14,7 @@ import type { ArchetypeMastery } from "@/lib/archetype-mastery";
 
 export type PlayerRatingRow = InferSelectModel<typeof playerRatings>;
 
-/** A player who has never completed a rated match has no row yet — not an error. */
+/** A player who has never completed a rated match has no row yet - not an error. */
 export async function getPlayerRating(userId: string): Promise<PlayerRatingRow | null> {
   const { data, error } = await supabase
     .from("player_ratings")
@@ -32,7 +32,7 @@ export interface PlayerStanding {
   peakRating: number;
   wins: number;
   losses: number;
-  /** True once a rating row exists — i.e. the player has entered the ladder. */
+  /** True once a rating row exists - i.e. the player has entered the ladder. */
   ranked: boolean;
 }
 
@@ -64,12 +64,12 @@ export async function getPlayerStanding(userId: string): Promise<PlayerStanding 
   };
 }
 
-// ── Matchmaking ─────────────────────────────────────────────────────────────
+// -- Matchmaking -------------------------------------------------------------
 
 /**
  * Joins the live PvP queue. Rating and username are read server-side from
  * authoritative tables inside the SECURITY DEFINER RPC, not supplied by the
- * caller — a client can't spoof either.
+ * caller - a client can't spoof either.
  */
 export async function enqueuePvpRpc(archetype: ArchetypeId): Promise<void> {
   const { error } = await supabase.rpc("enqueue_pvp", { p_archetype: archetype });
@@ -117,7 +117,7 @@ export interface ActivePvpBattle {
 }
 
 /**
- * `find_pvp_match` only tells the challenger they've been matched — the
+ * `find_pvp_match` only tells the challenger they've been matched - the
  * opponent is removed from the queue silently and must discover the match by
  * polling this instead. Scoped to the last 30 seconds so a stale, long-since-
  * resolved battle can never be picked up by a new search.
@@ -137,7 +137,7 @@ export async function findActivePvpBattleForUser(userId: string): Promise<Active
   return data?.[0] ?? null;
 }
 
-// ── Battle session recording ────────────────────────────────────────────────
+// -- Battle session recording ------------------------------------------------
 
 export interface RecordBattleSessionPayload {
   p_archetype: ArchetypeId;
@@ -154,7 +154,7 @@ export interface RecordBattleSessionPayload {
 
 /**
  * Persists a completed battle. The server-side RPC validates and clamps every
- * field — a client can't fabricate a rating or correct-answer count that
+ * field - a client can't fabricate a rating or correct-answer count that
  * bypasses the matchmaking pipeline. Returns null (rather than throwing) on
  * failure: recording is best-effort and must never block the player from
  * seeing their own result.
@@ -164,7 +164,7 @@ export async function recordBattleSessionRpc(
 ): Promise<string | null> {
   // `StoredQuestionRecord[]` is a closed object shape with no index
   // signature, so it can never satisfy `extends Json` under TypeScript's
-  // rules even though every value it can hold is valid JSON — the same gap
+  // rules even though every value it can hold is valid JSON - the same gap
   // documented in src/db/schema/battles.verify.ts. The RPC's own Postgres
   // signature accepts jsonb regardless of this array's declared TS shape.
   const { data, error } = await supabase.rpc("record_battle_session", {
@@ -178,7 +178,7 @@ export async function recordBattleSessionRpc(
   return data ?? null;
 }
 
-// ── Concept-mastery evidence stream ─────────────────────────────────────────
+// -- Concept-mastery evidence stream -----------------------------------------
 
 export interface BattleQuestionRecordInsert {
   user_id: string;
@@ -197,7 +197,7 @@ export async function insertBattleQuestionRecords(
   if (error) throw new Error(error.message);
 }
 
-// ── Archetype mastery ────────────────────────────────────────────────────────
+// -- Archetype mastery --------------------------------------------------------
 
 const MASTERY_COLUMNS =
   "archetype,battles_played,wins,best_streak,total_correct,total_questions,perfect_battles";
@@ -227,7 +227,7 @@ export async function recordArchetypeMasteryRpc(
   if (error) console.warn("recordArchetypeMasteryRpc failed", error);
 }
 
-/** Fetch one archetype's mastery row for a user. Returns null if never recorded — not an error. */
+/** Fetch one archetype's mastery row for a user. Returns null if never recorded - not an error. */
 export async function getArchetypeMastery(
   userId: string,
   archetype: ArchetypeId,

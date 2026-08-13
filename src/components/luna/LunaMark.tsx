@@ -1,5 +1,5 @@
 /**
- * Luna's brand mark — a gold crescent, used wherever Luna is represented in the
+ * Luna's brand mark - a gold crescent, used wherever Luna is represented in the
  * UI (the floating launcher, panel headers). Replaces the generic 🌙 emoji with
  * a consistent vector mark that inherits color via `currentColor`, so it reads
  * as a deliberate brand graphic rather than a template emoji.

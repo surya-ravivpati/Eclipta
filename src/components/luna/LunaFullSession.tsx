@@ -116,7 +116,7 @@ export function LunaFullSession() {
   };
 
   const accuracy = getAccuracy();
-  // Live timer — re-renders every second, pauses when the tab is hidden,
+  // Live timer - re-renders every second, pauses when the tab is hidden,
   // and stays paused during streaming so partial assistant replies don't
   // inflate the user's effective study time.
   const { label: durationLabel } = useLunaSessionTimer();
@@ -124,7 +124,7 @@ export function LunaFullSession() {
 
   return (
     <div className="luna-shell">
-      {/* ── Top bar ──────────────────────────────────────────────── */}
+      {/* -- Top bar ------------------------------------------------ */}
       <div className="luna-topbar">
         <div className="luna-topbar-left">
           <Link to="/" className="luna-back" aria-label="Back to home">
@@ -159,7 +159,7 @@ export function LunaFullSession() {
         </div>
       </div>
 
-      {/* ── Chat area ────────────────────────────────────────────── */}
+      {/* -- Chat area ---------------------------------------------- */}
       <div ref={scrollRef} className="luna-body">
         <div className="luna-body-inner">
           {/* Intro placeholder */}
@@ -237,7 +237,7 @@ export function LunaFullSession() {
         </div>
       </div>
 
-      {/* ── Input bar ────────────────────────────────────────────── */}
+      {/* -- Input bar ---------------------------------------------- */}
       <div className="luna-inputbar">
         <div className="luna-inputbar-inner">
           {/* Voice error */}
@@ -333,8 +333,8 @@ export function LunaFullSession() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={
                 pendingImage
-                  ? "Ask Luna about your screen…"
-                  : "Ask a question, describe what you're stuck on, or tell Luna what you're learning…"
+                  ? "Ask Luna about your screen..."
+                  : "Ask a question, describe what you're stuck on, or tell Luna what you're learning..."
               }
               className="luna-input"
             />

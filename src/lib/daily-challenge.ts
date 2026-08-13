@@ -1,5 +1,5 @@
 /**
- * Daily challenge definitions — rotated deterministically by UTC date.
+ * Daily challenge definitions - rotated deterministically by UTC date.
  * Shared competitive constraints drive daily return behaviour and create
  * a common experience all players reference on the same day.
  */
@@ -21,7 +21,7 @@ export interface DailyChallenge {
  * server actually grants via the `daily_challenge` event in `award_xp`.
  */
 const VARIANTS: DailyChallenge[] = [
-  // ── Win-count challenges ───────────────────────────────────────────────
+  // -- Win-count challenges -----------------------------------------------
   {
     id: "wins-1",
     title: "First Blood",
@@ -70,7 +70,7 @@ const VARIANTS: DailyChallenge[] = [
     reward: "+100 XP",
     unit: "wins",
   },
-  // ── Streak / precision challenges ─────────────────────────────────────
+  // -- Streak / precision challenges -------------------------------------
   {
     id: "streak-5",
     title: "On Fire",
@@ -96,9 +96,9 @@ const VARIANTS: DailyChallenge[] = [
     target: 2,
     reward: "+100 XP",
     unit: "wins",
-    modifier: "Use Charge (hard question) at least 3× per battle.",
+    modifier: "Use Charge (hard question) at least 3x per battle.",
   },
-  // ── PvP-specific challenges ────────────────────────────────────────────
+  // -- PvP-specific challenges --------------------------------------------
   {
     id: "pvp-1",
     title: "Real Rivals",
@@ -115,7 +115,7 @@ const VARIANTS: DailyChallenge[] = [
     target: 3,
     reward: "+100 XP",
     unit: "battles",
-    modifier: "Participation counts — face real opponents today.",
+    modifier: "Participation counts - face real opponents today.",
   },
   {
     id: "comeback",
@@ -126,7 +126,7 @@ const VARIANTS: DailyChallenge[] = [
     unit: "wins",
     modifier: "Don't give up when the odds are against you.",
   },
-  // ── Speed / difficulty challenges ──────────────────────────────────────
+  // -- Speed / difficulty challenges --------------------------------------
   {
     id: "speed-win",
     title: "Speed Demon",
@@ -134,7 +134,7 @@ const VARIANTS: DailyChallenge[] = [
     target: 2,
     reward: "+100 XP",
     unit: "wins",
-    modifier: "Answer fast — every second counts.",
+    modifier: "Answer fast - every second counts.",
   },
   {
     id: "hard-5",

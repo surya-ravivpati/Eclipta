@@ -35,7 +35,7 @@ type SetMessages = React.Dispatch<React.SetStateAction<ConversationMessage[]>>;
 interface Options {
   messages: ConversationMessage[];
   setMessages: SetMessages;
-  /** learning_history.session_type tag — "chat" for the mini panel, "luna-session" for the full surface. */
+  /** learning_history.session_type tag - "chat" for the mini panel, "luna-session" for the full surface. */
   sessionType: "chat" | "luna-session";
   /** Optional reasoning effort passed to the gateway. Full session uses "low"; mini panel omits. */
   reasoning?: { effort: "low" | "medium" | "high" };
@@ -74,7 +74,7 @@ export function useLunaConversation({
     }
   }, [active]);
 
-  // Event-driven fatigue → inject [BREAK] suggestion exactly once.
+  // Event-driven fatigue -> inject [BREAK] suggestion exactly once.
   useEffect(() => {
     if (!active) return;
     const unsubscribe = subscribeFatigue((level) => {
@@ -117,7 +117,7 @@ export function useLunaConversation({
     setAwaitingFirstToken(true);
 
     // Detect preference statements ("write shorter", "use more analogies", ...)
-    // and merge them into user_profiles.luna_auto_notes (NOT luna_notes — that
+    // and merge them into user_profiles.luna_auto_notes (NOT luna_notes - that
     // column is reserved for what the user types themselves on /profile, so
     // the notes box they see stays clean and editable). mergePreference also
     // drops any older entry in the same category, so "shorter responses" is
@@ -141,7 +141,7 @@ export function useLunaConversation({
               .from("user_profiles")
               .update({ luna_auto_notes: merged } as never)
               .eq("user_id", user.id);
-            if (!error) toast.success(`Got it — I'll remember: "${pref}"`, { duration: 3000 });
+            if (!error) toast.success(`Got it - I'll remember: "${pref}"`, { duration: 3000 });
           } catch {
             /* non-critical */
           }
@@ -170,7 +170,7 @@ export function useLunaConversation({
 
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
-      // First delta arrived — drop the "thinking" placeholder. setState is
+      // First delta arrived - drop the "thinking" placeholder. setState is
       // a no-op when value is already false, so calling every chunk is fine.
       setAwaitingFirstToken(false);
       const { tag, text: cleanText } = parseLunaTag(assistantSoFar);
@@ -221,7 +221,7 @@ export function useLunaConversation({
             if (!user) return;
             const { tag } = parseLunaTag(assistantSoFar);
             // Strip LaTeX delimiters, code fences, and tag markers before
-            // slicing — otherwise the stored summary is mostly \frac{...}.
+            // slicing - otherwise the stored summary is mostly \frac{...}.
             const cleanedSummary = assistantSoFar
               .replace(/```[\s\S]*?```/g, " ")
               .replace(/\$\$[\s\S]*?\$\$/g, " ")
@@ -244,7 +244,7 @@ export function useLunaConversation({
                 ? `[${tag.toUpperCase()}] ${cleanedSummary.slice(0, 200)}`
                 : cleanedSummary.slice(0, 200),
             });
-            // Background memory extraction — best effort, never blocks UI.
+            // Background memory extraction - best effort, never blocks UI.
             try {
               const session = (await supabase.auth.getSession()).data.session;
               if (session?.access_token && text) {
@@ -271,7 +271,7 @@ export function useLunaConversation({
             console.warn("Post-turn persistence (log_learning_history) failed", error);
           }
         })();
-        // Stream succeeded — clear the retry buffer entirely so we don't keep
+        // Stream succeeded - clear the retry buffer entirely so we don't keep
         // the prior turn (and any base64 screen-share image) in memory.
         // retryLast() is gated on a trailing err-* bubble, which can't exist
         // after a successful stream, so dropping this is safe.

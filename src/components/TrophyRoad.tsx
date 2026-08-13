@@ -43,7 +43,7 @@ import {
 import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
 import "./TrophyRoad.css";
 
-/* ── Per-tier rank icon (used for "rank" nodes) ─────────────── */
+/* -- Per-tier rank icon (used for "rank" nodes) --------------- */
 const TIER_ICONS: Record<TierId, typeof Crown> = {
   bronze: Hammer,
   silver: Swords,
@@ -72,7 +72,7 @@ interface RoadNode extends BaseRoadNode {
   current: boolean;
 }
 
-/* ── Tier metadata (XP + editorial copy) ────────────────────── */
+/* -- Tier metadata (XP + editorial copy) ---------------------- */
 
 interface TierMeta {
   id: TierId;
@@ -82,7 +82,7 @@ interface TierMeta {
   xpRequired: number;
 }
 
-// The eight realms trace a single eclipse — from first light, through the sun's
+// The eight realms trace a single eclipse - from first light, through the sun's
 // peak, into deepening shadow, to totality and the Eclipse itself.
 const TIERS: Record<TierId, TierMeta> = {
   bronze: {
@@ -124,7 +124,7 @@ const TIERS: Record<TierId, TierMeta> = {
     id: "champion",
     name: "Nightfall",
     label: "The Long Night",
-    description: "Far from any light — the solitude of real mastery.",
+    description: "Far from any light - the solitude of real mastery.",
     xpRequired: 145000,
   },
   unreal: {
@@ -143,7 +143,7 @@ const TIERS: Record<TierId, TierMeta> = {
   },
 };
 
-/* ── Archetypes ────────────────────────────────────────────── */
+/* -- Archetypes ---------------------------------------------- */
 
 interface MonsterArchetype {
   id: ArchetypeKey;
@@ -160,7 +160,7 @@ interface MonsterArchetype {
   special?: string;
 }
 
-// Qualitative summary of the real numbers in battles/archetypes.ts — kept in
+// Qualitative summary of the real numbers in battles/archetypes.ts - kept in
 // step with that stat sheet. There is no multiplier stat any more; DEF (damage
 // taken) and CRIT (crit power) took its slot.
 const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
@@ -190,7 +190,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
       crit: "None",
       difficulty: "Low",
     },
-    special: "Cannot heal · takes 20% less damage",
+    special: "Cannot heal | takes 20% less damage",
   },
   chud: {
     id: "chud",
@@ -278,7 +278,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   },
 };
 
-/* ── Derive node state from XP ─────────────────────────────── */
+/* -- Derive node state from XP ------------------------------- */
 
 function deriveNodes(playerXp: number): RoadNode[] {
   return RAW_NODES.map((node, i, arr) => {
@@ -289,7 +289,7 @@ function deriveNodes(playerXp: number): RoadNode[] {
   });
 }
 
-/* ── Trophy Node ────────────────────────────────────────────── */
+/* -- Trophy Node ---------------------------------------------- */
 
 function TrophyNode({
   node,
@@ -449,7 +449,7 @@ function TrophyNode({
 
       <span className="tr-node-label">{node.label}</span>
 
-      {/* Reward preview — anticipation before the chest is even reachable.
+      {/* Reward preview - anticipation before the chest is even reachable.
           The payout was previously buried in a hover title; surfacing it turns
           every chest on the road into a visible, named goal. */}
       {isChest && (CHEST_BONUS_XP[chestKey] ?? 0) > 0 && (
@@ -460,14 +460,14 @@ function TrophyNode({
 
       {showClaim && (
         <button className="tr-node-act" onClick={handleClaim} disabled={busy}>
-          {busy ? "···" : "Claim"}
+          {busy ? "|||" : "Claim"}
         </button>
       )}
       {isEcliptarNode && allOwned && <span className="tr-node-status">Claimed</span>}
 
       {showFinalClaim && (
         <button className="tr-node-act" onClick={handleClaimFinal} disabled={busy}>
-          {busy ? "···" : "Claim"}
+          {busy ? "|||" : "Claim"}
         </button>
       )}
       {node.type === "final" && finalSlug && finalOwned && (
@@ -481,7 +481,7 @@ function TrophyNode({
           disabled={busy}
           title={`+${CHEST_BONUS_XP[chestKey] ?? 0} bonus XP`}
         >
-          {busy ? "···" : "Open"}
+          {busy ? "|||" : "Open"}
         </button>
       )}
       {isChest && chestClaimed && <span className="tr-node-status">Opened</span>}
@@ -517,7 +517,7 @@ function TrophyNode({
   );
 }
 
-/* ── Cinema Road (unified single scroll) ──────────────────── */
+/* -- Cinema Road (unified single scroll) -------------------- */
 
 function CinemaRoad({
   allNodes,
@@ -551,7 +551,7 @@ function CinemaRoad({
 
   const totalCleared = allNodes.filter((n) => n.unlocked).length;
 
-  // Vault Seals — a collection meta over the chests already on the road.
+  // Vault Seals - a collection meta over the chests already on the road.
   // Every opened chest is a permanent claim (user_chest_claims); framing the
   // 16 of them as a set to complete adds collection-completion pull on top of
   // the linear XP climb, at zero new economy.
@@ -573,7 +573,7 @@ function CinemaRoad({
     return items;
   }, [allNodes]);
 
-  // Update header text + aurora color — called from RAF, no setState.
+  // Update header text + aurora color - called from RAF, no setState.
   // Each tier change re-arms a blur-in entrance on the headline + watermark
   // so crossing a tier boundary reads like a scene cut.
   const updateTierUI = useCallback((tierId: TierId) => {
@@ -665,7 +665,7 @@ function CinemaRoad({
         updateTierUI(cur);
       }
 
-      // Depth of field — nodes near the viewport center step forward,
+      // Depth of field - nodes near the viewport center step forward,
       // distant ones recede. Transform/opacity only, so it stays cheap.
       const falloff = stage.clientWidth * 0.55;
       for (const n of nodeElsRef.current) {
@@ -682,7 +682,7 @@ function CinemaRoad({
     return () => cancelAnimationFrame(rafId);
   }, [updateTierUI]);
 
-  // Wheel: vertical delta → horizontal targetX
+  // Wheel: vertical delta -> horizontal targetX
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -758,7 +758,7 @@ function CinemaRoad({
           <span className="tr-cinema-bar-eyebrow">The Expedition</span>
           <span className="tr-cinema-bar-stops">
             <strong ref={barTierRef}>Bronze</strong>
-            &nbsp;·&nbsp;{totalCleared} of {allNodes.length} cleared &nbsp;·&nbsp;
+            &nbsp;|&nbsp;{totalCleared} of {allNodes.length} cleared &nbsp;|&nbsp;
             <span className="tr-cinema-bar-seals">
               {sealsSecured}/{sealsTotal} seals
             </span>
@@ -783,10 +783,10 @@ function CinemaRoad({
           })}
         </div>
 
-        <span className="tr-cinema-hint">← drag · scroll →</span>
+        <span className="tr-cinema-hint">&lt;- drag | scroll -&gt;</span>
       </div>
 
-      {/* Tier header — its own band above the stage, so headline copy can
+      {/* Tier header - its own band above the stage, so headline copy can
           never collide with the scrolling nodes below */}
       <div className="tr-cinema-head">
         <div className="tr-cinema-head-left">
@@ -807,7 +807,7 @@ function CinemaRoad({
 
       {/* Scrollable stage */}
       <div className="tr-cinema-stage" ref={stageRef}>
-        {/* Scenography only — a giant tier watermark far behind the road */}
+        {/* Scenography only - a giant tier watermark far behind the road */}
         <div className="tr-cinema-watermark" ref={watermarkRef} aria-hidden>
           Bronze
         </div>
@@ -863,7 +863,7 @@ function CinemaRoad({
   );
 }
 
-/* ── Overview ──────────────────────────────────────────────── */
+/* -- Overview ------------------------------------------------ */
 
 interface StandingProps {
   rating: number;
@@ -902,18 +902,18 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="tr-ov-left">
-        <div className="tr-ov-eyebrow">The Expedition · Journey</div>
+        <div className="tr-ov-eyebrow">The Expedition | Journey</div>
         <div className="tr-ov-tier-name">{currentTier.name}</div>
         <div className="tr-ov-tier-label">{currentTier.label}</div>
 
-        {/* Competitive standing — the *other* progression spine. The Ascent
+        {/* Competitive standing - the *other* progression spine. The Ascent
             above is permanent and only climbs; this is the seasonal,
             gain-and-loss rating that drives PvP and the leaderboard. */}
         <div className={`tr-ov-standing tr-tier--${league.id}`}>
-          <div className="tr-ov-standing-eyebrow">Competitive · League</div>
+          <div className="tr-ov-standing-eyebrow">Competitive | League</div>
           {standing.loading ? (
             <div className="tr-ov-standing-row">
-              <span className="tr-ov-standing-league">—</span>
+              <span className="tr-ov-standing-league">-</span>
             </div>
           ) : standing.ranked ? (
             <>
@@ -926,21 +926,21 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
               </div>
               <div className="tr-ov-standing-meta">
                 <span>
-                  {standing.wins}W · {standing.losses}L · {winRate}%
+                  {standing.wins}W | {standing.losses}L | {winRate}%
                 </span>
                 <span>
                   {next ? (
                     <>
-                      Peak {standing.peakRating} · {toNext} to {next.name}
+                      Peak {standing.peakRating} | {toNext} to {next.name}
                     </>
                   ) : (
-                    <>Peak {standing.peakRating} · top league</>
+                    <>Peak {standing.peakRating} | top league</>
                   )}
                 </span>
               </div>
             </>
           ) : (
-            <div className="tr-ov-standing-empty">Unranked — win a battle to claim a league.</div>
+            <div className="tr-ov-standing-empty">Unranked - win a battle to claim a league.</div>
           )}
         </div>
       </div>
@@ -954,7 +954,7 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
           <div className="tr-ov-next">
             {nextTier ? (
               <>
-                Next — <strong>{nextTier.name}</strong> ·{" "}
+                Next - <strong>{nextTier.name}</strong> |{" "}
                 {(nextTier.xpRequired - playerXp).toLocaleString()} XP to go
               </>
             ) : (
@@ -1005,7 +1005,7 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
   );
 }
 
-/* ── Main ──────────────────────────────────────────────────── */
+/* -- Main ---------------------------------------------------- */
 
 export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   const { xp: playerXp } = usePlayerXp();
@@ -1058,7 +1058,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
                 );
               })}
               <p className="tr-compact-tier-row" style={{ color: "var(--tr-fog)", marginLeft: 20 }}>
-                <em>· and four more uncharted realms</em>
+                <em>| and four more uncharted realms</em>
               </p>
             </div>
           </motion.div>

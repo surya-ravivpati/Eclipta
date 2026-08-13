@@ -1,8 +1,8 @@
 /**
- * The recommendation & readiness engine — Phase 2 (docs/courses-redesign.md §5).
+ * The recommendation & readiness engine - Phase 2 (docs/courses-redesign.md section 5).
  *
- * Deterministic and explainable by design: candidate generation → weighted
- * scoring → a one-sentence reason. No LLM in the hot path, so the hub is instant
+ * Deterministic and explainable by design: candidate generation -> weighted
+ * scoring -> a one-sentence reason. No LLM in the hot path, so the hub is instant
  * and every recommendation can be justified and tested. Mastery is derived from
  * signals that already exist (completed/enrolled courses, strong/weak areas);
  * the same shape will later be fed by the concept_mastery store.
@@ -10,7 +10,11 @@
 
 import type { UnifiedCourse, Subject } from "./courses";
 import {
-  CONCEPTS, conceptsOf, matchConcept, courseTeaching, subjectPath,
+  CONCEPTS,
+  conceptsOf,
+  matchConcept,
+  courseTeaching,
+  subjectPath,
   type ConceptNode,
 } from "./course-graph";
 
@@ -52,7 +56,7 @@ export function deriveMastery(state: LearnerState): Map<string, number> {
   return m;
 }
 
-/** 0–1 readiness for a course given mastery of its required concepts. */
+/** 0-1 readiness for a course given mastery of its required concepts. */
 export function readiness(slug: string, mastery: Map<string, number>): number {
   const req = conceptsOf(slug).requires;
   if (req.length === 0) return 1; // no prereqs (community courses included)
@@ -88,7 +92,11 @@ function strongSubjects(state: LearnerState, courses: UnifiedCourse[]): Set<Subj
  * Ranked recommendations with reasons. Returns [] when there's no signal at all
  * (cold start) so the caller can fall back to a "popular" rail.
  */
-export function recommend(courses: UnifiedCourse[], state: LearnerState, limit = 6): Recommendation[] {
+export function recommend(
+  courses: UnifiedCourse[],
+  state: LearnerState,
+  limit = 6,
+): Recommendation[] {
   const hasSignal =
     state.completedSlugs.size > 0 || state.strongAreas.length > 0 || state.weakAreas.length > 0;
   if (!hasSignal) return [];
@@ -98,7 +106,7 @@ export function recommend(courses: UnifiedCourse[], state: LearnerState, limit =
   const bySlug = new Map(courses.map((c) => [c.slug, c]));
   const titleOf = (slug: string) => bySlug.get(slug)?.title ?? slug;
 
-  // Which completed course taught a given concept (for "because you finished…").
+  // Which completed course taught a given concept (for "because you finished...").
   const taughtBy = new Map<string, string>();
   for (const slug of state.completedSlugs) {
     for (const t of conceptsOf(slug).teaches) if (!taughtBy.has(t)) taughtBy.set(t, slug);
@@ -111,14 +119,19 @@ export function recommend(courses: UnifiedCourse[], state: LearnerState, limit =
   const recs: Recommendation[] = [];
   const used = new Set<string>();
 
-  // 1) Remediation — a weak prerequisite is worth fixing before advancing.
+  // 1) Remediation - a weak prerequisite is worth fixing before advancing.
   for (const wc of weakConcepts) {
     const slug = courseTeaching(wc.id);
     if (!slug || state.completedSlugs.has(slug) || used.has(slug)) continue;
     const course = bySlug.get(slug);
     if (!course) continue;
     used.add(slug);
-    recs.push({ course, readiness: 1, reason: `Review this to strengthen ${wc.label}`, kind: "remediation" });
+    recs.push({
+      course,
+      readiness: 1,
+      reason: `Review this to strengthen ${wc.label}`,
+      kind: "remediation",
+    });
   }
 
   // 2) Everything else, scored.
@@ -135,12 +148,9 @@ export function recommend(courses: UnifiedCourse[], state: LearnerState, limit =
     const popularity = Math.min(1, (course.enrolledCount ?? course.rating ?? 0) / 1000);
 
     const score =
-      0.45 * r +
-      0.25 * (successorOf ? 1 : 0) +
-      0.20 * (affinity ? 1 : 0) +
-      0.10 * popularity;
+      0.45 * r + 0.25 * (successorOf ? 1 : 0) + 0.2 * (affinity ? 1 : 0) + 0.1 * popularity;
 
-    // reason — strongest applicable signal wins
+    // reason - strongest applicable signal wins
     let reason: string;
     let kind: RecKind;
     const missing = req.find((rq) => (mastery.get(rq) ?? 0) < MASTERED);
@@ -149,7 +159,7 @@ export function recommend(courses: UnifiedCourse[], state: LearnerState, limit =
       kind = "next";
     } else if (r >= 0.5 && r < 0.95 && missing) {
       const label = CONCEPTS.find((c) => c.id === missing)?.label ?? "the basics";
-      reason = `You're ${Math.round(r * 100)}% ready — ${label} will get you there`;
+      reason = `You're ${Math.round(r * 100)}% ready - ${label} will get you there`;
       kind = "ready";
     } else if (r >= 0.95 && affinity) {
       reason = `Builds on your strength in ${course.subject}`;
@@ -172,7 +182,7 @@ export function recommend(courses: UnifiedCourse[], state: LearnerState, limit =
   return recs.slice(0, limit);
 }
 
-/* ── Learning path (the progression spine) ─────────────────────────────── */
+/* -- Learning path (the progression spine) ------------------------------- */
 
 export type StepState = "done" | "current" | "next" | "locked";
 
@@ -183,7 +193,11 @@ export interface PathStep {
 }
 
 /** A subject's concept spine annotated with the learner's you-are-here state. */
-export function buildPath(subject: Subject, mastery: Map<string, number>, courses: UnifiedCourse[]): PathStep[] {
+export function buildPath(
+  subject: Subject,
+  mastery: Map<string, number>,
+  courses: UnifiedCourse[],
+): PathStep[] {
   const seq = subjectPath(subject);
   let currentAssigned = false;
   return seq.map((concept) => {
@@ -191,8 +205,10 @@ export function buildPath(subject: Subject, mastery: Map<string, number>, course
     const prereqsMet = concept.dependsOn.every((d) => (mastery.get(d) ?? 0) >= MASTERED);
     let st: StepState;
     if (mv >= MASTERED) st = "done";
-    else if (prereqsMet && !currentAssigned) { st = "current"; currentAssigned = true; }
-    else if (prereqsMet) st = "next";
+    else if (prereqsMet && !currentAssigned) {
+      st = "current";
+      currentAssigned = true;
+    } else if (prereqsMet) st = "next";
     else st = "locked";
     const slug = courseTeaching(concept.id);
     const course = slug ? courses.find((c) => c.slug === slug) : undefined;
@@ -201,7 +217,11 @@ export function buildPath(subject: Subject, mastery: Map<string, number>, course
 }
 
 /** Pick the most relevant subject to show a path for. */
-export function activeSubject(state: LearnerState, courses: UnifiedCourse[], fallback: Subject = "Mathematics"): Subject {
+export function activeSubject(
+  state: LearnerState,
+  courses: UnifiedCourse[],
+  fallback: Subject = "Mathematics",
+): Subject {
   const bySlug = new Map(courses.map((c) => [c.slug, c]));
   // most recent enrolled/in-progress course's subject wins
   for (const slug of state.enrolledSlugs) {

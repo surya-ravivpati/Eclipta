@@ -1,6 +1,6 @@
 /**
- * The educational progression graph — Phase 2 of the Courses redesign
- * (docs/courses-redesign.md §8).
+ * The educational progression graph - Phase 2 of the Courses redesign
+ * (docs/courses-redesign.md section 8).
  *
  * Courses don't depend on courses (brittle); they depend on CONCEPTS, which a
  * course may teach or require. Concepts form a DAG. Proving a concept by any
@@ -18,40 +18,172 @@ export interface ConceptNode {
   id: string;
   label: string;
   subject: Subject;
-  /** prerequisite concept ids — the DAG edges */
+  /** prerequisite concept ids - the DAG edges */
   dependsOn: string[];
   /** free-text phrases (from weak/strong_areas) that map onto this concept */
   aliases: string[];
 }
 
 export const CONCEPTS: ConceptNode[] = [
-  // ── Mathematics ladder ───────────────────────────────────────────────
-  { id: "algebra", label: "Algebra", subject: "Mathematics", dependsOn: [], aliases: ["algebra", "equations"] },
-  { id: "limits", label: "Limits", subject: "Mathematics", dependsOn: ["algebra"], aliases: ["limits", "continuity"] },
-  { id: "derivatives", label: "Derivatives", subject: "Mathematics", dependsOn: ["limits"], aliases: ["derivative", "differentiation"] },
-  { id: "integrals", label: "Integrals", subject: "Mathematics", dependsOn: ["derivatives"], aliases: ["integral", "integration"] },
-  { id: "linear-algebra", label: "Linear Algebra", subject: "Mathematics", dependsOn: ["algebra"], aliases: ["linear algebra", "vectors", "matrices", "matrix"] },
-  { id: "statistics", label: "Statistics", subject: "Mathematics", dependsOn: ["algebra"], aliases: ["statistics", "stats", "probability"] },
+  // -- Mathematics ladder -----------------------------------------------
+  {
+    id: "algebra",
+    label: "Algebra",
+    subject: "Mathematics",
+    dependsOn: [],
+    aliases: ["algebra", "equations"],
+  },
+  {
+    id: "limits",
+    label: "Limits",
+    subject: "Mathematics",
+    dependsOn: ["algebra"],
+    aliases: ["limits", "continuity"],
+  },
+  {
+    id: "derivatives",
+    label: "Derivatives",
+    subject: "Mathematics",
+    dependsOn: ["limits"],
+    aliases: ["derivative", "differentiation"],
+  },
+  {
+    id: "integrals",
+    label: "Integrals",
+    subject: "Mathematics",
+    dependsOn: ["derivatives"],
+    aliases: ["integral", "integration"],
+  },
+  {
+    id: "linear-algebra",
+    label: "Linear Algebra",
+    subject: "Mathematics",
+    dependsOn: ["algebra"],
+    aliases: ["linear algebra", "vectors", "matrices", "matrix"],
+  },
+  {
+    id: "statistics",
+    label: "Statistics",
+    subject: "Mathematics",
+    dependsOn: ["algebra"],
+    aliases: ["statistics", "stats", "probability"],
+  },
 
-  // ── Computer Science ladder ──────────────────────────────────────────
-  { id: "programming", label: "Programming", subject: "Computer Science", dependsOn: [], aliases: ["programming", "coding", "intro to python", "basics"] },
-  { id: "python", label: "Python", subject: "Computer Science", dependsOn: ["programming"], aliases: ["python"] },
-  { id: "data-structures", label: "Data Structures", subject: "Computer Science", dependsOn: ["programming"], aliases: ["data structure", "data structures", "arrays", "linked list"] },
-  { id: "algorithms", label: "Algorithms", subject: "Computer Science", dependsOn: ["data-structures"], aliases: ["algorithm", "algorithms", "sorting", "recursion"] },
-  { id: "graph-algorithms", label: "Graph Algorithms", subject: "Computer Science", dependsOn: ["algorithms"], aliases: ["graph algorithm", "graphs", "dijkstra", "bfs", "dfs"] },
-  { id: "complexity", label: "Complexity", subject: "Computer Science", dependsOn: ["algorithms"], aliases: ["complexity", "big-o", "big o", "amortized"] },
-  { id: "databases", label: "Databases", subject: "Computer Science", dependsOn: ["programming"], aliases: ["database", "databases", "sql"] },
-  { id: "distributed-systems", label: "Distributed Systems", subject: "Computer Science", dependsOn: ["databases"], aliases: ["distributed systems", "scalability", "systems design"] },
-  { id: "ml-basics", label: "Machine Learning", subject: "Computer Science", dependsOn: ["linear-algebra", "statistics", "python"], aliases: ["machine learning", "ml", "regression"] },
-  { id: "neural-nets", label: "Neural Networks", subject: "Computer Science", dependsOn: ["ml-basics"], aliases: ["neural network", "neural networks", "deep learning", "backprop"] },
-  { id: "networking", label: "Networking", subject: "Computer Science", dependsOn: [], aliases: ["networking", "network", "tcp"] },
-  { id: "linux", label: "Linux", subject: "Computer Science", dependsOn: [], aliases: ["linux", "bash", "shell"] },
-  { id: "pentesting", label: "Penetration Testing", subject: "Computer Science", dependsOn: ["networking", "linux"], aliases: ["penetration testing", "pentest", "security", "cybersecurity"] },
-  { id: "web-exploitation", label: "Web Exploitation", subject: "Computer Science", dependsOn: ["pentesting"], aliases: ["web exploitation", "sqli", "xss", "ssrf"] },
+  // -- Computer Science ladder ------------------------------------------
+  {
+    id: "programming",
+    label: "Programming",
+    subject: "Computer Science",
+    dependsOn: [],
+    aliases: ["programming", "coding", "intro to python", "basics"],
+  },
+  {
+    id: "python",
+    label: "Python",
+    subject: "Computer Science",
+    dependsOn: ["programming"],
+    aliases: ["python"],
+  },
+  {
+    id: "data-structures",
+    label: "Data Structures",
+    subject: "Computer Science",
+    dependsOn: ["programming"],
+    aliases: ["data structure", "data structures", "arrays", "linked list"],
+  },
+  {
+    id: "algorithms",
+    label: "Algorithms",
+    subject: "Computer Science",
+    dependsOn: ["data-structures"],
+    aliases: ["algorithm", "algorithms", "sorting", "recursion"],
+  },
+  {
+    id: "graph-algorithms",
+    label: "Graph Algorithms",
+    subject: "Computer Science",
+    dependsOn: ["algorithms"],
+    aliases: ["graph algorithm", "graphs", "dijkstra", "bfs", "dfs"],
+  },
+  {
+    id: "complexity",
+    label: "Complexity",
+    subject: "Computer Science",
+    dependsOn: ["algorithms"],
+    aliases: ["complexity", "big-o", "big o", "amortized"],
+  },
+  {
+    id: "databases",
+    label: "Databases",
+    subject: "Computer Science",
+    dependsOn: ["programming"],
+    aliases: ["database", "databases", "sql"],
+  },
+  {
+    id: "distributed-systems",
+    label: "Distributed Systems",
+    subject: "Computer Science",
+    dependsOn: ["databases"],
+    aliases: ["distributed systems", "scalability", "systems design"],
+  },
+  {
+    id: "ml-basics",
+    label: "Machine Learning",
+    subject: "Computer Science",
+    dependsOn: ["linear-algebra", "statistics", "python"],
+    aliases: ["machine learning", "ml", "regression"],
+  },
+  {
+    id: "neural-nets",
+    label: "Neural Networks",
+    subject: "Computer Science",
+    dependsOn: ["ml-basics"],
+    aliases: ["neural network", "neural networks", "deep learning", "backprop"],
+  },
+  {
+    id: "networking",
+    label: "Networking",
+    subject: "Computer Science",
+    dependsOn: [],
+    aliases: ["networking", "network", "tcp"],
+  },
+  {
+    id: "linux",
+    label: "Linux",
+    subject: "Computer Science",
+    dependsOn: [],
+    aliases: ["linux", "bash", "shell"],
+  },
+  {
+    id: "pentesting",
+    label: "Penetration Testing",
+    subject: "Computer Science",
+    dependsOn: ["networking", "linux"],
+    aliases: ["penetration testing", "pentest", "security", "cybersecurity"],
+  },
+  {
+    id: "web-exploitation",
+    label: "Web Exploitation",
+    subject: "Computer Science",
+    dependsOn: ["pentesting"],
+    aliases: ["web exploitation", "sqli", "xss", "ssrf"],
+  },
 
-  // ── Science (quantum) ────────────────────────────────────────────────
-  { id: "qubits", label: "Qubits", subject: "Science", dependsOn: ["linear-algebra"], aliases: ["qubit", "qubits", "superposition", "quantum"] },
-  { id: "quantum-algorithms", label: "Quantum Algorithms", subject: "Science", dependsOn: ["qubits"], aliases: ["quantum algorithm", "grover", "shor"] },
+  // -- Science (quantum) ------------------------------------------------
+  {
+    id: "qubits",
+    label: "Qubits",
+    subject: "Science",
+    dependsOn: ["linear-algebra"],
+    aliases: ["qubit", "qubits", "superposition", "quantum"],
+  },
+  {
+    id: "quantum-algorithms",
+    label: "Quantum Algorithms",
+    subject: "Science",
+    dependsOn: ["qubits"],
+    aliases: ["quantum algorithm", "grover", "shor"],
+  },
 ];
 
 const CONCEPT_BY_ID = new Map(CONCEPTS.map((c) => [c.id, c]));
@@ -64,12 +196,30 @@ export interface CourseConcepts {
 }
 
 export const COURSE_CONCEPTS: Record<string, CourseConcepts> = {
-  "calculus-through-intuition": { teaches: ["limits", "derivatives", "integrals"], requires: ["algebra"] },
-  "machine-learning-foundations": { teaches: ["ml-basics", "neural-nets"], requires: ["linear-algebra", "statistics", "python"] },
-  "advanced-algorithms": { teaches: ["graph-algorithms", "complexity"], requires: ["data-structures"] },
-  "quantum-computing-primer": { teaches: ["qubits", "quantum-algorithms"], requires: ["linear-algebra"] },
-  "systems-design-mastery": { teaches: ["distributed-systems"], requires: ["databases", "programming"] },
-  "cybersecurity-red-team": { teaches: ["pentesting", "web-exploitation"], requires: ["networking", "linux"] },
+  "calculus-through-intuition": {
+    teaches: ["limits", "derivatives", "integrals"],
+    requires: ["algebra"],
+  },
+  "machine-learning-foundations": {
+    teaches: ["ml-basics", "neural-nets"],
+    requires: ["linear-algebra", "statistics", "python"],
+  },
+  "advanced-algorithms": {
+    teaches: ["graph-algorithms", "complexity"],
+    requires: ["data-structures"],
+  },
+  "quantum-computing-primer": {
+    teaches: ["qubits", "quantum-algorithms"],
+    requires: ["linear-algebra"],
+  },
+  "systems-design-mastery": {
+    teaches: ["distributed-systems"],
+    requires: ["databases", "programming"],
+  },
+  "cybersecurity-red-team": {
+    teaches: ["pentesting", "web-exploitation"],
+    requires: ["networking", "linux"],
+  },
 };
 
 export const conceptsOf = (slug: string): CourseConcepts =>
@@ -98,7 +248,7 @@ export function courseTeaching(conceptId: string): string | undefined {
 }
 
 /**
- * Topologically ordered concepts for one subject — the spine a learning path
+ * Topologically ordered concepts for one subject - the spine a learning path
  * renders. Stable (Kahn's algorithm over the subject-local subgraph).
  */
 export function subjectPath(subject: Subject): ConceptNode[] {

@@ -42,7 +42,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function fetchLunaStream(body: string, signal?: AbortSignal): Promise<Response> {
   // luna-chat authenticates the caller (getUser on the bearer token), so we
-  // must send the user's session JWT — NOT the publishable key, which carries
+  // must send the user's session JWT - NOT the publishable key, which carries
   // no user and gets rejected as "Unauthorized".
   const {
     data: { session },
@@ -91,7 +91,7 @@ export const LUNA_TAG_CONFIG: Record<LunaTag, { icon: LucideIcon; color: string;
     break: { icon: Coffee, color: "text-neon-pink", label: "BREAK" },
   };
 
-// Shared localStorage key — the mini panel and full session share memory
+// Shared localStorage key - the mini panel and full session share memory
 // so dropping into the full session continues the same conversation.
 export const LUNA_HISTORY_KEY = "luna:history:v2";
 
@@ -167,10 +167,10 @@ export async function streamLunaChat({
       if (resp.status === 429) {
         msg =
           err.code === "rate_limited"
-            ? (err.error ?? "You've hit the AI limit for now — try again in a few minutes.")
+            ? (err.error ?? "You've hit the AI limit for now - try again in a few minutes.")
             : "Luna is getting a lot of questions right now. Try again in a moment.";
       } else if (resp.status === 402)
-        msg = "Luna's AI credits ran out. Add more in Workspace → Usage.";
+        msg = "Luna's AI credits ran out. Add more in Workspace -> Usage.";
       else if (TRANSIENT_STATUSES.has(resp.status))
         msg = "Luna is temporarily unavailable. Try again in a moment.";
       onError?.(msg);
@@ -318,7 +318,7 @@ export function parseLunaActions(content: string): { text: string; actions: Luna
   const rx = /\[{1,2}ACTION:(\w+)([^\]]*)\]{1,2}/gi;
   const cleaned = content.replace(rx, (_full, kind: string, attrs: string) => {
     const map: Record<string, string> = {};
-    for (const m of attrs.matchAll(/(\w+)=["“]([^"”]+)["”]/g))
+    for (const m of attrs.matchAll(/(\w+)=[""]([^""]+)[""]/g))
       map[m[1].toLowerCase()] = m[2].trim();
     const k = kind.toLowerCase();
     if (k === "quiz" && map.topic) {

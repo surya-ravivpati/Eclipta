@@ -1,6 +1,6 @@
 /**
  * ELO-style player rating system for competitive battles.
- * Only live matches affect rating — bots never do.
+ * Only live matches affect rating - bots never do.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerRating } from "@/repositories/battles";
@@ -50,7 +50,7 @@ export function ratingLeague(rating: number): RatingLeague {
   return bronze;
 }
 
-/** Progress (0–1) through the current league, and points to the next gate. */
+/** Progress (0-1) through the current league, and points to the next gate. */
 export function leagueProgress(rating: number): {
   pct: number;
   toNext: number | null;

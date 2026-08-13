@@ -1,5 +1,5 @@
 /**
- * Course lesson blocks — the units a community course is built from.
+ * Course lesson blocks - the units a community course is built from.
  *
  * `course_blocks.data` is a `jsonb` column, so what it holds depends on the
  * sibling `type` column. Modelling that as one object with a loose payload
@@ -18,7 +18,7 @@ export type CourseBlockType = (typeof COURSE_BLOCK_TYPES)[number];
 /** Prose, rendered as Markdown. */
 export type TextBlockData = { text?: string };
 
-/** A YouTube embed or an uploaded image — both are a URL plus a caption. */
+/** A YouTube embed or an uploaded image - both are a URL plus a caption. */
 export type MediaBlockData = { url?: string; caption?: string };
 
 /** A single multiple-choice question. `correctIndex` points into `options`. */
@@ -36,7 +36,7 @@ export type CourseBlock =
   | (CourseBlockBase & { type: "image"; data: MediaBlockData })
   | (CourseBlockBase & { type: "quiz"; data: QuizBlockData });
 
-/** Any block's payload — what an editor hands back when the user edits one. */
+/** Any block's payload - what an editor hands back when the user edits one. */
 export type CourseBlockData = CourseBlock["data"];
 
 /** The `course_blocks` columns this module reads, before narrowing. */
@@ -48,7 +48,7 @@ export interface CourseBlockRow {
   position: number;
 }
 
-// ── Json readers ────────────────────────────────────────────────────────────
+// -- Json readers ------------------------------------------------------------
 // A jsonb column can hold anything, so each field is read defensively and a
 // value of the wrong shape is treated as absent rather than coerced.
 
@@ -76,7 +76,7 @@ function isCourseBlockType(value: string): value is CourseBlockType {
 /**
  * Narrow a stored row into a `CourseBlock`.
  *
- * Returns an empty array for a block whose `type` this build doesn't know —
+ * Returns an empty array for a block whose `type` this build doesn't know -
  * a course authored by a newer version should render its other blocks
  * rather than crash the lesson. Callers use `flatMap`.
  */
@@ -89,36 +89,46 @@ export function toCourseBlock(row: CourseBlockRow): CourseBlock[] {
     case "text":
       return [{ ...base, type: "text", data: { text: asString(fields.text) } }];
     case "youtube":
-      return [{
-        ...base,
-        type: "youtube",
-        data: { url: asString(fields.url), caption: asString(fields.caption) },
-      }];
-    case "image":
-      return [{
-        ...base,
-        type: "image",
-        data: { url: asString(fields.url), caption: asString(fields.caption) },
-      }];
-    case "quiz":
-      return [{
-        ...base,
-        type: "quiz",
-        data: {
-          question: asString(fields.question),
-          options: asStringArray(fields.options),
-          correctIndex: asNumber(fields.correctIndex),
+      return [
+        {
+          ...base,
+          type: "youtube",
+          data: { url: asString(fields.url), caption: asString(fields.caption) },
         },
-      }];
+      ];
+    case "image":
+      return [
+        {
+          ...base,
+          type: "image",
+          data: { url: asString(fields.url), caption: asString(fields.caption) },
+        },
+      ];
+    case "quiz":
+      return [
+        {
+          ...base,
+          type: "quiz",
+          data: {
+            question: asString(fields.question),
+            options: asStringArray(fields.options),
+            correctIndex: asNumber(fields.correctIndex),
+          },
+        },
+      ];
   }
 }
 
 /** The payload a freshly added block starts with. */
 export function emptyBlockData(type: CourseBlockType): CourseBlockData {
   switch (type) {
-    case "text":    return { text: "" };
-    case "youtube": return { url: "", caption: "" };
-    case "image":   return { url: "", caption: "" };
-    case "quiz":    return { question: "", options: ["", "", "", ""], correctIndex: 0 };
+    case "text":
+      return { text: "" };
+    case "youtube":
+      return { url: "", caption: "" };
+    case "image":
+      return { url: "", caption: "" };
+    case "quiz":
+      return { question: "", options: ["", "", "", ""], correctIndex: 0 };
   }
 }

@@ -8,7 +8,7 @@ import { generateRoster, pickBotOpponent, isActiveAt, type BotProfile } from "./
  * the same handle every single match.
  *
  * A fixed seed makes the roster identical run to run, and an explicit `r`
- * removes the other source of nondeterminism — so a failure here is a real
+ * removes the other source of nondeterminism - so a failure here is a real
  * behaviour change rather than an unlucky draw.
  */
 const ROSTER = generateRoster(300, 20260801);
@@ -36,7 +36,7 @@ describe("pickBotOpponent", () => {
   });
 
   it("prefers a bot whose schedule says it is awake", () => {
-    const hour = 3; // deep night — only night owls are active
+    const hour = 3; // deep night - only night owls are active
     const bot = pickBotOpponent(1200, seq([0.5]), hour, ROSTER);
     const nearAndAwake = ROSTER.filter(
       (b) => Math.abs(b.rating - 1200) <= 120 && isActiveAt(b, hour),

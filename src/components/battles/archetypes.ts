@@ -13,8 +13,8 @@ import {
 import type { Archetype, ArchetypeId, GamblerRoll } from "./types";
 
 /**
- * Roster stat sheet. Every archetype is defined by seven readable numbers —
- * HP, DMG, DEF, TIME, HEAL, CRIT, question difficulty — plus one signature
+ * Roster stat sheet. Every archetype is defined by seven readable numbers -
+ * HP, DMG, DEF, TIME, HEAL, CRIT, question difficulty - plus one signature
  * passive. There is deliberately **no damage multiplier stat**: streak scaling
  * used to compound on top of base damage and ended matches far too quickly, so
  * momentum now feeds score only (see stat-mechanics.ts).
@@ -27,7 +27,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-cyan-400",
     borderColor: "border-cyan-400/40",
     description:
-      "Fast, pressured gameplay. The shortest clock in the roster — but the faster you answer, the harder you hit.",
+      "Fast, pressured gameplay. The shortest clock in the roster - but the faster you answer, the harder you hit.",
     passive: "Damage scales with time remaining",
     maxHp: 130,
     baseDamage: 16,
@@ -49,7 +49,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-tier-silver",
     borderColor: "border-tier-silver/40",
     description:
-      "Heavy, durable, easy questions. The biggest HP pool and the best armour — but the lowest damage, and no way to heal.",
+      "Heavy, durable, easy questions. The biggest HP pool and the best armour - but the lowest damage, and no way to heal.",
     passive: "Cannot heal. Takes 20% less damage",
     maxHp: 220,
     baseDamage: 11,
@@ -69,7 +69,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-tier-champion",
     borderColor: "border-tier-champion/40",
     description:
-      "Glass cannon. The hardest hits and the meanest crits on the thinnest HP bar — and it gets deadlier as it dies.",
+      "Glass cannon. The hardest hits and the meanest crits on the thinnest HP bar - and it gets deadlier as it dies.",
     passive: "Below 35 HP gains +30% damage",
     maxHp: 95,
     baseDamage: 34,
@@ -90,7 +90,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-tier-gold",
     borderColor: "border-tier-gold/40",
     description:
-      "All stats randomized each battle. Could be godlike — could be garbage. Pure chaos.",
+      "All stats randomized each battle. Could be godlike - could be garbage. Pure chaos.",
     passive: "All stats reroll at the start of each match",
     maxHp: 155,
     baseDamage: 25,
@@ -132,7 +132,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-violet-400",
     borderColor: "border-violet-400/40",
     description:
-      "Balanced all-rounder that borrows from the rest of the roster. Never the best at anything — never without an answer.",
+      "Balanced all-rounder that borrows from the rest of the roster. Never the best at anything - never without an answer.",
     passive: "Copies a random passive each round (reduced)",
     maxHp: 165,
     baseDamage: 18,
@@ -153,7 +153,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-tier-platinum",
     borderColor: "border-tier-platinum/40",
     description:
-      "Scaling power over time. Every correct answer permanently sharpens your damage (14→30) and your score bonus (up to +35%).",
+      "Scaling power over time. Every correct answer permanently sharpens your damage (14->30) and your score bonus (up to +35%).",
     passive: "+2 DMG and +2% score per correct answer",
     maxHp: 165,
     baseDamage: 14,
@@ -174,7 +174,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     color: "text-tier-god",
     borderColor: "border-tier-god/40",
     description:
-      "Endgame archetype. Towering stats and the hardest questions in the game — sustained by sheer consistency rather than by defence.",
+      "Endgame archetype. Towering stats and the hardest questions in the game - sustained by sheer consistency rather than by defence.",
     passive: "Every 3 correct answers heals 15 HP",
     maxHp: 180,
     baseDamage: 24,
@@ -193,8 +193,8 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
 /**
  * Role-identity copy for each archetype's three core abilities. Unlike the
  * terse in-battle action tags, these full sentences teach playstyle on sight at
- * class-select — a player should understand how an archetype wants to be played
- * just by reading them (docs/battle-redesign.md §12). Kept truthful to the
+ * class-select - a player should understand how an archetype wants to be played
+ * just by reading them (docs/battle-redesign.md section 12). Kept truthful to the
  * current mechanics (e.g. Tank genuinely cannot heal).
  */
 export const ARCHETYPE_ABILITY_COPY: Record<
@@ -202,42 +202,42 @@ export const ARCHETYPE_ABILITY_COPY: Record<
   { attack: string; heal: string; charge: string }
 > = {
   speedster: {
-    attack: "Hit before they blink — the faster you answer, the deeper it cuts.",
+    attack: "Hit before they blink - the faster you answer, the deeper it cuts.",
     heal: "A quick breath. Small, but you'll be long gone before they swing back.",
     charge: "Spend your tempo to burst them down while you still hold the lead.",
   },
   tank: {
     attack: "A measured blow. Low damage, but you can throw them all day.",
-    heal: "You can't heal — brace instead. Defending banks Focus for a heavier counter.",
+    heal: "You can't heal - brace instead. Defending banks Focus for a heavier counter.",
     charge: "A slow wind-up for a rare, heavy landing. You have the HP to set it up.",
   },
   chud: {
-    attack: "Everything, all at once — 34 damage, and the meanest crits in the game.",
+    attack: "Everything, all at once - 34 damage, and the meanest crits in the game.",
     heal: "A desperate patch on a glass frame. Spend it wisely, or not at all.",
     charge: "All-in: the hardest question for the hardest hit. Live or die by it.",
   },
   gambler: {
     attack: "Swing with whatever the dice handed you this match.",
-    heal: "However much the roll allows — chaos cuts both ways.",
+    heal: "However much the roll allows - chaos cuts both ways.",
     charge: "Bet it all on the hardest question. Fortune favors the bold.",
   },
   healer: {
     attack: "A soft jab. You win by outlasting, not by out-hitting.",
-    heal: "Pour it back in — and take an 8 HP shield on top of the HP.",
+    heal: "Pour it back in - and take an 8 HP shield on top of the HP.",
     charge: "A rare burst that still leaves you standing when it lands.",
   },
   fulcrum: {
-    attack: "Clean, consistent damage — plus whichever passive you borrowed this round.",
+    attack: "Clean, consistent damage - plus whichever passive you borrowed this round.",
     heal: "Steady upkeep to keep the rhythm unbroken.",
     charge: "A solid finisher from a class that always has an answer ready.",
   },
   accelerator: {
-    attack: "Starts small, ends decisive — every answer makes the next one hurt more.",
+    attack: "Starts small, ends decisive - every answer makes the next one hurt more.",
     heal: "Buy time. Your most dangerous turns are still ahead of you.",
-    charge: "Late-game payoff — the longer the fight runs, the harder this lands.",
+    charge: "Late-game payoff - the longer the fight runs, the harder this lands.",
   },
   god: {
-    attack: "Precision incarnate — but only the hardest questions answer to you.",
+    attack: "Precision incarnate - but only the hardest questions answer to you.",
     heal: "Mend at will, and every third correct answer tops you up unasked.",
     charge: "The summit: the hardest question for a decisive, final blow.",
   },
@@ -251,15 +251,15 @@ export const ARCHETYPE_ABILITY_COPY: Record<
  */
 export function rollGamblerStats(): GamblerRoll {
   const power = Math.random();
-  const diffMin = 2 + Math.floor(Math.random() * 5); // 2–6
-  const diffMax = Math.min(10, diffMin + 1 + Math.floor(Math.random() * 4)); // diffMin+1 … 10
+  const diffMin = 2 + Math.floor(Math.random() * 5); // 2-6
+  const diffMax = Math.min(10, diffMin + 1 + Math.floor(Math.random() * 4)); // diffMin+1 ... 10
   return {
-    maxHp: Math.round(90 + (1 - power) * 130), // 90–220 (inversely with power)
-    baseDamage: Math.round(10 + power * 30), // 10–40 (with power)
-    defense: parseFloat((Math.random() * 0.2).toFixed(2)), // 0–20%
-    healAmount: Math.round(Math.random() * 30), // 0–30 (independent)
-    timeSeconds: 20 + Math.floor(Math.random() * 61), // 20–80s
-    critBonus: parseFloat((Math.random() * 0.4).toFixed(2)), // 0–40%
+    maxHp: Math.round(90 + (1 - power) * 130), // 90-220 (inversely with power)
+    baseDamage: Math.round(10 + power * 30), // 10-40 (with power)
+    defense: parseFloat((Math.random() * 0.2).toFixed(2)), // 0-20%
+    healAmount: Math.round(Math.random() * 30), // 0-30 (independent)
+    timeSeconds: 20 + Math.floor(Math.random() * 61), // 20-80s
+    critBonus: parseFloat((Math.random() * 0.4).toFixed(2)), // 0-40%
     diffMin,
     diffMax,
   };

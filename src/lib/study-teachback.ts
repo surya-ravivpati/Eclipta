@@ -1,11 +1,11 @@
 /**
- * Teach-Back Rotation — thin client over the SQL in
+ * Teach-Back Rotation - thin client over the SQL in
  * supabase/migrations/20260626120000_study-room-teach-back.sql.
  *
  * The whole ritual is server-gated: clients race to call `openTeachBackRound`
- * on the clock's work→break flip and the server creates exactly one round per
- * transition. Concept selection (Stuck resolution → recap snippet → goal pin)
- * happens entirely in the RPC — no AI key is ever touched client-side.
+ * on the clock's work->break flip and the server creates exactly one round per
+ * transition. Concept selection (Stuck resolution -> recap snippet -> goal pin)
+ * happens entirely in the RPC - no AI key is ever touched client-side.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,7 +43,7 @@ export async function fetchTeachBackRounds(roomId: string): Promise<TeachBackRou
 }
 
 /** Toggle the ritual on/off (any member). Rebuilds the rotation + resets the
- *  one-skip allowance — a fresh session. Posts a system line. */
+ *  one-skip allowance - a fresh session. Posts a system line. */
 export async function setTeachBack(roomId: string, on: boolean): Promise<string | null> {
   const { error } = await supabase.rpc(
     "set_teach_back" as never,
@@ -52,7 +52,7 @@ export async function setTeachBack(roomId: string, on: boolean): Promise<string 
   return error ? error.message : null;
 }
 
-/** Fire once at work→break on every client; the server gates so only one round
+/** Fire once at work->break on every client; the server gates so only one round
  *  is created. `triggerKey` is the break phase's start time (unique per flip). */
 export async function openTeachBackRound(roomId: string, triggerKey: string): Promise<void> {
   const { error } = await supabase.rpc(
@@ -62,7 +62,7 @@ export async function openTeachBackRound(roomId: string, triggerKey: string): Pr
   if (error) console.error("openTeachBackRound", error);
 }
 
-/** One-tap validation. Informational only — never a per-user score. */
+/** One-tap validation. Informational only - never a per-user score. */
 export async function reactTeachBack(roundId: string, reaction: TbReaction): Promise<void> {
   const { error } = await supabase.rpc(
     "react_teach_back" as never,
@@ -78,7 +78,7 @@ export async function skipTeachBack(roundId: string): Promise<string | null> {
 }
 
 /** Auto-pass when the explainer has left mid-turn (no skip charged). Safe to
- *  call from several clients — the server collapses concurrent calls. */
+ *  call from several clients - the server collapses concurrent calls. */
 export async function passTeachBack(roundId: string): Promise<void> {
   const { error } = await supabase.rpc("pass_teach_back" as never, { p_round: roundId } as never);
   if (error) console.error("passTeachBack", error);

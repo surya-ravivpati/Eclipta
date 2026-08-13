@@ -22,7 +22,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/admin/forum")({
   head: () => ({
     meta: [
-      { title: "Forum Moderation – Eclipta" },
+      { title: "Forum Moderation - Eclipta" },
       { name: "description", content: "Review reported and auto-flagged forum content." },
     ],
   }),
@@ -74,7 +74,12 @@ interface ActionLog {
  * branch of each `Promise.all` leg can produce a correctly-typed empty
  * array instead of one the compiler has to guess at.
  */
-interface BodySnippetRow { id: string; body: string; author_name: string; moderation_status: string }
+interface BodySnippetRow {
+  id: string;
+  body: string;
+  author_name: string;
+  moderation_status: string;
+}
 type ThreadSnippetRow = BodySnippetRow & { title: string };
 
 const TARGET_TYPES = ["thread", "answer", "comment"] as const;
@@ -96,39 +101,43 @@ function toQueueItem(row: TableRow<"admin_moderation_queue">): QueueItem[] {
   if (!target_type || !isTargetType(target_type)) return [];
   if (!target_id || !author_id || !created_at || !updated_at) return [];
   const status = row.moderation_status ?? "";
-  return [{
-    target_type,
-    target_id,
-    author_id,
-    author_name: row.author_name,
-    title: row.title,
-    body: row.body ?? "",
-    moderation_status: (MODERATION_STATUSES as readonly string[]).includes(status)
-      ? (status as QueueItem["moderation_status"])
-      : "visible",
-    moderation_reason: row.moderation_reason,
-    moderation_score: row.moderation_score,
-    moderation_category: row.moderation_category,
-    report_count: row.report_count ?? 0,
-    hidden_at: row.hidden_at,
-    created_at,
-    updated_at,
-  }];
+  return [
+    {
+      target_type,
+      target_id,
+      author_id,
+      author_name: row.author_name,
+      title: row.title,
+      body: row.body ?? "",
+      moderation_status: (MODERATION_STATUSES as readonly string[]).includes(status)
+        ? (status as QueueItem["moderation_status"])
+        : "visible",
+      moderation_reason: row.moderation_reason,
+      moderation_score: row.moderation_score,
+      moderation_category: row.moderation_category,
+      report_count: row.report_count ?? 0,
+      hidden_at: row.hidden_at,
+      created_at,
+      updated_at,
+    },
+  ];
 }
 
 /** Reports whose type or status the UI can't classify are not shown. */
 function toReport(row: TableRow<"forum_reports">): Report[] {
   if (!isTargetType(row.target_type)) return [];
   if (!(REPORT_STATUSES as readonly string[]).includes(row.status)) return [];
-  return [{
-    id: row.id,
-    reporter_id: row.reporter_id,
-    target_type: row.target_type,
-    target_id: row.target_id,
-    reason: row.reason,
-    status: row.status as Report["status"],
-    created_at: row.created_at,
-  }];
+  return [
+    {
+      id: row.id,
+      reporter_id: row.reporter_id,
+      target_type: row.target_type,
+      target_id: row.target_id,
+      reason: row.reason,
+      status: row.status as Report["status"],
+      created_at: row.created_at,
+    },
+  ];
 }
 
 function AdminForumPage() {
@@ -145,7 +154,8 @@ function AdminForumPage() {
 
   const loadQueue = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("admin_moderation_queue")
+    const { data, error } = await supabase
+      .from("admin_moderation_queue")
       .select("*")
       .order("hidden_at", { ascending: false, nullsFirst: false })
       .order("report_count", { ascending: false })
@@ -211,7 +221,8 @@ function AdminForumPage() {
 
   const loadLog = async () => {
     setLoading(true);
-    const { data } = await supabase.from("moderation_actions")
+    const { data } = await supabase
+      .from("moderation_actions")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
@@ -293,7 +304,7 @@ function AdminForumPage() {
             to="/forum"
             className="text-neon-purple hover:underline text-sm font-bold tracking-widest"
           >
-            ← BACK TO FORUM
+            &lt;- BACK TO FORUM
           </Link>
         </div>
       </div>
@@ -387,7 +398,7 @@ function AdminForumPage() {
                         <span className="text-[10px] font-bold tracking-widest text-neon-purple bg-neon-purple/10 px-2 py-0.5 border border-neon-purple/30 inline-flex items-center gap-1">
                           <Bot className="w-2.5 h-2.5" />
                           {q.moderation_category}
-                          {q.moderation_score != null && ` · ${q.moderation_score}`}
+                          {q.moderation_score != null && ` | ${q.moderation_score}`}
                         </span>
                       )}
                       {q.report_count > 0 && (
@@ -412,7 +423,7 @@ function AdminForumPage() {
                       {q.body}
                     </p>
                     {q.author_name && (
-                      <p className="text-[10px] text-muted-foreground mt-1.5">— {q.author_name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">- {q.author_name}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -514,7 +525,7 @@ function AdminForumPage() {
                       </p>
                       {reportSnippets[r.target_id].author && (
                         <p className="text-[10px] text-muted-foreground mt-1.5">
-                          — {reportSnippets[r.target_id].author}
+                          - {reportSnippets[r.target_id].author}
                         </p>
                       )}
                     </div>
@@ -591,6 +602,10 @@ function AdminForumPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
+            {/* The fixed min-width is deliberate and safe: the parent above is
+                the scroll container the rule asks for, which it cannot see from
+                one line away. */}
+            {/* eslint-disable-next-line vibesafe/no-unresponsive-fixed-width */}
             <div className="space-y-1.5 min-w-[640px]">
               {log.map((l) => (
                 <div
@@ -606,7 +621,7 @@ function AdminForumPage() {
                   <span className="text-muted-foreground w-20">{l.target_type}</span>
                   {l.category && <span className="text-neon-pink">{l.category}</span>}
                   {l.score != null && (
-                    <span className="text-muted-foreground">· score {l.score}</span>
+                    <span className="text-muted-foreground">| score {l.score}</span>
                   )}
                   <span className="flex-1 truncate text-foreground/80">{l.reason || ""}</span>
                   <Check className="w-3 h-3 text-muted-foreground" />

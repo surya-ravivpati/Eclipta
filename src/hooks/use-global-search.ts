@@ -51,7 +51,7 @@ export function useGlobalSearch(): SearchState {
   const parsed = useMemo(() => parseQuery(query, kinds), [query, kinds]);
   const idle = parsed.needle.length < MIN_LENGTH;
 
-  // Kinds the query resolved to — inferred from phrasing, or chosen by chip.
+  // Kinds the query resolved to - inferred from phrasing, or chosen by chip.
   const effectiveKinds = parsed.kinds;
   const cacheKey = `${parsed.needle}::${[...effectiveKinds].sort().join(",")}`;
 

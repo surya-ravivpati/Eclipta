@@ -46,7 +46,7 @@ export function BattleReport({
   opponentType?: string;
   /** Click handler for the "Quick Rematch" button on live PvP only. */
   onLiveRematch?: () => void;
-  /** Drives the rematch button label: idle → "QUICK REMATCH", waiting → "WAITING FOR OPPONENT…", starting → "STARTING…". */
+  /** Drives the rematch button label: idle -> "QUICK REMATCH", waiting -> "WAITING FOR OPPONENT...", starting -> "STARTING...". */
   liveRematchState?: "idle" | "waiting" | "starting";
   /**
    * Open Practice Weak Spots on the topic this battle exposed. Receives the
@@ -92,7 +92,7 @@ export function BattleReport({
         if (!user) return;
 
         // XP is awarded once at battle end (see finishBattle in
-        // KnowledgeBattles) — not here — so it lands even if this screen is
+        // KnowledgeBattles) - not here - so it lands even if this screen is
         // skipped by a live rematch or an early exit.
 
         // Update battle stats on profile
@@ -151,7 +151,7 @@ export function BattleReport({
           });
         }
 
-        // Archetype mastery — record battle and expose updated stats
+        // Archetype mastery - record battle and expose updated stats
         try {
           const before = await fetchMastery(stats.archetype);
           setPrevBestStreak(before?.best_streak ?? 0);
@@ -290,7 +290,7 @@ export function BattleReport({
             <StatCard
               icon={Zap}
               label="FASTEST"
-              value={stats.fastestAnswer < Infinity ? `${stats.fastestAnswer.toFixed(1)}s` : "—"}
+              value={stats.fastestAnswer < Infinity ? `${stats.fastestAnswer.toFixed(1)}s` : "-"}
               color="text-neon-purple"
             />
             <StatCard
@@ -301,7 +301,7 @@ export function BattleReport({
             />
           </div>
 
-          {/* Math domain breakdown — shows exactly which skills were exercised */}
+          {/* Math domain breakdown - shows exactly which skills were exercised */}
           <div className="glass-panel p-4 mb-4 border border-border/40">
             <p className="text-[9px] font-bold tracking-widest text-muted-foreground mb-3">
               MATH DOMAINS THIS BATTLE
@@ -326,7 +326,7 @@ export function BattleReport({
                           className={`text-[10px] font-bold tabular-nums ${t.wrong === 0 ? "text-neon-cyan" : "text-muted-foreground"}`}
                         >
                           {correct}/{t.total}
-                          {t.wrong > 0 ? ` · ${t.wrong} missed` : " · perfect"}
+                          {t.wrong > 0 ? ` | ${t.wrong} missed` : " | perfect"}
                         </span>
                       </div>
                       <div className="h-1.5 bg-secondary/50 overflow-hidden">
@@ -343,7 +343,7 @@ export function BattleReport({
             </div>
           </div>
 
-          {/* Accelerator compounding insight — brief conceptual frame, Accelerator only */}
+          {/* Accelerator compounding insight - brief conceptual frame, Accelerator only */}
           {stats.archetype === "accelerator" &&
             stats.records.length >= 3 &&
             (() => {
@@ -361,9 +361,9 @@ export function BattleReport({
                   <TrendingUp className="w-4 h-4 text-tier-platinum shrink-0 mt-0.5" />
                   <p className="text-[11px] text-muted-foreground leading-snug">
                     Your damage scaled from{" "}
-                    <span className="text-foreground font-bold">13 → {finalDmg}</span> over {n}{" "}
-                    turns — a{" "}
-                    <span className="text-tier-platinum font-bold">{ratio}× increase</span>. Small
+                    <span className="text-foreground font-bold">13 -&gt; {finalDmg}</span> over {n}{" "}
+                    turns - a{" "}
+                    <span className="text-tier-platinum font-bold">{ratio}x increase</span>. Small
                     repeated gains compounding over time: this is how compound growth works in the
                     real world.
                   </p>
@@ -371,7 +371,7 @@ export function BattleReport({
               );
             })()}
 
-          {/* Archetype mastery panel — appears once the async upsert resolves */}
+          {/* Archetype mastery panel - appears once the async upsert resolves */}
           {mastery &&
             (() => {
               const m = mastery;
@@ -398,7 +398,7 @@ export function BattleReport({
                       <span
                         className={`ml-auto text-[10px] font-bold tracking-widest ${rank.color}`}
                       >
-                        RANK {["", "I", "II", "III", "IV", "V"][rank.level]} ·{" "}
+                        RANK {["", "I", "II", "III", "IV", "V"][rank.level]} |{" "}
                         {rank.label.toUpperCase()}
                       </span>
                     )}
@@ -460,7 +460,7 @@ export function BattleReport({
 
                   {m.perfect_battles > 0 && (
                     <p className="text-[9px] text-muted-foreground mt-2">
-                      {m.perfect_battles} perfect {m.perfect_battles === 1 ? "run" : "runs"} ·{" "}
+                      {m.perfect_battles} perfect {m.perfect_battles === 1 ? "run" : "runs"} |{" "}
                       {m.total_correct}/{m.total_questions} total correct
                     </p>
                   )}
@@ -556,7 +556,7 @@ export function BattleReport({
               </div>
             </div>
 
-            {/* This used to call onRematch — it said "practice weak spots" and
+            {/* This used to call onRematch - it said "practice weak spots" and
                 started an ordinary battle, which is the opposite of practice.
                 It now opens the coaching mode on the topic just missed. */}
             <motion.button
@@ -591,9 +591,9 @@ export function BattleReport({
             whileTap={liveRematchState === "idle" ? { scale: 0.97 } : {}}
           >
             {liveRematchState === "waiting"
-              ? "WAITING FOR OPPONENT…"
+              ? "WAITING FOR OPPONENT..."
               : liveRematchState === "starting"
-                ? "STARTING REMATCH…"
+                ? "STARTING REMATCH..."
                 : "QUICK REMATCH"}
           </motion.button>
         )}

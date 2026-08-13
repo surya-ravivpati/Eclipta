@@ -4,7 +4,7 @@ import type { ArchetypeId } from "@/components/battles/types";
 /**
  * Mission Control data.
  *
- * The happy path is a single `get_dashboard` RPC — see migration
+ * The happy path is a single `get_dashboard` RPC - see migration
  * 20260802000000 for why this is not a dozen client queries.
  *
  * But the homepage must not hard-fail when that function is missing. An
@@ -113,7 +113,7 @@ export async function getDashboard(): Promise<DashboardResult> {
     return { status: "ok", data: data as unknown as DashboardData };
   }
 
-  // PGRST202 is PostgREST's "no function matches" — i.e. the migration has not
+  // PGRST202 is PostgREST's "no function matches" - i.e. the migration has not
   // been applied. Worth distinguishing, because the fix is a deploy rather than
   // a code change, and a generic "something went wrong" sends people hunting in
   // the wrong place.
@@ -134,7 +134,7 @@ export async function getDashboard(): Promise<DashboardResult> {
  *
  * Only touches tables that existed before this feature and are readable under
  * the user's own RLS policies, so it works even when nothing new has shipped.
- * Deliberately does not attempt the aggregate sections — a wrong number is
+ * Deliberately does not attempt the aggregate sections - a wrong number is
  * worse than an absent one.
  */
 async function buildFallback(): Promise<DashboardData | null> {

@@ -69,7 +69,7 @@ function StudyRoomView() {
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   /** Per-client buffer of chat messages received while in `work` phase that
-   *  haven't been revealed yet. Never synced — purely local display state. */
+   *  haven't been revealed yet. Never synced - purely local display state. */
   const [pending, setPending] = useState<RoomMessage[]>([]);
   const [stuck, setStuck] = useState<StuckRequest[]>([]);
   const [draft, setDraft] = useState("");
@@ -125,7 +125,7 @@ function StudyRoomView() {
     const list = await getRoomMembers(roomId);
     setMembers(list);
     // If I'm no longer in the member list and I didn't leave on my own, the
-    // host removed me — surface a clear reason rather than a silent dead room.
+    // host removed me - surface a clear reason rather than a silent dead room.
     const me = meRef.current.userId;
     if (me && !leftRef.current && list.length > 0 && !list.some((m) => m.user_id === me)) {
       setRemoved(true);
@@ -133,7 +133,7 @@ function StudyRoomView() {
   }, [roomId]);
 
   /** Pull every live snapshot fresh from the server. Used on first load and as
-   *  the single reconnect-resync path — clock/pin/queue derive from `room`,
+   *  the single reconnect-resync path - clock/pin/queue derive from `room`,
    *  Stuck/Teach-Back come straight from their tables, so one refetch makes a
    *  reconnected client correct (no per-feature resync). */
   const loadSnapshots = useCallback(async () => {
@@ -158,7 +158,7 @@ function StudyRoomView() {
       const me = await getMyRoomIdentity();
       meRef.current = me;
       let r = await getRoom(roomId);
-      // Direct link to a public room you haven't joined yet — join on entry.
+      // Direct link to a public room you haven't joined yet - join on entry.
       if (r && !r.am_member && r.is_public) {
         await joinStudyRoom({ roomId, displayName: me.displayName, ecliptarSlug: me.equippedSlug });
         r = await getRoom(roomId);
@@ -225,7 +225,7 @@ function StudyRoomView() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "study_rooms", filter: `id=eq.${roomId}` },
         async () => {
-          // Pattern change, phase flip, or activity-clock bump — re-fetch
+          // Pattern change, phase flip, or activity-clock bump - re-fetch
           // the full room (RPC returns clock columns + member flags).
           const fresh = await refetchRoom(roomId);
           if (fresh) setRoom(fresh);
@@ -270,7 +270,7 @@ function StudyRoomView() {
     };
   }, [roomId, denied, refreshMembers, upsertStuck, upsertRound, loadSnapshots]);
 
-  // Tab return / network back online → resync (same single path as reconnect).
+  // Tab return / network back online -> resync (same single path as reconnect).
   useEffect(() => {
     if (denied || removed) return;
     const resync = () => {
@@ -290,7 +290,7 @@ function StudyRoomView() {
   }, [messages]);
 
   /**
-   * Idle nudge — every 30s while in `work` phase, if the room has been
+   * Idle nudge - every 30s while in `work` phase, if the room has been
    * silent for 10+ minutes, ask the server to post the nudge. The server
    * enforces "only one per idle stretch" and "never during break" so
    * multiple clients calling this is harmless.
@@ -307,7 +307,7 @@ function StudyRoomView() {
     return () => window.clearInterval(id);
   }, [denied, room, roomId]);
 
-  // Stuck AI fallback driver — once a card's countdown hits zero with no human
+  // Stuck AI fallback driver - once a card's countdown hits zero with no human
   // answer, fire the server claim. Each client attempts at most once per card;
   // the server claims atomically so only one AI answer is ever produced.
   useEffect(() => {
@@ -328,7 +328,7 @@ function StudyRoomView() {
   }, [denied]);
 
   /** When phase flips, flush any buffered messages so break-time is normal, and
-   *  — if Teach-Back is on — open a round for the next person. Every client
+   *  - if Teach-Back is on - open a round for the next person. Every client
    *  fires this; the server gates so exactly one round is created per flip. */
   const onPhaseFlip = useCallback(
     (next: "work" | "break") => {
@@ -343,7 +343,7 @@ function StudyRoomView() {
         });
         const r = roomRef.current;
         if (r?.teach_back_enabled) {
-          // trigger_key = the break phase's start time → unique per transition.
+          // trigger_key = the break phase's start time -> unique per transition.
           void openTeachBackRound(roomId, r.phase_started_at);
         }
       }
@@ -351,7 +351,7 @@ function StudyRoomView() {
     [roomId],
   );
 
-  // Leaver mid-turn → auto-pass to the next person (no skip charged). Any
+  // Leaver mid-turn -> auto-pass to the next person (no skip charged). Any
   // remaining client may call it; the server collapses concurrent calls.
   useEffect(() => {
     const memberIds = new Set(members.map((m) => m.user_id));
@@ -381,7 +381,7 @@ function StudyRoomView() {
     setSending(true);
     setDraft("");
 
-    // Unified moderation pipeline — same path as forums & usernames.
+    // Unified moderation pipeline - same path as forums & usernames.
     const verdict = await moderate(body, "chat_message");
     // Self-harm is its own supportive path: show resources, never block on it.
     if (verdict.selfHarm) setCrisisOpen(true);
@@ -440,7 +440,7 @@ function StudyRoomView() {
       <div className="sr">
         <div className="sr-wrap sr-empty">
           <Loader2 className="animate-spin" size={18} style={{ display: "inline" }} /> Entering
-          room…
+          room...
         </div>
       </div>
     );
@@ -519,7 +519,7 @@ function StudyRoomView() {
           </div>
         </div>
 
-        {/* Goal/Resource Pin — always-visible, no-scroll room header strip */}
+        {/* Goal/Resource Pin - always-visible, no-scroll room header strip */}
         <GoalPin
           room={room}
           onSetGoal={(g) => setRoomGoal(roomId, g)}
@@ -530,7 +530,7 @@ function StudyRoomView() {
           <aside className="sr-side">
             <h4>
               <Users size={11} style={{ display: "inline", marginRight: 5 }} />
-              Members · {members.length}
+              Members | {members.length}
             </h4>
             {members.map((m) => {
               const isMe = m.user_id === meRef.current.userId;
@@ -551,7 +551,7 @@ function StudyRoomView() {
                     </div>
                     <div className="sr-member-ec">{ec?.name ?? "No Ecliptar"}</div>
                   </div>
-                  {/* Host-only remove — rendered only for the host, never shown
+                  {/* Host-only remove - rendered only for the host, never shown
                       disabled to others. Can't remove yourself. */}
                   {isHost && !isMe && (
                     <RemoveMemberButton
@@ -683,7 +683,7 @@ function StudyRoomView() {
             {visiblePending.length > 0 && (
               <div className="sr-pending">
                 <button className="sr-pending-btn" onClick={revealPending}>
-                  {visiblePending.length} new message{visiblePending.length === 1 ? "" : "s"} — tap
+                  {visiblePending.length} new message{visiblePending.length === 1 ? "" : "s"} - tap
                   to show
                 </button>
               </div>
@@ -702,7 +702,7 @@ function StudyRoomView() {
                     void send();
                   }
                 }}
-                placeholder="Message the room…"
+                placeholder="Message the room..."
                 maxLength={1000}
               />
               <button className="sr-send" onClick={send} disabled={sending || !draft.trim()}>
@@ -710,7 +710,7 @@ function StudyRoomView() {
               </button>
             </div>
 
-            {/* Ask Luna — private, only the asker sees this; never broadcast. */}
+            {/* Ask Luna - private, only the asker sees this; never broadcast. */}
             <AskLuna />
 
             {/* Supportive resources if a message read as self-harm/distress.

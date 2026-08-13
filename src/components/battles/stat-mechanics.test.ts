@@ -18,7 +18,7 @@ import {
 } from "./stat-mechanics";
 import { DAMAGE_TUNING, QUESTION_TIMER } from "@/config/battle-tuning";
 
-/** Damage without the crit roll — keeps the arithmetic assertions deterministic. */
+/** Damage without the crit roll - keeps the arithmetic assertions deterministic. */
 function damage(arch: Archetype, opts: Parameters<typeof getEffectiveDamage>[1]): number {
   return getEffectiveDamage(arch, { ...opts, allowCrit: false }).damage;
 }

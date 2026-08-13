@@ -6,17 +6,17 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Eclipta — The arena is open." },
+      { title: "Eclipta - The arena is open." },
       {
         name: "description",
         content:
           "1v1 knowledge battles, 8 classes, 8 ranked tiers, and collectible Ecliptars. Eclipta turns learning into a competitive arena.",
       },
-      { property: "og:title", content: "Eclipta — The arena is open." },
+      { property: "og:title", content: "Eclipta - The arena is open." },
       {
         property: "og:description",
         content:
-          "Pick a class. Queue up. Land combos. Climb the ranks. Eclipta is the learning arena — battle-first, AI-tutored, fully gamified.",
+          "Pick a class. Queue up. Land combos. Climb the ranks. Eclipta is the learning arena - battle-first, AI-tutored, fully gamified.",
       },
     ],
   }),
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
  * The root route serves two entirely different products.
  *
  * A signed-in learner landing on the marketing film has to scroll past a pitch
- * for something they already bought before they can do anything — so they get
+ * for something they already bought before they can do anything - so they get
  * Mission Control instead. Signed-out visitors still get the film.
  *
  * `loading` renders neither: flashing the marketing page for a frame before

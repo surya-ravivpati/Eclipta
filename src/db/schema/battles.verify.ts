@@ -13,7 +13,7 @@ import type {
 
 /**
  * This file asserts nothing at runtime and is never imported by application
- * code — its only job is to fail `pnpm typecheck` if a Drizzle table stops
+ * code - its only job is to fail `pnpm typecheck` if a Drizzle table stops
  * matching the shape Supabase's generator says the real table has.
  *
  * Reading and hand-transcribing ~90 columns across 8 tables is exactly the
@@ -23,7 +23,7 @@ import type {
  *
  * Two checks per table, both ordinary TypeScript rather than a hand-rolled
  * equality operator (an earlier version of this file used one and produced
- * inconsistent results between near-identical cases — not trustworthy):
+ * inconsistent results between near-identical cases - not trustworthy):
  *   - `KeysMatch`: the two types have exactly the same property names.
  *     Catches a missing or invented column outright.
  *   - Bidirectional assignment: a value of one type must be assignable to
@@ -31,25 +31,25 @@ import type {
  *     nullability/optionality on a shared key.
  *
  * A few columns are deliberately typed MORE precisely in Drizzle than
- * Supabase's generator can express — a jsonb column narrowed with
+ * Supabase's generator can express - a jsonb column narrowed with
  * `.$type()`, or a `text` column with a CHECK constraint narrowed via
  * `{ enum: [...] }`. Supabase's generator only sees the SQL column type,
  * never the constraint, so it always widens these to `Json` or plain
  * `string`. Those columns are excluded from the two checks above (via
  * `Omit`) and checked separately: only that the Drizzle side is assignable
- * TO the wider Supabase side, which is the direction that matters — every
+ * TO the wider Supabase side, which is the direction that matters - every
  * value this app writes through the narrowed type is also valid per
  * Supabase's looser one.
  *
  * This file does not satisfy tsconfig.strict.json's `exactOptionalPropertyTypes`
  * and is not expected to: Drizzle infers an optional column as `field?: X |
  * undefined`, Supabase's generator writes the same optionality as `field?: X`
- * — two valid encodings of "optional" that this flag treats as different
+ * - two valid encodings of "optional" that this flag treats as different
  * types. That gap is inherent to comparing two independently generated type
  * systems and has no bearing on real behaviour, so it is accepted as ratchet
  * debt here rather than routed around with more type-level machinery for no
- * real safety gain. The base tsconfig.json check — the one that gates every
- * push — passes with zero errors.
+ * real safety gain. The base tsconfig.json check - the one that gates every
+ * push - passes with zero errors.
  */
 type KeysMatch<A, B> = [Exclude<keyof A, keyof B>, Exclude<keyof B, keyof A>] extends [never, never]
   ? true
@@ -61,7 +61,7 @@ declare function assignableOneWay<Narrow, Wide>(narrowToWide: (n: Narrow) => Wid
 
 type SupabaseTables = Database["public"]["Tables"];
 
-// ── archetype_mastery — no narrowed columns ────────────────────────────────
+// -- archetype_mastery - no narrowed columns --------------------------------
 export type _archetypeMasteryKeys = Assert<
   KeysMatch<InferSelectModel<typeof archetypeMastery>, SupabaseTables["archetype_mastery"]["Row"]>
 >;
@@ -86,7 +86,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── battle_sessions — question_records is a narrowed jsonb column ─────────
+// -- battle_sessions - question_records is a narrowed jsonb column ---------
 export type _battleSessionsKeys = Assert<
   KeysMatch<InferSelectModel<typeof battleSessions>, SupabaseTables["battle_sessions"]["Row"]>
 >;
@@ -99,7 +99,7 @@ assignableBothWays<
 );
 // `question_records`'s narrowed type is a closed object shape with no index
 // signature, so it can never satisfy `extends Json` under TypeScript's rules
-// even though every value it can hold is valid JSON — the same closed-type
+// even though every value it can hold is valid JSON - the same closed-type
 // vs. open-index-signature gap `database.ts` already documents. Not checked
 // mechanically here for that reason; verified by inspection at declaration.
 export type _battleSessionsInsertKeys = Assert<
@@ -113,7 +113,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── battle_question_records — no narrowed columns ──────────────────────────
+// -- battle_question_records - no narrowed columns --------------------------
 export type _battleQuestionRecordsKeys = Assert<
   KeysMatch<
     InferSelectModel<typeof battleQuestionRecords>,
@@ -141,7 +141,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── player_ratings — no narrowed columns ───────────────────────────────────
+// -- player_ratings - no narrowed columns -----------------------------------
 export type _playerRatingsKeys = Assert<
   KeysMatch<InferSelectModel<typeof playerRatings>, SupabaseTables["player_ratings"]["Row"]>
 >;
@@ -160,7 +160,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── pvp_queue — no narrowed columns ─────────────────────────────────────────
+// -- pvp_queue - no narrowed columns -----------------------------------------
 export type _pvpQueueKeys = Assert<
   KeysMatch<InferSelectModel<typeof pvpQueue>, SupabaseTables["pvp_queue"]["Row"]>
 >;
@@ -176,7 +176,7 @@ assignableBothWays<InferInsertModel<typeof pvpQueue>, SupabaseTables["pvp_queue"
   (b) => b,
 );
 
-// ── pvp_battles — status is a narrowed (CHECK-constrained) text column ─────
+// -- pvp_battles - status is a narrowed (CHECK-constrained) text column -----
 export type _pvpBattlesKeys = Assert<
   KeysMatch<InferSelectModel<typeof pvpBattles>, SupabaseTables["pvp_battles"]["Row"]>
 >;
@@ -202,7 +202,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── pvp_challenges — status is a narrowed (CHECK-constrained) text column ──
+// -- pvp_challenges - status is a narrowed (CHECK-constrained) text column --
 export type _pvpChallengesKeys = Assert<
   KeysMatch<InferSelectModel<typeof pvpChallenges>, SupabaseTables["pvp_challenges"]["Row"]>
 >;
@@ -228,7 +228,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── pvp_turn_actions — question is a narrowed jsonb column ─────────────────
+// -- pvp_turn_actions - question is a narrowed jsonb column -----------------
 export type _pvpTurnActionsKeys = Assert<
   KeysMatch<InferSelectModel<typeof pvpTurnActions>, SupabaseTables["pvp_turn_actions"]["Row"]>
 >;

@@ -29,7 +29,7 @@ import { progressLabel } from "@/lib/a11y";
 import { cn } from "@/lib/utils";
 
 /**
- * Mission Control — the authenticated home.
+ * Mission Control - the authenticated home.
  *
  * The organising principle is **one obvious next action**. A dashboard that
  * presents nine equally-weighted panels is a menu, not a control surface, and
@@ -112,7 +112,7 @@ export function MissionControl() {
   );
 }
 
-// ─── Hero ────────────────────────────────────────────────────────────────────
+// --- Hero --------------------------------------------------------------------
 
 function Hero({ data, streak }: { data: DashboardData; streak: number }) {
   const { t } = useTranslation();
@@ -231,7 +231,7 @@ function GoalRing({ pct, current, goal }: { pct: number; current: number; goal: 
 /**
  * Study timer.
  *
- * Wall-clock based, like the Pressure Mode clock — an accumulating interval
+ * Wall-clock based, like the Pressure Mode clock - an accumulating interval
  * drifts and is throttled in background tabs, so a session timed while the user
  * reads a PDF in another tab would under-count badly.
  */
@@ -309,7 +309,7 @@ function Stat({
   );
 }
 
-// ─── Panels ──────────────────────────────────────────────────────────────────
+// --- Panels ------------------------------------------------------------------
 
 function Panel({
   title,
@@ -419,8 +419,8 @@ function CompetitivePanel({ data }: { data: DashboardData }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
         <Figure label={t("dashboard.elo")} value={String(rating)} />
         <Figure label={t("dashboard.league")} value={tier} />
-        <Figure label={t("dashboard.winRate")} value={winRate === null ? "—" : `${winRate}%`} />
-        <Figure label={t("dashboard.record")} value={games > 0 ? `${wins}–${losses}` : "—"} />
+        <Figure label={t("dashboard.winRate")} value={winRate === null ? "-" : `${winRate}%`} />
+        <Figure label={t("dashboard.record")} value={games > 0 ? `${wins}-${losses}` : "-"} />
       </div>
 
       {data.recent_battles.length > 0 ? (
@@ -671,7 +671,7 @@ function ContinueAnywhere({ data }: { data: DashboardData }) {
   );
 }
 
-// ─── States ──────────────────────────────────────────────────────────────────
+// --- States ------------------------------------------------------------------
 
 function DashboardSkeleton() {
   const { t } = useTranslation();

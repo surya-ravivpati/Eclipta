@@ -1,9 +1,9 @@
 /**
- * Archetype Mastery — rank system, DB helpers, and display utilities.
+ * Archetype Mastery - rank system, DB helpers, and display utilities.
  *
  * Ranks are earned through a combination of volume (battles played),
  * quality (win rate), and skill expression (best streak, perfect battles).
- * A player cannot rank up simply by grinding losses — they must demonstrate
+ * A player cannot rank up simply by grinding losses - they must demonstrate
  * improving competence, which directly mirrors the educational goal.
  */
 import type { ArchetypeId } from "@/components/battles/types";
@@ -14,7 +14,7 @@ import {
   getAllArchetypeMastery,
 } from "@/repositories/battles";
 
-// ─── Data Types ───────────────────────────────────────────────────────────────
+// --- Data Types ---------------------------------------------------------------
 
 export interface ArchetypeMastery {
   archetype: string;
@@ -27,13 +27,13 @@ export interface ArchetypeMastery {
 }
 
 export interface MasteryRank {
-  level: number; // 0 = unranked, 1–5 = ranked
+  level: number; // 0 = unranked, 1-5 = ranked
   label: string; // archetype-flavoured title (e.g. "Reflex" for Speedster III)
   color: string; // Tailwind class
   flavor: string; // one-line personality description
 }
 
-// ─── Rank Thresholds ──────────────────────────────────────────────────────────
+// --- Rank Thresholds ----------------------------------------------------------
 // Requiring BOTH volume AND quality prevents pure-grind rank-ups.
 // best_streak gates show mastery of compounding momentum.
 // perfect_battles (Rank V) is the skill-expression ceiling.
@@ -47,30 +47,30 @@ const THRESHOLDS = [
   { battles: 55, winRate: 0.6, streak: 10, perfect: 1 }, // Rank V
 ] as const;
 
-// ─── Rank Identity Labels ─────────────────────────────────────────────────────
-// Each archetype has 6 labels (0 = unranked placeholder, 1–5 = ranks).
+// --- Rank Identity Labels -----------------------------------------------------
+// Each archetype has 6 labels (0 = unranked placeholder, 1-5 = ranks).
 // These reinforce the playstyle fantasy: Speedster ranks are about speed and
 // precision, Gambler ranks are about house-beating edge, etc.
 
 const RANK_LABELS: Record<ArchetypeId, readonly string[]> = {
-  speedster: ["—", "Signal", "Flash", "Reflex", "Blur", "Ghost"],
-  tank: ["—", "Wall", "Bulwark", "Fortress", "Colossus", "Immovable"],
-  chud: ["—", "Spark", "Detonator", "Devastator", "Obliterator", "Singularity"],
-  healer: ["—", "Medic", "Sustainer", "Guardian", "Lifeline", "Undying"],
-  fulcrum: ["—", "Student", "Tactician", "Strategist", "Grandmaster", "Equilibrium"],
-  accelerator: ["—", "Kindling", "Ember", "Blaze", "Inferno", "Supernova"],
-  gambler: ["—", "Punter", "Shark", "Hustler", "Card Counter", "House Wins"],
-  god: ["—", "Acolyte", "Disciple", "Prophet", "Archangel", "Transcendent"],
+  speedster: ["-", "Signal", "Flash", "Reflex", "Blur", "Ghost"],
+  tank: ["-", "Wall", "Bulwark", "Fortress", "Colossus", "Immovable"],
+  chud: ["-", "Spark", "Detonator", "Devastator", "Obliterator", "Singularity"],
+  healer: ["-", "Medic", "Sustainer", "Guardian", "Lifeline", "Undying"],
+  fulcrum: ["-", "Student", "Tactician", "Strategist", "Grandmaster", "Equilibrium"],
+  accelerator: ["-", "Kindling", "Ember", "Blaze", "Inferno", "Supernova"],
+  gambler: ["-", "Punter", "Shark", "Hustler", "Card Counter", "House Wins"],
+  god: ["-", "Acolyte", "Disciple", "Prophet", "Archangel", "Transcendent"],
 };
 
-// Per-rank flavor text — communicates the psychological identity of each tier.
+// Per-rank flavor text - communicates the psychological identity of each tier.
 const RANK_FLAVORS: Record<ArchetypeId, readonly string[]> = {
   speedster: [
     "",
     "First steps at the speed of light.",
     "Quick hands, quicker mind.",
     "Pressure is your element.",
-    "You don't react to time — you warp it.",
+    "You don't react to time - you warp it.",
     "The blur between thought and action.",
   ],
   tank: [
@@ -140,7 +140,7 @@ const RANK_COLORS = [
   "text-tier-god", // Rank V
 ] as const;
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// --- Public API ---------------------------------------------------------------
 
 /** Returns the highest rank the player qualifies for. */
 export function getMasteryRank(m: ArchetypeMastery, archId: ArchetypeId): MasteryRank {
@@ -189,7 +189,7 @@ export function emptyMastery(archetype: ArchetypeId): ArchetypeMastery {
   };
 }
 
-// ─── Database Helpers ─────────────────────────────────────────────────────────
+// --- Database Helpers ---------------------------------------------------------
 
 /**
  * Atomically upsert one battle into archetype_mastery via the

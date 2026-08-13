@@ -11,22 +11,22 @@ import { readBody } from "nitro/h3";
  * unsubscribe, and a dead one is what gets a sending domain's reputation
  * destroyed rather than merely annoying the recipient.
  *
- * ── Why GET and POST do different things ────────────────────────────────────
+ * -- Why GET and POST do different things ------------------------------------
  * POST unsubscribes immediately. That is RFC 8058: the mail client posts
  * `List-Unsubscribe=One-Click` on the user's behalf, without a human ever
  * seeing this page, and expects a 2xx.
  *
  * GET only *offers* to unsubscribe, behind a form that posts back. A GET must
  * never change state here, because plenty of things fetch a URL that no human
- * clicked — link scanners in corporate mail gateways, spam filters, and clients
+ * clicked - link scanners in corporate mail gateways, spam filters, and clients
  * that prefetch. Unsubscribing on GET would silently opt people out of mail
  * they still wanted, and they would have no idea why it stopped arriving.
  *
- * ── Auth ────────────────────────────────────────────────────────────────────
+ * -- Auth --------------------------------------------------------------------
  * The token is the credential: an unguessable per-user uuid, and
  * `unsubscribe_by_token` is granted to `anon` precisely so a recipient can act
  * without logging in. Requiring a login to leave a mailing list is both hostile
- * and non-compliant — the person may no longer have an account at all.
+ * and non-compliant - the person may no longer have an account at all.
  */
 
 const APP_NAME = "Eclipta";
@@ -79,7 +79,7 @@ function page(title: string, body: string, status = 200): HTTPResponse {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>${escapeHtml(title)} — ${APP_NAME}</title>
+<title>${escapeHtml(title)} - ${APP_NAME}</title>
 <style>
   :root { color-scheme: light dark; }
   body {

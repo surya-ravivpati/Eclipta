@@ -1,12 +1,12 @@
 /**
- * The profile domain's one door into the database — account XP, owned
+ * The profile domain's one door into the database - account XP, owned
  * Ecliptars, and claimed Trophy Road chests. See AGENTS.md's "Database"
  * section: nothing outside this file calls `supabase.from()`/`.rpc()` for
  * these tables and functions.
  */
 import { supabase } from "@/integrations/supabase/client";
 
-/** A brand-new user has no profile row yet — that is not an error, they simply have 0 XP. */
+/** A brand-new user has no profile row yet - that is not an error, they simply have 0 XP. */
 export async function getUserXp(userId: string): Promise<number> {
   const { data, error } = await supabase
     .from("user_profiles")
@@ -23,7 +23,7 @@ export async function getUserXp(userId: string): Promise<number> {
  * never set a username. Goes through a security-definer RPC rather than a
  * direct `user_profiles` select: that table's SELECT policy is own-row-only,
  * so a direct query here would silently return null for every user but the
- * caller — this is the one function on this repository that legitimately
+ * caller - this is the one function on this repository that legitimately
  * needs another user's row, same reason `get_public_profile` exists.
  */
 export async function getUsername(userId: string): Promise<string | null> {
@@ -54,7 +54,7 @@ export async function getClaimedChestNodeIds(userId: string): Promise<number[]> 
 }
 
 /**
- * The amount is determined server-side from the event name — clients cannot
+ * The amount is determined server-side from the event name - clients cannot
  * inject arbitrary XP values. Returns the resulting total.
  */
 export async function awardXpRpc(event: string): Promise<number> {
@@ -91,7 +91,7 @@ export async function awardVerifiedBattleXpRpc(challengeIds: string[]): Promise<
 
 /**
  * Claiming an already-claimed chest is an expected, routine outcome (a
- * double-click, a stale UI) rather than a real failure — the RPC's unique
+ * double-click, a stale UI) rather than a real failure - the RPC's unique
  * index makes it a no-op, and this returns 0 instead of throwing so the UI
  * doesn't need to distinguish "nothing happened" from "something broke."
  */

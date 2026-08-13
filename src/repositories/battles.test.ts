@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
  * The Supabase client is the one thing this module can't exercise directly
- * without a real database — it's mocked here so these tests prove the
+ * without a real database - it's mocked here so these tests prove the
  * repository's own logic (which table, which columns, how errors and empty
  * results map to the return type) rather than Supabase's behaviour.
  */

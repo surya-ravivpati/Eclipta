@@ -50,7 +50,8 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html"],
+      // json-summary is what scripts/coverage-ratchet.mjs reads.
+      reporter: ["text", "html", "json-summary"],
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/routeTree.gen.ts",

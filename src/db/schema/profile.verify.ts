@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/database";
 import type { userChestClaims, userEcliptars, userProfiles } from "./profile";
 
 /**
- * Same purpose and mechanism as battles.verify.ts — see that file for the
+ * Same purpose and mechanism as battles.verify.ts - see that file for the
  * full rationale. Narrowed columns here: `user_profiles.learner_profile`
  * (jsonb) and `user_profiles.preferred_pace` / `preferred_style` (CHECK-
  * constrained text), checked one-way for the same reason as battles' status
@@ -11,7 +11,7 @@ import type { userChestClaims, userEcliptars, userProfiles } from "./profile";
  *
  * Also same as battles.verify.ts: this file does not satisfy
  * tsconfig.strict.json's `exactOptionalPropertyTypes`, and is not expected
- * to — Drizzle's and Supabase's generator encode "optional" differently
+ * to - Drizzle's and Supabase's generator encode "optional" differently
  * (`field?: X | undefined` vs `field?: X`), which is inherent to comparing
  * two independently generated type systems, not a real defect.
  */
@@ -25,7 +25,7 @@ declare function assignableOneWay<Narrow, Wide>(narrowToWide: (n: Narrow) => Wid
 
 type SupabaseTables = Database["public"]["Tables"];
 
-// ── user_chest_claims — no narrowed columns ────────────────────────────────
+// -- user_chest_claims - no narrowed columns --------------------------------
 export type _userChestClaimsKeys = Assert<
   KeysMatch<InferSelectModel<typeof userChestClaims>, SupabaseTables["user_chest_claims"]["Row"]>
 >;
@@ -47,7 +47,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── user_ecliptars — no narrowed columns ────────────────────────────────────
+// -- user_ecliptars - no narrowed columns ------------------------------------
 export type _userEcliptarsKeys = Assert<
   KeysMatch<InferSelectModel<typeof userEcliptars>, SupabaseTables["user_ecliptars"]["Row"]>
 >;
@@ -66,7 +66,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── user_profiles — learner_profile (jsonb) and preferred_pace/style (enum) are narrowed ──
+// -- user_profiles - learner_profile (jsonb) and preferred_pace/style (enum) are narrowed --
 const NARROWED_COLUMNS = ["learner_profile", "preferred_pace", "preferred_style"] as const;
 type NarrowedColumn = (typeof NARROWED_COLUMNS)[number];
 
@@ -90,7 +90,7 @@ assignableOneWay<
 >((n) => n);
 // learner_profile's narrowed type has the same closed-shape-vs-open-index-
 // signature gap documented in battles.verify.ts for question/question_records
-// — not mechanically checked against Json for the same reason.
+// - not mechanically checked against Json for the same reason.
 
 export type _userProfilesInsertKeys = Assert<
   KeysMatch<InferInsertModel<typeof userProfiles>, SupabaseTables["user_profiles"]["Insert"]>

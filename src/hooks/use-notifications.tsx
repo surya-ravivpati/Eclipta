@@ -18,7 +18,7 @@ export interface Notification {
 /**
  * Notification feed.
  *
- * Realtime is primary — a postgres_changes subscription on the user's row
+ * Realtime is primary - a postgres_changes subscription on the user's row
  * filter delivers inserts/updates/deletes as they happen, with a friendly
  * toast for genuinely new ones. A slow 5-minute background poll exists
  * only as a cold-start safety net for sessions where the websocket was
@@ -78,18 +78,18 @@ export function useNotifications() {
     }
   }, [user]);
 
-  // ── Hydrate + slow background poll ────────────────────────────────────
+  // -- Hydrate + slow background poll ------------------------------------
   useEffect(() => {
     void refresh();
     if (!user) return;
-    // 5 minutes — realtime is primary, this is just a safety net.
+    // 5 minutes - realtime is primary, this is just a safety net.
     const id = setInterval(() => {
       void refresh();
     }, 5 * 60_000);
     return () => clearInterval(id);
   }, [user, refresh]);
 
-  // ── Realtime subscription ─────────────────────────────────────────────
+  // -- Realtime subscription ---------------------------------------------
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -158,7 +158,7 @@ export function useNotifications() {
 
   const markAllRead = useCallback(async () => {
     if (!user || unread === 0) return;
-    // Optimistic — realtime UPDATE events will reconcile.
+    // Optimistic - realtime UPDATE events will reconcile.
     setItems((xs) => xs.map((n) => ({ ...n, read: true })));
     await supabase
       .from("notifications")

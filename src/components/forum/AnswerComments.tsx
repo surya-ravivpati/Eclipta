@@ -63,7 +63,8 @@ export function AnswerComments({
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("forum_comments")
+    const { data } = await supabase
+      .from("forum_comments")
       .select("id,user_id,author_name,body,created_at,moderation_status,moderation_reason")
       .eq("answer_id", answerId)
       .order("created_at", { ascending: true });
@@ -80,7 +81,7 @@ export function AnswerComments({
     if (!user) return toast.error("Sign in to comment");
     if (reply.trim().length < 2) return toast.error("Comment too short");
     if (containsProfanity(reply))
-      return toast.error("Please rephrase — your comment contains language we don't allow.");
+      return toast.error("Please rephrase - your comment contains language we don't allow.");
     setSubmitting(true);
 
     const body = reply.trim().slice(0, 1000);
@@ -113,13 +114,13 @@ export function AnswerComments({
     setSubmitting(false);
     if (error) {
       const msg = /check_violation|moderation/i.test(error.message)
-        ? "Comment rejected by moderation — please rephrase."
+        ? "Comment rejected by moderation - please rephrase."
         : error.message;
       return toast.error(msg);
     }
     setReply("");
     if (verdict.verdict === "hide") {
-      toast.message("Posted — held for review");
+      toast.message("Posted - held for review");
     } else if (inserted?.id) {
       void moderateAfterInsert(body, "comment", inserted.id);
     }
@@ -157,7 +158,7 @@ export function AnswerComments({
               </div>
               <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
                 <AuthorLink name={c.author_name} />
-                <span>· {timeAgo(c.created_at)}</span>
+                <span>| {timeAgo(c.created_at)}</span>
                 {isAuthenticated && user?.id !== c.user_id && (
                   <button
                     onClick={() => setReporting(c.id)}
@@ -187,7 +188,7 @@ export function AnswerComments({
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               maxLength={1000}
-              placeholder="Add a comment… (@mention to ping)"
+              placeholder="Add a comment... (@mention to ping)"
               className="flex-1 bg-secondary/30 border border-input px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-neon-purple"
             />
             <button

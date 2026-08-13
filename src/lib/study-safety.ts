@@ -1,15 +1,15 @@
 /**
- * Study-room safety & infrastructure helpers — thin client over the SQL in
+ * Study-room safety & infrastructure helpers - thin client over the SQL in
  * supabase/migrations/20260626140000_study-room-safety.sql.
  *
  *   - Host powers: regenerate code, remove member (+ un-remove).
- *   - Report a message (human or AI-authored) — silent, durable, moderator-read.
- *   - Block a user — account-level, personal; hides their chat everywhere.
+ *   - Report a message (human or AI-authored) - silent, durable, moderator-read.
+ *   - Block a user - account-level, personal; hides their chat everywhere.
  *   - Opportunistic abandoned-room cleanup (check-on-access).
  */
 import { supabase } from "@/integrations/supabase/client";
 
-// ── Host powers ─────────────────────────────────────────────────────────────
+// -- Host powers -------------------------------------------------------------
 export async function regenerateRoomCode(
   roomId: string,
 ): Promise<{ code?: string; error?: string }> {
@@ -37,7 +37,7 @@ export async function allowRoomMember(roomId: string, userId: string): Promise<s
   return error ? error.message : null;
 }
 
-// ── Report ──────────────────────────────────────────────────────────────────
+// -- Report ------------------------------------------------------------------
 export type ReportAuthorKind = "human" | "ai" | "system";
 
 /** Silent report. The reported user is never notified. Works for AI content
@@ -62,7 +62,7 @@ export async function reportRoomMessage(args: {
   return error ? error.message : null;
 }
 
-// ── Block (account-level) ────────────────────────────────────────────────────
+// -- Block (account-level) ----------------------------------------------------
 export async function fetchBlockedUserIds(): Promise<Set<string>> {
   const {
     data: { user },
@@ -105,7 +105,7 @@ export async function unblockUser(blockedId: string): Promise<string | null> {
   return error ? error.message : null;
 }
 
-// ── Abandoned-room cleanup (best-effort, check-on-access) ─────────────────────
+// -- Abandoned-room cleanup (best-effort, check-on-access) ---------------------
 export async function cleanupAbandonedRooms(): Promise<void> {
   // Fire-and-forget; the server enforces the "empty AND stale" guard.
   const { error } = await supabase.rpc("cleanup_abandoned_rooms" as never);

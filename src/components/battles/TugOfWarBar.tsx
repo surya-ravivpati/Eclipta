@@ -3,7 +3,7 @@ import { tugPercent, type TugState } from "@/lib/battle-modes/tug-of-war";
 import { progressLabel } from "@/lib/a11y";
 
 /**
- * The shared bar. Replaces the two HP bars while Tug-of-War is active — this
+ * The shared bar. Replaces the two HP bars while Tug-of-War is active - this
  * mode's one resource in one place, not a third readout alongside two that
  * do not mean anything here.
  */

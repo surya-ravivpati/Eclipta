@@ -3,7 +3,7 @@ import type { ArchetypeId } from "@/components/battles/types";
 /**
  * The AI learner roster.
  *
- * Bots make a competitive ladder playable on day one — a leaderboard with four
+ * Bots make a competitive ladder playable on day one - a leaderboard with four
  * people on it is worse than no leaderboard. This is ordinary game practice, and
  * the codebase already matches players against bot opponents.
  *
@@ -13,7 +13,7 @@ import type { ArchetypeId } from "@/components/battles/types";
  *      generated record and `is_bot` is on the row. Note what changed on
  *      2026-08-12: the *battle* UI no longer surfaces that flag while you are
  *      queueing or fighting, so a single match does not announce which kind of
- *      opponent it found. The flag itself is never dropped — it still drives
+ *      opponent it found. The flag itself is never dropped - it still drives
  *      the ladder's labelling, and it is what lets the "how battles work"
  *      panel disclose that bots exist at all. The product decision is that the
  *      practice is disclosed once, in general, rather than stamped on each
@@ -28,7 +28,7 @@ import type { ArchetypeId } from "@/components/battles/types";
  * player who has been around.
  */
 
-// ── Deterministic RNG ────────────────────────────────────────────────────────
+// -- Deterministic RNG --------------------------------------------------------
 // mulberry32: small, fast, good enough distribution for content generation.
 // Explicit rather than Math.random so the roster is reproducible.
 function rng(seed: number): () => number {
@@ -48,7 +48,7 @@ const pick = <T>(r: () => number, xs: readonly T[]): T => {
 };
 const int = (r: () => number, lo: number, hi: number) => Math.floor(lo + r() * (hi - lo + 1));
 
-// ── Personalities ────────────────────────────────────────────────────────────
+// -- Personalities ------------------------------------------------------------
 
 export type PersonalityId =
   | "speed_runner"
@@ -68,7 +68,7 @@ export interface Personality {
   /** Battle archetypes this personality gravitates to. */
   archetypes: ArchetypeId[];
   subjects: string[];
-  /** Hours (0–23) this bot is typically active — drives when it challenges you. */
+  /** Hours (0-23) this bot is typically active - drives when it challenges you. */
   activeHours: number[];
   /** Fraction of questions answered correctly, before rating adjustment. */
   baseAccuracy: number;
@@ -76,7 +76,7 @@ export interface Personality {
   meanPace: number;
   /** How much accuracy varies session to session. High = streaky. */
   volatility: number;
-  /** Sessions per week — a casual bot must not out-grind a grinder. */
+  /** Sessions per week - a casual bot must not out-grind a grinder. */
   weeklySessions: [number, number];
   /** How fast the bot's rating trends upward over its history. */
   improvementRate: number;
@@ -194,11 +194,11 @@ export const PERSONALITIES: Record<PersonalityId, Personality> = {
   },
 };
 
-// ── Names ────────────────────────────────────────────────────────────────────
+// -- Names --------------------------------------------------------------------
 // Handle-style rather than realistic personal names, deliberately: a bot called
 // "Sarah Chen" invites a user to believe a specific person exists, which is a
-// claim about the world. A handle is a screen name — the same kind of thing
-// every real account here has — so it sits in a match without either announcing
+// claim about the world. A handle is a screen name - the same kind of thing
+// every real account here has - so it sits in a match without either announcing
 // itself as synthetic or impersonating somebody.
 
 const HANDLE_HEADS = [
@@ -284,7 +284,7 @@ function makeHandle(r: () => number, used: Set<string>): string {
   return handle;
 }
 
-// ── Bot record ───────────────────────────────────────────────────────────────
+// -- Bot record ---------------------------------------------------------------
 
 export interface ProgressionPoint {
   /** Days before "now". Positive numbers are in the past. */
@@ -300,7 +300,7 @@ export interface BotProfile {
   isBot: true;
   personality: PersonalityId;
   blurb: string;
-  /** Deterministic avatar seed — no image asset needed. */
+  /** Deterministic avatar seed - no image asset needed. */
   avatarSeed: string;
   archetype: ArchetypeId;
   subjects: string[];
@@ -364,7 +364,7 @@ function makeBot(r: () => number, used: Set<string>, index: number): BotProfile 
   const skill = personality.baseAccuracy + (bell - 0.5) * 0.14;
   const accuracy = Math.max(0.42, Math.min(0.96, skill));
 
-  // Win rate follows accuracy but compresses toward 50% — matchmaking pairs
+  // Win rate follows accuracy but compresses toward 50% - matchmaking pairs
   // like with like, so even strong players hover near even.
   const winRate = Math.max(0.25, Math.min(0.78, 0.5 + (accuracy - 0.72) * 1.1));
   const wins = Math.round(games * winRate);
@@ -448,7 +448,7 @@ export function defaultRoster(): BotProfile[] {
 /**
  * Pick the bot a player at `rating` should face.
  *
- * Rating proximity first, then "is this one plausibly awake right now" — the
+ * Rating proximity first, then "is this one plausibly awake right now" - the
  * same schedule `isActiveAt` uses for challenges, for the same reason. The
  * window widens rather than failing: an opponent slightly off your rating beats
  * no opponent, and the caller has no fallback to offer.
@@ -473,7 +473,7 @@ export function pickBotOpponent(
   return pick(r, roster);
 }
 
-// ── Behaviour ────────────────────────────────────────────────────────────────
+// -- Behaviour ----------------------------------------------------------------
 
 /**
  * Whether a bot is "online" at a given hour, so challenges arrive when that bot
@@ -490,7 +490,7 @@ export function isActiveAt(bot: BotProfile, hour: number): boolean {
  *
  * Bounded well away from both 0 and 1: a bot that never misses is not a learner,
  * and one that always misses is not an opponent. The volatility term is what
- * produces "realistic mistakes" — a strong bot that occasionally fumbles an easy
+ * produces "realistic mistakes" - a strong bot that occasionally fumbles an easy
  * question reads as human in a way a fixed probability never does.
  */
 export function botAccuracyFor(

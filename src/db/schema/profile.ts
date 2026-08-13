@@ -7,7 +7,7 @@ import type { LearningProfile } from "@/lib/luna-calibration";
  *
  * Column shapes are transcribed from src/integrations/supabase/types.ts (the
  * current-state snapshot), same discipline as src/db/schema/battles.ts.
- * `user_profiles` in particular has grown across 15 separate migrations —
+ * `user_profiles` in particular has grown across 15 separate migrations -
  * defaults below are traced to the migration that added each column, but
  * given the size (31 columns), this was not re-verified line-by-line against
  * every later migration the way the smaller battles tables were. The
@@ -17,12 +17,12 @@ import type { LearningProfile } from "@/lib/luna-calibration";
  * re-derived fact.
  *
  * `user_id` references `auth.users`, owned by Supabase Auth outside this
- * app's migrations — see the equivalent note in battles.ts for why it
+ * app's migrations - see the equivalent note in battles.ts for why it
  * carries no `.references()` here.
  */
 
 /**
- * Claimed Trophy Road chests. One row per chest a player has opened — the
+ * Claimed Trophy Road chests. One row per chest a player has opened - the
  * unique (user_id, node_id) constraint is what makes claiming idempotent.
  * Source: 20260505153236_f0a91365-5b15-4ecc-91f5-cb4868750ccb.sql.
  */
@@ -39,7 +39,7 @@ export const userChestClaims = pgTable("user_chest_claims", {
 
 /**
  * Claimed Ecliptar collectibles. The unique (user_id, ecliptar_slug)
- * constraint makes claiming idempotent — a player can't own the same
+ * constraint makes claiming idempotent - a player can't own the same
  * creature twice. Source: 20260622000000_ecliptar-claim-resilient.sql,
  * which superseded the original 20260416182626 definition (same shape).
  */
@@ -61,10 +61,10 @@ export const userEcliptars = pgTable("user_ecliptars", {
  * daily practice streak (`daily_streak`/`longest_daily_streak`/
  * `streak_freezes`/`practice_dates`/`last_practice_date`), and Luna's saved
  * learner state. Two streak systems coexist because they measure different
- * things — one battle-to-battle, one calendar-day-to-calendar-day — not
+ * things - one battle-to-battle, one calendar-day-to-calendar-day - not
  * because one replaced the other.
  * Source: 20260416042235_ac21bb32-ff8b-4e13-afdd-560d101c0265.sql (original),
- * plus 14 later migrations adding individual columns — see git blame on this
+ * plus 14 later migrations adding individual columns - see git blame on this
  * file's predecessor comments for which migration added which column if the
  * exact origin ever matters again.
  */
@@ -92,7 +92,7 @@ export const userProfiles = pgTable("user_profiles", {
   weak_areas: text("weak_areas").array().default([]),
   strong_areas: text("strong_areas").array().default([]),
 
-  /** Legacy per-battle win/loss streak — distinct from the daily practice streak below. */
+  /** Legacy per-battle win/loss streak - distinct from the daily practice streak below. */
   current_streak: integer("current_streak").notNull().default(0),
   best_streak: integer("best_streak").notNull().default(0),
   xp: integer("xp").notNull().default(0),

@@ -35,7 +35,7 @@ import { timeAgo } from "@/lib/time";
 export const Route = createFileRoute("/_authenticated/forum_/$threadId")({
   head: () => ({
     meta: [
-      { title: "Thread – Eclipta Forum" },
+      { title: "Thread - Eclipta Forum" },
       { name: "description", content: "Discussion thread on the Eclipta community forum." },
     ],
   }),
@@ -186,7 +186,7 @@ function ThreadPage() {
     if (!user || !thread) return;
     if (reply.trim().length < 10) return toast.error("Answer must be at least 10 characters");
     if (containsProfanity(reply))
-      return toast.error("Please rephrase — your answer contains language we don't allow.");
+      return toast.error("Please rephrase - your answer contains language we don't allow.");
     setSubmitting(true);
 
     const body = reply.trim().slice(0, 4000);
@@ -219,13 +219,13 @@ function ThreadPage() {
     setSubmitting(false);
     if (error) {
       const msg = /check_violation|moderation/i.test(error.message)
-        ? "Answer rejected by moderation — please rephrase."
+        ? "Answer rejected by moderation - please rephrase."
         : error.message;
       return toast.error(msg);
     }
     setReply("");
     if (verdict.verdict === "hide") {
-      toast.message("Posted — held for review", {
+      toast.message("Posted - held for review", {
         description: "Your answer will appear once a moderator clears it.",
       });
     } else {
@@ -501,7 +501,7 @@ function ThreadPage() {
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                           <div className="text-[11px] text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span>
-                              <AuthorLink name={a.author_name} /> · {timeAgo(a.created_at)}
+                              <AuthorLink name={a.author_name} /> | {timeAgo(a.created_at)}
                             </span>
                             {user && user.id !== a.user_id && (
                               <button
@@ -552,7 +552,7 @@ function ThreadPage() {
                   onChange={(e) => setReply(e.target.value)}
                   rows={5}
                   maxLength={4000}
-                  placeholder="Share your insight. Markdown supported — use ```lang code```, $math$, or @username to ping."
+                  placeholder="Share your insight. Markdown supported - use ```lang code```, $math$, or @username to ping."
                   className="w-full mt-2 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
                 />
                 <div className="flex justify-between items-center mt-2">

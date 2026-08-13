@@ -27,7 +27,7 @@ import type { ArchetypeId } from "@/components/battles/types";
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({
     meta: [
-      { title: `${params.username} – Eclipta Profile` },
+      { title: `${params.username} - Eclipta Profile` },
       { name: "description", content: `Public profile of ${params.username} on Eclipta.` },
     ],
   }),
@@ -186,7 +186,7 @@ function PublicProfilePage() {
             to="/forum"
             className="text-neon-purple hover:underline text-sm font-bold tracking-widest"
           >
-            ← BACK TO FORUM
+            &lt;- BACK TO FORUM
           </Link>
         </div>
       </div>
@@ -376,7 +376,7 @@ function PublicProfilePage() {
                       {t.title}
                     </Link>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {t.votes} votes · {t.answer_count} answers
+                      {t.votes} votes | {t.answer_count} answers
                     </p>
                   </li>
                 ))}

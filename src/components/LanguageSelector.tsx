@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * Language picker.
  *
  * Renders straight from the LOCALES registry, so a new language appears here
- * the moment it is registered — no change to this file.
+ * the moment it is registered - no change to this file.
  *
  * Built as a native `<select>` rather than a custom listbox on purpose: it
  * arrives with keyboard support, type-ahead, screen-reader semantics and the

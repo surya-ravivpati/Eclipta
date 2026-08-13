@@ -6,7 +6,7 @@ import * as ProgressPrimitive from "@radix-ui/react-progress";
 import { cn } from "@/lib/utils";
 
 /**
- * Radix supplies `role="progressbar"` and `aria-valuenow`, but not a NAME — and
+ * Radix supplies `role="progressbar"` and `aria-valuenow`, but not a NAME - and
  * an unnamed progress bar announces as a bare "70%", which answers nothing.
  * `label` is required so every bar says what it is measuring; pass
  * `labelHidden` when a visible heading already provides the text.

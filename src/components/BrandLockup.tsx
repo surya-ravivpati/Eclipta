@@ -1,18 +1,18 @@
 import { cn } from "@/lib/utils";
 
 /**
- * BrandLockup — the single source of truth for the Eclipta logo lockup.
+ * BrandLockup - the single source of truth for the Eclipta logo lockup.
  *
  * Brand rules encoded here so the mark + wordmark are never reassembled
  * ad-hoc again:
- *  • Wordmark face: JetBrains Mono (--font-mono), uppercase, 0.3em tracking.
+ *  * Wordmark face: JetBrains Mono (--font-mono), uppercase, 0.3em tracking.
  *    The signature display face (RobotHeroes) is a decorative, limited-glyph
  *    face unsuited to a lowercase wordmark, so the locked wordmark uses the
- *    mono voice — the treatment already shipping in the nav/footer.
- *  • Clear space: a margin of half the mark's height is reserved on every
+ *    mono voice - the treatment already shipping in the nav/footer.
+ *  * Clear space: a margin of half the mark's height is reserved on every
  *    side when `clearSpace` is set (default off; most chrome manages its own).
- *  • Minimum size: the mark never renders below MIN_MARK px.
- *  • Variants: full (mark + wordmark), mark (icon only), and monochrome
+ *  * Minimum size: the mark never renders below MIN_MARK px.
+ *  * Variants: full (mark + wordmark), mark (icon only), and monochrome
  *    light/dark for use over imagery or on inverted surfaces.
  */
 
@@ -32,7 +32,7 @@ const SIZES: Record<LockupSize, { mark: number; text: string; gap: string }> = {
 export interface BrandLockupProps {
   size?: LockupSize;
   variant?: LockupVariant;
-  /** Reserve brand clear-space (½ mark height) around the lockup. */
+  /** Reserve brand clear-space (1/2 mark height) around the lockup. */
   clearSpace?: boolean;
   className?: string;
 }
@@ -48,7 +48,7 @@ export function BrandLockup({
   const showWord = variant !== "mark";
   const mono = variant === "mono-light" || variant === "mono-dark";
 
-  // PNG → monochrome: brightness-0 collapses to black, invert flips to white.
+  // PNG -> monochrome: brightness-0 collapses to black, invert flips to white.
   const markTone =
     variant === "mono-light"
       ? "brightness-0 invert"

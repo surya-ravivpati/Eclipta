@@ -1,0 +1,195 @@
+#!/usr/bin/env node
+/**
+ * Unit-test line-coverage ratchet.
+ *
+ * Same shape as lint-ratchet.mjs and typecheck-ratchet.mjs — a recorded floor
+ * that may fall but never rise — with one addition: a commit that changes
+ * production code has to *raise* the floor, not merely hold it.
+ *
+ * ── Why the increase is conditional ─────────────────────────────────────────
+ * The requested rule was "+1/100th every commit". Applied literally that blocks
+ * commits that cannot possibly satisfy it: a README edit, a SQL migration, a
+ * config change, or a refactor that deletes as much as it adds. A gate that
+ * fires on work it has no opinion about is a gate people learn to pass with
+ * --no-verify, and then it protects nothing.
+ *
+ * So the demand is scoped to the commits it can actually be about. Touch
+ * `src/**` production code and you owe a percentage point. Touch anything else
+ * and you only owe "don't regress". The floor still only moves one way, so the
+ * number climbs steadily toward the target without ever standing in front of
+ * work it was not designed to judge.
+ *
+ * ── What counts as "production code" ────────────────────────────────────────
+ * `src/**` excluding tests and the generated files coverage already ignores.
+ * Adding tests alone raises coverage without tripping the requirement, which
+ * is the intended escape hatch: a commit whose whole job is backfilling tests
+ * should never be blocked for not adding enough of them.
+ *
+ * Usage:
+ *   node scripts/coverage-ratchet.mjs            check against the baseline
+ *   node scripts/coverage-ratchet.mjs --accept   record the current number
+ *   node scripts/coverage-ratchet.mjs --staged   judge the staged diff
+ *                                                (pre-commit); default is the
+ *                                                diff against the upstream
+ *                                                branch (pre-push)
+ */
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const baselinePath = join(repoRoot, "coverage-baseline.json");
+const summaryPath = join(repoRoot, "coverage", "coverage-summary.json");
+
+/** Percentage points a production-code commit must add. */
+const REQUIRED_GAIN = 1.0;
+
+/** Coverage is a float; compare with a tolerance so 12.0 vs 11.999999 is not a failure. */
+const EPSILON = 0.005;
+
+function git(args) {
+  try {
+    return execFileSync("git", args, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Files this commit changes, from the staged index or from the diff against
+ * the upstream branch. Falls back to an empty list rather than guessing: an
+ * unknown diff should not invent an obligation.
+ */
+function changedFiles() {
+  if (process.argv.includes("--staged")) {
+    return git(["diff", "--cached", "--name-only", "--diff-filter=ACMR"])
+      .split("\n")
+      .filter(Boolean);
+  }
+  const upstream = git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]).trim();
+  if (!upstream) return [];
+  return git(["diff", "--name-only", "--diff-filter=ACMR", `${upstream}...HEAD`])
+    .split("\n")
+    .filter(Boolean);
+}
+
+const PRODUCTION = /^src\/.*\.(ts|tsx)$/;
+const NOT_PRODUCTION = [
+  /\.test\.(ts|tsx)$/,
+  /\.verify\.ts$/,
+  /^src\/routeTree\.gen\.ts$/,
+  /^src\/integrations\/supabase\/types\.ts$/,
+  /^src\/components\/ui\//,
+];
+
+function touchesProductionCode(files) {
+  return files.some((f) => PRODUCTION.test(f) && !NOT_PRODUCTION.some((skip) => skip.test(f)));
+}
+
+function runCoverage() {
+  execFileSync("npx", ["vitest", "run", "--coverage", "--coverage.reporter=json-summary"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    // Inherit so a failing test prints its own diagnosis rather than being
+    // swallowed and re-reported here as a coverage problem.
+    stdio: ["ignore", "inherit", "inherit"],
+    shell: process.platform === "win32",
+  });
+}
+
+function readCoverage() {
+  if (!existsSync(summaryPath)) {
+    console.error(
+      `No coverage summary at ${summaryPath}.\n` +
+        `Ensure "json-summary" is in vitest.config.ts's coverage.reporter list.`,
+    );
+    process.exit(1);
+  }
+  const total = JSON.parse(readFileSync(summaryPath, "utf8")).total;
+  return {
+    lines: total.lines.pct,
+    covered: total.lines.covered,
+    totalLines: total.lines.total,
+  };
+}
+
+const accept = process.argv.includes("--accept");
+
+runCoverage();
+const { lines, covered, totalLines } = readCoverage();
+const shown = lines.toFixed(2);
+
+const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, "utf8")) : null;
+
+function write(floor) {
+  writeFileSync(
+    baselinePath,
+    `${JSON.stringify(
+      {
+        lines: Number(floor.toFixed(2)),
+        covered,
+        total: totalLines,
+        requiredGainPerCodeCommit: REQUIRED_GAIN,
+        updated: new Date().toISOString().slice(0, 10),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+if (accept || baseline === null) {
+  write(lines);
+  console.log(`Line coverage baseline set to ${shown}%. Commit coverage-baseline.json.`);
+  process.exit(0);
+}
+
+const floor = baseline.lines;
+
+if (lines < floor - EPSILON) {
+  console.error(
+    `Line coverage fell from ${floor.toFixed(2)}% to ${shown}% (${covered}/${totalLines} lines).\n\n` +
+      `Coverage may never drop. Add tests for what this commit changed, or\n` +
+      `remove the untested code it introduced.`,
+  );
+  process.exit(1);
+}
+
+const files = changedFiles();
+const owesGain = touchesProductionCode(files);
+const target = floor + REQUIRED_GAIN;
+
+if (owesGain && lines < target - EPSILON) {
+  console.error(
+    `Line coverage is ${shown}% (${covered}/${totalLines} lines).\n` +
+      `This commit changes production code under src/, so it needs ` +
+      `${target.toFixed(2)}% — a ${REQUIRED_GAIN.toFixed(2)}pp gain on the ` +
+      `${floor.toFixed(2)}% floor.\n\n` +
+      `Short by ${(target - lines).toFixed(2)}pp, roughly ` +
+      `${Math.ceil(((target - lines) / 100) * totalLines)} more covered lines.\n\n` +
+      `A commit that only adds tests is never asked for a gain — split the work\n` +
+      `if that is easier than covering this change in place.`,
+  );
+  process.exit(1);
+}
+
+if (lines > floor + EPSILON) {
+  write(lines);
+  console.log(
+    `Line coverage rose from ${floor.toFixed(2)}% to ${shown}% ` +
+      `(${covered}/${totalLines} lines). Floor raised — commit coverage-baseline.json.`,
+  );
+  process.exit(0);
+}
+
+console.log(
+  `Line coverage holding at ${shown}%` +
+    (owesGain ? "" : " (no production-code changes, so no gain required)") +
+    ".",
+);

@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
-    meta: [{ title: "Signing you in — Eclipta" }],
+    meta: [{ title: "Signing you in - Eclipta" }],
   }),
   component: AuthCallback,
 });
@@ -85,7 +85,7 @@ function AuthCallback() {
               className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary"
               aria-hidden="true"
             />
-            <p className="mt-4 text-sm text-muted-foreground">Signing you in…</p>
+            <p className="mt-4 text-sm text-muted-foreground">Signing you in...</p>
           </>
         )}
       </div>

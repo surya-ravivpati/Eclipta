@@ -67,7 +67,7 @@ function mockFallbackTables(opts: {
   });
 }
 
-describe("getDashboard — happy path", () => {
+describe("getDashboard - happy path", () => {
   it("returns status ok with the RPC's data when it succeeds", async () => {
     const rpcData = { profile: { username: "nova" }, resume: null };
     vi.mocked(supabase.rpc).mockResolvedValue({ data: rpcData, error: null } as never);
@@ -83,7 +83,7 @@ describe("getDashboard — happy path", () => {
   });
 });
 
-describe("getDashboard — degraded path", () => {
+describe("getDashboard - degraded path", () => {
   it("distinguishes an undeployed migration (PGRST202) from a generic error", async () => {
     vi.mocked(supabase.rpc).mockResolvedValue({
       data: null,

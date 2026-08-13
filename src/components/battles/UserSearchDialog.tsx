@@ -122,7 +122,7 @@ export function UserSearchDialog({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="username…"
+            placeholder="username..."
             className="w-full bg-secondary/40 border border-border/60 px-3 py-2 text-sm focus:outline-none focus:border-neon-cyan/60"
           />
 
@@ -143,7 +143,7 @@ export function UserSearchDialog({
 
           <div className="max-h-72 overflow-y-auto -mx-2 px-2">
             {loading && (
-              <p className="text-xs text-muted-foreground italic px-2 py-3">Searching…</p>
+              <p className="text-xs text-muted-foreground italic px-2 py-3">Searching...</p>
             )}
             {!loading && query.trim().length >= 2 && results.length === 0 && (
               <p className="text-xs text-muted-foreground italic px-2 py-3">

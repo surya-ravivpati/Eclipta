@@ -2,20 +2,20 @@
  * Hook: live competitive rating from Supabase `player_ratings`.
  *
  * The Trophy Road's XP track (`usePlayerXp`) is the permanent, loss-proof
- * "Ascent" — it only ever goes up. This hook surfaces the *other* progression
+ * "Ascent" - it only ever goes up. This hook surfaces the *other* progression
  * spine: the seasonal, gain-and-loss competitive rating that drives PvP and the
- * leaderboard. Keeping both visible on the road is the whole point — skill and
+ * leaderboard. Keeping both visible on the road is the whole point - skill and
  * dedication are different journeys, and the player should see both at once.
  *
  * TanStack Query owns the fetch, cache, and loading state. A Supabase Realtime
  * subscription is still needed on top: nothing about a normal query tells this
  * client that a *different* process (the battle-completion RPC, running
  * server-side) just changed this row, so a completed battle invalidates the
- * cached query instead of writing to it directly — the next fetch re-reads
+ * cached query instead of writing to it directly - the next fetch re-reads
  * from the same repository function everything else uses.
  *
  * Window-focus refetching (Query's default) replaces the previous
- * visibilitychange listener — Query's focus manager already reacts to tab
+ * visibilitychange listener - Query's focus manager already reacts to tab
  * visibility changes in a browser environment, so the manual listener this
  * hook used before TanStack Query would now just be redundant.
  */

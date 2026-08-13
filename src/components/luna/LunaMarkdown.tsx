@@ -20,7 +20,7 @@ import "katex/dist/katex.min.css";
  * doesn't recognize without preprocessing) into the $-style syntax that
  * remark-math parses out of the box.
  *
- * Order matters — block first so the inline regex can't eat its opener.
+ * Order matters - block first so the inline regex can't eat its opener.
  */
 function normalizeLatex(input: string): string {
   if (!input) return input;
@@ -82,14 +82,23 @@ const components: Components = {
     );
   },
   th({ children }) {
-    return <th className="px-2 py-1 border-b border-border bg-secondary/40 text-left font-bold">{children}</th>;
+    return (
+      <th className="px-2 py-1 border-b border-border bg-secondary/40 text-left font-bold">
+        {children}
+      </th>
+    );
   },
   td({ children }) {
     return <td className="px-2 py-1 border-b border-border/40">{children}</td>;
   },
   a({ href, children }) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className="text-neon-cyan hover:text-neon-pink underline">
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="text-neon-cyan hover:text-neon-pink underline"
+      >
         {children}
       </a>
     );
@@ -104,7 +113,9 @@ interface Props {
 export function LunaMarkdown({ children, className }: Props) {
   const normalized = normalizeLatex(children);
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 break-words ${className ?? ""}`}>
+    <div
+      className={`prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 break-words ${className ?? ""}`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}

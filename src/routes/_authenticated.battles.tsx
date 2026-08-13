@@ -4,13 +4,13 @@ import { KnowledgeBattles } from "@/components/KnowledgeBattles";
 export const Route = createFileRoute("/_authenticated/battles")({
   head: () => ({
     meta: [
-      { title: "Battles – Eclipta" },
+      { title: "Battles - Eclipta" },
       {
         name: "description",
         content:
           "Pokémon-style PvP duels powered by what you've learned. Build combos, climb ranks, and earn XP.",
       },
-      { property: "og:title", content: "Battles – Eclipta" },
+      { property: "og:title", content: "Battles - Eclipta" },
       {
         property: "og:description",
         content:

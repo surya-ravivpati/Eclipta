@@ -91,7 +91,7 @@ export function SiteFooter() {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t border-border">
           <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted-foreground">
-            © {new Date().getFullYear()} Eclipta · All rights reserved
+            © {new Date().getFullYear()} Eclipta | All rights reserved
           </p>
           <div className="flex items-center gap-3">
             <a

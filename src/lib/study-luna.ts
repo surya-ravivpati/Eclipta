@@ -1,8 +1,8 @@
 /**
- * Study-room Luna helpers — the "Stuck" escalation records and the "Recap"
+ * Study-room Luna helpers - the "Stuck" escalation records and the "Recap"
  * generator. Both reuse the Lovable AI gateway via the luna-room edge function
  * (same engine as luna-chat). Ask is handled directly in the UI via
- * streamLunaChat (private, client-only) — no storage, so it can never leak into
+ * streamLunaChat (private, client-only) - no storage, so it can never leak into
  * Recap. Recap is fed ONLY structured events, never chat.
  */
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +62,7 @@ export async function createStuckRequest(roomId: string, note: string): Promise<
   return error ? error.message : null;
 }
 
-/** A human picks it up — first action wins (server-guarded), cancels AI fallback. */
+/** A human picks it up - first action wins (server-guarded), cancels AI fallback. */
 export async function resolveStuckHuman(stuckId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc(
     "resolve_stuck_human" as never,
@@ -85,7 +85,7 @@ export async function triggerStuckAi(stuckId: string): Promise<void> {
   }
 }
 
-// ─── Recap ───────────────────────────────────────────────────────────────────
+// --- Recap -------------------------------------------------------------------
 
 export interface RecapEvent {
   type: string;
@@ -106,7 +106,7 @@ export function gatherRecapEvents(
     .map((s) => ({
       type: "stuck_resolved",
       text:
-        `${s.author_name || "A member"} was stuck${s.note ? ` on "${s.note}"` : ""} — ` +
+        `${s.author_name || "A member"} was stuck${s.note ? ` on "${s.note}"` : ""} - ` +
         (s.resolved_by === "ai" ? "Luna stepped in" : `${s.resolver_name || "a member"} helped`) +
         (s.resolved_by === "ai" && s.resolution_summary
           ? `. Luna's hint: ${s.resolution_summary.slice(0, 300)}`
@@ -122,7 +122,7 @@ export function gatherRecapEvents(
         const tally = `👍${r.up_count} 🤔${r.kinda_count} ❓${r.lost_count}`;
         return {
           type: "teach_back",
-          text: `${who} taught back ${concept} — the room reacted ${tally}.`,
+          text: `${who} taught back ${concept} - the room reacted ${tally}.`,
         };
       }
       if (r.status === "skipped") {
@@ -135,7 +135,7 @@ export function gatherRecapEvents(
 }
 
 /**
- * Generate the recap. Caller MUST pass at least one event — with zero events we
+ * Generate the recap. Caller MUST pass at least one event - with zero events we
  * never call the model (that's exactly when it would hallucinate). Same logic
  * powers both "Recap so far" and end-of-session.
  */

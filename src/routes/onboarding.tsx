@@ -24,7 +24,7 @@ import { moderate, calmBlockMessage } from "@/lib/moderation";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Welcome to Eclipta — Quick Setup" },
+      { title: "Welcome to Eclipta - Quick Setup" },
       { name: "description", content: "Five quick questions to personalize your learning arena." },
     ],
   }),
@@ -64,9 +64,9 @@ const GOALS = [
 ] as const;
 
 const HOURS = [
-  { value: 2, label: "Casual", desc: "1–2 hrs / week" },
-  { value: 5, label: "Steady", desc: "3–5 hrs / week" },
-  { value: 10, label: "Focused", desc: "6–10 hrs / week" },
+  { value: 2, label: "Casual", desc: "1-2 hrs / week" },
+  { value: 5, label: "Steady", desc: "3-5 hrs / week" },
+  { value: 10, label: "Focused", desc: "6-10 hrs / week" },
   { value: 15, label: "Intense", desc: "10+ hrs / week" },
 ] as const;
 
@@ -128,13 +128,13 @@ function OnboardingPage() {
       {
         id: "goal",
         title: "What do you want to learn?",
-        sub: "Pick everything that interests you — we'll tune your roadmap.",
+        sub: "Pick everything that interests you - we'll tune your roadmap.",
       },
       { id: "hours", title: "How much time do you have?", sub: "Sets a realistic weekly pace." },
       {
         id: "style",
         title: "How should Luna teach you?",
-        sub: "She'll adapt over time — this is the starting point.",
+        sub: "She'll adapt over time - this is the starting point.",
       },
     ],
     [],
@@ -178,7 +178,7 @@ function OnboardingPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
-      // Unified moderation — usernames go through the same pipeline (deterministic
+      // Unified moderation - usernames go through the same pipeline (deterministic
       // layer weighted heavily; impersonation of staff is blocked here too).
       const modVerdict = await moderate(form.username.trim(), "username");
       if (modVerdict.blocked) {
@@ -209,7 +209,7 @@ function OnboardingPage() {
 
       if (error) {
         if (error.code === "23505") {
-          toast.error("That handle is already taken — try another.");
+          toast.error("That handle is already taken - try another.");
           setStep(0);
           return;
         }
@@ -282,7 +282,7 @@ function OnboardingPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  3–20 chars. Letters, numbers, underscores. Visible on your profile.
+                  3-20 chars. Letters, numbers, underscores. Visible on your profile.
                 </p>
               </div>
             )}
@@ -314,7 +314,7 @@ function OnboardingPage() {
                   <textarea
                     value={form.bio}
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                    placeholder="A line about you — interests, goals, anything."
+                    placeholder="A line about you - interests, goals, anything."
                     rows={3}
                     maxLength={240}
                     className="w-full px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -438,7 +438,7 @@ function OnboardingPage() {
             disabled={!canAdvance || saving}
             className="px-6 py-3 rounded-md bg-primary text-primary-foreground font-bold text-sm tracking-widest uppercase inline-flex items-center gap-2 transition-colors hover:bg-primary/90 disabled:opacity-40 elev-1"
           >
-            {saving ? "Saving…" : step === total - 1 ? "Enter the arena" : "Continue"}
+            {saving ? "Saving..." : step === total - 1 ? "Enter the arena" : "Continue"}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

@@ -1,7 +1,7 @@
 /**
  * Hooks: live player XP and owned-Ecliptar tracking from Supabase.
  *
- * Same shape as src/hooks/use-player-rating.tsx — TanStack Query owns the
+ * Same shape as src/hooks/use-player-rating.tsx - TanStack Query owns the
  * fetch/cache/loading state, a Realtime subscription invalidates the query
  * when a battle or course completion changes the row server-side, and
  * window-focus refetching (Query's default) replaces the old manual

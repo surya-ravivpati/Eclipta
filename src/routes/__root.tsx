@@ -79,14 +79,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Eclipta – A Smarter Way to Learn" },
+      { title: "Eclipta - A Smarter Way to Learn" },
       {
         name: "description",
         content:
           "Adaptive learning arena with AI guidance, knowledge battles, and personalized courses.",
       },
       { name: "author", content: "Eclipta" },
-      { property: "og:title", content: "Eclipta – A Smarter Way to Learn" },
+      { property: "og:title", content: "Eclipta - A Smarter Way to Learn" },
       {
         property: "og:description",
         content:
@@ -94,7 +94,7 @@ export const Route = createRootRoute({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Eclipta – A Smarter Way to Learn" },
+      { name: "twitter:title", content: "Eclipta - A Smarter Way to Learn" },
       {
         name: "twitter:description",
         content:
@@ -176,7 +176,7 @@ function AppShell() {
     applyMotionPreference();
   }, []);
 
-  // Route changes are invisible to a screen reader in a SPA — nothing reloads,
+  // Route changes are invisible to a screen reader in a SPA - nothing reloads,
   // so nothing is announced. Naming the new page on navigation restores the
   // orientation a full page load would have given for free.
   useEffect(() => {

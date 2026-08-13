@@ -4,7 +4,7 @@ import { AuthForm } from "@/components/auth/AuthForm";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign In — Eclipta" },
+      { title: "Sign In - Eclipta" },
       { name: "description", content: "Sign in to your Eclipta account." },
     ],
   }),

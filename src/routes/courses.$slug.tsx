@@ -19,7 +19,7 @@ import {
 export const Route = createFileRoute("/courses/$slug")({
   head: ({ params }) => ({
     meta: [
-      { title: `Course – Eclipta` },
+      { title: `Course - Eclipta` },
       { name: "description", content: `Community-built course on Eclipta.` },
     ],
   }),
@@ -123,7 +123,7 @@ function CommunityCoursePage() {
             This course isn't published yet, or the link is wrong.
           </p>
           <Link to="/courses" className="text-neon-purple">
-            ← Browse community courses
+            &lt;- Browse community courses
           </Link>
         </div>
       </div>

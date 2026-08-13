@@ -2,11 +2,11 @@
  * Lightweight client-side detector for tutoring-style preferences the user
  * states in chat. We capture intent ("write shorter", "use more analogies",
  * "answer in Spanish") as a short imperative phrase, then merge it into
- * user_profiles.luna_auto_notes (the auto-detected channel — kept separate from
+ * user_profiles.luna_auto_notes (the auto-detected channel - kept separate from
  * luna_notes, which is reserved for what the user types on /profile) so Luna
  * sees it on every future reply.
  *
- * This is intentionally heuristic — false positives are cheap (the user can
+ * This is intentionally heuristic - false positives are cheap (the user can
  * edit notes from /profile) and false negatives just mean the preference
  * doesn't auto-stick. Anything heavier (LLM extraction) would double our
  * AI bill on every turn.
@@ -46,7 +46,7 @@ const TRIGGER_PATTERNS: { rx: RegExp; build: (m: RegExpMatchArray) => string }[]
   },
   // Hints
   // "just give me the answer" is transient frustration, not a durable
-  // preference — never persist it as a standing instruction (that would defeat
+  // preference - never persist it as a standing instruction (that would defeat
   // Luna's core never-give-the-answer mechanic). Escalation is handled live by
   // hintLevel instead. Only the "fewer hints" intent persists, and it means
   // "get concrete faster", not "skip to the answer".
@@ -82,7 +82,7 @@ export function extractPreference(text: string): string | null {
  * Coarse category for a preference line. Used by mergePreference to drop
  * stale entries that the user has just contradicted ("shorter responses"
  * gets replaced when they later say "longer responses"). Returns null when
- * the line doesn't map to a recognisable category — in which case we leave
+ * the line doesn't map to a recognisable category - in which case we leave
  * older lines alone and only dedupe by text.
  */
 export function preferenceCategory(line: string): string | null {

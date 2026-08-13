@@ -3,7 +3,7 @@ import { QueryClient } from "@tanstack/react-query";
 /**
  * A factory, not a module-level singleton. TanStack Start can render on the
  * server, and a client created at module scope would be shared across every
- * request — one user's cached data leaking into another's response. Creating
+ * request - one user's cached data leaking into another's response. Creating
  * it inside a component's `useState(createQueryClient)` scopes one instance
  * per render (per request on the server, per mount on the client).
  */

@@ -59,7 +59,7 @@ export function useDailyStreak() {
     setLoading(false);
   }, []);
 
-  /** Mark today as practiced. Safe to call repeatedly — server is idempotent per day. */
+  /** Mark today as practiced. Safe to call repeatedly - server is idempotent per day. */
   const recordPractice = useCallback(async (): Promise<PracticeResult | null> => {
     const {
       data: { user },

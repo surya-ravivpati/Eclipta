@@ -134,7 +134,7 @@ describe("updateBattleMemoryAiTurn", () => {
   });
 });
 
-describe("pickAiAction — unavailable actions are never chosen", () => {
+describe("pickAiAction - unavailable actions are never chosen", () => {
   it("never picks defend when the opponent cannot heal", () => {
     mockRandomSequence([0.99]); // always land at the high end of the weighted draw
     const m = createBattleMemory();
@@ -163,7 +163,7 @@ describe("pickAiAction — unavailable actions are never chosen", () => {
   });
 });
 
-describe("pickAiAction — gambler's chaos mode", () => {
+describe("pickAiAction - gambler's chaos mode", () => {
   it("picks from the fixed chaos pool on the 86% chaos roll", () => {
     // First random() call (0.5) is the "is this a chaos turn" check
     // (>0.14 -> yes); second call (0) picks the first pool entry.
@@ -184,7 +184,7 @@ describe("pickAiAction — gambler's chaos mode", () => {
   });
 });
 
-describe("pickAiAction — situational weighting is directional, not just present", () => {
+describe("pickAiAction - situational weighting is directional, not just present", () => {
   it("favors charge/aggression for a risk-tolerant archetype at critically low HP", () => {
     // chud has riskTolerance 0.96 (>= 0.7 threshold) -> the all-in branch
     // multiplies charge by 2.8 and defend by 0.12, making charge's weight
@@ -329,7 +329,7 @@ describe("getPressureLogLine", () => {
   });
 });
 
-// ─── Rating-matched difficulty ───────────────────────────────────────────────
+// --- Rating-matched difficulty -----------------------------------------------
 
 describe("ratingSkillAdjustment", () => {
   it("is zero for an evenly matched pair", () => {
@@ -400,7 +400,7 @@ describe("computeAiAccuracy with a skill adjustment", () => {
   });
 });
 
-// ─── Pacing ──────────────────────────────────────────────────────────────────
+// --- Pacing ------------------------------------------------------------------
 
 describe("botThinkDelayMs", () => {
   /** Cycles a fixed sequence, so a "random" delay is reproducible. */
@@ -423,7 +423,7 @@ describe("botThinkDelayMs", () => {
     }
   });
 
-  it("is never the same value twice running — the point of the whole function", () => {
+  it("is never the same value twice running - the point of the whole function", () => {
     // A flat delay is what gave the old bot away, so variation is the property
     // under test, not an implementation detail.
     const seen = new Set(

@@ -6,26 +6,26 @@ import { ArchetypesCompass } from "@/components/archetypes/ArchetypesCompass";
 import "./CinematicFilm.css";
 
 /**
- * CinematicFilm — the homepage as a directed, scroll-driven film.
+ * CinematicFilm - the homepage as a directed, scroll-driven film.
  *
  * Narrative arc:
- *   Act I   — Curiosity.      A film-title reveal in deep space; the camera
+ *   Act I   - Curiosity.      A film-title reveal in deep space; the camera
  *                             pushes through the title into a portal of light.
- *   Act II  — Discovery.      One ring of light morphs through three chapters
- *                             (match timer → combo streak → Luna's crescent),
+ *   Act II  - Discovery.      One ring of light morphs through three chapters
+ *                             (match timer -> combo streak -> Luna's crescent),
  *                             then the archetype compass tour.
- *   Act III — Transformation. The ascent: the environment turns from deep
- *                             blue to gold as tiers climb Bronze → God,
+ *   Act III - Transformation. The ascent: the environment turns from deep
+ *                             blue to gold as tiers climb Bronze -> God,
  *                             ending on a freeze-frame.
- *   Act IV  — Resolution.     Calm. One statement, one call to action.
+ *   Act IV  - Resolution.     Calm. One statement, one call to action.
  *
  * Engine: a single rAF loop lerps scrollY and mouse position, then drives
  * every scene through transform / opacity / filter and a handful of SVG
- * attributes — no layout work per frame, fully compositor-friendly.
+ * attributes - no layout work per frame, fully compositor-friendly.
  * prefers-reduced-motion collapses the film into a static gallery.
  */
 
-/* ─── math helpers ──────────────────────────────────────────────── */
+/* --- math helpers ------------------------------------------------ */
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -35,7 +35,7 @@ const win = (p: number, a: number, b: number, f = 0.08) => {
   return Math.min(clamp01((p - a) / f), clamp01((b - p) / f));
 };
 
-/* ─── scene data ────────────────────────────────────────────────── */
+/* --- scene data -------------------------------------------------- */
 const STARS = Array.from({ length: 26 }, (_, i) => ({
   x: 4 + ((i * 167 + 23) % 92),
   y: 4 + ((i * 113 + 41) % 92),
@@ -86,7 +86,7 @@ const COMBO_ARCS = [0, 1, 2].map((i) => {
   return arcPath(178, start, start + (Math.PI * 2) / 3 - 0.36);
 });
 
-/* ─── component ─────────────────────────────────────────────────── */
+/* --- component --------------------------------------------------- */
 export function CinematicFilm() {
   const { isAuthenticated } = useAuth();
   const ctaTo = isAuthenticated ? "/battles" : "/signup";
@@ -96,7 +96,7 @@ export function CinematicFilm() {
   const [activeTier, setActiveTier] = useState(0);
   const activeTierRef = useRef(0);
 
-  /* DOM refs — everything the camera touches */
+  /* DOM refs - everything the camera touches */
   const auroraRef = useRef<HTMLDivElement>(null);
   const flashRef = useRef<HTMLDivElement>(null);
 
@@ -171,7 +171,7 @@ export function CinematicFilm() {
       const p2 = prog(s2Ref.current, vh);
       const p4 = prog(s4Ref.current, vh);
 
-      /* ── ACT I — title push + portal ─────────────────────────── */
+      /* -- ACT I - title push + portal --------------------------- */
       if (starsRef.current) {
         starsRef.current.style.transform = `translate3d(${(mx * -14).toFixed(1)}px, ${(my * -10 + sY * 0.03).toFixed(1)}px, 0)`;
       }
@@ -185,14 +185,14 @@ export function CinematicFilm() {
       if (coreRef.current) {
         coreRef.current.style.transform = `translate3d(${(mx * 6).toFixed(1)}px, ${(my * 4).toFixed(1)}px, 0) scale(${(0.16 + grow * 26).toFixed(3)})`;
       }
-      /* Portal flash — whites out the screen well BEFORE the text beats so
+      /* Portal flash - whites out the screen well BEFORE the text beats so
          every line lands on a fully bright field, holds, then dissolves
          over Act II's entry. */
       const whiteUp = smooth(clamp01((p1 - 0.4) / 0.16));
       const bridgeOut = 1 - smooth(clamp01(p2 / 0.1));
       const flash = whiteUp * bridgeOut;
       if (flashRef.current) flashRef.current.style.opacity = flash.toFixed(3);
-      /* Inside the light — three dark-ink beats. Each window is comfortably
+      /* Inside the light - three dark-ink beats. Each window is comfortably
          wider than its fade, so the line rises, HOLDS at full for a real
          stretch of scroll, then dissolves before the next arrives. Multiplied
          by bridgeOut so the last beat dissolves WITH the flash into Act II
@@ -213,7 +213,7 @@ export function CinematicFilm() {
       });
       hintRef.current?.classList.toggle("cf-hidden", p1 > 0.03);
 
-      /* ── ACT II — the morphing ring ──────────────────────────── */
+      /* -- ACT II - the morphing ring ---------------------------- */
       if (ringWrapRef.current) {
         const enter = smooth(clamp01(p2 / 0.06));
         ringWrapRef.current.style.opacity = p2 >= 1 ? "1" : enter.toFixed(3);
@@ -248,7 +248,7 @@ export function CinematicFilm() {
       if (numBRef.current) {
         const v = win(p2, 0.36, 0.66, 0.07);
         numBRef.current.style.opacity = v.toFixed(3);
-        numBRef.current.textContent = `×${(1 + clamp01((p2 - 0.36) / 0.26) * 1.4).toFixed(2)}`;
+        numBRef.current.textContent = `x${(1 + clamp01((p2 - 0.36) / 0.26) * 1.4).toFixed(2)}`;
       }
       const chWins: [number, number][] = [
         [0.02, 0.34],
@@ -263,7 +263,7 @@ export function CinematicFilm() {
         ch.style.filter = v < 0.99 ? `blur(${((1 - v) * 9).toFixed(1)}px)` : "";
       });
 
-      /* ── ACT III — the climb ─────────────────────────────────── */
+      /* -- ACT III - the climb ----------------------------------- */
       const idx = Math.min(7, Math.floor(clamp01((p4 - 0.05) / 0.7) * 8));
       if (idx !== activeTierRef.current) {
         activeTierRef.current = idx;
@@ -283,7 +283,7 @@ export function CinematicFilm() {
         freezeRef.current.style.transform = `translateY(${((1 - freeze) * 34).toFixed(1)}px)`;
       }
 
-      /* ── Environment — blue depths to gold heights, then calm ── */
+      /* -- Environment - blue depths to gold heights, then calm -- */
       let gold = smooth(clamp01((p4 - 0.12) / 0.55));
       if (s5Ref.current) {
         const r5 = s5Ref.current.getBoundingClientRect();
@@ -291,7 +291,7 @@ export function CinematicFilm() {
       }
       if (auroraRef.current) {
         // Cool deep-navy wash that resolves to brand gold as the eclipse
-        // turns — restrained chroma, no neon/magenta start.
+        // turns - restrained chroma, no neon/magenta start.
         auroraRef.current.style.setProperty("--h1", lerp(250, 88, gold).toFixed(1));
         auroraRef.current.style.setProperty("--h2", lerp(285, 78, gold).toFixed(1));
         auroraRef.current.style.setProperty("--i", (0.32 + gold * 0.26).toFixed(3));
@@ -310,7 +310,7 @@ export function CinematicFilm() {
 
   return (
     <div className={`cf${staticMode ? " cf-static" : ""}`}>
-      {/* ── Environment ─────────────────────────────────────────── */}
+      {/* -- Environment ------------------------------------------- */}
       <div className="cf-bg" aria-hidden="true">
         <div className="cf-aurora" ref={auroraRef} />
         <div className="cf-grain" />
@@ -318,7 +318,7 @@ export function CinematicFilm() {
       </div>
       <div className="cf-flash" ref={flashRef} aria-hidden="true" />
 
-      {/* Beats inside the light — a SIBLING of the flash (same stacking
+      {/* Beats inside the light - a SIBLING of the flash (same stacking
           layer) so its z-index actually sits above the white, and gated by
           the flash's dissolve so it never lingers into Act II. */}
       <div className="cf-step" aria-hidden="true">
@@ -345,7 +345,7 @@ export function CinematicFilm() {
         </p>
       </div>
 
-      {/* ── ACT I — Title ───────────────────────────────────────── */}
+      {/* -- ACT I - Title ----------------------------------------- */}
       <section className="cf-act1" ref={s1Ref}>
         <div className="cf-pin">
           <div className="cf-stars" ref={starsRef} aria-hidden="true">
@@ -378,7 +378,7 @@ export function CinematicFilm() {
               height={150}
               draggable={false}
             />
-            <p className="cf-kicker">Eclipta · Season 01</p>
+            <p className="cf-kicker">Eclipta | Season 01</p>
             <h1 className="cf-title" aria-label="Eclipta">
               {"ECLIPTA".split("").map((c, i) => (
                 <span
@@ -404,12 +404,12 @@ export function CinematicFilm() {
         </div>
       </section>
 
-      {/* ── ACT II — The Loop ───────────────────────────────────── */}
+      {/* -- ACT II - The Loop ------------------------------------- */}
       <section className="cf-act2" ref={s2Ref} id="loop">
         <div className="cf-pin">
           <div className="cf-act2-grid">
             <div className="cf-act2-copy">
-              <p className="cf-actlabel">Act II · The Loop</p>
+              <p className="cf-actlabel">Act II | The Loop</p>
               <div
                 className="cf-ch"
                 ref={(el) => {
@@ -422,7 +422,7 @@ export function CinematicFilm() {
                   <em>Live stakes.</em>
                 </h2>
                 <p>
-                  Real opponents, in real time. Every correct answer lands as damage — every
+                  Real opponents, in real time. Every correct answer lands as damage - every
                   hesitation costs you.
                 </p>
               </div>
@@ -452,7 +452,7 @@ export function CinematicFilm() {
                   <em>Never answers.</em>
                 </h2>
                 <p>
-                  A hint-first AI that makes you reason it out — then sends you back into the fight.
+                  A hint-first AI that makes you reason it out - then sends you back into the fight.
                 </p>
               </div>
             </div>
@@ -497,7 +497,7 @@ export function CinematicFilm() {
                   ))}
                 </g>
 
-                {/* Chapter 1 — the match ring draws itself */}
+                {/* Chapter 1 - the match ring draws itself */}
                 <circle
                   ref={ringRef}
                   cx={RC}
@@ -511,7 +511,7 @@ export function CinematicFilm() {
                   transform={`rotate(-90 ${RC} ${RC})`}
                 />
 
-                {/* Chapter 2 — combo arcs light in sequence */}
+                {/* Chapter 2 - combo arcs light in sequence */}
                 {COMBO_ARCS.map((d, i) => (
                   <path
                     key={i}
@@ -526,7 +526,7 @@ export function CinematicFilm() {
                   />
                 ))}
 
-                {/* Chapter 3 — the ring becomes Luna's crescent */}
+                {/* Chapter 3 - the ring becomes Luna's crescent */}
                 <circle
                   ref={moonRef}
                   cx={RC}
@@ -546,14 +546,14 @@ export function CinematicFilm() {
         </div>
       </section>
 
-      {/* ── ACT II, continued — eight ways to fight ─────────────── */}
+      {/* -- ACT II, continued - eight ways to fight --------------- */}
       <ArchetypesCompass />
 
-      {/* ── ACT III — The Climb ─────────────────────────────────── */}
+      {/* -- ACT III - The Climb ----------------------------------- */}
       <section className="cf-act4" ref={s4Ref} id="climb">
         <div className="cf-pin">
           <div className="cf-climb-stage">
-            <p className="cf-actlabel">Act III · The Climb</p>
+            <p className="cf-actlabel">Act III | The Climb</p>
             <div className="cf-beam" aria-hidden="true">
               <div className="cf-beam-fill" ref={beamFillRef} />
             </div>
@@ -578,13 +578,13 @@ export function CinematicFilm() {
               </div>
             </div>
             <p className="cf-climb-meta">
-              Ranked ascent — tier {String(activeTier + 1).padStart(2, "0")} / 08
+              Ranked ascent - tier {String(activeTier + 1).padStart(2, "0")} / 08
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── ACT IV — Resolution ─────────────────────────────────── */}
+      {/* -- ACT IV - Resolution ----------------------------------- */}
       <section className="cf-act5" ref={s5Ref} id="enter">
         <div>
           <motion.p
@@ -594,7 +594,7 @@ export function CinematicFilm() {
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.9, ease: [0.2, 0.7, 0.2, 1] }}
           >
-            Act IV · Yours
+            Act IV | Yours
           </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 26, filter: "blur(10px)" }}
@@ -611,7 +611,7 @@ export function CinematicFilm() {
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.9, delay: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
           >
-            Free to play. Pick a class, land your first combo, and find out what you actually know —
+            Free to play. Pick a class, land your first combo, and find out what you actually know -
             in three minutes.
           </motion.p>
           <motion.div
@@ -634,7 +634,7 @@ export function CinematicFilm() {
         </div>
       </section>
 
-      {/* ── Credits ─────────────────────────────────────────────── */}
+      {/* -- Credits ----------------------------------------------- */}
       <footer className="cf-foot">
         <Link to="/" className="cf-brand">
           <img

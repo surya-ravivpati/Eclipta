@@ -1,5 +1,5 @@
 /**
- * ArchetypesCompass — scroll-driven cinematic showcase of every Eclipta
+ * ArchetypesCompass - scroll-driven cinematic showcase of every Eclipta
  * archetype. The user travels a rotating compass; the needle locks onto
  * each archetype in turn while a panel cross-fades its identity.
  *
@@ -8,13 +8,13 @@
  *   - Midground:   rotating wheel of archetype icons + a fixed lock-on arc
  *   - Foreground:  active archetype panel (name, blurb, stats)
  *
- * Motion plumbing (kept from the battle-tested version — do not "simplify"):
- *   * useScroll() → scrollYProgress (0→1) across the section.
+ * Motion plumbing (kept from the battle-tested version - do not "simplify"):
+ *   * useScroll() -> scrollYProgress (0->1) across the section.
  *   * activeIndex is discrete; wheel rotation springs toward it so wheel
  *     position and panel text are always driven by the SAME event and can
  *     never drift out of phase (a real bug we hit when they read scroll
  *     through different mechanisms).
- *   * Colours STEP between archetypes via callback transforms — never fed
+ *   * Colours STEP between archetypes via callback transforms - never fed
  *     to framer-motion as an array, which can't interpolate oklch().
  *   * prefers-reduced-motion holds the wheel still and shows panels plainly.
  */
@@ -44,11 +44,11 @@ const ORDER: ArchetypeId[] = [
 ];
 
 // Scroll budget per archetype, in viewport heights. Section height is
-// (N + 2) * SLOT_VH — one buffer slot at each end so the first/last
+// (N + 2) * SLOT_VH - one buffer slot at each end so the first/last
 // archetype still gets a full dwell inside [0,1] of scrollYProgress.
 const SLOT_VH = 40;
 
-// Film fonts — reference the canonical type roles (defined in styles.css
+// Film fonts - reference the canonical type roles (defined in styles.css
 // @theme, loaded globally from the <head> in __root.tsx).
 const F_DISPLAY = "var(--font-cinematic)";
 const F_SERIF = "var(--font-serif)";
@@ -67,10 +67,10 @@ const AURA: Record<ArchetypeId, string> = {
   god: "#ffd86b",
 };
 
-// Short, punchy one-liner per archetype — keeps the panel uncluttered
+// Short, punchy one-liner per archetype - keeps the panel uncluttered
 // (the full ARCHETYPES descriptions are longer and used elsewhere).
 const BLURB: Record<ArchetypeId, string> = {
-  speedster: "Less time per question — but faster answers hit harder.",
+  speedster: "Less time per question - but faster answers hit harder.",
   tank: "A wall of HP. Low damage, and it can't heal.",
   chud: "Glass cannon. Massive damage, almost no HP.",
   gambler: "Every stat rolled fresh each battle. Pure chaos.",
@@ -80,13 +80,13 @@ const BLURB: Record<ArchetypeId, string> = {
   god: "Max stats across the board. The hardest questions.",
 };
 
-/* Wheel geometry — viewBox is 400×400 centred on origin.
+/* Wheel geometry - viewBox is 400x400 centred on origin.
    Nodes orbit near the outer ring (R_NODE high) so they hug the edge of
    the wheel and leave a clear "stage" in the middle for the panel text. */
 const VIEW = 400;
 const R_OUTER = 190;
 const R_TICK_IN = 178;
-const R_NODE = 150; // icon-node ring — clear of the central text, clear of the top navbar
+const R_NODE = 150; // icon-node ring - clear of the central text, clear of the top navbar
 
 export function ArchetypesCompass() {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -138,7 +138,7 @@ export function ArchetypesCompass() {
   );
 }
 
-/* ─── Background ─────────────────────────────────────────────────────── */
+/* --- Background ------------------------------------------------------- */
 
 function BackgroundLayer({
   auraColour,
@@ -164,7 +164,7 @@ function BackgroundLayer({
         style={{ background: wash }}
         aria-hidden
       />
-      {/* Fine dot field — faint, masked to the outer ring so the centre
+      {/* Fine dot field - faint, masked to the outer ring so the centre
           stage stays clean behind the panel text */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.12]"
@@ -179,7 +179,7 @@ function BackgroundLayer({
         }}
         aria-hidden
       />
-      {/* Slow volumetric light sweep — one beam, recoloured to the active aura */}
+      {/* Slow volumetric light sweep - one beam, recoloured to the active aura */}
       {!reduce && (
         <motion.div
           className="absolute inset-0 pointer-events-none"
@@ -201,7 +201,7 @@ function BackgroundLayer({
   );
 }
 
-/* ─── Compass wheel ──────────────────────────────────────────────────── */
+/* --- Compass wheel ---------------------------------------------------- */
 
 function CompassLayer({
   wheelRotate,
@@ -221,7 +221,7 @@ function CompassLayer({
     (c) => `0 0 140px 24px ${withAlpha(c, 0.32)}, 0 0 300px 80px ${withAlpha(c, 0.12)}`,
   );
 
-  // Fixed lock-on arc spanning the top wedge (centred on -90°).
+  // Fixed lock-on arc spanning the top wedge (centred on -90 deg).
   const a0 = ((-90 - wedge / 2) * Math.PI) / 180;
   const a1 = ((-90 + wedge / 2) * Math.PI) / 180;
   const arcPath =
@@ -263,7 +263,7 @@ function CompassLayer({
             strokeWidth="0.6"
           />
 
-          {/* Boundary ticks (between wedges) — the only marks on the ring */}
+          {/* Boundary ticks (between wedges) - the only marks on the ring */}
           {ORDER.map((_, i) => {
             const ang = ((-90 + i * wedge - wedge / 2) * Math.PI) / 180;
             return (
@@ -280,7 +280,7 @@ function CompassLayer({
           })}
         </svg>
 
-        {/* Icon nodes — HTML overlay, counter-rotated to stay upright */}
+        {/* Icon nodes - HTML overlay, counter-rotated to stay upright */}
         {ORDER.map((id, i) => {
           const ang = ((-90 + i * wedge + wedge / 2) * Math.PI) / 180;
           const radiusPct = (R_NODE / VIEW) * 100;
@@ -301,7 +301,7 @@ function CompassLayer({
         })}
       </motion.div>
 
-      {/* Fixed lock-on overlay (does NOT rotate) — frames whichever node is
+      {/* Fixed lock-on overlay (does NOT rotate) - frames whichever node is
           currently at the top, recolouring smoothly via CSS transition. */}
       <div
         className="absolute"
@@ -357,7 +357,7 @@ function CompassNode({
   const aura = AURA[id];
 
   // Counter-rotate by the LIVE wheel rotation so every icon stays perfectly
-  // upright as the wheel turns — including the active one at the top.
+  // upright as the wheel turns - including the active one at the top.
   const counter = useTransform(wheelRotate, (v) => -v);
 
   // Shortest-path distance from this node to the live focus. Distant nodes
@@ -404,7 +404,7 @@ function CompassNode({
   );
 }
 
-/* ─── Foreground panel ───────────────────────────────────────────────── */
+/* --- Foreground panel ------------------------------------------------- */
 
 function ForegroundLayer({
   activeIndex,
@@ -433,7 +433,7 @@ function ForegroundLayer({
 function ArchetypePanel({ id, reduce }: { id: ArchetypeId; reduce: boolean }) {
   const arch = ARCHETYPES[id];
   const aura = AURA[id];
-  // Names read "The Speedster" — render the article as a quiet serif kicker
+  // Names read "The Speedster" - render the article as a quiet serif kicker
   // and the noun as the headline.
   const parts = arch.name.split(" ");
   const lead = parts.length > 1 ? parts[0] : "";
@@ -478,7 +478,7 @@ function ArchetypePanel({ id, reduce }: { id: ArchetypeId; reduce: boolean }) {
         </span>
       </h2>
 
-      {/* Short blurb — narrow so it never reaches the node ring */}
+      {/* Short blurb - narrow so it never reaches the node ring */}
       <p
         className="max-w-sm mb-8"
         style={{
@@ -500,7 +500,7 @@ function ArchetypePanel({ id, reduce }: { id: ArchetypeId; reduce: boolean }) {
             arch.statsAreRandom
               ? "??"
               : arch.damageRamps
-                ? `${arch.baseDamage}↑`
+                ? `${arch.baseDamage}^`
                 : String(arch.baseDamage)
           }
           aura={aura}
@@ -549,7 +549,7 @@ function StatCell({ label, value, aura }: { label: string; value: string; aura: 
   );
 }
 
-/* ─── Progress rail ──────────────────────────────────────────────────── */
+/* --- Progress rail ---------------------------------------------------- */
 
 function ProgressRail({
   activeIndex,
@@ -593,7 +593,7 @@ function ProgressRail({
   );
 }
 
-/* ─── Helpers ────────────────────────────────────────────────────────── */
+/* --- Helpers ---------------------------------------------------------- */
 
 /** Add an alpha channel to a 6-digit hex colour. Safe to call repeatedly. */
 function withAlpha(hex: string, alpha: number): string {

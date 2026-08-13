@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getEnrollmentsWithCount } from "@/repositories/courses";
 import "./Progress.css";
 
-/* ── Helpers ───────────────────────────────────────────────── */
+/* -- Helpers ------------------------------------------------- */
 
 function AnimatedCounter({ to, suffix = "" }: { to: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -39,7 +39,7 @@ function AnimatedCounter({ to, suffix = "" }: { to: number; suffix?: string }) {
   );
 }
 
-/* ── Main Component ────────────────────────────────────────── */
+/* -- Main Component ------------------------------------------ */
 
 export function ProgressDashboard() {
   const { user } = useAuth();

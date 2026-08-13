@@ -4,9 +4,9 @@ import { advanceRoomPhase, setRoomPattern, type StudyRoom } from "@/lib/study-ro
 import { toast } from "sonner";
 
 /**
- * Shared Session Clock — one room-wide countdown that every member sees in
+ * Shared Session Clock - one room-wide countdown that every member sees in
  * sync. Clock state lives on `study_rooms`; this component is purely a view
- * over `phase_started_at + duration*60s − now()`. When the countdown hits
+ * over `phase_started_at + duration*60s - now()`. When the countdown hits
  * zero, every client racing here calls `advance_room_phase`; the server gates
  * on (phase, started_at) so only the first call advances and the rest no-op.
  *
@@ -33,7 +33,7 @@ export function SessionClock({
 }: {
   room: StudyRoom;
   /** Fires once locally each time the visible phase transitions. The room
-   *  view uses it to flush collapsed messages when work → break. */
+   *  view uses it to flush collapsed messages when work -> break. */
   onPhaseFlip?: (next: "work" | "break") => void;
 }) {
   const durationMin = room.phase === "work" ? room.work_minutes : room.break_minutes;
@@ -61,7 +61,7 @@ export function SessionClock({
     void advanceRoomPhase(room.id, room.phase, room.phase_started_at);
   }, [remaining, room.id, room.phase, room.phase_started_at]);
 
-  // Local phase-flip detector — fires onPhaseFlip when the realtime update
+  // Local phase-flip detector - fires onPhaseFlip when the realtime update
   // arrives. Compares against the last phase we saw rendered, not against
   // the countdown, so a mid-phase pattern change doesn't fire a fake flip.
   const lastPhaseRef = useRef(room.phase);
@@ -93,7 +93,7 @@ export function SessionClock({
     <div
       className={`sr-clock ${isWork ? "sr-clock--work" : "sr-clock--break"}`}
       role="group"
-      aria-label={`Session clock — ${isWork ? "focus" : "break"} phase, ${fmt(remaining)} remaining`}
+      aria-label={`Session clock - ${isWork ? "focus" : "break"} phase, ${fmt(remaining)} remaining`}
     >
       <div className="sr-clock-row">
         <span className="sr-clock-phase">
@@ -131,7 +131,7 @@ export function SessionClock({
                 </button>
               ))}
               <button className="sr-clock-menu-item" onClick={() => setCustomOpen((v) => !v)}>
-                Custom…
+                Custom...
               </button>
               {customOpen && (
                 <div className="sr-clock-custom">

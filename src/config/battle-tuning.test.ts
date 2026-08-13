@@ -10,7 +10,7 @@ import {
 } from "./battle-tuning";
 
 /**
- * These constants are hardcoded, not user input — so why validate them with
+ * These constants are hardcoded, not user input - so why validate them with
  * Zod at all? Because TypeScript's static types cannot express the
  * invariants that actually matter here: "leagues are sorted with no gaps",
  * "a difficulty range has a min no greater than its max". A typo that
@@ -156,7 +156,7 @@ describe("CHEST_REWARDS", () => {
   it("awards strictly more XP at each successive tier", () => {
     const amounts = Object.values(CHEST_REWARDS).map((c) => c.bonusXp);
     // Not asserting global monotonicity (Chest/Cache pairs interleave per
-    // tier), only that nothing is zero or negative — covered above — and
+    // tier), only that nothing is zero or negative - covered above - and
     // that the schema itself enforces positivity.
     expect(amounts.every((n) => Number.isInteger(n))).toBe(true);
   });

@@ -17,8 +17,11 @@ import {
 export const Route = createFileRoute("/_authenticated/calibration")({
   head: () => ({
     meta: [
-      { title: "Calibrate Luna – Eclipta" },
-      { name: "description", content: "A short diagnostic that tunes Luna to how you actually learn best." },
+      { title: "Calibrate Luna - Eclipta" },
+      {
+        name: "description",
+        content: "A short diagnostic that tunes Luna to how you actually learn best.",
+      },
     ],
   }),
   component: CalibrationPage,
@@ -63,14 +66,18 @@ function CalibrationPage() {
     setProfile(result);
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         // learner_profile + calibration_runs are added in the learner-profile
         // migration; types aren't regenerated yet, hence the casts.
-        await supabase.from("user_profiles")
+        await supabase
+          .from("user_profiles")
           .update({ learner_profile: result } as never)
           .eq("user_id", user.id);
-        await supabase.from("calibration_runs" as never)
+        await supabase
+          .from("calibration_runs" as never)
           .insert({ user_id: user.id, profile: result, responses: all } as never);
       }
     } catch (e) {
@@ -128,7 +135,9 @@ function CalibrationPage() {
           </div>
           <div>
             <h1 className="font-display font-bold text-lg leading-tight">Calibrate Luna</h1>
-            <p className="text-xs text-muted-foreground">A 5-minute read on how you learn best. Not graded.</p>
+            <p className="text-xs text-muted-foreground">
+              A 5-minute read on how you learn best. Not graded.
+            </p>
           </div>
         </div>
 
@@ -144,23 +153,33 @@ function CalibrationPage() {
               />
             </div>
             <p className="text-[10px] font-mono tracking-widest text-muted-foreground mt-2 uppercase">
-              {Math.min(questionsSoFar + (step?.kind === "question" ? 1 : 0), CALIBRATION_QUESTION_COUNT)} / {CALIBRATION_QUESTION_COUNT}
+              {Math.min(
+                questionsSoFar + (step?.kind === "question" ? 1 : 0),
+                CALIBRATION_QUESTION_COUNT,
+              )}{" "}
+              / {CALIBRATION_QUESTION_COUNT}
             </p>
           </div>
         )}
 
         <AnimatePresence mode="wait">
-          {/* ── Teach step ─────────────────────────────────────────── */}
+          {/* -- Teach step ------------------------------------------- */}
           {!done && step?.kind === "teach" && (
             <motion.div
               key={step.id}
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.35 }}
               className="glass-panel p-7 border border-neon-cyan/20"
             >
-              <p className="text-[10px] font-bold tracking-widest text-neon-cyan mb-3 uppercase">Learn this first</p>
+              <p className="text-[10px] font-bold tracking-widest text-neon-cyan mb-3 uppercase">
+                Learn this first
+              </p>
               <h2 className="font-display font-bold text-xl mb-4">{step.title}</h2>
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{step.body}</p>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                {step.body}
+              </p>
               <button
                 onClick={advanceTeach}
                 className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 bg-neon-cyan/10 border border-neon-cyan/40 text-neon-cyan text-xs font-bold tracking-widest hover:bg-neon-cyan/20 transition-colors"
@@ -170,15 +189,19 @@ function CalibrationPage() {
             </motion.div>
           )}
 
-          {/* ── Question step ──────────────────────────────────────── */}
+          {/* -- Question step ---------------------------------------- */}
           {!done && step?.kind === "question" && (
             <motion.div
               key={step.item.id}
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.35 }}
               className="glass-panel p-7 border border-border"
             >
-              <h2 className="font-display font-semibold text-lg leading-snug mb-5">{step.item.prompt}</h2>
+              <h2 className="font-display font-semibold text-lg leading-snug mb-5">
+                {step.item.prompt}
+              </h2>
 
               <div className="space-y-2.5 mb-6">
                 {step.item.options.map((opt, i) => (
@@ -191,7 +214,9 @@ function CalibrationPage() {
                         : "border-border hover:border-neon-purple/40 text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <span className="font-mono text-[10px] text-muted-foreground mr-3">{String.fromCharCode(65 + i)}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground mr-3">
+                      {String.fromCharCode(65 + i)}
+                    </span>
                     {opt}
                   </button>
                 ))}
@@ -202,7 +227,8 @@ function CalibrationPage() {
                 <div className="mb-6">
                   {usedHint ? (
                     <p className="text-sm text-neon-cyan/90 flex items-start gap-2">
-                      <Lightbulb className="w-4 h-4 mt-0.5 shrink-0" />{step.item.hint}
+                      <Lightbulb className="w-4 h-4 mt-0.5 shrink-0" />
+                      {step.item.hint}
                     </p>
                   ) : (
                     <button
@@ -237,10 +263,15 @@ function CalibrationPage() {
 
               <div className="flex items-center justify-between gap-3">
                 {step.item.allowHint ? (
-                  <button onClick={skipStruggle} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <button
+                    onClick={skipStruggle}
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <SkipForward className="w-3.5 h-3.5" /> Skip this one
                   </button>
-                ) : <span />}
+                ) : (
+                  <span />
+                )}
                 <button
                   onClick={submitAnswer}
                   disabled={selected === null || confidence === null}
@@ -252,20 +283,26 @@ function CalibrationPage() {
             </motion.div>
           )}
 
-          {/* ── Result ─────────────────────────────────────────────── */}
+          {/* -- Result ----------------------------------------------- */}
           {done && (
             <motion.div
               key="result"
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
             >
               <div className="text-center mb-8">
                 <div className="w-12 h-12 rounded-full bg-neon-cyan/10 border border-neon-cyan/40 grid place-items-center mx-auto mb-4">
-                  {saving ? <Loader2 className="w-5 h-5 text-neon-cyan animate-spin" /> : <Check className="w-5 h-5 text-neon-cyan" />}
+                  {saving ? (
+                    <Loader2 className="w-5 h-5 text-neon-cyan animate-spin" />
+                  ) : (
+                    <Check className="w-5 h-5 text-neon-cyan" />
+                  )}
                 </div>
                 <h2 className="font-display font-bold text-2xl mb-2">Luna's tuned to you</h2>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Here's what the diagnostic read. Luna uses this to decide how to guide you — and it keeps adjusting as you learn.
+                  Here's what the diagnostic read. Luna uses this to decide how to guide you - and
+                  it keeps adjusting as you learn.
                 </p>
               </div>
 
@@ -273,7 +310,9 @@ function CalibrationPage() {
                 <div className="space-y-3 mb-9">
                   {describeProfile(profile).map((row) => (
                     <div key={row.label} className="glass-panel p-4 border border-border">
-                      <p className="text-[10px] font-bold tracking-widest text-neon-purple uppercase mb-1">{row.label}</p>
+                      <p className="text-[10px] font-bold tracking-widest text-neon-purple uppercase mb-1">
+                        {row.label}
+                      </p>
                       <p className="text-sm text-foreground">{row.value}</p>
                     </div>
                   ))}
@@ -287,7 +326,10 @@ function CalibrationPage() {
                 >
                   START LEARNING
                 </button>
-                <Link to="/profile" className="px-6 py-3 border border-border text-xs font-bold tracking-widest hover:border-neon-purple transition-colors">
+                <Link
+                  to="/profile"
+                  className="px-6 py-3 border border-border text-xs font-bold tracking-widest hover:border-neon-purple transition-colors"
+                >
                   VIEW PROFILE
                 </Link>
               </div>

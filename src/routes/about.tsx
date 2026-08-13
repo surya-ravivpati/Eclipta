@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EASING } from "@/config/motion";
 import "./About.css";
 
-// ─── Contact form ────────────────────────────────────────────────────
+// --- Contact form ----------------------------------------------------
 // Backed by submit_contact_message RPC (validates, rate-limits, runs through
 // moderation, stores in contact_messages).
 
@@ -226,7 +226,7 @@ function ContactForm() {
           {submitting ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Sending…
+              Sending...
             </>
           ) : (
             <>
@@ -291,9 +291,9 @@ function Field({
   );
 }
 
-// ─── Page content ────────────────────────────────────────────────────
+// --- Page content ----------------------------------------------------
 
-// shared scroll-reveal — a gentle blur-in for reading, calmer than the
+// shared scroll-reveal - a gentle blur-in for reading, calmer than the
 // homepage film's big cinematic beats.
 const EASE = EASING.soft;
 const reveal = {
@@ -352,13 +352,13 @@ function FounderCard({
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Eclipta – Why we built it" },
+      { title: "About Eclipta - Why we built it" },
       {
         name: "description",
         content:
           "Eclipta is an AI-powered learning platform built on one idea: AI should help you learn, not learn for you. The honest story from the two friends building it.",
       },
-      { property: "og:title", content: "About Eclipta – Why we built it" },
+      { property: "og:title", content: "About Eclipta - Why we built it" },
       {
         property: "og:description",
         content:
@@ -372,7 +372,7 @@ export const Route = createFileRoute("/about")({
 function AboutPage() {
   return (
     <div className="ab">
-      {/* Environment — one fixed, evolving atmosphere */}
+      {/* Environment - one fixed, evolving atmosphere */}
       <div className="ab-bg" aria-hidden="true">
         <div className="ab-aurora" />
         <div className="ab-grain" />
@@ -380,7 +380,7 @@ function AboutPage() {
       </div>
 
       <div className="ab-content">
-        {/* ── Hero ─────────────────────────────────────────────── */}
+        {/* -- Hero ----------------------------------------------- */}
         <header className="ab-hero">
           <div>
             <img
@@ -391,7 +391,7 @@ function AboutPage() {
               height={124}
               draggable={false}
             />
-            <p className="ab-kicker">About · Eclipta</p>
+            <p className="ab-kicker">About | Eclipta</p>
             <h1 className="ab-title">
               Hi, we're <em>Eclipta.</em>
             </h1>
@@ -410,7 +410,7 @@ function AboutPage() {
           </div>
         </header>
 
-        {/* ── The letter ───────────────────────────────────────── */}
+        {/* -- The letter ----------------------------------------- */}
         <section className="ab-letter-wrap">
           <motion.p className="ab-actlabel is-accent" {...reveal}>
             The whole story
@@ -514,7 +514,7 @@ function AboutPage() {
           </div>
         </section>
 
-        {/* ── The two of us ────────────────────────────────────── */}
+        {/* -- The two of us -------------------------------------- */}
         <section className="ab-section">
           <motion.div className="ab-section-head is-center" {...reveal}>
             <p className="ab-actlabel">Who's building it</p>
@@ -528,14 +528,14 @@ function AboutPage() {
           <motion.div className="ab-people" {...reveal}>
             <FounderCard
               name="Aarit Perswal"
-              role="Co-founder · builds all of it"
+              role="Co-founder | builds all of it"
               src="/about/aarit.jpg"
               email="perswalaarit@gmail.com"
               tilt={-2}
             />
             <FounderCard
               name="Surya Ravipati"
-              role="Co-founder · builds all of it"
+              role="Co-founder | builds all of it"
               src="/about/surya.jpg"
               email="suryarvpt@gmail.com"
               tilt={2}
@@ -543,7 +543,7 @@ function AboutPage() {
           </motion.div>
         </section>
 
-        {/* ── What this is ─────────────────────────────────────── */}
+        {/* -- What this is --------------------------------------- */}
         <section className="ab-section">
           <motion.div className="ab-section-head" {...reveal}>
             <p className="ab-actlabel">What this is</p>
@@ -568,7 +568,7 @@ function AboutPage() {
           </motion.div>
         </section>
 
-        {/* ── Reach us ─────────────────────────────────────────── */}
+        {/* -- Reach us ------------------------------------------- */}
         <section className="ab-section" id="contact" style={{ scrollMarginTop: 96 }}>
           <motion.div className="ab-section-head is-center" {...reveal}>
             <p className="ab-actlabel">Say hello</p>
@@ -593,7 +593,7 @@ function AboutPage() {
           </motion.div>
         </section>
 
-        {/* ── Finale ───────────────────────────────────────────── */}
+        {/* -- Finale --------------------------------------------- */}
         <section className="ab-finale">
           <motion.div {...reveal}>
             <p className="ab-actlabel" style={{ justifyContent: "center" }}>

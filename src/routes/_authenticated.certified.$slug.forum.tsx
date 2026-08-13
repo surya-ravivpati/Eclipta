@@ -11,17 +11,24 @@ export const Route = createFileRoute("/_authenticated/certified/$slug/forum")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.course.title ?? "Course"} – Forum – Eclipta` },
-      { name: "description", content: `Discussion threads for ${loaderData?.course.title ?? "this course"} — ask, answer, share insights.` },
+      { title: `${loaderData?.course.title ?? "Course"} - Forum - Eclipta` },
+      {
+        name: "description",
+        content: `Discussion threads for ${loaderData?.course.title ?? "this course"} - ask, answer, share insights.`,
+      },
     ],
   }),
   notFoundComponent: () => (
     <div className="min-h-screen flex items-center justify-center">
-      <Link to="/courses" className="text-neon-purple">← Back to courses</Link>
+      <Link to="/courses" className="text-neon-purple">
+        &lt;- Back to courses
+      </Link>
     </div>
   ),
   errorComponent: ({ error }) => (
-    <div className="min-h-screen flex items-center justify-center text-muted-foreground">{error.message}</div>
+    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      {error.message}
+    </div>
   ),
   component: CourseForumPage,
 });
@@ -42,7 +49,11 @@ function CourseForumPage() {
       <Forum
         defaultCourse={course.title}
         lockCourse
-        heading={<>{course.title} <span className="text-neon-pink">Forum</span></>}
+        heading={
+          <>
+            {course.title} <span className="text-neon-pink">Forum</span>
+          </>
+        }
         subheading={`Course-specific discussion for ${course.title}. Ask questions, post answers, help peers.`}
       />
     </div>

@@ -1,5 +1,5 @@
 /**
- * Study Rooms — cozy public/private study spaces with live chat and a chosen
+ * Study Rooms - cozy public/private study spaces with live chat and a chosen
  * Ecliptar per member. Thin client over the SQL in
  * supabase/migrations/20260622010000_study-rooms.sql.
  *
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/database";
 
 /**
- * A room's own state — everything stored on the row itself.
+ * A room's own state - everything stored on the row itself.
  *
  * Split out from `StudyRoom` because the create/join RPCs return the room
  * row alone: they know nothing about how many members it has or whether
@@ -26,16 +26,16 @@ export interface StudyRoomDetails {
   owner_id: string;
   created_at: string;
   join_code: string | null;
-  /** Shared Session Clock — room-level, synced to all members. */
+  /** Shared Session Clock - room-level, synced to all members. */
   work_minutes: number;
   break_minutes: number;
   phase: "work" | "break";
   phase_started_at: string;
   last_activity_at: string;
-  /** Goal/Resource Pin — room-level, synced to all members. */
+  /** Goal/Resource Pin - room-level, synced to all members. */
   goal_text: string | null;
   resource_links: ResourceLink[];
-  /** Teach-Back Rotation — room-level, synced to all members. */
+  /** Teach-Back Rotation - room-level, synced to all members. */
   teach_back_enabled: boolean;
   tb_queue: string[];
   tb_position: number;
@@ -65,7 +65,7 @@ export interface RoomMember {
   display_name: string | null;
   ecliptar_slug: string | null;
   joined_at: string;
-  /** Teach-Back — has this member used their one free skip this session. */
+  /** Teach-Back - has this member used their one free skip this session. */
   tb_skip_used?: boolean;
 }
 
@@ -89,17 +89,16 @@ export async function getMyRoomIdentity(): Promise<{
   displayName: string;
   equippedSlug: string | null;
 }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { userId: null, displayName: "Learner", equippedSlug: null };
   const { data } = await supabase
     .from("user_profiles")
     .select("username,equipped_ecliptar")
     .eq("user_id", user.id)
     .maybeSingle();
-  const displayName =
-    data?.username?.trim() ||
-    user.email?.split("@")[0] ||
-    "Learner";
+  const displayName = data?.username?.trim() || user.email?.split("@")[0] || "Learner";
   return {
     userId: user.id,
     displayName,
@@ -107,9 +106,9 @@ export async function getMyRoomIdentity(): Promise<{
   };
 }
 
-// ── Row adapters ────────────────────────────────────────────────────────────
+// -- Row adapters ------------------------------------------------------------
 
-/** Unknown statuses are treated as visible — the same default the column carries. */
+/** Unknown statuses are treated as visible - the same default the column carries. */
 function toModerationStatus(value: string): NonNullable<RoomMessage["moderation_status"]> {
   return value === "hidden" || value === "removed" ? value : "visible";
 }
@@ -190,7 +189,10 @@ export async function listStudyRooms(): Promise<StudyRoom[]> {
     if (error) console.error("cleanup_abandoned_rooms", error);
   });
   const { data, error } = await supabase.rpc("get_study_rooms");
-  if (error) { console.error("listStudyRooms", error); return []; }
+  if (error) {
+    console.error("listStudyRooms", error);
+    return [];
+  }
   return (data ?? []).map(toStudyRoom);
 }
 
@@ -244,7 +246,10 @@ export async function getRoomMembers(roomId: string): Promise<RoomMember[]> {
     .select("room_id,user_id,display_name,ecliptar_slug,joined_at,tb_skip_used")
     .eq("room_id", roomId)
     .order("joined_at", { ascending: true });
-  if (error) { console.error("getRoomMembers", error); return []; }
+  if (error) {
+    console.error("getRoomMembers", error);
+    return [];
+  }
   return data ?? [];
 }
 
@@ -255,7 +260,10 @@ export async function getRoomMessages(roomId: string, limit = 100): Promise<Room
     .eq("room_id", roomId)
     .order("created_at", { ascending: true })
     .limit(limit);
-  if (error) { console.error("getRoomMessages", error); return []; }
+  if (error) {
+    console.error("getRoomMessages", error);
+    return [];
+  }
   return (data ?? []).map((row) => ({
     id: row.id,
     room_id: row.room_id,
@@ -275,7 +283,9 @@ export async function sendRoomMessage(args: {
   authorName: string;
   ecliptarSlug: string | null;
 }): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return "You need to be signed in.";
   const body = args.body.trim();
   if (!body) return null;
@@ -291,7 +301,9 @@ export async function sendRoomMessage(args: {
 
 /** Update the Ecliptar that represents you inside a room. */
 export async function setRoomEcliptar(roomId: string, slug: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return;
   const { error } = await supabase
     .from("study_room_members")
@@ -301,24 +313,32 @@ export async function setRoomEcliptar(roomId: string, slug: string): Promise<voi
   if (error) console.error("setRoomEcliptar", error);
 }
 
-// ── Shared Session Clock ────────────────────────────────────────────────────
+// -- Shared Session Clock ----------------------------------------------------
 
 /** Change the work/break pattern for the room. Posts a system line in chat. */
 export async function setRoomPattern(
-  roomId: string, workMinutes: number, breakMinutes: number,
+  roomId: string,
+  workMinutes: number,
+  breakMinutes: number,
 ): Promise<string | null> {
   const { error } = await supabase.rpc("set_room_pattern", {
-    p_room: roomId, p_work: workMinutes, p_break: breakMinutes,
+    p_room: roomId,
+    p_work: workMinutes,
+    p_break: breakMinutes,
   });
   return error ? error.message : null;
 }
 
-/** Idempotent phase flip — racing clients collapse to one update on the server. */
+/** Idempotent phase flip - racing clients collapse to one update on the server. */
 export async function advanceRoomPhase(
-  roomId: string, fromPhase: "work" | "break", fromStartedAt: string,
+  roomId: string,
+  fromPhase: "work" | "break",
+  fromStartedAt: string,
 ): Promise<void> {
   const { error } = await supabase.rpc("advance_room_phase", {
-    p_room: roomId, p_from_phase: fromPhase, p_from_started_at: fromStartedAt,
+    p_room: roomId,
+    p_from_phase: fromPhase,
+    p_from_started_at: fromStartedAt,
   });
   if (error) console.error("advanceRoomPhase", error);
 }
@@ -334,7 +354,7 @@ export async function refetchRoom(roomId: string): Promise<StudyRoom | null> {
   return await getRoom(roomId);
 }
 
-// ─── Goal/Resource Pin ──────────────────────────────────────────────────────
+// --- Goal/Resource Pin ------------------------------------------------------
 
 /** Set the room's single goal line (any member; null/empty clears it). */
 export async function setRoomGoal(roomId: string, goal: string | null): Promise<string | null> {
@@ -342,7 +362,7 @@ export async function setRoomGoal(roomId: string, goal: string | null): Promise<
   return error ? error.message : null;
 }
 
-/** Replace the room's resource links (the full list, max 3 — server enforces). */
+/** Replace the room's resource links (the full list, max 3 - server enforces). */
 export async function setRoomLinks(roomId: string, links: ResourceLink[]): Promise<string | null> {
   const { error } = await supabase.rpc("set_room_links", { p_room: roomId, p_links: links });
   return error ? error.message : null;

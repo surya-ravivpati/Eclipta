@@ -21,7 +21,7 @@ import { generateQuestionForTopic, TOPIC_DIFFICULTY } from "./questions";
 import type { MathQuestion } from "./types";
 
 /**
- * Practice Weak Spots — a dedicated coaching mode (docs/battle-redesign.md §8).
+ * Practice Weak Spots - a dedicated coaching mode (docs/battle-redesign.md section 8).
  * NOT a battle: no timer, no opponent, no rating. It reads the shared
  * concept_mastery store (which battles write to) to surface the topics the
  * learner keeps missing, runs calm reps, updates mastery, then offers a smooth
@@ -48,7 +48,7 @@ export function WeakSpotPractice({
    * Skip the picker and drop straight into reps on this concept.
    *
    * Set when arriving from a battle report, where the learner has just been
-   * shown the topic they missed most — asking them to pick it out of a list
+   * shown the topic they missed most - asking them to pick it out of a list
    * again would be busywork. It is passed from the battle's own records rather
    * than read back from `concept_mastery`, so it works even though that write
    * is best-effort and may not have landed yet.
@@ -97,7 +97,7 @@ export function WeakSpotPractice({
         <h3 className="font-display text-2xl font-bold">Practice your weak spots</h3>
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-md">
-        Calm reps — no timer, no opponent. Shore up the topics you've been missing, then take them
+        Calm reps - no timer, no opponent. Shore up the topics you've been missing, then take them
         into battle.
       </p>
 
@@ -214,12 +214,12 @@ function PracticeSession({
       >
         <Brain className="w-10 h-10 text-primary mx-auto mb-3" />
         <h3 className="font-display text-2xl font-bold mb-1">
-          {concept} — {correct}/{SESSION_LEN}
+          {concept} - {correct}/{SESSION_LEN}
         </h3>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
           {correct >= 4
             ? "That's locking in. Ready to test it under real pressure?"
-            : "Getting there — another round will help it stick."}
+            : "Getting there - another round will help it stick."}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           <button
@@ -243,7 +243,7 @@ function PracticeSession({
     <motion.div className="btt-card p-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-6">
         <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">
-          {concept} · no timer
+          {concept} | no timer
         </span>
         <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
           {idx + 1}/{SESSION_LEN}

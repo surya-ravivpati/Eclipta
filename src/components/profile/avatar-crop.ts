@@ -8,8 +8,8 @@
  * drag handler is a straight pointer-delta with no conversion, and the one
  * place that has to think in image pixels is the canvas export.
  *
- * Everything here is pure so the invariant that matters — the crop circle can
- * never show empty space — is testable without a DOM.
+ * Everything here is pure so the invariant that matters - the crop circle can
+ * never show empty space - is testable without a DOM.
  */
 
 export const MIN_ZOOM = 1;
@@ -58,11 +58,11 @@ export const IDENTITY_TRANSFORM: CropTransform = { zoom: MIN_ZOOM, offsetX: 0, o
 function clamp(value: number, lo: number, hi: number): number {
   const bounded = Math.max(lo, Math.min(hi, value));
   // Clamping to a zero-width range yields -0, which is `=== 0` but not
-  // `Object.is` equal to it — enough to break comparisons downstream.
+  // `Object.is` equal to it - enough to break comparisons downstream.
   return bounded === 0 ? 0 : bounded;
 }
 
-/** Scale at which the image exactly covers the frame — the 1x baseline. */
+/** Scale at which the image exactly covers the frame - the 1x baseline. */
 export function coverScale(view: CropView): number {
   const shortestSide = Math.min(view.image.width, view.image.height);
   return shortestSide > 0 ? view.frame / shortestSide : 0;

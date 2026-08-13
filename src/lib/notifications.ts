@@ -8,8 +8,16 @@
  */
 import type { ComponentType } from "react";
 import {
-  Bell, MessageSquare, MessageCircle, UserPlus, AtSign, Award,
-  Swords, Check, X, Sparkles,
+  Bell,
+  MessageSquare,
+  MessageCircle,
+  UserPlus,
+  AtSign,
+  Award,
+  Swords,
+  Check,
+  X,
+  Sparkles,
 } from "lucide-react";
 
 export type NotificationCategory = "forum" | "social" | "battle" | "system";
@@ -29,11 +37,11 @@ export interface NotificationTypeMeta {
 
 function actor(meta: Record<string, unknown>): string {
   return (
-    (meta.author as string | undefined)
-    ?? (meta.username as string | undefined)
-    ?? (meta.challenger_username as string | undefined)
-    ?? (meta.opponent_username as string | undefined)
-    ?? "Someone"
+    (meta.author as string | undefined) ??
+    (meta.username as string | undefined) ??
+    (meta.challenger_username as string | undefined) ??
+    (meta.opponent_username as string | undefined) ??
+    "Someone"
   );
 }
 
@@ -43,47 +51,66 @@ function title(meta: Record<string, unknown>, fallback = "your thread"): string 
 
 export const NOTIFICATION_TYPES: Record<string, NotificationTypeMeta> = {
   follow: {
-    icon: UserPlus, category: "social", color: "text-neon-cyan",
+    icon: UserPlus,
+    category: "social",
+    color: "text-neon-cyan",
     describe: (m) => `${actor(m)} started following you`,
   },
   reply: {
-    icon: MessageSquare, category: "forum", color: "text-neon-purple",
+    icon: MessageSquare,
+    category: "forum",
+    color: "text-neon-purple",
     describe: (m) => `${actor(m)} replied to "${title(m)}"`,
   },
   comment: {
-    icon: MessageCircle, category: "forum", color: "text-neon-purple",
+    icon: MessageCircle,
+    category: "forum",
+    color: "text-neon-purple",
     describe: (m) => `${actor(m)} commented on your answer in "${title(m)}"`,
   },
   accepted: {
-    icon: Award, category: "forum", color: "text-neon-cyan",
+    icon: Award,
+    category: "forum",
+    color: "text-neon-cyan",
     describe: (m) => `Your answer was accepted on "${title(m)}"`,
   },
   mention_thread: {
-    icon: AtSign, category: "forum", color: "text-neon-pink",
+    icon: AtSign,
+    category: "forum",
+    color: "text-neon-pink",
     describe: (m) => `${actor(m)} mentioned you in "${title(m)}"`,
   },
   mention_answer: {
-    icon: AtSign, category: "forum", color: "text-neon-pink",
+    icon: AtSign,
+    category: "forum",
+    color: "text-neon-pink",
     describe: (m) => `${actor(m)} mentioned you in an answer on "${title(m)}"`,
   },
   mention_comment: {
-    icon: AtSign, category: "forum", color: "text-neon-pink",
+    icon: AtSign,
+    category: "forum",
+    color: "text-neon-pink",
     describe: (m) => `${actor(m)} mentioned you in a comment on "${title(m)}"`,
   },
   challenge: {
-    icon: Swords, category: "battle", color: "text-neon-pink",
+    icon: Swords,
+    category: "battle",
+    color: "text-neon-pink",
     describe: (m) =>
       `${actor(m)} challenged you to a battle${m.archetype ? ` as ${m.archetype}` : ""}`,
-    fallbackLink: (m) =>
-      m.challenge_id ? `/battles?challenge=${m.challenge_id}` : "/battles",
+    fallbackLink: (m) => (m.challenge_id ? `/battles?challenge=${m.challenge_id}` : "/battles"),
   },
   challenge_accepted: {
-    icon: Check, category: "battle", color: "text-neon-cyan",
-    describe: (m) => `${actor(m)} accepted your challenge — battle starting`,
+    icon: Check,
+    category: "battle",
+    color: "text-neon-cyan",
+    describe: (m) => `${actor(m)} accepted your challenge - battle starting`,
     fallbackLink: (m) => (m.battle_id ? `/battles?battle=${m.battle_id}` : "/battles"),
   },
   challenge_rejected: {
-    icon: X, category: "battle", color: "text-muted-foreground",
+    icon: X,
+    category: "battle",
+    color: "text-muted-foreground",
     describe: (m) => `${actor(m)} declined your challenge`,
     fallbackLink: () => "/battles",
   },
@@ -101,14 +128,14 @@ export function notificationMeta(type: string): NotificationTypeMeta {
 }
 
 export const CATEGORY_LABEL: Record<NotificationCategory, string> = {
-  forum:  "Forum",
+  forum: "Forum",
   social: "Social",
   battle: "Battles",
   system: "System",
 };
 
 export const CATEGORY_ICON: Record<NotificationCategory, ComponentType<{ className?: string }>> = {
-  forum:  MessageSquare,
+  forum: MessageSquare,
   social: UserPlus,
   battle: Swords,
   system: Sparkles,
@@ -120,7 +147,8 @@ export function dateBucket(iso: string): "Today" | "Yesterday" | "Earlier" {
   const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
   if (sameDay) return "Today";
-  const y = new Date(now); y.setDate(y.getDate() - 1);
+  const y = new Date(now);
+  y.setDate(y.getDate() - 1);
   if (d.toDateString() === y.toDateString()) return "Yesterday";
   return "Earlier";
 }

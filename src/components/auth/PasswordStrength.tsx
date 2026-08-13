@@ -16,14 +16,8 @@ export function scorePassword(pw: string): StrengthResult {
   // Cap at 4
   const capped = Math.min(score, 4) as 0 | 1 | 2 | 3 | 4;
   const labels = ["Too weak", "Weak", "Fair", "Strong", "Excellent"];
-  // Palette: red (functional weak) → blue → gold (strong).
-  const colors = [
-    "bg-destructive",
-    "bg-destructive",
-    "bg-neon-cyan",
-    "bg-neon-cyan",
-    "bg-primary",
-  ];
+  // Palette: red (functional weak) -> blue -> gold (strong).
+  const colors = ["bg-destructive", "bg-destructive", "bg-neon-cyan", "bg-neon-cyan", "bg-primary"];
   return { score: capped, label: labels[capped], color: colors[capped] };
 }
 
@@ -41,9 +35,13 @@ export function PasswordStrength({ password }: { password: string }) {
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground flex justify-between">
-        <span>Strength: <span className="font-medium text-foreground">{label}</span></span>
+        <span>
+          Strength: <span className="font-medium text-foreground">{label}</span>
+        </span>
         {score < 3 && password.length > 0 && (
-          <span className="text-muted-foreground/80">Use 12+ chars, mix cases, numbers, symbols</span>
+          <span className="text-muted-foreground/80">
+            Use 12+ chars, mix cases, numbers, symbols
+          </span>
         )}
       </p>
     </div>

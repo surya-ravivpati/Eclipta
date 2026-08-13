@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SearchKind } from "@/lib/search/query";
 
 /**
- * Search data access. One RPC per concern, all of it server-ranked — see
+ * Search data access. One RPC per concern, all of it server-ranked - see
  * migration 20260801020000 for why the ranking is not done here.
  */
 

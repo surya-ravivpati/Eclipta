@@ -20,15 +20,15 @@ import type { CourseBlockData } from "@/lib/course-blocks";
  *
  * Several `text` columns here (`user_courses.status`, `course_progress.status`
  * /`source`, `concept_mastery.state`, `course_blocks.type`) are documented in
- * their migrations as a fixed set of values, but — unlike
- * `pvp_battles.status` in battles.ts — have no actual Postgres CHECK
+ * their migrations as a fixed set of values, but - unlike
+ * `pvp_battles.status` in battles.ts - have no actual Postgres CHECK
  * constraint enforcing it. They stay plain `text()` here rather than
  * `{ enum: [...] }`: narrowing would claim a database guarantee that does
  * not exist. The application is the only thing currently keeping them in
  * range.
  *
  * `user_id` columns reference `auth.users`, owned by Supabase Auth outside
- * this app's migrations — see the equivalent note in battles.ts.
+ * this app's migrations - see the equivalent note in battles.ts.
  */
 
 /**
@@ -72,7 +72,7 @@ export const courseModules = pgTable("course_modules", {
 });
 
 /**
- * A single content block within a module — text, a YouTube embed, an image,
+ * A single content block within a module - text, a YouTube embed, an image,
  * or a quiz question. `type` is conventionally one of
  * `src/lib/course-blocks.ts`'s `COURSE_BLOCK_TYPES` (see caveat above: not
  * DB-enforced). `data`'s shape depends on `type`; narrowed to the same
@@ -123,7 +123,7 @@ export const courseProposals = pgTable("course_proposals", {
     .defaultNow(),
 });
 
-/** The original enroll-only record — still written alongside course_progress; see that table's comment. */
+/** The original enroll-only record - still written alongside course_progress; see that table's comment. */
 export const enrollments = pgTable(
   "enrollments",
   {
@@ -139,11 +139,11 @@ export const enrollments = pgTable(
 );
 
 /**
- * Per-(user, course) progress — the substrate for Continue Learning, resume
+ * Per-(user, course) progress - the substrate for Continue Learning, resume
  * points, and recommendation readiness. `percent` is a real Postgres
  * `GENERATED ALWAYS AS (...) STORED` column derived from
  * `lessons_done`/`lessons_total`; it can never be written directly, which is
- * exactly what `.generatedAlwaysAs()` encodes here — Drizzle excludes it
+ * exactly what `.generatedAlwaysAs()` encodes here - Drizzle excludes it
  * from the inferred Insert/Update types the same way the database rejects
  * writing it.
  * Source: 20260628140000_course-progress.sql.

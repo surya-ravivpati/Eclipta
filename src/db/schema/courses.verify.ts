@@ -12,13 +12,13 @@ import type {
 } from "./courses";
 
 /**
- * Same purpose and mechanism as battles.verify.ts and profile.verify.ts —
+ * Same purpose and mechanism as battles.verify.ts and profile.verify.ts -
  * see battles.verify.ts for the full rationale. Narrowed column here:
  * `course_blocks.data` (jsonb), checked one-way for the same reason as
  * battles' question/question_records and profile's learner_profile.
  *
  * `course_progress.percent` is a generated column, so Drizzle's inferred
- * Insert/Update types exclude it entirely — its absence from both sides is
+ * Insert/Update types exclude it entirely - its absence from both sides is
  * itself part of what this file proves; if a future edit to courses.ts
  * accidentally made it writable, `KeysMatch` would catch the mismatch
  * against Supabase's generated Insert type, which also omits it.
@@ -35,7 +35,7 @@ declare function assignableBothWays<A, B>(forward: (a: A) => B, backward: (b: B)
 
 type SupabaseTables = Database["public"]["Tables"];
 
-// ── user_courses — no narrowed columns ──────────────────────────────────────
+// -- user_courses - no narrowed columns --------------------------------------
 export type _userCoursesKeys = Assert<
   KeysMatch<InferSelectModel<typeof userCourses>, SupabaseTables["user_courses"]["Row"]>
 >;
@@ -51,7 +51,7 @@ assignableBothWays<InferInsertModel<typeof userCourses>, SupabaseTables["user_co
   (b) => b,
 );
 
-// ── course_modules — no narrowed columns ────────────────────────────────────
+// -- course_modules - no narrowed columns ------------------------------------
 export type _courseModulesKeys = Assert<
   KeysMatch<InferSelectModel<typeof courseModules>, SupabaseTables["course_modules"]["Row"]>
 >;
@@ -70,7 +70,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── course_blocks — data is a narrowed jsonb column ─────────────────────────
+// -- course_blocks - data is a narrowed jsonb column -------------------------
 export type _courseBlocksKeys = Assert<
   KeysMatch<InferSelectModel<typeof courseBlocks>, SupabaseTables["course_blocks"]["Row"]>
 >;
@@ -82,7 +82,7 @@ assignableBothWays<
   (b) => b,
 );
 // data's narrowed type has the same closed-shape-vs-open-index-signature gap
-// documented in battles.verify.ts — not mechanically checked against Json.
+// documented in battles.verify.ts - not mechanically checked against Json.
 export type _courseBlocksInsertKeys = Assert<
   KeysMatch<InferInsertModel<typeof courseBlocks>, SupabaseTables["course_blocks"]["Insert"]>
 >;
@@ -94,7 +94,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── course_proposals — no narrowed columns ──────────────────────────────────
+// -- course_proposals - no narrowed columns ----------------------------------
 export type _courseProposalsKeys = Assert<
   KeysMatch<InferSelectModel<typeof courseProposals>, SupabaseTables["course_proposals"]["Row"]>
 >;
@@ -116,7 +116,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── enrollments — no narrowed columns ───────────────────────────────────────
+// -- enrollments - no narrowed columns ---------------------------------------
 export type _enrollmentsKeys = Assert<
   KeysMatch<InferSelectModel<typeof enrollments>, SupabaseTables["enrollments"]["Row"]>
 >;
@@ -132,7 +132,7 @@ assignableBothWays<InferInsertModel<typeof enrollments>, SupabaseTables["enrollm
   (b) => b,
 );
 
-// ── course_progress — percent is a generated column, excluded on both sides ─
+// -- course_progress - percent is a generated column, excluded on both sides -
 export type _courseProgressKeys = Assert<
   KeysMatch<InferSelectModel<typeof courseProgress>, SupabaseTables["course_progress"]["Row"]>
 >;
@@ -154,7 +154,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── concept_mastery — no narrowed columns ───────────────────────────────────
+// -- concept_mastery - no narrowed columns -----------------------------------
 export type _conceptMasteryKeys = Assert<
   KeysMatch<InferSelectModel<typeof conceptMastery>, SupabaseTables["concept_mastery"]["Row"]>
 >;
@@ -176,7 +176,7 @@ assignableBothWays<
   (b) => b,
 );
 
-// ── daily_challenge_progress — no narrowed columns ──────────────────────────
+// -- daily_challenge_progress - no narrowed columns --------------------------
 export type _dailyChallengeProgressKeys = Assert<
   KeysMatch<
     InferSelectModel<typeof dailyChallengeProgress>,

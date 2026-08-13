@@ -6,15 +6,21 @@ import { toast } from "sonner";
 const XP_MILESTONES = [100, 500, 1000, 2500, 5000, 10000, 20000, 35000, 50000];
 
 const XP_MESSAGES: Record<number, { title: string; desc: string }> = {
-  100: { title: "First Steps! ✨", desc: "You've earned 100 XP — the journey has begun!" },
+  100: { title: "First Steps! ✨", desc: "You've earned 100 XP - the journey has begun!" },
   500: { title: "Rising Star ⭐", desc: "500 XP! You're building real momentum." },
-  1000: { title: "Knowledge Seeker 📚", desc: "1,000 XP — you're becoming a force to reckon with." },
+  1000: {
+    title: "Knowledge Seeker 📚",
+    desc: "1,000 XP - you're becoming a force to reckon with.",
+  },
   2500: { title: "Battle Hardened ⚔️", desc: "2,500 XP! Your dedication is showing." },
-  5000: { title: "Scholar Elite 🏅", desc: "5,000 XP — half the legends would envy you." },
+  5000: { title: "Scholar Elite 🏅", desc: "5,000 XP - half the legends would envy you." },
   10000: { title: "Master Learner 🎓", desc: "10,000 XP! You've reached the top echelons." },
-  20000: { title: "Legendary Mind 🧠", desc: "20,000 XP — wisdom radiates from you." },
+  20000: { title: "Legendary Mind 🧠", desc: "20,000 XP - wisdom radiates from you." },
   35000: { title: "Cosmic Intellect 🌌", desc: "35,000 XP! The universe bends to your knowledge." },
-  50000: { title: "ECLIPTADON AWAKENS 🐉", desc: "50,000 XP — you've reached the pinnacle of all learning." },
+  50000: {
+    title: "ECLIPTADON AWAKENS 🐉",
+    desc: "50,000 XP - you've reached the pinnacle of all learning.",
+  },
 };
 
 const NODE_MESSAGES: Record<string, string> = {
@@ -26,14 +32,14 @@ const NODE_MESSAGES: Record<string, string> = {
   Fulcrum: "The Fulcrum awakens! Balance of all forces. ⚖️",
   Accelerator: "Accelerator online! Time bends to your will. 🚀",
   "God Archetype": "The God Archetype is yours. You've transcended. 👑",
-  Newton: "🍎 NEWTON UNLOCKED — the gravity of your knowledge reshapes reality.",
-  ECLIPTADON: "🐉 ECLIPTADON — the celestial destroyer acknowledges your mastery. You are LEGEND.",
+  Newton: "🍎 NEWTON UNLOCKED - the gravity of your knowledge reshapes reality.",
+  ECLIPTADON: "🐉 ECLIPTADON - the celestial destroyer acknowledges your mastery. You are LEGEND.",
 };
 
 const TIER_MESSAGES: Record<string, string> = {
   "Bronze I": "Welcome to the arena, recruit! Bronze tier unlocked. 🥉",
   "Silver I": "Silver tier! You're leaving the rookies behind. 🥈",
-  "Gold I": "Gold tier — now we're talking. The real battles begin. 🥇",
+  "Gold I": "Gold tier - now we're talking. The real battles begin. 🥇",
   "Diamond I": "Diamond tier! You sparkle with knowledge. 💎",
   "Platinum I": "Platinum! Only the elite reach this far. ✨",
   Champion: "CHAMPION tier! The arena trembles at your name. 🏆",
@@ -50,7 +56,7 @@ const shownMilestones = new Set<string>();
  */
 export function checkMilestones(
   prevXp: number,
-  currentXp: number
+  currentXp: number,
 ): { toasts: { title: string; description: string }[]; lunaMessages: string[] } {
   const toasts: { title: string; description: string }[] = [];
   const lunaMessages: string[] = [];
@@ -63,7 +69,7 @@ export function checkMilestones(
       const msg = XP_MESSAGES[threshold];
       if (msg) {
         toasts.push({ title: msg.title, description: msg.desc });
-        lunaMessages.push(`🎉 **Milestone: ${msg.title}** — ${msg.desc}`);
+        lunaMessages.push(`🎉 **Milestone: ${msg.title}** - ${msg.desc}`);
       }
     }
   }
@@ -87,7 +93,10 @@ export function checkMilestones(
           lunaMessages.push(msg);
         }
       } else if (node.type === "chest") {
-        toasts.push({ title: `🎁 ${node.label} ready`, description: "Open it on the Trophy Road to claim your bonus." });
+        toasts.push({
+          title: `🎁 ${node.label} ready`,
+          description: "Open it on the Trophy Road to claim your bonus.",
+        });
       }
     }
   }
@@ -105,7 +114,9 @@ export function fireMilestoneToasts(milestoneToasts: { title: string; descriptio
         className: "milestone-toast",
         action: {
           label: "View Progress",
-          onClick: () => { window.location.href = "/progress"; },
+          onClick: () => {
+            window.location.href = "/progress";
+          },
         },
       });
     }, i * 1500); // Stagger toasts
@@ -117,7 +128,7 @@ let lastMarkedXp = -1;
 export function markExistingMilestones(currentXp: number) {
   // Both Luna panels mount useXpMilestones, so this runs twice on a typical
   // page. The shownMilestones Set is module-level (correct), but re-walking
-  // the thresholds on every mount is pure waste — short-circuit when we've
+  // the thresholds on every mount is pure waste - short-circuit when we've
   // already marked at or above the current XP.
   if (lastMarkedXp >= currentXp) return;
   lastMarkedXp = currentXp;

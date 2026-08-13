@@ -1,31 +1,31 @@
 /**
- * Territory: a 5×5 board, one flag per correct answer, and flips by sandwich.
+ * Territory: a 5x5 board, one flag per correct answer, and flips by sandwich.
  *
  * Spec fidelity, and one deliberate deviation
  * -------------------------------------------
- * Everything the brief asked for is here: a 5×5 grid between the fighters,
+ * Everything the brief asked for is here: a 5x5 grid between the fighters,
  * empty at the start; a correct answer plants a flag on any open tile *you*
  * choose; a wrong answer costs you the round's placement entirely; the board
  * fills (or the clock runs out) and the most territory wins, with the center
  * worth extra.
  *
  * The one rule that changed is *how* tiles flip. The brief described Go-style
- * capture — "fully surround an opponent's tile or chain and it flips". That was
+ * capture - "fully surround an opponent's tile or chain and it flips". That was
  * built first and then simulated, and on a board this small it does not produce
  * a game:
  *
  *   - Whole-chain capture on 25 tiles is all-or-nothing. Typical finishes were
- *     26–0 wipeouts decided by a single move, not "most territory wins".
+ *     26-0 wipeouts decided by a single move, not "most territory wins".
  *   - Worse, it inverted the point of the mode. Every extra stone you place is
  *     another liability in a capture race, so the player answering *more*
  *     questions correctly won only ~36% of simulated boards. Being better at
  *     maths made you lose, which defeats the entire premise of a Knowledge
  *     Battle.
  *
- * Flipping by sandwich instead — place a flag so that a straight line of enemy
- * tiles is bracketed between it and another of yours, and that line turns —
+ * Flipping by sandwich instead - place a flag so that a straight line of enemy
+ * tiles is bracketed between it and another of yours, and that line turns -
  * fixes both, and is measured to do so: the more accurate player now wins ~95%
- * of boards, and finishes look like 17–9 rather than 26–0. It also matches the
+ * of boards, and finishes look like 17-9 rather than 26-0. It also matches the
  * *effects* the brief asked these rules to produce more closely than the
  * original did: placement is still a real decision layered on top of the maths,
  * and a single flag flipping a long line is exactly the "reads instantly to a
@@ -33,27 +33,27 @@
  *
  * How Ecliptar stats reach the board
  * ----------------------------------
- * One correct answer is always one flag — never more, which is both what the
+ * One correct answer is always one flag - never more, which is both what the
  * brief says and what keeps the mode from degenerating (consecutive placements
  * let a player trivially wall off a board this size). Stats land on the flag's
  * *weight* instead: the same already-computed damage or heal number that Battle
  * mode would have spent on HP decides whether a tile counts for one, two or
  * three. DEF shrinks the number before it arrives, a crit or a Charge grows it,
- * an ultimate can max it — all without a single new balance constant, and
+ * an ultimate can max it - all without a single new balance constant, and
  * without touching stat-mechanics.ts, resolve-ultimate.ts or effects.ts.
  *
  * A flipped tile keeps its weight and only changes hands, so a heavy flag is
- * worth planting and also worth losing — the swing cuts both ways.
+ * worth planting and also worth losing - the swing cuts both ways.
  */
 
 export const GRID_SIZE = 5;
-export const CENTER_INDEX = 12; // (2, 2) in a 5×5 grid, 0-indexed row-major
+export const CENTER_INDEX = 12; // (2, 2) in a 5x5 grid, 0-indexed row-major
 export const CENTER_WEIGHT = 2; // "the center tile worth extra"
 
 /**
  * How much of an already-computed damage/heal number is worth one extra point
  * of tile weight. A routing constant, not a balance one: a typical attack
- * (~12–20) plants a 1–2 weight flag, a Charge or crit (~30–45) a 2–3.
+ * (~12-20) plants a 1-2 weight flag, a Charge or crit (~30-45) a 2-3.
  */
 export const AMOUNT_PER_EXTRA_WEIGHT = 18;
 /** Ceiling, so one huge ultimate cannot out-score a whole match of good play. */
@@ -67,7 +67,7 @@ export function flagWeight(amount: number): number {
 
 /**
  * The spec's "or the clock runs out". Without it, a match where both sides keep
- * missing never plants a flag and never ends — a miss costs the round's
+ * missing never plants a flag and never ends - a miss costs the round's
  * placement, so unlike Tug-of-War nothing pushes a stalled board to a result.
  */
 export const TERRITORY_MAX_TURNS = 40;
@@ -85,7 +85,7 @@ export interface TerritoryBoard {
 /**
  * The opening. Four seeded flags around the center, rotationally symmetric so
  * neither side is favoured. A sandwich rule needs something already on the
- * board to bracket against — from a wholly empty grid the first several moves
+ * board to bracket against - from a wholly empty grid the first several moves
  * could flip nothing at all, which reads as a broken board rather than a slow
  * one.
  */
@@ -119,7 +119,7 @@ export function toIndex(row: number, col: number): number {
   return row * GRID_SIZE + col;
 }
 
-/** Orthogonal neighbours — used for adjacency questions, not for flipping. */
+/** Orthogonal neighbours - used for adjacency questions, not for flipping. */
 export function neighbors(i: number): number[] {
   const [r, c] = toRowCol(i);
   const out: number[] = [];
@@ -134,7 +134,7 @@ function opponentOf(owner: "player" | "opponent"): "player" | "opponent" {
   return owner === "player" ? "opponent" : "player";
 }
 
-/** All eight directions — a sandwich can run along a diagonal too. */
+/** All eight directions - a sandwich can run along a diagonal too. */
 const DIRECTIONS: [number, number][] = [
   [-1, -1],
   [-1, 0],
@@ -190,7 +190,7 @@ export interface PlaceResult {
 
 /**
  * Plant a flag of `weight` for `owner` at `index`, flipping every enemy run it
- * brackets. Any open tile is a legal choice, flips or not — the brief lets you
+ * brackets. Any open tile is a legal choice, flips or not - the brief lets you
  * "plant a flag on any open tile you choose", and silently rejecting a tap
  * would read as a broken board. Returns the board unchanged if the tile is
  * already taken.
@@ -209,7 +209,7 @@ export function placeFlag(
   const nextWeights = [...weights];
   nextGrid[index] = owner;
   nextWeights[index] = weight;
-  // A flipped tile keeps the weight whoever planted it earned — it changes
+  // A flipped tile keeps the weight whoever planted it earned - it changes
   // hands, it does not shrink.
   for (const f of flipped) nextGrid[f] = owner;
 
@@ -258,7 +258,7 @@ export function territoryWinner(
   return territoryLeader(grid, weights);
 }
 
-/** Corners cannot ever be flipped — nothing can bracket them — so they are the
+/** Corners cannot ever be flipped - nothing can bracket them - so they are the
  *  most valuable real estate on the board, exactly as in Othello. */
 const CORNERS = [0, GRID_SIZE - 1, GRID_SIZE * (GRID_SIZE - 1), GRID_SIZE * GRID_SIZE - 1];
 /** Tiles adjacent to a corner hand that corner over, so they are avoided. */

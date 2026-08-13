@@ -121,15 +121,15 @@ export function CourseBuilder() {
       {
         label: "Format & Spam Check",
         status: "pending",
-        detail: "Validating proposal isn't spam or junk…",
+        detail: "Validating proposal isn't spam or junk...",
       },
-      { label: "Scope Coherence", status: "pending", detail: "Checking depth fits level…" },
+      { label: "Scope Coherence", status: "pending", detail: "Checking depth fits level..." },
       {
         label: "AI Editorial Review",
         status: "pending",
-        detail: "Grading on clarity, scope, and creator credibility…",
+        detail: "Grading on clarity, scope, and creator credibility...",
       },
-      { label: "Final Verdict", status: "pending", detail: "Compiling decision…" },
+      { label: "Final Verdict", status: "pending", detail: "Compiling decision..." },
     ];
     setReviewChecks(checks);
 
@@ -539,7 +539,7 @@ export function CourseBuilder() {
                       >
                         <Check className="w-6 h-6 text-neon-purple mx-auto mb-2" />
                         <p className="font-display font-bold tracking-wide">
-                          APPROVED — SCORE {verdict?.score}/100
+                          APPROVED - SCORE {verdict?.score}/100
                         </p>
                         <p className="text-sm text-muted-foreground mt-1 mb-4 max-w-md mx-auto">
                           {verdict?.reason}

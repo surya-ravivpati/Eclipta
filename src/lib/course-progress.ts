@@ -1,5 +1,5 @@
 /**
- * Course progress write path — upserts into the course_progress table the hub's
+ * Course progress write path - upserts into the course_progress table the hub's
  * "Continue Learning" reads from (docs/courses-redesign.md, Phase 0/1).
  *
  * Best-effort by design: if the migration hasn't been applied yet the table is
@@ -17,7 +17,7 @@ export interface ProgressSync {
   source: CourseSource;
   lessonsDone: number;
   lessonsTotal: number;
-  /** opaque resume token — "moduleIdx:lessonIdx" for official, block id for community */
+  /** opaque resume token - "moduleIdx:lessonIdx" for official, block id for community */
   currentBlockId?: string;
 }
 
@@ -43,7 +43,7 @@ export async function syncCourseProgress(p: ProgressSync): Promise<void> {
       completed_at: status === "completed" ? now : null,
     });
   } catch (e) {
-    // Table not migrated yet, or transient failure — never block the player.
+    // Table not migrated yet, or transient failure - never block the player.
     console.warn("course_progress sync skipped:", e);
   }
 }

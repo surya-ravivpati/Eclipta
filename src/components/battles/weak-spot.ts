@@ -7,8 +7,8 @@ import type { QuestionRecord } from "./types";
  * report, and so the button that opens Practice and the panel that names the
  * weak spot cannot disagree about what the weak spot is.
  *
- * ── Why not rank by miss *rate* ──────────────────────────────────────────────
- * The obvious ranking — wrong ÷ total, highest first — is wrong at battle
+ * -- Why not rank by miss *rate* ----------------------------------------------
+ * The obvious ranking - wrong ÷ total, highest first - is wrong at battle
  * scale. A battle is a handful of questions, so a topic seen once and missed
  * once scores 1.00 and beats a topic missed three times out of five. That sends
  * the learner to drill their unluckiest topic rather than their weakest one.
@@ -21,7 +21,7 @@ export interface TopicTally {
   topic: string;
   total: number;
   wrong: number;
-  /** Share of this topic's questions the learner got wrong, 0–1. */
+  /** Share of this topic's questions the learner got wrong, 0-1. */
   missRate: number;
 }
 
@@ -41,7 +41,7 @@ export function tallyTopics(records: QuestionRecord[]): Map<string, TopicTally> 
 
 /**
  * Topics worth drilling, worst first. Topics the learner got entirely right
- * are omitted — there is nothing to practise there.
+ * are omitted - there is nothing to practise there.
  */
 export function rankWeakTopics(records: QuestionRecord[]): TopicTally[] {
   return [...tallyTopics(records).values()]

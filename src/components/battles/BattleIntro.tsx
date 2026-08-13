@@ -6,12 +6,12 @@ import type { ArchetypeId } from "./types";
 import "./BattleIntro.css";
 
 /**
- * BattleIntro — "The Eclipse Alignment".
+ * BattleIntro - "The Eclipse Alignment".
  *
  * The cinematic loading sequence shown while matchmaking resolves (the
  * `searching` phase). Replaces the old spinner-style loader. Brand language:
  * gold motes fall INWARD into a forming eclipse on midnight navy, your
- * archetype and a mystery opponent rise rim-lit from opposite sides — crossing
+ * archetype and a mystery opponent rise rim-lit from opposite sides - crossing
  * a threshold into the arena rather than waiting for a page to load.
  *
  * All motion is compositor-only (transform/opacity/filter) and collapses to a
@@ -20,7 +20,7 @@ import "./BattleIntro.css";
 
 const EASE = EASING.soft;
 
-// Deterministic mote field — golden-angle spread so it reads organic, not
+// Deterministic mote field - golden-angle spread so it reads organic, not
 // gridded. Each mote starts at an edge offset and falls inward to the core.
 const PARTICLES = Array.from({ length: 22 }, (_, i) => {
   const angle = i * 137.5 * (Math.PI / 180);
@@ -76,7 +76,7 @@ export function BattleIntro({
           <div className="bi-disc" />
         </div>
 
-        {/* the duel — you vs a mystery opponent, rim-lit by the corona */}
+        {/* the duel - you vs a mystery opponent, rim-lit by the corona */}
         <motion.div
           className="bi-fighter bi-fighter--left"
           initial={{ opacity: 0, x: -36 }}
@@ -84,7 +84,7 @@ export function BattleIntro({
           transition={{ duration: 1, delay: 0.5, ease: EASE }}
         >
           <PlayerIcon className="bi-fighter-icon" />
-          <span className="bi-fighter-tag">You · {arch.name.replace(/^The /, "")}</span>
+          <span className="bi-fighter-tag">You | {arch.name.replace(/^The /, "")}</span>
         </motion.div>
 
         <motion.div

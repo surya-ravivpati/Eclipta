@@ -30,7 +30,7 @@ export const CERTIFIED_COURSES: CertifiedCourse[] = [
     ],
     tags: ["Python", "TensorFlow", "Statistics"],
     description:
-      "A rigorous introduction to modern machine learning — from linear regression all the way to convolutional neural networks. You'll write models from first principles, then graduate to production-grade tooling.",
+      "A rigorous introduction to modern machine learning - from linear regression all the way to convolutional neural networks. You'll write models from first principles, then graduate to production-grade tooling.",
     syllabus: [
       {
         title: "Foundations",
@@ -64,7 +64,7 @@ export const CERTIFIED_COURSES: CertifiedCourse[] = [
     ],
     tags: ["Algorithms", "Complexity", "Problem Solving"],
     description:
-      "Go beyond textbook complexity analysis. Tackle the algorithms that show up in real systems — from concurrent skip lists to amortized analysis of LSM trees.",
+      "Go beyond textbook complexity analysis. Tackle the algorithms that show up in real systems - from concurrent skip lists to amortized analysis of LSM trees.",
     syllabus: [
       {
         title: "Complexity Theory",
@@ -97,7 +97,7 @@ export const CERTIFIED_COURSES: CertifiedCourse[] = [
     ],
     tags: ["Physics", "Qiskit", "Linear Algebra"],
     description:
-      "A gentle on-ramp to quantum computing. No prior physics required — we'll build the linear algebra you need as we go.",
+      "A gentle on-ramp to quantum computing. No prior physics required - we'll build the linear algebra you need as we go.",
     syllabus: [
       {
         title: "Linear Algebra Refresher",
@@ -148,7 +148,7 @@ export const CERTIFIED_COURSES: CertifiedCourse[] = [
     ],
     tags: ["Mathematics", "Visualization", "Problem Solving"],
     description:
-      "Calculus the way it should be taught — visual, intuitive, and grounded in real problems.",
+      "Calculus the way it should be taught - visual, intuitive, and grounded in real problems.",
     syllabus: [
       { title: "Limits", lessons: ["Geometric intuition", "Continuity", "Asymptotes"] },
       { title: "Derivatives", lessons: ["Slopes & rates", "Chain rule", "Optimization"] },

@@ -150,7 +150,7 @@ import "./Battles.css";
 
 /**
  * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
- * Rank-based matchmaking has been removed — every battle is a fair random draw.
+ * Rank-based matchmaking has been removed - every battle is a fair random draw.
  */
 function pickOpponent(playerArch: ArchetypeId): Ecliptar {
   const candidates = ECLIPTARS.filter((e) => e.archetype !== playerArch);
@@ -158,17 +158,17 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// ─── Action Config ───────────────────────────────────────────────────
+// --- Action Config ---------------------------------------------------
 // Focus economy: Attack & Defend BUILD focus, Charge SPENDS it. Ultimate is
-// deliberately outside that economy — it spends its own charge meter, earned
-// only by answering correctly — so the two payoff moves never compete for the
+// deliberately outside that economy - it spends its own charge meter, earned
+// only by answering correctly - so the two payoff moves never compete for the
 // same resource and Charge keeps its role as the tempo play.
 const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, ultimate: 0 };
 
 const ACTIONS: Record<Action, ActionConfig> = {
-  attack: { label: "Attack", icon: Swords, focusCost: 0, desc: "Your base DMG · +15 Focus" },
-  defend: { label: "Heal", icon: Heart, focusCost: 0, desc: "Restore HP · +10 Focus" },
-  charge: { label: "Charge", icon: Zap, focusCost: 25, desc: "1.8× your DMG · −25 Focus" },
+  attack: { label: "Attack", icon: Swords, focusCost: 0, desc: "Your base DMG | +15 Focus" },
+  defend: { label: "Heal", icon: Heart, focusCost: 0, desc: "Restore HP | +10 Focus" },
+  charge: { label: "Charge", icon: Zap, focusCost: 25, desc: "1.8x your DMG | -25 Focus" },
   ultimate: {
     label: "Ultimate",
     icon: Sparkles,
@@ -179,8 +179,8 @@ const ACTIONS: Record<Action, ActionConfig> = {
 
 /**
  * Action button descriptions, derived from the ACTIVE archetype's real stats
- * AND its signature identity — so Attack/Heal/Charge read differently for every
- * class. The ± Focus is shown as a badge, so the text carries flavor instead.
+ * AND its signature identity - so Attack/Heal/Charge read differently for every
+ * class. The +/- Focus is shown as a badge, so the text carries flavor instead.
  */
 const ATTACK_TAG: Record<string, string> = {
   speedster: "fast = harder",
@@ -213,14 +213,14 @@ const CHARGE_TAG: Record<string, string> = {
   god: "finisher",
 };
 
-/** Base damage shown on the action buttons — live, so ramps read as they climb. */
+/** Base damage shown on the action buttons - live, so ramps read as they climb. */
 function displayDamage(arch: Archetype, correctCount: number): string {
   if (arch.damageIsTimeScaled) {
-    return `${arch.baseDamage}–${arch.baseDamage + DAMAGE_TUNING.speedster.maxSpeedBonus} DMG`;
+    return `${arch.baseDamage}-${arch.baseDamage + DAMAGE_TUNING.speedster.maxSpeedBonus} DMG`;
   }
   if (arch.damageRamps) {
     const { damagePerAnswer, damageCap } = DAMAGE_TUNING.accelerator;
-    return `${arch.baseDamage + Math.min(correctCount * damagePerAnswer, damageCap)} DMG ↑`;
+    return `${arch.baseDamage + Math.min(correctCount * damagePerAnswer, damageCap)} DMG ^`;
   }
   return `${arch.baseDamage} DMG`;
 }
@@ -231,16 +231,16 @@ function getActionDesc(
   correctCount: number,
   ultimate?: Ultimate | null,
 ): string {
-  const tag = (m: Record<string, string>) => (m[arch.id] ? ` · ${m[arch.id]}` : "");
+  const tag = (m: Record<string, string>) => (m[arch.id] ? ` | ${m[arch.id]}` : "");
   switch (action) {
     case "attack":
       return `${displayDamage(arch, correctCount)}${tag(ATTACK_TAG)}`;
     case "defend": {
-      if (arch.healAmount === null) return "Can't heal · builds Focus"; // Tank
+      if (arch.healAmount === null) return "Can't heal | builds Focus"; // Tank
       return `+${arch.healAmount} HP${tag(HEAL_TAG)}`;
     }
     case "charge": {
-      // Charge is chargeMultiplier× whatever Attack would deal right now.
+      // Charge is chargeMultiplierx whatever Attack would deal right now.
       const scaled = displayDamage(arch, correctCount).replace(/\d+/g, (n) =>
         String(Math.floor(Number(n) * DAMAGE_TUNING.chargeMultiplier)),
       );
@@ -251,7 +251,7 @@ function getActionDesc(
   }
 }
 
-// ─── Quick-chat constants ───────────────────────────────────────────
+// --- Quick-chat constants -------------------------------------------
 // Preset-only, sportsmanship-first: a fixed set of positive/neutral worded
 // phrases. No free text (toxicity), no emoji (brand: docs/brand-system.md).
 // Insults are impossible by construction; communication stays warm, not loud.
@@ -322,8 +322,8 @@ const tierColors: Record<string, string> = {
   Bronze: "text-tier-bronze",
 };
 
-// ─── Audio Engine ─────────────────────────────────────────────────────
-// Web Audio API tone synthesizer — runs on the main thread, no external deps.
+// --- Audio Engine -----------------------------------------------------
+// Web Audio API tone synthesizer - runs on the main thread, no external deps.
 // AudioContext is created lazily on first use (requires prior user gesture).
 let _audioCtx: AudioContext | null = null;
 function getAudioCtx(): AudioContext | null {
@@ -379,7 +379,7 @@ function sfxDefeat() {
   [330, 262, 196].forEach((f, i) => setTimeout(() => playTone(f, 0.3, "triangle", 0.1), i * 170));
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────
+// --- Sub-components --------------------------------------------------
 function HpBar({
   current,
   max,
@@ -402,7 +402,7 @@ function HpBar({
       aria-valuenow={Math.max(0, Math.round(current))}
       // A bare "70%" is meaningless: name the bar, and spell out the critical
       // state, which is otherwise carried only by the colour turning pink.
-      aria-valuetext={`${label}: ${Math.max(0, Math.round(current))} / ${max}${isCritical ? " — critical" : ""}`}
+      aria-valuetext={`${label}: ${Math.max(0, Math.round(current))} / ${max}${isCritical ? " - critical" : ""}`}
     >
       <div className="flex justify-between items-center mb-1">
         <span
@@ -463,9 +463,9 @@ function FocusBar({
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={Math.max(0, Math.round(current))}
-      // "Charged" is signalled visually by a pink pulse — state that in words
+      // "Charged" is signalled visually by a pink pulse - state that in words
       // too, so the cue is not colour-and-motion only.
-      aria-valuetext={`Focus: ${Math.max(0, Math.round(current))} / ${max}${isCharged ? " — charged, Charge available" : ""}`}
+      aria-valuetext={`Focus: ${Math.max(0, Math.round(current))} / ${max}${isCharged ? " - charged, Charge available" : ""}`}
     >
       <div className="flex justify-between items-center mb-1">
         <motion.span
@@ -535,7 +535,7 @@ function FighterCard({
   showHit: boolean;
   showHeal: boolean;
   canCharge?: boolean;
-  /** False in modes where health is not the resource — the bar would sit at
+  /** False in modes where health is not the resource - the bar would sit at
    *  full all match and read as a win condition that isn't one. */
   showHp?: boolean;
 }) {
@@ -550,7 +550,7 @@ function FighterCard({
   }, [fighter.sprite]);
   const showSprite = !!fighter.sprite && !spriteFailed;
 
-  // Floating combat numbers — derived from HP deltas so every damage source
+  // Floating combat numbers - derived from HP deltas so every damage source
   // (bot, live PvP, wild events, heals) produces one automatically.
   const prevHpRef = useRef(fighter.hp);
   const floatIdRef = useRef(0);
@@ -668,7 +668,7 @@ function FighterCard({
                     <span
                       className={`font-bold tracking-widest ${isHot ? "text-[11px]" : "text-[10px]"}`}
                     >
-                      {momentum}× STREAK
+                      {momentum}x STREAK
                     </span>
                   </motion.div>
                 );
@@ -683,7 +683,7 @@ function FighterCard({
             label="HP"
           />
         )}
-        {/* Absorb pool (Healer passive) — only rendered while it holds charge,
+        {/* Absorb pool (Healer passive) - only rendered while it holds charge,
             so classes without a shield never show an empty slot. */}
         <AnimatePresence>
           {(fighter.shield ?? 0) > 0 && (
@@ -773,7 +773,7 @@ function QuestionOverlay({
             <span
               className={`text-[10px] font-bold tracking-widest ${question.difficulty === "hard" ? "text-neon-pink" : question.difficulty === "medium" ? "text-neon-purple" : "text-neon-cyan"}`}
             >
-              {question.difficulty.toUpperCase()} · {question.topic.toUpperCase()}
+              {question.difficulty.toUpperCase()} | {question.topic.toUpperCase()}
             </span>
             <div className="flex items-center gap-1">
               <Timer
@@ -822,7 +822,7 @@ function QuestionOverlay({
           })}
         </div>
 
-        {/* Correct answer reveal — appears briefly on wrong answer before damage */}
+        {/* Correct answer reveal - appears briefly on wrong answer before damage */}
         <AnimatePresence>
           {showReveal && (
             <motion.div
@@ -833,7 +833,7 @@ function QuestionOverlay({
               transition={{ duration: 0.2 }}
             >
               <span className="text-[10px] font-bold tracking-widest text-muted-foreground">
-                {question.topic.toUpperCase()} · CORRECT ANSWER
+                {question.topic.toUpperCase()} | CORRECT ANSWER
               </span>
               <span className="text-xl font-bold font-display text-neon-cyan">
                 {result?.answer}
@@ -850,7 +850,7 @@ function QuestionOverlay({
  * Issue 1: structured log renderer.
  * Uses LogEntry.id as the React key (never the array index) so that entries
  * are stable across re-renders and can never be reordered or deduplicated
- * by React's reconciler. Color derives from actor + actionType — no emoji
+ * by React's reconciler. Color derives from actor + actionType - no emoji
  * prefix parsing.
  */
 function BattleLog({ logs }: { logs: LogEntry[] }) {
@@ -892,7 +892,7 @@ function BattleLog({ logs }: { logs: LogEntry[] }) {
       </div>
       <div ref={ref} className="p-3 h-48 overflow-y-auto space-y-1">
         {logs.length === 0 && (
-          <p className="text-[10px] text-muted-foreground italic">Battle log will appear here…</p>
+          <p className="text-[10px] text-muted-foreground italic">Battle log will appear here...</p>
         )}
         {logs.map((e) => (
           <motion.p
@@ -917,7 +917,7 @@ function BattleLog({ logs }: { logs: LogEntry[] }) {
   );
 }
 
-// ─── Wild Event Overlay ───────────────────────────────────────────────
+// --- Wild Event Overlay -----------------------------------------------
 // An ultimate is the loudest thing that happens in a battle, so the cast gets
 // its own overlay: the move's name, who cast it, and any random branches it
 // rolled (the Gambler ultimates lean on this to show what the dice gave).
@@ -951,7 +951,7 @@ function UltimateCastOverlay({
         </p>
         {cast.rolls.length > 0 && (
           <p className={`text-xs font-bold mt-2 ${color} opacity-80 tracking-wider`}>
-            {cast.rolls.join("  ·  ")}
+            {cast.rolls.join("  |  ")}
           </p>
         )}
       </motion.div>
@@ -985,7 +985,7 @@ function EffectChips({ effects, side }: { effects: ActiveEffect[]; side: "left" 
   );
 }
 
-// ─── Battle Chat + Emoji Reactions ───────────────────────────────────
+// --- Battle Chat + Emoji Reactions -----------------------------------
 // Issue 2: lightweight preset-only expression system. No free-text, no
 // gameplay interruption. 3-second cooldown between sends prevents spam.
 // Works one-sided for a bot (local display only, no broadcast).
@@ -1025,7 +1025,7 @@ function BattleChat({
 
   const visibleItems = allItems.filter((item) => Date.now() - item.ts < 4000);
 
-  // Only visible during active battle phases — zero footprint otherwise
+  // Only visible during active battle phases - zero footprint otherwise
   const isActive = phase === "select" || phase === "question" || phase === "animate";
   if (!isActive) return null;
 
@@ -1057,7 +1057,7 @@ function BattleChat({
 
   return (
     <div className="relative">
-      {/* Floating message bubbles — up to 2 visible at once */}
+      {/* Floating message bubbles - up to 2 visible at once */}
       <div className="absolute bottom-full mb-1 w-full pointer-events-none z-10 space-y-1">
         <AnimatePresence>
           {visibleItems.slice(-2).map((item) => (
@@ -1153,7 +1153,7 @@ function BattleChat({
   );
 }
 
-// ─── Gambler Reveal ───────────────────────────────────────────────────
+// --- Gambler Reveal ---------------------------------------------------
 // Stat definitions for the slot-machine reveal sequence.
 interface RevealDef {
   key: keyof GamblerRoll;
@@ -1162,7 +1162,7 @@ interface RevealDef {
   lockText: (s: GamblerRoll) => string;
   /** Integer range cycled while unlocked (avoids floating-point flicker) */
   cycleRange: [number, number];
-  /** Returns a 0–1 score for quality colouring (higher = better) */
+  /** Returns a 0-1 score for quality colouring (higher = better) */
   qualityScore: (s: GamblerRoll) => number;
   hasQuality: boolean;
 }
@@ -1219,7 +1219,7 @@ const REVEAL_DEFS: RevealDef[] = [
   {
     key: "diffMin",
     label: "DIFF",
-    lockText: (s) => `${s.diffMin}–${s.diffMax}`,
+    lockText: (s) => `${s.diffMin}-${s.diffMax}`,
     cycleRange: [2, 10],
     qualityScore: () => 0.5,
     hasQuality: false,
@@ -1265,7 +1265,7 @@ function GamblerRevealScreen({
   opponentName: string;
   onComplete: () => void;
 }) {
-  const STAGGER = 850; // ms between each stat locking (7 stats — keep it snappy)
+  const STAGGER = 850; // ms between each stat locking (7 stats - keep it snappy)
 
   const [lockedCount, setLockedCount] = useState(0);
   const lockedRef = useRef(0);
@@ -1315,7 +1315,7 @@ function GamblerRevealScreen({
     };
   }, []);
 
-  // Overall build rating — average quality score across stats that have one
+  // Overall build rating - average quality score across stats that have one
   const qualityStats = REVEAL_DEFS.filter((d) => d.hasQuality);
   const avgQuality =
     qualityStats.reduce((s, d) => s + d.qualityScore(stats), 0) / qualityStats.length;
@@ -1367,14 +1367,14 @@ function GamblerRevealScreen({
           <Dices className="w-7 h-7 text-tier-gold" />
         </motion.div>
         <h3 className="btt-shout text-3xl mb-0.5">
-          {allDone ? "FATE HAS SPOKEN" : "ROLLING FATE…"}
+          {allDone ? "FATE HAS SPOKEN" : "ROLLING FATE..."}
         </h3>
         <p className="text-[10px] text-muted-foreground tracking-widest">
           {allDone ? `vs ${opponentName}` : "YOUR BUILD IS BEING DETERMINED"}
         </p>
       </div>
 
-      {/* 2-column stat grid — each cell cycles then locks with a quality pop */}
+      {/* 2-column stat grid - each cell cycles then locks with a quality pop */}
       <div className="grid grid-cols-2 gap-2 mb-5 text-left">
         {REVEAL_DEFS.map((def, i) => {
           const isLocked = i < lockedCount;
@@ -1418,7 +1418,7 @@ function GamblerRevealScreen({
         })}
       </div>
 
-      {/* Overall run rating + CTA — appears after all stats are locked */}
+      {/* Overall run rating + CTA - appears after all stats are locked */}
       <AnimatePresence>
         {allDone && (
           <motion.div
@@ -1448,15 +1448,15 @@ function GamblerRevealScreen({
   );
 }
 
-// ─── Main Battle Engine ──────────────────────────────────────────────
+// --- Main Battle Engine ----------------------------------------------
 function BattleArena() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [showPractice, setShowPractice] = useState(false);
   /** Concept to drop straight into when Practice is opened from a battle report. */
   const [practiceConcept, setPracticeConcept] = useState<string | null>(null);
-  // ── Game mode ─────────────────────────────────────────────────────────
-  // Modes never touch stat-mechanics/resolve-ultimate/effects — they only
+  // -- Game mode ---------------------------------------------------------
+  // Modes never touch stat-mechanics/resolve-ultimate/effects - they only
   // redirect what an already-computed dmg/heal number is spent on. `gameMode`
   // is read inside async turn callbacks, so it gets the same ref-twin pattern
   // as everything else those callbacks need.
@@ -1482,11 +1482,11 @@ function BattleArena() {
   const actingSideRef = useRef<"player" | "opponent">("player");
   /** Weight of the flag awaiting placement, for the prompt. 0 when none. */
   const [placementWeight, setPlacementWeight] = useState(0);
-  /** Turns taken this match — Territory's stand-in for the spec's match clock. */
+  /** Turns taken this match - Territory's stand-in for the spec's match clock. */
   const modeTurnsRef = useRef(0);
   /** Opponent's correct answers, for Territory's tied-board tiebreak. */
   const opponentCorrectRef = useRef(0);
-  // Draft Battle team state lives only in refs — nothing renders a roster
+  // Draft Battle team state lives only in refs - nothing renders a roster
   // sidebar yet, and the turn-loop logic (resolveModeOutcome, startBattle)
   // only ever needs synchronous reads, never a re-render.
   const playerDraftTeamRef = useRef<DraftTeam | null>(null);
@@ -1523,8 +1523,8 @@ function BattleArena() {
   const [showPlayerHeal, setShowPlayerHeal] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [records, setRecords] = useState<QuestionRecord[]>([]);
-  // ── Ultimate & status-effect state ──────────────────────────────────
-  // Charge is a 0–1 meter filled by correct answers; effects are the flat,
+  // -- Ultimate & status-effect state ----------------------------------
+  // Charge is a 0-1 meter filled by correct answers; effects are the flat,
   // serialisable status lists from battles/effects.ts. Each has a ref twin
   // because the async turn callbacks (bot, PvP resolution) read them
   // outside React's render cycle.
@@ -1560,10 +1560,10 @@ function BattleArena() {
   const hpHistoryRef = useRef<number[]>([]);
   /** The bot's Ecliptar, so it casts a real ultimate from its own archetype. */
   const opponentEcliptarRef = useRef<string | null>(null);
-  /** The player's equipped Ecliptar slug — keys their ultimate. */
+  /** The player's equipped Ecliptar slug - keys their ultimate. */
   const ecliptarRef = useRef<string | null>(null);
   const momentumRef = useRef(0);
-  // Correct answers banked this match — drives the Accelerator ramp and God's
+  // Correct answers banked this match - drives the Accelerator ramp and God's
   // every-third-answer heal, both of which count answers, not turns.
   const [correctCount, setCorrectCount] = useState(0);
   // Fulcrum only: the passive borrowed for the current round, rolled fresh
@@ -1585,7 +1585,7 @@ function BattleArena() {
   const battleMemoryRef = useRef<BattleMemory | null>(null);
   const [playerXp, setPlayerXp] = useState<number>(0);
 
-  // Issue 1: ref-based log pipeline — prevents React batching from swallowing
+  // Issue 1: ref-based log pipeline - prevents React batching from swallowing
   // multiple synchronous addLog calls and eliminates nested-setState side-effects.
   const logCounterRef = useRef(0);
   const pendingLogsRef = useRef<LogEntry[]>([]);
@@ -1610,7 +1610,7 @@ function BattleArena() {
   // PvP / matchmaking state
   const [opponentType, setOpponentType] = useState<OpponentType>("bot");
   const [confirmExit, setConfirmExit] = useState(false);
-  const [matchStatus, setMatchStatus] = useState("Finding opponent…");
+  const [matchStatus, setMatchStatus] = useState("Finding opponent...");
   const [pvpBattleId, setPvpBattleId] = useState<string | null>(null);
   const [playerRating, setPlayerRating] = useState(1000);
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
@@ -1714,7 +1714,7 @@ function BattleArena() {
           const row = payload.new as TableRow<"pvp_battles">;
           if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
             // A battle can also be resolved by the server's reaper when the
-            // other side goes quiet. Say so — otherwise the win arrives out of
+            // other side goes quiet. Say so - otherwise the win arrives out of
             // nowhere and reads as a bug rather than a forfeit.
             if (row.abandoned_by && row.abandoned_by !== myUserIdRef.current) {
               toast(`${opponentRef.current.name} left the battle.`, {
@@ -1733,7 +1733,7 @@ function BattleArena() {
             row.rematch_requested_by[0] !== myUserIdRef.current &&
             liveRematchStateRef.current === "idle"
           ) {
-            // Opponent asked for a rematch first — surface it so the player
+            // Opponent asked for a rematch first - surface it so the player
             // knows clicking QUICK REMATCH will jump straight into another match.
             toast(`${opponentRef.current.name} wants a rematch.`, {
               description: "Click QUICK REMATCH on the result screen to accept.",
@@ -1878,7 +1878,7 @@ function BattleArena() {
   const comboThreshold = archetype === "fulcrum" ? 2 : 3;
 
   /**
-   * Issue 1 — single-pipeline addLog.
+   * Issue 1 - single-pipeline addLog.
    *
    * All synchronous addLog calls within the same execution frame are
    * batched into one setLogs via queueMicrotask, preserving insertion order
@@ -1907,9 +1907,9 @@ function BattleArena() {
     setTimeout(() => setComboBurst((prev) => (prev?.id === id ? null : prev)), 1200);
   }, []);
 
-  // "FIGHT" stinger — fires once per battle, the first time we hit select.
+  // "FIGHT" stinger - fires once per battle, the first time we hit select.
   // The flag re-arms on any pre-battle phase (and on result, so a direct
-  // result → select rematch transition still gets its stinger).
+  // result -> select rematch transition still gets its stinger).
   useEffect(() => {
     if (phase === "select" && !fightShownRef.current) {
       fightShownRef.current = true;
@@ -2106,8 +2106,8 @@ function BattleArena() {
   /**
    * Cast an ultimate and commit its outcome to battle state.
    *
-   * Everything the ops produced — HP, shields, effects, timers, permanent
-   * damage, charge refunds — is written here so the player, bot and PvP paths
+   * Everything the ops produced - HP, shields, effects, timers, permanent
+   * damage, charge refunds - is written here so the player, bot and PvP paths
    * share one commit point rather than each re-deriving the rules.
    */
   const castUltimate = useCallback(
@@ -2127,7 +2127,7 @@ function BattleArena() {
       const oppSideOut = isPlayer ? outcome.target : outcome.caster;
 
       // Outside an HP mode the resolver's health numbers are not what the match
-      // turns on, so they are not written to the fighters — the ultimate's
+      // turns on, so they are not written to the fighters - the ultimate's
       // damage and healing get spent on the mode's own resource below instead.
       // Everything else the ultimate did (shields, effects, bonus damage,
       // timers, charge) lands identically either way.
@@ -2170,7 +2170,7 @@ function BattleArena() {
       }
 
       // Charge: spend it, then honour any refund the ultimate rolled.
-      // Casting resets to the configured floor, then any refund is added — the
+      // Casting resets to the configured floor, then any refund is added - the
       // level before the cast plays no part, so nothing is passed in.
       const chargeAfterCast = Math.max(
         0,
@@ -2202,11 +2202,11 @@ function BattleArena() {
       setTimeout(() => setUltimateCast(null), 1800);
       sfxWild();
 
-      const rollNote = outcome.rolls.length > 0 ? ` [${outcome.rolls.join(" · ")}]` : "";
+      const rollNote = outcome.rolls.length > 0 ? ` [${outcome.rolls.join(" | ")}]` : "";
       addLog({
         actor: isPlayer ? "player" : "opponent",
         actionType: "ultimate",
-        result: `${isPlayer ? "" : `${opponentRef.current.name} `}ULTIMATE — ${ult.name}!${rollNote} ${outcome.notes.join(" ")}`,
+        result: `${isPlayer ? "" : `${opponentRef.current.name} `}ULTIMATE - ${ult.name}!${rollNote} ${outcome.notes.join(" ")}`,
         value: outcome.damageDealt,
       });
 
@@ -2237,7 +2237,7 @@ function BattleArena() {
 
       // Poison and regen are outcomes like any other, so outside an HP mode
       // they buy ground or flags instead of quietly draining a bar nobody is
-      // looking at — which would otherwise make poison the only thing in these
+      // looking at - which would otherwise make poison the only thing in these
       // modes that could still end a match by health.
       const other = isPlayer ? "opponent" : "player";
       const poisonHp = spendDamage(other, tick.poisonDamage);
@@ -2296,16 +2296,16 @@ function BattleArena() {
     }
   }, [phase, question]);
 
-  // ── Game mode: reinterpreting the same numbers, never new ones ──────────
+  // -- Game mode: reinterpreting the same numbers, never new ones ----------
   // Every dmg/heal value below is already fully computed by
-  // damageWithEffects/defendWithEffects/castUltimate — archetype stats, DEF,
+  // damageWithEffects/defendWithEffects/castUltimate - archetype stats, DEF,
   // crit and ultimates all already happened by the time these run. Modes only
   // decide what that number is SPENT ON (HP, a shared bar, a grid tile).
   //
   // The rule that keeps a mode from being Battle-with-decoration: outside an
   // `"hp"` mode, HP is NOT a second win condition ticking away underneath the
   // visible one. `spendDamage`/`spendHeal` are the only way an outcome reaches
-  // a resource, and in bar/grid modes they return 0 HP — the health bars never
+  // a resource, and in bar/grid modes they return 0 HP - the health bars never
   // move and are not rendered. Everything the stat sheet does still lands,
   // because it landed before these ran: DEF and shields already shrank the
   // number, a crit already grew it.
@@ -2316,7 +2316,7 @@ function BattleArena() {
   }
 
   /**
-   * How well a side is doing, as a 0–1 fraction of whatever this mode is
+   * How well a side is doing, as a 0-1 fraction of whatever this mode is
    * fought over. The bot brain reasons entirely in health fractions; outside an
    * HP mode health never moves, so without this translation the AI would
    * believe it was at full strength all match and never defend, heal or reach
@@ -2379,8 +2379,8 @@ function BattleArena() {
 
   /**
    * The heal counterpart. A Healer or a God's passive restore is worth just as
-   * much outside Battle mode — it pulls the tug bar back off your own line, or
-   * buys board space — instead of topping up a bar nobody is looking at.
+   * much outside Battle mode - it pulls the tug bar back off your own line, or
+   * buys board space - instead of topping up a bar nobody is looking at.
    */
   function spendHeal(healer: "player" | "opponent", heal: number): number {
     const resource = GAME_MODES[gameModeRef.current].resource;
@@ -2388,7 +2388,7 @@ function BattleArena() {
     if (heal <= 0) return 0;
 
     if (resource === "bar") {
-      // Recovery only ever walks the bar back toward center — a heal cannot
+      // Recovery only ever walks the bar back toward center - a heal cannot
       // push through into enemy ground the way a hit can.
       const next = recoverTug(tugStateRef.current, healer, heal);
       tugStateRef.current = next;
@@ -2402,7 +2402,7 @@ function BattleArena() {
   /**
    * Territory: a correct answer earns exactly one flag, whose weight carries
    * the stat sheet onto the board. The player's is banked and the turn loop
-   * parks in the "placing" phase until they tap a tile — placement is the
+   * parks in the "placing" phase until they tap a tile - placement is the
    * decision this mode is built around, so it is never auto-resolved for them.
    * A bot resolves immediately against the shared heuristic.
    */
@@ -2439,7 +2439,7 @@ function BattleArena() {
   }
 
   /** Swap the next drafted Ecliptar in after a KO, resetting its own HP/focus
-   *  fresh — a new duel, not a continuation of the fallen member's fight. */
+   *  fresh - a new duel, not a continuation of the fallen member's fight. */
   function swapInDraftMember(side: "player" | "opponent", team: DraftTeam) {
     const member = activeMember(team);
     if (!member) return;
@@ -2494,9 +2494,9 @@ function BattleArena() {
    * Mode-aware replacement for Battle mode's plain HP<=0 check.
    * - "ended": finishBattle already ran; caller does nothing more.
    * - "handled": this mode owns the win-check (even with no winner yet this
-   *   turn) — caller skips the default HP check and goes straight to its
+   *   turn) - caller skips the default HP check and goes straight to its
    *   normal turn-continuation logic (extra turn / ai).
-   * - "passthrough": not a mode with its own win condition — caller runs the
+   * - "passthrough": not a mode with its own win condition - caller runs the
    *   original HP<=0 check exactly as Battle mode always has.
    */
   function resolveModeOutcome(
@@ -2529,14 +2529,14 @@ function BattleArena() {
           addLog({
             actor: "system",
             actionType: "info",
-            result: `Territory tied — decided on correct answers, ${mine} to ${theirs}.`,
+            result: `Territory tied - decided on correct answers, ${mine} to ${theirs}.`,
           });
           finishBattle(mine > theirs);
         } else {
           addLog({
             actor: "system",
             actionType: "info",
-            result: `Territory and correct answers both tied — the round is decided by coin flip.`,
+            result: `Territory and correct answers both tied - the round is decided by coin flip.`,
           });
           finishBattle(Math.random() < 0.5);
         }
@@ -2575,7 +2575,7 @@ function BattleArena() {
    * A wrong answer's self-inflicted damage. Separate from `spendDamage`
    * because the two modes read a miss differently: Tug-of-War hands the ground
    * you lost to the other side, while Territory "costs you the round's
-   * placement entirely" — no flag for anyone. Returns the HP to subtract.
+   * placement entirely" - no flag for anyone. Returns the HP to subtract.
    */
   function spendMiss(missedSide: "player" | "opponent", selfDmg: number): number {
     const resource = GAME_MODES[gameModeRef.current].resource;
@@ -2616,7 +2616,7 @@ function BattleArena() {
           setPhase("select");
         } else if (extraTurnRef.current) {
           extraTurnRef.current = false;
-          addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
+          addLog({ actor: "system", actionType: "info", result: `Another turn - go again!` });
           setPhase("select");
         } else {
           aiTurn();
@@ -2656,7 +2656,7 @@ function BattleArena() {
       const arch = getArch(archetype);
       const oppArchNow = getArch(opponentArchetype);
       const copied = copiedPassiveRef.current;
-      // Answers banked BEFORE this one — what the Accelerator ramp had to work
+      // Answers banked BEFORE this one - what the Accelerator ramp had to work
       // with when the question was posed.
       const priorCorrect = correctCountRef.current;
       if (correct) {
@@ -2697,7 +2697,7 @@ function BattleArena() {
             addLog({
               actor: "system",
               actionType: "combo",
-              result: `COMBO x${Math.floor(nextMom / comboThreshold)} — ${scoreMult.toFixed(2)}× score!`,
+              result: `COMBO x${Math.floor(nextMom / comboThreshold)} - ${scoreMult.toFixed(2)}x score!`,
             });
             fireComboBurst(Math.floor(nextMom / comboThreshold), scoreMult);
             sfxCombo();
@@ -2770,7 +2770,7 @@ function BattleArena() {
         addLog({
           actor: "system",
           actionType: "info",
-          result: `Action locked for turn ${liveTurnNumberRef.current}. ${liveOpponentLockedRef.current ? "Resolving…" : `Waiting for ${opponentRef.current.name}.`}`,
+          result: `Action locked for turn ${liveTurnNumberRef.current}. ${liveOpponentLockedRef.current ? "Resolving..." : `Waiting for ${opponentRef.current.name}.`}`,
         });
 
         void (async () => {
@@ -2795,7 +2795,7 @@ function BattleArena() {
           if (error) {
             liveActionLockedRef.current = false;
             setLiveActionLocked(false);
-            toast.error("Couldn't lock PvP action — try again.");
+            toast.error("Couldn't lock PvP action - try again.");
             return;
           }
           if (data?.ready) {
@@ -2842,12 +2842,12 @@ function BattleArena() {
         if (newMom > longestStreak) setLongestStreak(newMom);
         sfxStreak(newMom);
 
-        // Announce combo activations — momentum pays out in score, not damage.
+        // Announce combo activations - momentum pays out in score, not damage.
         if (newMom > 0 && newMom % comboThreshold === 0) {
           addLog({
             actor: "system",
             actionType: "combo",
-            result: `COMBO x${Math.floor(newMom / comboThreshold)} — ${scoreMult.toFixed(2)}× score!`,
+            result: `COMBO x${Math.floor(newMom / comboThreshold)} - ${scoreMult.toFixed(2)}x score!`,
           });
           fireComboBurst(Math.floor(newMom / comboThreshold), scoreMult);
           sfxCombo();
@@ -2901,7 +2901,7 @@ function BattleArena() {
             addLog({
               actor: "system",
               actionType: "info",
-              result: `No Ecliptar equipped — the ultimate fizzles.`,
+              result: `No Ecliptar equipped - the ultimate fizzles.`,
             });
           }
         } else {
@@ -2932,7 +2932,7 @@ function BattleArena() {
               addLog({
                 actor: "player",
                 actionType: "info",
-                result: `Velocity Break: ${unused}s unused → +${bonus} damage.`,
+                result: `Velocity Break: ${unused}s unused -> +${bonus} damage.`,
               });
             }
           }
@@ -2983,7 +2983,7 @@ function BattleArena() {
       } else {
         setMomentum(0);
         sfxBreak();
-        // The miss penalty runs through DEF like any other incoming damage —
+        // The miss penalty runs through DEF like any other incoming damage -
         // the maxHp-derived self-damage curve went with the multiplier stat.
         const counterDmg = applyDefense(rollMissPenalty(), arch, copied);
         const { hpLoss, shieldLeft } = absorbWithShield(counterDmg, playerRef.current.shield ?? 0);
@@ -3010,7 +3010,7 @@ function BattleArena() {
         setShowPlayerHeal(false);
 
         if (pendingPlacementRef.current) {
-          // Territory: waiting on the player to tap a tile — resolvePendingPlacement continues the loop.
+          // Territory: waiting on the player to tap a tile - resolvePendingPlacement continues the loop.
           return;
         }
 
@@ -3027,7 +3027,7 @@ function BattleArena() {
         } else if (extraTurnRef.current) {
           // Time Fracture / Wheel of Fortune: act again without ceding the turn.
           extraTurnRef.current = false;
-          addLog({ actor: "system", actionType: "info", result: `Another turn — go again!` });
+          addLog({ actor: "system", actionType: "info", result: `Another turn - go again!` });
           setPhase("select");
         } else {
           aiTurn();
@@ -3140,7 +3140,7 @@ function BattleArena() {
 
           // Feed every answered question into the shared concept-mastery store so
           // Practice Weak Spots (and the Courses readiness engine) can use it.
-          // Best-effort — a missing table never affects the battle result.
+          // Best-effort - a missing table never affects the battle result.
           void recordOutcomes(
             user.id,
             finalRecords.map((r) => ({
@@ -3152,7 +3152,7 @@ function BattleArena() {
             })),
           );
 
-          // Award XP here — at the guaranteed battle-end hook — rather than relying
+          // Award XP here - at the guaranteed battle-end hook - rather than relying
           // on the result screen mounting (which a live rematch or an early exit can
           // skip). Server computes the amount from correct/total/won.
           await awardVerifiedBattleXp(answeredChallengeIdsRef.current);
@@ -3168,7 +3168,7 @@ function BattleArena() {
             p_was_correct: won,
             p_response_time_ms: null,
             p_hint_level_used: 0,
-            p_luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} · score ${Math.floor(finalScore)} · streak ${finalStreak}`,
+            p_luna_summary: `${won ? "Victory" : "Defeat"} as ${ARCHETYPES[archetype].name} | score ${Math.floor(finalScore)} | streak ${finalStreak}`,
           });
           if (won) {
             // Server-side atomic increment; clients can no longer set wins directly.
@@ -3230,13 +3230,13 @@ function BattleArena() {
     if (!battleId) return;
     if (liveRematchStateRef.current !== "idle") return;
     setLiveRematchState("waiting");
-    // Don't strand the player on "WAITING FOR OPPONENT…": if the opponent never
+    // Don't strand the player on "WAITING FOR OPPONENT...": if the opponent never
     // accepts, reset to idle so QUICK REMATCH is clickable again.
     if (rematchTimeoutRef.current) clearTimeout(rematchTimeoutRef.current);
     rematchTimeoutRef.current = setTimeout(() => {
       if (liveRematchStateRef.current === "waiting") {
         setLiveRematchState("idle");
-        toast("Rematch timed out — your opponent didn't accept.");
+        toast("Rematch timed out - your opponent didn't accept.");
       }
     }, 30000);
     try {
@@ -3246,7 +3246,7 @@ function BattleArena() {
       });
       if (error) throw error;
       const d = data as { ready?: boolean; battle_id?: string | null } | null;
-      // Both players already requested → the realtime UPDATE will arrive and
+      // Both players already requested -> the realtime UPDATE will arrive and
       // trigger startLiveBattleFromId, but kick it off directly too in case
       // the broadcast was dropped between RPC return and channel delivery.
       if (d?.ready && d.battle_id && !rematchStartedRef.current) {
@@ -3256,7 +3256,7 @@ function BattleArena() {
       }
     } catch (err) {
       console.error("rematch failed", err);
-      toast.error("Couldn't queue rematch — try again.");
+      toast.error("Couldn't queue rematch - try again.");
       setLiveRematchState("idle");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3269,7 +3269,7 @@ function BattleArena() {
 
     setTimeout(
       () => {
-        // Poison/regen/freeze resolve before the bot chooses — a frozen turn is
+        // Poison/regen/freeze resolve before the bot chooses - a frozen turn is
         // skipped outright, and a poison that kills ends the match here.
         const oppTick = runEffectTick("opponent");
         if (oppTick.died) {
@@ -3326,7 +3326,7 @@ function BattleArena() {
             ratingSkillAdjustment(playerRatingRef.current, opponentRatingRef.current),
           );
 
-        // Narrative pressure line — appears at meaningful moments only
+        // Narrative pressure line - appears at meaningful moments only
         const hasData = mem.playerTurnCount >= 4;
         const strongPattern = mem.patternConfidence >= personality.counterPlaySensitivity;
         const pressureLine = getPressureLogLine(
@@ -3405,8 +3405,8 @@ function BattleArena() {
             }
           } else if (choice === "ultimate" && oppUltimate) {
             // The bot's ultimate goes through the same resolver, which commits
-            // both sides itself — including routing its damage to whatever this
-            // mode is fought over — so this branch skips the local bookkeeping.
+            // both sides itself - including routing its damage to whatever this
+            // mode is fought over - so this branch skips the local bookkeeping.
             castUltimate(oppUltimate, "opponent");
             newPlayerHp = playerRef.current.hp;
             newPlayerShield = playerRef.current.shield ?? 0;
@@ -3486,7 +3486,7 @@ function BattleArena() {
           setShowPlayerHit(false);
 
           if (pendingPlacementRef.current) {
-            // Territory: waiting on the player to tap a tile — resolvePendingPlacement continues the loop.
+            // Territory: waiting on the player to tap a tile - resolvePendingPlacement continues the loop.
             return;
           }
 
@@ -3501,7 +3501,7 @@ function BattleArena() {
             setPhase("select");
           }
         }, 600);
-        // Variable, right-skewed, and occasionally hesitant — see botThinkDelayMs.
+        // Variable, right-skewed, and occasionally hesitant - see botThinkDelayMs.
         // A flat delay here was the loudest remaining tell: nothing else in the
         // match is metronomic, so a perfectly regular opponent stands out inside
         // a few turns.
@@ -3531,7 +3531,7 @@ function BattleArena() {
       addLog({
         actor: "system",
         actionType: "info",
-        result: `You are frozen — the turn is skipped.`,
+        result: `You are frozen - the turn is skipped.`,
       });
       setTimeout(() => {
         aiTurn();
@@ -3561,7 +3561,7 @@ function BattleArena() {
     addLog({
       actor: "player",
       actionType: "info",
-      result: `You ${ACTIONS[action].label.toLowerCase()}…`,
+      result: `You ${ACTIONS[action].label.toLowerCase()}...`,
     });
 
     const arch = getArch(archetype);
@@ -3614,7 +3614,7 @@ function BattleArena() {
     setQuestion(q);
     setQuestionChallengeId(challengeId);
     // Base clock, then Velocity Break's pin, then any delta an ultimate left on
-    // us — floored so a stacked debuff can never make a question unanswerable.
+    // us - floored so a stacked debuff can never make a question unanswerable.
     let t = nextTimerOverrideRef.current
       ? nextTimerOverrideRef.current.seconds
       : getQuestionTime(arch, category);
@@ -3659,7 +3659,7 @@ function BattleArena() {
     setLiveRematchState("idle");
 
     // Reset mode state. Draft's player team was already picked in DraftDialog
-    // and set on gameModeRef before this ran — everything else starts fresh.
+    // and set on gameModeRef before this ran - everything else starts fresh.
     tugStateRef.current = initialTugState();
     setTugState(tugStateRef.current);
     territoryGridRef.current = startingGrid();
@@ -3676,9 +3676,9 @@ function BattleArena() {
     }
     opponentDraftTeamRef.current = null;
 
-    // Run full Tier 1→2 matchmaking asynchronously. Non-Battle modes have no
+    // Run full Tier 1->2 matchmaking asynchronously. Non-Battle modes have no
     // realtime sync yet, so they skip straight past the live tier they don't
-    // support — see GAME_MODES.
+    // support - see GAME_MODES.
     void (async () => {
       try {
         const match: MatchResult = await findMatch(
@@ -3699,7 +3699,7 @@ function BattleArena() {
           oppName = match.opponentName;
 
           // A live opponent arrives as an archetype, so it would otherwise
-          // fight with no Ecliptar at all — no sprite, and no ultimate, since
+          // fight with no Ecliptar at all - no sprite, and no ultimate, since
           // ultimates are keyed by Ecliptar slug. That would make it strictly
           // weaker than a bot, so derive a stable stand-in from the archetype,
           // keyed on the opponent's identity so the same rival always brings the
@@ -3807,7 +3807,7 @@ function BattleArena() {
     })();
   };
 
-  /** Draft Battle: the pre-match team was just picked in DraftDialog — kick
+  /** Draft Battle: the pre-match team was just picked in DraftDialog - kick
    *  off an ordinary bot match with its first member, same as any other
    *  archetype selection. Team-swap-on-KO takes over from there via
    *  resolveModeOutcome. */
@@ -3915,7 +3915,7 @@ function BattleArena() {
         addLog({
           actor: "system",
           actionType: "info",
-          result: `Direct challenge — ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) · LIVE`,
+          result: `Direct challenge - ${playerName} (${baseArch.name}) vs ${opts.opponentName} (${oppArch.name}) | LIVE`,
         });
       }
     },
@@ -3943,7 +3943,7 @@ function BattleArena() {
     return () => window.removeEventListener("eclipta:direct-battle", handler);
   }, [startDirectBattle]);
 
-  // ── Idle ──
+  // -- Idle --
   if (phase === "idle") {
     if (showPractice) {
       return (
@@ -4005,7 +4005,7 @@ function BattleArena() {
     );
   }
 
-  // ── Mode Select ──
+  // -- Mode Select --
   if (phase === "modeSelect") {
     return (
       <GameModeSelectDialog
@@ -4018,24 +4018,24 @@ function BattleArena() {
     );
   }
 
-  // ── Draft ──
+  // -- Draft --
   if (phase === "draft") {
     return <DraftDialog onComplete={(team) => startDraftBattle(team)} />;
   }
 
-  // ── Class Select ──
+  // -- Class Select --
   if (phase === "classSelect") {
     return <ClassSelectDialog onSelect={(sel) => startBattle(sel)} />;
   }
 
-  // ── Searching ──
+  // -- Searching --
   if (phase === "searching") {
     // Cinematic "Eclipse Alignment" intro (docs/battle-redesign loading redesign).
     // Original spinner-style loader is in git history prior to the Eclipse Alignment redesign.
     return <BattleIntro archetype={archetype} matchStatus={matchStatus} />;
   }
 
-  // ── Gambler Reveal ──
+  // -- Gambler Reveal --
   if (phase === "gamblerReveal" && gamblerStats) {
     const baseArch = ARCHETYPES[archetype];
     return (
@@ -4054,7 +4054,7 @@ function BattleArena() {
     );
   }
 
-  // ── Result ──
+  // -- Result --
   if (phase === "result" && battleStats) {
     return (
       <BattleReport
@@ -4079,11 +4079,11 @@ function BattleArena() {
     );
   }
 
-  // ── Battle ──
+  // -- Battle --
   const playerCritical = player.hp > 0 && player.hp <= player.maxHp * 0.25;
   return (
     <div className={`relative ${showPlayerHit ? "btt-shake" : ""}`}>
-      {/* Directional impact flashes — pink when you're hit, cyan when your hit lands */}
+      {/* Directional impact flashes - pink when you're hit, cyan when your hit lands */}
       <AnimatePresence>
         {showPlayerHit && (
           <motion.div
@@ -4144,7 +4144,7 @@ function BattleArena() {
         )}
       </AnimatePresence>
 
-      {/* KO banner — holds the moment before the battle report */}
+      {/* KO banner - holds the moment before the battle report */}
       <AnimatePresence>
         {koBanner && (
           <motion.div
@@ -4196,7 +4196,7 @@ function BattleArena() {
         )}
       </AnimatePresence>
 
-      {/* Combo burst — the payoff moment, front and center */}
+      {/* Combo burst - the payoff moment, front and center */}
       <AnimatePresence>
         {comboBurst && (
           <motion.div
@@ -4221,22 +4221,22 @@ function BattleArena() {
                     "0 0 44px oklch(0.60 0.17 255 / 0.8), 0 0 120px oklch(0.60 0.17 255 / 0.4)",
                 }}
               >
-                COMBO ×{comboBurst.combo}
+                COMBO x{comboBurst.combo}
               </p>
               <p className="btt-mono-text text-[12px] tracking-[0.34em] text-neon-pink/80 mt-2">
-                {comboBurst.mult.toFixed(2)}× SCORE
+                {comboBurst.mult.toFixed(2)}x SCORE
               </p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Wild event overlay — appears on the battle field, not inside the question panel */}
+      {/* Wild event overlay - appears on the battle field, not inside the question panel */}
       <AnimatePresence>
         {ultimateCast && <UltimateCastOverlay cast={ultimateCast} />}
       </AnimatePresence>
 
-      {/* Forfeit / leave control — confirms, then counts as a loss by abandonment */}
+      {/* Forfeit / leave control - confirms, then counts as a loss by abandonment */}
       {(phase === "select" || phase === "question" || phase === "animate" || phase === "placing") &&
         !koBanner && (
           <div className="flex justify-end mb-2">
@@ -4251,7 +4251,7 @@ function BattleArena() {
         )}
 
       {/* Tug-of-War: the shared bar sits above the fighter cards, alongside
-          HP rather than replacing it — stats/ultimates still change HP, the
+          HP rather than replacing it - stats/ultimates still change HP, the
           bar is just what decides the match in this mode. */}
       {gameMode === "tugofwar" &&
         (phase === "select" || phase === "question" || phase === "animate") &&
@@ -4321,7 +4321,7 @@ function BattleArena() {
         {/* Momentum bar with near-miss telegraphing and live multiplier readout */}
         {(() => {
           // How far into the current combo cycle are we?
-          // At threshold multiples (3, 6, 9…) show the bar fully filled.
+          // At threshold multiples (3, 6, 9...) show the bar fully filled.
           const comboProgress =
             momentum > 0 && momentum % comboThreshold === 0
               ? comboThreshold
@@ -4330,7 +4330,7 @@ function BattleArena() {
           const isNearMiss = momentum > 0 && momentum % comboThreshold === comboThreshold - 1;
           const comboActive = momentum >= comboThreshold;
           const arch = getArch(archetype);
-          // Momentum pays out in SCORE only — it no longer touches damage.
+          // Momentum pays out in SCORE only - it no longer touches damage.
           const activeMult = getScoreMultiplier(arch, momentum, correctCount, copiedPassive);
 
           return (
@@ -4368,7 +4368,7 @@ function BattleArena() {
                     initial={{ scale: comboProgress === 0 ? 1.4 : 1.1, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                   >
-                    {activeMult.toFixed(2)}×
+                    {activeMult.toFixed(2)}x
                   </motion.span>
                 )}
                 {comboActive && (
@@ -4383,7 +4383,7 @@ function BattleArena() {
                 )}
               </div>
 
-              {/* Pip bar — next empty pip pulses when one away from activation */}
+              {/* Pip bar - next empty pip pulses when one away from activation */}
               <div className="flex gap-1">
                 {Array.from({ length: comboThreshold }).map((_, i) => {
                   const isFilled = i < comboProgress;
@@ -4417,7 +4417,7 @@ function BattleArena() {
                 })}
               </div>
 
-              {/* Near-miss cue label — subtle, disappears once threshold is hit */}
+              {/* Near-miss cue label - subtle, disappears once threshold is hit */}
               <AnimatePresence>
                 {isNearMiss && (
                   <motion.p
@@ -4427,7 +4427,7 @@ function BattleArena() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    ONE MORE →
+                    ONE MORE -&gt;
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -4435,7 +4435,7 @@ function BattleArena() {
           );
         })()}
 
-        {/* ── Accelerator Power-Scaling HUD ───────────────────────────────
+        {/* -- Accelerator Power-Scaling HUD -------------------------------
             Only visible when playing as Accelerator. Communicates the
             core USP: sustained correct answers directly compound combat
             power. Every question answered is ammunition for the future. */}
@@ -4444,7 +4444,7 @@ function BattleArena() {
             const arch = getArch("accelerator");
             const { damagePerAnswer, damageCap, scorePerAnswer, scoreCap } =
               DAMAGE_TUNING.accelerator;
-            // The ramp caps at +16 DMG (8 answers) and +35% score (18 answers) —
+            // The ramp caps at +16 DMG (8 answers) and +35% score (18 answers) -
             // the bar tracks the slower of the two so it fills as the class matures.
             const answersToCap = Math.ceil(scoreCap / scorePerAnswer);
             const scalePct = Math.min(correctCount / answersToCap, 1);
@@ -4501,7 +4501,7 @@ function BattleArena() {
                   />
                 </div>
 
-                {/* Live stat readout — the educational feedback loop made visible */}
+                {/* Live stat readout - the educational feedback loop made visible */}
                 <div className="flex items-center justify-between text-[9px] font-bold tabular-nums">
                   <span className="text-muted-foreground">
                     DMG{" "}
@@ -4538,14 +4538,14 @@ function BattleArena() {
               transition={{ duration: 1.4, repeat: Infinity }}
             >
               {liveResolvingTurn
-                ? "RESOLVING TURN…"
+                ? "RESOLVING TURN..."
                 : liveOpponentLocked
-                  ? "BOTH ACTIONS LOCKED…"
-                  : `ACTION LOCKED · WAITING FOR ${opponent.name.toUpperCase()}`}
+                  ? "BOTH ACTIONS LOCKED..."
+                  : `ACTION LOCKED | WAITING FOR ${opponent.name.toUpperCase()}`}
             </motion.span>
           </motion.div>
         )}
-        {/* Ultimate charge — the resource that gates the Ecliptar's signature move.
+        {/* Ultimate charge - the resource that gates the Ecliptar's signature move.
             Shown whenever an Ecliptar is equipped so the player can see it fill. */}
         {playerUltimate && (
           <div
@@ -4637,13 +4637,13 @@ function BattleArena() {
                     : act.label.toUpperCase()}
                 </div>
                 <div className="btt-mono-text text-[9px] text-muted-foreground mt-1 leading-tight">
-                  {/* getActionDesc returns "Can't heal · builds Focus" for any no-heal
+                  {/* getActionDesc returns "Can't heal | builds Focus" for any no-heal
                       class (Tank and now God), so this stays correct without hardcoding a name. */}
                   {getActionDesc(key, getArch(archetype), correctCount, playerUltimate)}
                 </div>
                 {cost > 0 && (
                   <div className="absolute top-2 right-2 btt-mono-text text-[8px] font-bold text-neon-purple border border-neon-purple/30 px-1">
-                    −{cost}
+                    -{cost}
                   </div>
                 )}
                 {key === "ultimate" && (
@@ -4692,7 +4692,7 @@ function BattleArena() {
         )}
       </AnimatePresence>
 
-      {/* Forfeit confirmation — leaving counts as a loss by abandonment */}
+      {/* Forfeit confirmation - leaving counts as a loss by abandonment */}
       <Dialog open={confirmExit} onOpenChange={setConfirmExit}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -4728,11 +4728,11 @@ function BattleArena() {
   );
 }
 
-// ─── Leaderboard ─────────────────────────────────────────────────────
+// --- Leaderboard -----------------------------------------------------
 // A cinematic, game-style ranking board: a top-3 medal podium over a clean
 // ranked list. Both tabs (PvP Rating / XP) share one normalised row shape so
 // the podium + list render identically. The signed-in player is detected by
-// user_id and highlighted — and pinned to the foot of the board if they rank
+// user_id and highlighted - and pinned to the foot of the board if they rank
 // outside the visible top 10, so "where do I stand" is always answerable.
 interface LbRow {
   rank: number;
@@ -4744,8 +4744,8 @@ interface LbRow {
   wins?: number;
   losses?: number;
   /**
-   * Rated but hasn't finished a match yet. Shown rather than hidden — the old
-   * board dropped these players entirely — but marked, because a starting 1000
+   * Rated but hasn't finished a match yet. Shown rather than hidden - the old
+   * board dropped these players entirely - but marked, because a starting 1000
    * and an earned 1000 are not the same claim.
    */
   provisional?: boolean;
@@ -4831,7 +4831,7 @@ function LeaderboardCard() {
     };
     void load();
 
-    // Debounced refresh on any XP / rating change anywhere — keeps the board
+    // Debounced refresh on any XP / rating change anywhere - keeps the board
     // close to live without hammering RPCs on every event.
     let pending: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefresh = () => {
@@ -4898,7 +4898,7 @@ function LeaderboardCard() {
           <div>
             <h3 className="btt-shout text-3xl leading-none">LEADERBOARD</h3>
             <p className="btt-mono-text text-[10px] text-muted-foreground tracking-[0.24em] mt-1">
-              {tab === "rating" ? "TOP RANKED · GLOBAL" : "MOST XP · GLOBAL"}
+              {tab === "rating" ? "TOP RANKED | GLOBAL" : "MOST XP | GLOBAL"}
             </p>
           </div>
         </div>
@@ -4933,7 +4933,7 @@ function LeaderboardCard() {
         </div>
       ) : (
         <>
-          {/* ── Podium (top 3) ── visual order 2 · 1 · 3 ── */}
+          {/* -- Podium (top 3) -- visual order 2 | 1 | 3 -- */}
           {podium.length >= 1 && (
             <div className="btt-lb-podium">
               {[podium[1], podium[0], podium[2]].map((row) => {
@@ -4960,9 +4960,9 @@ function LeaderboardCard() {
                     <div className="btt-lb-pod-sub">
                       {tab === "rating"
                         ? row.provisional
-                          ? "Provisional · no matches yet"
+                          ? "Provisional | no matches yet"
                           : wr !== null
-                            ? `${row.wins}W ${row.losses}L · ${wr}%`
+                            ? `${row.wins}W ${row.losses}L | ${wr}%`
                             : `${row.wins ?? 0}W ${row.losses ?? 0}L`
                         : unit}
                     </div>
@@ -4973,7 +4973,7 @@ function LeaderboardCard() {
             </div>
           )}
 
-          {/* ── Ranked list (4+) ── */}
+          {/* -- Ranked list (4+) -- */}
           {rest.length > 0 && (
             <div className="btt-lb-rows">
               {rest.map((row) => {
@@ -4998,9 +4998,9 @@ function LeaderboardCard() {
                       <div className="btt-lb-row-sub">
                         {tab === "rating"
                           ? row.provisional
-                            ? "Provisional · no matches yet"
+                            ? "Provisional | no matches yet"
                             : wr !== null
-                              ? `${row.wins}W ${row.losses}L · ${wr}%`
+                              ? `${row.wins}W ${row.losses}L | ${wr}%`
                               : `${row.wins ?? 0}W ${row.losses ?? 0}L`
                           : unit}
                       </div>
@@ -5013,7 +5013,7 @@ function LeaderboardCard() {
           )}
 
           {!meInList && (
-            <p className="btt-lb-foot">Not on the board yet — win ranked battles to climb in.</p>
+            <p className="btt-lb-foot">Not on the board yet - win ranked battles to climb in.</p>
           )}
         </>
       )}
@@ -5021,7 +5021,7 @@ function LeaderboardCard() {
   );
 }
 
-// ─── Daily Challenge (live) ───────────────────────────────────────────
+// --- Daily Challenge (live) -------------------------------------------
 function DailyChallengeCard() {
   const [wins, setWins] = useState(0);
   const [claimed, setClaimed] = useState(false);
@@ -5092,7 +5092,7 @@ function DailyChallengeCard() {
         { p_required_wins: target },
       );
       if (claimErr || !claimedOk) {
-        toast.error("Couldn't claim — try again");
+        toast.error("Couldn't claim - try again");
         return;
       }
       // Award the XP via the rate-limited server RPC. The amount (100) is
@@ -5101,7 +5101,7 @@ function DailyChallengeCard() {
       setClaimed(true);
       toast.success("Daily Challenge complete!", { description: "+100 XP added to your profile." });
     } catch {
-      toast.error("Couldn't claim — try again");
+      toast.error("Couldn't claim - try again");
     } finally {
       setClaiming(false);
     }
@@ -5119,15 +5119,15 @@ function DailyChallengeCard() {
           <Sparkles className="w-5 h-5 text-neon-purple" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="btt-shout text-xl">DAILY · {challenge.title.toUpperCase()}</h4>
+          <h4 className="btt-shout text-xl">DAILY | {challenge.title.toUpperCase()}</h4>
           <p className="text-[10px] text-muted-foreground">
             {!authed
               ? `Sign in to track today's challenge`
               : claimed
                 ? `Reward claimed. Come back tomorrow for a new challenge.`
                 : complete
-                  ? `Reward ready to claim — +100 XP`
-                  : `${challenge.goal} → +100 XP`}
+                  ? `Reward ready to claim - +100 XP`
+                  : `${challenge.goal} -> +100 XP`}
           </p>
         </div>
         <div
@@ -5155,7 +5155,7 @@ function DailyChallengeCard() {
               : "bg-neon-cyan text-background hover:bg-neon-cyan/90 disabled:opacity-60"
           }`}
         >
-          {claimed ? "✓ CLAIMED" : claiming ? "CLAIMING…" : "CLAIM +100 XP"}
+          {claimed ? "✓ CLAIMED" : claiming ? "CLAIMING..." : "CLAIM +100 XP"}
         </button>
       )}
       <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-muted-foreground">
@@ -5166,7 +5166,7 @@ function DailyChallengeCard() {
   );
 }
 
-// ─── Main Export ──────────────────────────────────────────────────────
+// --- Main Export ------------------------------------------------------
 export function KnowledgeBattles() {
   const [howOpen, setHowOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -5249,7 +5249,7 @@ export function KnowledgeBattles() {
               How Battles work
             </DialogTitle>
             <DialogDescription>
-              Everything you need to know — opponents, combat, and rewards.
+              Everything you need to know - opponents, combat, and rewards.
             </DialogDescription>
           </DialogHeader>
 
@@ -5260,25 +5260,26 @@ export function KnowledgeBattles() {
               </h4>
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
                 <li>
-                  <span className="text-neon-cyan font-bold">LIVE PvP</span> — the system first
+                  <span className="text-neon-cyan font-bold">LIVE PvP</span> - the system first
                   scans for a real player currently in queue. If one is found, you battle
                   head-to-head in real time via a live channel. Rating is at stake.
                 </li>
                 <li>
-                  <span className="text-muted-foreground font-bold">AI OPPONENT</span> — if nobody
+                  <span className="text-muted-foreground font-bold">AI OPPONENT</span> - if nobody
                   is in queue after 8 seconds, you are matched with an AI opponent rather than left
                   waiting. These earn full XP, but they do not move your rating or your W/L record.
                 </li>
                 <li>
-                  Priority is always <span className="text-foreground font-bold">Live → AI</span>.
-                  You are never given an AI opponent while a real player is available.
+                  Priority is always{" "}
+                  <span className="text-foreground font-bold">Live -&gt; AI</span>. You are never
+                  given an AI opponent while a real player is available.
                 </li>
                 <li>
                   <span className="text-foreground font-bold">
                     We don&apos;t label which one you got.
                   </span>{" "}
                   A match doesn&apos;t tell you whether the name across from you is a person or an
-                  AI — playing differently against each is its own kind of spoiler. That&apos;s why
+                  AI - playing differently against each is its own kind of spoiler. That&apos;s why
                   it&apos;s written here instead: you always know AI opponents exist and roughly how
                   often you&apos;ll see one, just not which is which in the moment.
                 </li>
@@ -5295,51 +5296,51 @@ export function KnowledgeBattles() {
                   <span className="text-foreground font-bold">
                     The action sets the question's difficulty
                   </span>{" "}
-                  — Heal draws an easy one, Attack a medium one, Charge a hard one. Bigger payoff,
+                  - Heal draws an easy one, Attack a medium one, Charge a hard one. Bigger payoff,
                   harder question.
                 </li>
                 <li>
-                  <span className="text-foreground font-bold">Attack</span> — your class's base
+                  <span className="text-foreground font-bold">Attack</span> - your class's base
                   damage; builds <span className="text-neon-cyan">+15 Focus</span>. Your
                   bread-and-butter.
                 </li>
                 <li>
-                  <span className="text-foreground font-bold">Heal</span> — restores HP; builds{" "}
+                  <span className="text-foreground font-bold">Heal</span> - restores HP; builds{" "}
                   <span className="text-neon-cyan">+10 Focus</span>.{" "}
                   <span className="text-foreground">
-                    The Tank and the God can't Heal — they build Focus instead.
+                    The Tank and the God can't Heal - they build Focus instead.
                   </span>
                 </li>
                 <li>
-                  <span className="text-foreground font-bold">Charge</span> — 1.8× your damage, but
+                  <span className="text-foreground font-bold">Charge</span> - 1.8x your damage, but
                   spends <span className="text-neon-purple">25 Focus</span>. Your finisher.
                 </li>
                 <li>
-                  <span className="text-foreground font-bold">Wild</span> — a chaotic effect for{" "}
+                  <span className="text-foreground font-bold">Wild</span> - a chaotic effect for{" "}
                   <span className="text-neon-purple">15 Focus</span>.
                 </li>
                 <li>
                   <span className="text-foreground font-bold">
                     Every number on the action buttons is YOUR archetype's
                   </span>{" "}
-                  — a Speedster's Attack hits harder the faster you answer, an Accelerator's grows
+                  - a Speedster's Attack hits harder the faster you answer, an Accelerator's grows
                   each turn, an Apex's is brutal but fragile. Read them before you commit.
                 </li>
                 <li>
                   <span className="text-neon-purple font-bold">Focus</span> unlocks Charge &amp;
-                  Wild — build it with Attack/Heal. Pool size differs by class (Speedster small,
+                  Wild - build it with Attack/Heal. Pool size differs by class (Speedster small,
                   Apex huge).
                 </li>
                 <li>
-                  Correct answers grow <span className="text-neon-pink font-bold">Momentum</span> →
-                  a bigger score bonus. A wrong answer or timeout breaks Momentum and lets your
-                  opponent counter.
+                  Correct answers grow <span className="text-neon-pink font-bold">Momentum</span>{" "}
+                  -&gt; a bigger score bonus. A wrong answer or timeout breaks Momentum and lets
+                  your opponent counter.
                 </li>
                 <li>
                   <span className="text-foreground font-bold">
                     Leaving a battle counts as a loss by abandonment
                   </span>{" "}
-                  — finish what you start.
+                  - finish what you start.
                 </li>
               </ul>
             </section>
@@ -5351,7 +5352,7 @@ export function KnowledgeBattles() {
               <ul className="space-y-1.5 text-muted-foreground leading-relaxed list-disc pl-5">
                 <li>
                   Each archetype tweaks HP, damage, defense, time, heal, crit power, and question
-                  difficulty — plus one signature passive. Pick the one that fits your style.
+                  difficulty - plus one signature passive. Pick the one that fits your style.
                 </li>
                 <li>
                   Every battle counts toward your{" "}

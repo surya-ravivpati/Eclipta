@@ -31,7 +31,7 @@ function Ava({ slug, on }: { slug: string | null; on: boolean }) {
 }
 
 /**
- * Teach-Back control strip — the opt-in toggle plus the visible rotation queue.
+ * Teach-Back control strip - the opt-in toggle plus the visible rotation queue.
  * Lives directly under the clock; no menu to dig into. Handles the 1-person
  * (auto-disabled, reason shown) and 2-person ("just the two of you") framings.
  */
@@ -39,7 +39,7 @@ export function TeachBackBar({ room, members }: { room: StudyRoom; members: Room
   const [busy, setBusy] = useState(false);
   const count = members.length;
   const enabled = room.teach_back_enabled;
-  const tooFew = count < 2; // 1-person → can't run
+  const tooFew = count < 2; // 1-person -> can't run
 
   const toggle = async (on: boolean) => {
     setBusy(true);
@@ -106,7 +106,7 @@ export function TeachBackBar({ room, members }: { room: StudyRoom; members: Room
 }
 
 /**
- * The round card — a system-card sibling of the Stuck card, but clearly a
+ * The round card - a system-card sibling of the Stuck card, but clearly a
  * different prompt (graduation cap, "TEACH-BACK" label, blue accent). No
  * countdown, no AI fallback. The explainer answers in chat; everyone else taps
  * one of three lightweight reactions once the answer lands.
@@ -166,7 +166,7 @@ export function TeachBackCard({
       <div className="sr-tb-card-prompt">
         {isExplainer && !closed ? (
           <>
-            Your turn — explain <b>{concept}</b> in your own words.
+            Your turn - explain <b>{concept}</b> in your own words.
           </>
         ) : (
           <>

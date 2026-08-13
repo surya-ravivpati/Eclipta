@@ -1,7 +1,7 @@
 /**
  * Minimal ambient declarations for the Web Speech API's recognition half.
  *
- * TypeScript's DOM lib doesn't ship these — the spec is still a draft and
+ * TypeScript's DOM lib doesn't ship these - the spec is still a draft and
  * Chromium exposes it under the `webkit` prefix. Without them the only way
  * to reach `window.SpeechRecognition` was `(window as any)`, which erased
  * the types of everything downstream of it.

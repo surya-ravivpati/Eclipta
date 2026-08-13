@@ -8,7 +8,7 @@ import { useEffect, useRef } from "react";
  * these is to port them onto it. This hook exists because several overlays
  * (`Forum`'s composer, `StreakCelebration`, the lesson viewer) are custom
  * `fixed inset-0` layers that would otherwise trap a keyboard user on the page
- * behind them with no way out — a WCAG 2.2 SC 2.1.2 (No Keyboard Trap) failure.
+ * behind them with no way out - a WCAG 2.2 SC 2.1.2 (No Keyboard Trap) failure.
  *
  * What it does, in the order the checkpoints matter:
  *   1. Escape closes.

@@ -1,9 +1,9 @@
 /**
- * The courses domain's one door into the database — community courses and
+ * The courses domain's one door into the database - community courses and
  * their content, enrollment, progress tracking, and per-concept mastery. See
  * AGENTS.md's "Database" section: nothing outside this file calls
  * `supabase.from()`/`.rpc()` for these tables. `battle_question_records` is
- * modelled in, and written through, the battles repository instead — it's a
+ * modelled in, and written through, the battles repository instead - it's a
  * battles-domain table even though courses' concept-mastery pipeline reads
  * the aggregate courses builds from it.
  */
@@ -12,7 +12,7 @@ import type { Json } from "@/integrations/supabase/database";
 import type { CourseBlockData, CourseBlockRow, CourseBlockType } from "@/lib/course-blocks";
 import { getUsername } from "@/repositories/profile";
 
-// ── Course content reads (courses.$slug.tsx) ────────────────────────────────
+// -- Course content reads (courses.$slug.tsx) --------------------------------
 
 export interface CourseSummary {
   id: string;
@@ -26,7 +26,7 @@ export interface CourseSummary {
   status: string;
 }
 
-/** No row means no course has that slug — not an error. */
+/** No row means no course has that slug - not an error. */
 export async function getCourseBySlug(slug: string): Promise<CourseSummary | null> {
   const { data, error } = await supabase
     .from("user_courses")
@@ -69,7 +69,7 @@ export async function getCourseBlocksForModules(moduleIds: string[]): Promise<Co
 /**
  * Username lookup for a course's creator. Delegates to the profile
  * repository's `getUsername` rather than querying `public_profiles`
- * directly — that view was found to be RLS-restricted to the caller's own
+ * directly - that view was found to be RLS-restricted to the caller's own
  * row (its `security_invoker` history meant it inherited `user_profiles`'
  * own-row-only SELECT policy, defeating the view's own purpose), returning
  * null for every course the caller didn't author. `getUsername` goes
@@ -79,7 +79,7 @@ export async function getCourseCreatorUsername(userId: string): Promise<string |
   return getUsername(userId);
 }
 
-// ── Course proposals (src/components/CourseBuilder.tsx) ─────────────────────
+// -- Course proposals (src/components/CourseBuilder.tsx) ---------------------
 
 export interface CourseProposalInsert {
   user_id: string;
@@ -130,7 +130,7 @@ export async function getPublishedCommunityCourses(limit: number): Promise<Publi
   return data ?? [];
 }
 
-// ── Enrollment ───────────────────────────────────────────────────────────────
+// -- Enrollment ---------------------------------------------------------------
 
 export async function isEnrolled(userId: string, courseSlug: string): Promise<boolean> {
   const { data, error } = await supabase
@@ -198,13 +198,13 @@ export interface EnrollmentPayload {
   course_title: string;
 }
 
-/** Throws on a duplicate enrollment (the unique constraint) same as any other database error — callers already surface `error.message` to the user. */
+/** Throws on a duplicate enrollment (the unique constraint) same as any other database error - callers already surface `error.message` to the user. */
 export async function enrollInCourse(payload: EnrollmentPayload): Promise<void> {
   const { error } = await supabase.from("enrollments").insert(payload);
   if (error) throw new Error(error.message);
 }
 
-// ── Progress tracking (src/lib/course-progress.ts) ──────────────────────────
+// -- Progress tracking (src/lib/course-progress.ts) --------------------------
 
 export interface CourseProgressUpsert {
   user_id: string;
@@ -246,7 +246,7 @@ export async function upsertCourseProgress(payload: CourseProgressUpsert): Promi
   if (error) throw new Error(error.message);
 }
 
-// ── Concept mastery (src/lib/concept-mastery.ts) ────────────────────────────
+// -- Concept mastery (src/lib/concept-mastery.ts) ----------------------------
 
 export interface ConceptMasteryEvidenceRow {
   concept: string;
@@ -308,14 +308,14 @@ export async function getWeakConceptRows(userId: string, limit: number): Promise
   return data ?? [];
 }
 
-// ── Daily challenge (src/components/KnowledgeBattles.tsx) ──────────────────
+// -- Daily challenge (src/components/KnowledgeBattles.tsx) ------------------
 
 export interface DailyChallengeProgressRow {
   wins: number;
   bonus_claimed: boolean;
 }
 
-/** No row means the player hasn't won a battle yet today — not an error. */
+/** No row means the player hasn't won a battle yet today - not an error. */
 export async function getDailyChallengeProgress(
   userId: string,
   challengeDate: string,
@@ -331,7 +331,7 @@ export async function getDailyChallengeProgress(
   return data;
 }
 
-// ── Course editor (_authenticated.courses.$courseId.edit.tsx) ──────────────
+// -- Course editor (_authenticated.courses.$courseId.edit.tsx) --------------
 
 export interface CourseEditRow {
   id: string;
@@ -400,7 +400,7 @@ export async function deleteCourseModule(moduleId: string): Promise<void> {
 
 /**
  * `data`'s narrowed shape has the same closed-shape-vs-open-index-signature
- * gap documented in `src/db/schema/courses.verify.ts` — every value it can
+ * gap documented in `src/db/schema/courses.verify.ts` - every value it can
  * hold is valid JSON, but TypeScript can't see that structurally.
  */
 export async function insertCourseBlock(

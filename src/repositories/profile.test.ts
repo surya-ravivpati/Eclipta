@@ -64,7 +64,7 @@ describe("getUserXp", () => {
 
 describe("getUsername", () => {
   // Goes through get_username_by_id (security-definer RPC), not a direct
-  // user_profiles select — that table's SELECT policy is own-row-only, so a
+  // user_profiles select - that table's SELECT policy is own-row-only, so a
   // direct query would silently return null for every user but the caller.
   it("calls get_username_by_id with the given user", async () => {
     vi.mocked(supabase.rpc).mockResolvedValue({ data: "nova", error: null } as never);

@@ -7,6 +7,8 @@ set -e
 # typecheck:ratchet — stricter flags; count may fall, never rise
 # lint:ratchet     — lint warnings; count may fall, never rise
 # test             — unit and integration suites
+# coverage:ratchet — line coverage; may never fall, and a commit touching
+#                    src/ production code must raise it by a point
 #
 # E2E is deliberately not here: it needs a built app and a browser, which is
 # too slow for a push. Run it in CI and before a release.
@@ -16,3 +18,4 @@ pnpm run lint
 pnpm run typecheck:ratchet
 pnpm run lint:ratchet
 pnpm run test
+pnpm run coverage:ratchet

@@ -11,25 +11,25 @@ interface LunaIconProps {
 
 export function LunaIcon({ state, hasNudge, onClick }: LunaIconProps) {
   const pulseVariants = {
-    // Slow orbital breath — Luna is present but resting
+    // Slow orbital breath - Luna is present but resting
     idle: {
       scale: [1, 1.03, 0.99, 1.02, 1],
       y: [0, -2, 1, -1, 0],
       transition: { duration: 4.5, repeat: Infinity, ease: "easeInOut" as const },
     },
-    // Processing pulse — rapid irregular scale mimics active computation
+    // Processing pulse - rapid irregular scale mimics active computation
     thinking: {
       scale: [1, 1.06, 1.01, 1.08, 1.02, 1],
       rotate: [0, -4, 4, -3, 2, 0],
       transition: { duration: 1.3, repeat: Infinity, ease: "easeInOut" as const },
     },
-    // Attention — sharp bounce to demand the user's focus
+    // Attention - sharp bounce to demand the user's focus
     alert: {
       scale: [1, 1.18, 0.93, 1.12, 0.97, 1],
       y: [0, -4, 1, -2, 0],
       transition: { duration: 0.65, repeat: Infinity, ease: "easeInOut" as const },
     },
-    // Celebration — big joyful burst with rotation, settles back
+    // Celebration - big joyful burst with rotation, settles back
     happy: {
       scale: [1, 1.28, 0.86, 1.18, 0.95, 1],
       rotate: [0, 14, -14, 8, -4, 0],
@@ -46,7 +46,7 @@ export function LunaIcon({ state, hasNudge, onClick }: LunaIconProps) {
       aria-label="Open Luna AI assistant"
     >
       <LunaMark size={22} />
-      {/* Thinking ring — orbits when Luna is processing */}
+      {/* Thinking ring - orbits when Luna is processing */}
       {state === "thinking" && (
         <motion.span
           className="absolute inset-0 rounded-full border border-neon-cyan/50 pointer-events-none"

@@ -32,7 +32,9 @@
     "test:e2e:ui": "playwright test --ui",
     "verify": "turbo run lint typecheck:ratchet test",
     "prepare": "husky",
-    "sync:sprites": "node scripts/sync-ecliptar-sprites.mjs"
+    "sync:sprites": "node scripts/sync-ecliptar-sprites.mjs",
+    "coverage:ratchet": "node scripts/coverage-ratchet.mjs",
+    "coverage:ratchet:accept": "node scripts/coverage-ratchet.mjs --accept"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -114,6 +116,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-vibesafe": "^0.1.0",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",

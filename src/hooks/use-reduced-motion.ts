@@ -8,7 +8,7 @@ import { getMotionPreference } from "@/lib/a11y";
  * Framer's own `useReducedMotion` only reads the media query, so a user who set
  * Reduce Motion inside Eclipta while leaving their OS setting alone would still
  * get full animation from any JS-driven component. Prefer this hook over
- * Framer's anywhere the choice drives behaviour rather than styling — CSS is
+ * Framer's anywhere the choice drives behaviour rather than styling - CSS is
  * already handled globally in styles.css.
  */
 export function useAppReducedMotion(): boolean {

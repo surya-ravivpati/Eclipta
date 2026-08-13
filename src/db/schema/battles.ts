@@ -17,7 +17,7 @@ import { sql } from "drizzle-orm";
  *
  * Column shapes are transcribed from src/integrations/supabase/types.ts,
  * which is generated from the live database and therefore reflects the
- * current state after every migration — not any single migration file.
+ * current state after every migration - not any single migration file.
  * Defaults and CHECK constraints (which the generator omits) are cross-
  * referenced against the migration that most recently touched each column;
  * see the comment above each table for its source.
@@ -25,7 +25,7 @@ import { sql } from "drizzle-orm";
  * `user_id` / `challenger_id` / `opponent_id` / `actor_id` columns reference
  * `auth.users`, a table Supabase Auth owns and manages entirely outside this
  * app's migrations. It is intentionally not modelled here, so these columns
- * carry no `.references()` — Postgres still enforces the real foreign key;
+ * carry no `.references()` - Postgres still enforces the real foreign key;
  * Drizzle simply isn't the tool tracking it.
  */
 
@@ -94,7 +94,7 @@ export const battleQuestionRecords = pgTable("battle_question_records", {
   user_id: uuid("user_id").notNull(),
   concept: text("concept").notNull(),
   subject: text("subject").notNull().default("Mathematics"),
-  /** easy | medium | hard — see components/battles/types.ts's `Difficulty`. */
+  /** easy | medium | hard - see components/battles/types.ts's `Difficulty`. */
   difficulty: text("difficulty").notNull(),
   correct: boolean("correct").notNull(),
   time_spent: real("time_spent"),
@@ -103,7 +103,7 @@ export const battleQuestionRecords = pgTable("battle_question_records", {
     .defaultNow(),
 });
 
-/** ELO-style competitive rating. Bots never affect it — only live matches do. */
+/** ELO-style competitive rating. Bots never affect it - only live matches do. */
 export const playerRatings = pgTable("player_ratings", {
   user_id: uuid("user_id").primaryKey(),
   rating: integer("rating").notNull().default(1000),
@@ -119,7 +119,7 @@ export const playerRatings = pgTable("player_ratings", {
  * Live matchmaking queue. A row exists for exactly as long as a player is
  * searching; matched or cancelled entries are deleted, not marked.
  *
- * `user_id` is the primary key — there is no separate `id` column. A later
+ * `user_id` is the primary key - there is no separate `id` column. A later
  * redefinition (20260512182744_d8b0b2a1-9fd5-4c4e-8c5e-4434629dd38e.sql)
  * replaced the original 20260510000006_pvp-architecture.sql shape, which did
  * have one; that surrogate key is not part of the live schema.
@@ -138,7 +138,7 @@ export const pvpQueue = pgTable("pvp_queue", {
  *
  * `status`'s allowed values were originally `active|complete|abandoned`;
  * 20260516150706_pvp-status-leaderboard-rematch-fix.sql replaced the
- * constraint with the current spelling, `completed` — this schema reflects
+ * constraint with the current spelling, `completed` - this schema reflects
  * that final state, not the original migration.
  */
 export const pvpBattles = pgTable(

@@ -31,7 +31,7 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
     (async () => {
       try {
         // luna-quiz authenticates the caller, so send the user's session JWT,
-        // not the publishable key (which has no user → "Unauthorized").
+        // not the publishable key (which has no user -> "Unauthorized").
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -88,7 +88,7 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
           }
           className="mt-2 text-[10px] font-bold tracking-widest text-neon-pink hover:text-neon-purple"
         >
-          ASK LUNA WHAT'S NEXT →
+          ASK LUNA WHAT'S NEXT -&gt;
         </button>
       </div>
     );
@@ -138,7 +138,7 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
             }}
             className="ml-2 text-neon-pink font-bold tracking-widest hover:text-neon-purple"
           >
-            NEXT →
+            NEXT -&gt;
           </button>
         </div>
       )}

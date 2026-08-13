@@ -1,5 +1,5 @@
 /**
- * XP service — centralizes XP updates, milestone checks, and trophy road reward logic.
+ * XP service - centralizes XP updates, milestone checks, and trophy road reward logic.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "./milestones";
@@ -18,14 +18,14 @@ import {
 
 export { CHEST_REWARDS };
 
-/** Bonus XP per chest, derived from CHEST_REWARDS — see src/config/battle-tuning.ts for the source values. */
+/** Bonus XP per chest, derived from CHEST_REWARDS - see src/config/battle-tuning.ts for the source values. */
 export const CHEST_BONUS_XP: Record<string, number> = Object.fromEntries(
   Object.entries(CHEST_REWARDS).map(([label, chest]) => [label, chest.bonusXp]),
 );
 
 /**
  * Award XP to the current user via a server-side event-based RPC.
- * The amount is determined server-side from the event name — clients cannot
+ * The amount is determined server-side from the event name - clients cannot
  * inject arbitrary XP values.
  */
 export async function awardXp(

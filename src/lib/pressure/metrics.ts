@@ -2,7 +2,7 @@
  * Pressure Mode scoring.
  *
  * The brief asks for a Pressure Score built from hesitation, speed, confidence,
- * accuracy and consistency — and, in the same breath, for the experience to feel
+ * accuracy and consistency - and, in the same breath, for the experience to feel
  * "supportive rather than punitive". Those pull against each other, so the design
  * resolves the tension explicitly:
  *
@@ -12,7 +12,7 @@
  *     what makes a practice tool feel like an accusation.
  *   - **Confidence is measured as calibration, not bravado.** The useful signal
  *     is whether a learner's certainty matches their correctness. Being unsure
- *     and wrong is well-calibrated and scores *well* — it means they know what
+ *     and wrong is well-calibrated and scores *well* - it means they know what
  *     they don't know, which is the skill that actually transfers to an exam.
  *   - **Hesitation is not slowness.** Thinking for 40 seconds and answering
  *     correctly is good exam technique. Hesitation means *thrash*: revisiting,
@@ -40,9 +40,9 @@ export interface PressureItem {
   answerChanges: number;
   /** How many times they navigated away and came back to this question. */
   revisits: number;
-  /** Self-reported certainty, 0–1, when the format collects it. */
+  /** Self-reported certainty, 0-1, when the format collects it. */
   statedConfidence?: number;
-  /** Difficulty 1–10, so speed can be judged against how hard the item was. */
+  /** Difficulty 1-10, so speed can be judged against how hard the item was. */
   difficulty: number;
 }
 
@@ -56,7 +56,7 @@ export interface PressureEvent {
     | "revisit"
     | "break_start"
     | "break_end"
-    /** Window lost focus — a distraction, not necessarily misconduct. */
+    /** Window lost focus - a distraction, not necessarily misconduct. */
     | "focus_lost"
     | "focus_regained"
     /** The learner left fullscreen. Recorded, never punished. */
@@ -66,15 +66,15 @@ export interface PressureEvent {
 }
 
 export interface SubScores {
-  /** Share correct, weighted by difficulty. 0–100. */
+  /** Share correct, weighted by difficulty. 0-100. */
   accuracy: number;
-  /** Pace relative to the time the format allows. 0–100. */
+  /** Pace relative to the time the format allows. 0-100. */
   speed: number;
-  /** Freedom from thrash: changes and revisits under time pressure. 0–100. */
+  /** Freedom from thrash: changes and revisits under time pressure. 0-100. */
   composure: number;
-  /** Calibration between stated certainty and correctness. 0–100. */
+  /** Calibration between stated certainty and correctness. 0-100. */
   calibration: number;
-  /** Evenness of performance across the session. 0–100. */
+  /** Evenness of performance across the session. 0-100. */
   consistency: number;
 }
 
@@ -83,7 +83,7 @@ export interface PressureResult {
   sub: SubScores;
   /** Plain-language observations, each tied to the number it explains. */
   observations: string[];
-  /** Where the learner is strongest — always populated, always shown first. */
+  /** Where the learner is strongest - always populated, always shown first. */
   strengths: string[];
   /** Actionable next steps. Never more than three: a list of ten is a wall. */
   recommendations: string[];
@@ -109,8 +109,8 @@ const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
  *
  * A correct answer on a level-9 item counts for more than on a level-2 one, so a
  * learner who attempts hard material is not scored below one who plays safe.
- * Unanswered items count as incorrect — the brief asks for a penalty, and on a
- * real exam a blank is a blank — but they are surfaced separately in the
+ * Unanswered items count as incorrect - the brief asks for a penalty, and on a
+ * real exam a blank is a blank - but they are surfaced separately in the
  * observations so "ran out of time" never reads as "didn't know it".
  */
 export function accuracyScore(items: PressureItem[]): number {
@@ -127,7 +127,7 @@ export function accuracyScore(items: PressureItem[]): number {
 
 /**
  * Pace against the time allowed, judged per item against a difficulty-adjusted
- * budget rather than a flat average — spending 90s on the hardest question is
+ * budget rather than a flat average - spending 90s on the hardest question is
  * good technique, not slowness.
  *
  * Answering far *faster* than the budget is not rewarded beyond full marks:
@@ -140,7 +140,7 @@ export function speedScore(items: PressureItem[], secondsPerItem: number): numbe
   for (const it of answered) {
     const budget = secondsPerItem * (0.7 + (it.difficulty / 10) * 0.6);
     const ratio = budget > 0 ? it.timeSpent / budget : 1;
-    // At or under budget → full marks. Over budget → falls off, floored at 0.
+    // At or under budget -> full marks. Over budget -> falls off, floored at 0.
     total += ratio <= 1 ? 100 : clamp(100 - (ratio - 1) * 70);
   }
   return clamp(total / answered.length);
@@ -149,7 +149,7 @@ export function speedScore(items: PressureItem[], secondsPerItem: number): numbe
 /**
  * Composure: freedom from thrash.
  *
- * Counts answer changes and revisits, *not* time. One change is normal — people
+ * Counts answer changes and revisits, *not* time. One change is normal - people
  * reconsider, and penalising that would teach learners to lock in a first guess.
  * The penalty starts from the second change on the same item.
  */
@@ -167,10 +167,10 @@ export function composureScore(items: PressureItem[]): number {
  * Calibration between stated certainty and correctness.
  *
  * Scored as the inverse of Brier-style error, so:
- *   confident + correct   → high
- *   unsure + wrong        → ALSO high (they knew they didn't know)
- *   confident + wrong     → low (the dangerous case, worth surfacing)
- *   unsure + correct      → mid (they knew it but didn't trust themselves)
+ *   confident + correct   -> high
+ *   unsure + wrong        -> ALSO high (they knew they didn't know)
+ *   confident + wrong     -> low (the dangerous case, worth surfacing)
+ *   unsure + correct      -> mid (they knew it but didn't trust themselves)
  *
  * That last case is the one worth coaching, and it is invisible to any metric
  * that treats confidence as a thing to maximise.
@@ -203,8 +203,7 @@ export function consistencyScore(items: PressureItem[]): number {
 
   const times = items.filter((i) => i.answered).map((i) => i.timeSpent);
   const mean = times.reduce((a, b) => a + b, 0) / Math.max(1, times.length);
-  const variance =
-    times.reduce((a, t) => a + (t - mean) ** 2, 0) / Math.max(1, times.length);
+  const variance = times.reduce((a, t) => a + (t - mean) ** 2, 0) / Math.max(1, times.length);
   // Coefficient of variation: spread relative to pace, so a slow-but-even
   // session is not marked down for being slow.
   const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
@@ -213,11 +212,11 @@ export function consistencyScore(items: PressureItem[]): number {
 }
 
 /**
- * Strain detection — the guardrail that keeps this supportive.
+ * Strain detection - the guardrail that keeps this supportive.
  *
  * Pressure training is meant to stretch, not distress. When several signals move
- * together — accuracy collapsing in the back half, heavy thrash, repeated
- * focus loss — the session offers an exit and the review leads with support
+ * together - accuracy collapsing in the back half, heavy thrash, repeated
+ * focus loss - the session offers an exit and the review leads with support
  * rather than a score. Deliberately conservative: a false positive costs one
  * gentle message, a false negative means pushing someone who is struggling.
  */
@@ -230,7 +229,7 @@ export function detectStrain(items: PressureItem[], events: PressureEvent[]): bo
   const thrash = items.reduce((a, i) => a + i.answerChanges, 0) / items.length > 2.5;
   const focusLost = events.filter((e) => e.kind === "focus_lost").length >= 4;
   const abandoned = items.filter((i) => !i.answered).length / items.length > 0.35;
-  // Two independent signals, not one — any single one has innocent explanations.
+  // Two independent signals, not one - any single one has innocent explanations.
   return [collapsed, thrash, focusLost, abandoned].filter(Boolean).length >= 2;
 }
 
@@ -277,13 +276,13 @@ export function scorePressureSession(
   if (sub.consistency >= 75) strengths.push("Your performance held steady from start to finish.");
   if (unanswered === 0 && items.length > 0) strengths.push("You reached every question in time.");
   if (strengths.length === 0) {
-    strengths.push("You finished a full pressure session — that is the part most people skip.");
+    strengths.push("You finished a full pressure session - that is the part most people skip.");
   }
 
   const observations: string[] = [];
   if (unanswered > 0) {
     observations.push(
-      `${unanswered} ${unanswered === 1 ? "question was" : "questions were"} left unanswered — that is pacing, not knowledge.`,
+      `${unanswered} ${unanswered === 1 ? "question was" : "questions were"} left unanswered - that is pacing, not knowledge.`,
     );
   }
   if (changes >= items.length) {
@@ -291,7 +290,7 @@ export function scorePressureSession(
   }
   if (overconfident > 0) {
     observations.push(
-      `${overconfident} ${overconfident === 1 ? "answer" : "answers"} you were sure about turned out wrong — worth reviewing those specifically.`,
+      `${overconfident} ${overconfident === 1 ? "answer" : "answers"} you were sure about turned out wrong - worth reviewing those specifically.`,
     );
   }
   if (underconfident > 0) {
@@ -300,15 +299,19 @@ export function scorePressureSession(
     );
   }
   if (sub.consistency < 60) {
-    observations.push("Accuracy dropped in the back half — stamina, not ability.");
+    observations.push("Accuracy dropped in the back half - stamina, not ability.");
   }
 
   const recommendations: string[] = [];
-  if (unanswered > 0) recommendations.push("Practise a shorter set at the same time limit to build pace.");
-  if (sub.composure < 60) recommendations.push("Try committing to your first answer and moving on.");
-  if (underconfident > 0) recommendations.push("Trust the first instinct — it was right more often than not.");
+  if (unanswered > 0)
+    recommendations.push("Practise a shorter set at the same time limit to build pace.");
+  if (sub.composure < 60)
+    recommendations.push("Try committing to your first answer and moving on.");
+  if (underconfident > 0)
+    recommendations.push("Trust the first instinct - it was right more often than not.");
   if (overconfident > 0) recommendations.push("Slow down on questions that feel obvious.");
-  if (recommendations.length === 0) recommendations.push("Step up one difficulty band next session.");
+  if (recommendations.length === 0)
+    recommendations.push("Step up one difficulty band next session.");
 
   return {
     score,
@@ -323,7 +326,7 @@ export function scorePressureSession(
 const STRENGTH_COPY: Record<keyof SubScores, string> = {
   accuracy: "Your accuracy under time pressure is strong.",
   speed: "You work through questions at a good pace.",
-  composure: "You commit to answers and keep moving — that holds up under pressure.",
+  composure: "You commit to answers and keep moving - that holds up under pressure.",
   calibration: "You have a clear sense of what you do and don't know.",
   consistency: "You perform evenly across a whole session.",
 };
@@ -332,7 +335,7 @@ const STRENGTH_COPY: Record<keyof SubScores, string> = {
  * Rating change for a completed session.
  *
  * Elo-shaped against an expected score for the learner's current rating, so
- * improvement is measured against yourself rather than a global bar — and the
+ * improvement is measured against yourself rather than a global bar - and the
  * floor means a bad session costs less than a good one gains. Pressure practice
  * that can tank your rating is practice people avoid.
  */

@@ -1,7 +1,7 @@
 import type { ArchetypeId } from "./types";
 
 /**
- * Status effects — the layer Ecliptar ultimates write into.
+ * Status effects - the layer Ecliptar ultimates write into.
  *
  * Ultimates are declarative (see ultimates.ts): each one is a list of ops, and
  * the ones that outlast their turn land here as `ActiveEffect`s. Keeping them a
@@ -10,9 +10,9 @@ import type { ArchetypeId } from "./types";
  * lets the UI render "what is currently true about this fighter" generically.
  *
  * Durations come in two flavours, because the spec uses both:
- * - **turn-based** ("for 3 turns", "poisons for 5 turns") — ticks down at the
+ * - **turn-based** ("for 3 turns", "poisons for 5 turns") - ticks down at the
  *   end of the owner's turn.
- * - **use-based** ("+10 damage for the next 2 attacks") — ticks down when the
+ * - **use-based** ("+10 damage for the next 2 attacks") - ticks down when the
  *   effect actually modifies something.
  */
 export type EffectKind =
@@ -81,7 +81,7 @@ export function findCopiedPassive(effects: ActiveEffect[]): ArchetypeId | null {
  * Stacking rule: a second cast of the same kind refreshes rather than stacks,
  * taking the stronger magnitude and the longer remaining duration. Without this
  * a player could chain one ultimate into an unbounded pile of the same buff.
- * `poison` is the exception — escalating stacks are its whole identity, so
+ * `poison` is the exception - escalating stacks are its whole identity, so
  * re-applying it restarts the ramp at the higher magnitude.
  */
 export function addEffect(effects: ActiveEffect[], next: ActiveEffect): ActiveEffect[] {
@@ -124,7 +124,7 @@ export function consumeUse(effects: ActiveEffect[], kind: EffectKind): ActiveEff
 /** Everything the owner's turn-start tick produced. */
 export interface TickResult {
   effects: ActiveEffect[];
-  /** Poison damage to apply (bypasses DEF — it is already "true" damage). */
+  /** Poison damage to apply (bypasses DEF - it is already "true" damage). */
   poisonDamage: number;
   /** Regen healing to apply, before any heal-block check. */
   regenHeal: number;
@@ -137,7 +137,7 @@ export interface TickResult {
 /**
  * Advance every turn-based effect by one of the owner's turns, collecting the
  * damage-over-time and heal-over-time it produces. Use-based effects are
- * untouched — they expire through `consumeUse`.
+ * untouched - they expire through `consumeUse`.
  */
 export function tickEffects(effects: ActiveEffect[]): TickResult {
   let poisonDamage = 0;
@@ -160,7 +160,7 @@ export function tickEffects(effects: ActiveEffect[]): TickResult {
       notes.push(`Regeneration restores ${Math.round(e.magnitude)} HP.`);
     } else if (e.kind === "freeze") {
       frozen = true;
-      notes.push(`Frozen — the turn is lost.`);
+      notes.push(`Frozen - the turn is lost.`);
     }
 
     const turnsLeft = (e.turnsLeft ?? 1) - 1;
@@ -190,10 +190,10 @@ export function isHarmful(kind: EffectKind): boolean {
   return HARMFUL.has(kind);
 }
 
-/** Chip text for the UI and log, e.g. "POISON 20 · 3T" or "DMG +12 · 3×". */
+/** Chip text for the UI and log, e.g. "POISON 20 | 3T" or "DMG +12 | 3x". */
 export function labelFor(e: Omit<ActiveEffect, "label">): string {
   const dur =
-    e.usesLeft !== undefined ? ` · ${e.usesLeft}×` : e.turnsLeft ? ` · ${e.turnsLeft}T` : "";
+    e.usesLeft !== undefined ? ` | ${e.usesLeft}x` : e.turnsLeft ? ` | ${e.turnsLeft}T` : "";
   const pct = (m: number) => `${Math.round(m * 100)}%`;
   switch (e.kind) {
     case "poison":
@@ -203,7 +203,7 @@ export function labelFor(e: Omit<ActiveEffect, "label">): string {
     case "damageBuff":
       return `DMG +${Math.round(e.magnitude)}${dur}`;
     case "damageMult":
-      return `DMG ×${e.magnitude}${dur}`;
+      return `DMG x${e.magnitude}${dur}`;
     case "damageReduction":
       return `ARMOUR ${pct(e.magnitude)}${dur}`;
     case "reflect":

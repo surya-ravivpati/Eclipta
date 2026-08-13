@@ -4,7 +4,7 @@ import { GRID_SIZE, CENTER_INDEX, type TerritoryGrid as Grid } from "@/lib/battl
 import { cn } from "@/lib/utils";
 
 /**
- * The 5×5 board. `awaitingPlacement` gates whether empty tiles are clickable —
+ * The 5x5 board. `awaitingPlacement` gates whether empty tiles are clickable -
  * outside of the brief window after a correct answer, the grid is a read-only
  * scoreboard.
  */
@@ -21,7 +21,7 @@ export function TerritoryGridView({
   onPlace: (index: number) => void;
   /** Cells that just flipped, for a one-beat highlight. */
   lastFlipped: number[];
-  /** Weight of the flag awaiting placement — a harder hit plants a heavier one. */
+  /** Weight of the flag awaiting placement - a harder hit plants a heavier one. */
   placementWeight?: number;
   /** Running weighted tile count, so the board reads as a scoreboard too. */
   score?: { player: number; opponent: number };
@@ -36,14 +36,14 @@ export function TerritoryGridView({
           role="status"
         >
           {placementWeight > 1
-            ? `Correct! Place your flag — worth ${placementWeight}`
+            ? `Correct! Place your flag - worth ${placementWeight}`
             : "Correct! Place your flag."}
         </motion.p>
       )}
       {score && (
         <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest">
           <span className="text-[color:var(--btt-you)]">YOU {score.player}</span>
-          <span className="text-muted-foreground/50">·</span>
+          <span className="text-muted-foreground/50">|</span>
           <span className="text-[color:var(--btt-foe)]">{score.opponent} OPP</span>
         </div>
       )}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 
 /**
- * Cozy lofi player — loops /lofi.mp3 in the background of a study room.
+ * Cozy lofi player - loops /lofi.mp3 in the background of a study room.
  * Drop the track at public/lofi.mp3 and it plays here. Browsers block autoplay
  * until a user gesture, so it starts paused with a clear Play control.
  */
@@ -52,7 +52,7 @@ export function LofiPlayer() {
       >
         {playing ? <Pause size={15} /> : <Play size={15} />}
         <Music size={13} className="sr-lofi-note" />
-        <span className="sr-lofi-label">{playing ? "lofi · playing" : "lofi beats"}</span>
+        <span className="sr-lofi-label">{playing ? "lofi | playing" : "lofi beats"}</span>
       </button>
       <button
         className="sr-lofi-mute"
@@ -68,7 +68,10 @@ export function LofiPlayer() {
         max={1}
         step={0.01}
         value={muted ? 0 : volume}
-        onChange={(e) => { setVolume(Number(e.target.value)); setMuted(false); }}
+        onChange={(e) => {
+          setVolume(Number(e.target.value));
+          setMuted(false);
+        }}
         aria-label="Volume"
       />
       {missing && <span className="sr-lofi-missing">add public/lofi.mp3</span>}

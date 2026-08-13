@@ -10,13 +10,13 @@ import { readConsent, recordConsent, type ConsentChoice } from "@/lib/consent";
  *
  *  1. **Reject is as easy as accept.** Under GDPR Art. 7(3) and the EDPB's
  *     guidance, consent is not freely given if refusing takes more effort than
- *     agreeing. So both are one click, side by side, with equal visual weight —
+ *     agreeing. So both are one click, side by side, with equal visual weight -
  *     no "manage preferences" maze on the reject path.
  *  2. **Nothing non-essential is stored before a choice is made.** The banner
  *     itself records the decision in localStorage, which is strictly necessary
  *     for the banner to stop reappearing, and is permitted on that basis.
  *
- * Dismissing without choosing is not treated as consent — the banner stays.
+ * Dismissing without choosing is not treated as consent - the banner stays.
  */
 
 export function ConsentBanner() {

@@ -3,7 +3,7 @@ import type { PressureEvent } from "./metrics";
 /**
  * Exam-condition integrity.
  *
- * ── What a browser can and cannot do ────────────────────────────────────────
+ * -- What a browser can and cannot do ----------------------------------------
  * The brief asks for fullscreen, no pausing and navigation restrictions. A web
  * page **cannot enforce any of those**, and it is important the product does not
  * pretend otherwise:
@@ -14,14 +14,14 @@ import type { PressureEvent } from "./metrics";
  *     or a screenshot. `visibilitychange` tells you focus was lost; it cannot
  *     tell you why, and it fires for a notification banner as readily as for
  *     cheating.
- *   - "No pausing" is enforceable for *our* timer — it runs off wall-clock, so
- *     closing the tab does not stop it — but not for the learner's attention.
+ *   - "No pausing" is enforceable for *our* timer - it runs off wall-clock, so
+ *     closing the tab does not stop it - but not for the learner's attention.
  *
  * Real lockdown needs a native client or a proctoring service. So this module
  * does the honest thing: it **observes and records**, surfaces what it saw in
- * the review, and never accuses. That is genuinely useful — a learner who
+ * the review, and never accuses. That is genuinely useful - a learner who
  * discovers they lost focus nine times in a mock exam has learned something
- * real about their own conditions — and it does not lie about being proctoring.
+ * real about their own conditions - and it does not lie about being proctoring.
  */
 
 export interface IntegrityState {
@@ -93,7 +93,7 @@ export function startIntegrityMonitor(
 /**
  * Request fullscreen. Must be called from a user gesture or the browser refuses.
  *
- * Resolves false rather than throwing when unavailable — iOS Safari does not
+ * Resolves false rather than throwing when unavailable - iOS Safari does not
  * support fullscreen on arbitrary elements at all, and a mock exam that cannot
  * start on an iPhone is worse than one that runs windowed.
  */
@@ -122,7 +122,7 @@ export async function exitFullscreen(): Promise<void> {
  *
  * Deliberately *not* an accumulating interval. A `setInterval` that ticks a
  * counter drifts, and browsers throttle timers in background tabs to once a
- * minute — so a learner who switched tabs would come back to a clock that had
+ * minute - so a learner who switched tabs would come back to a clock that had
  * barely moved. Storing the end instant and diffing against `Date.now()` means
  * the exam runs in real time whatever the tab does, which is the actual meaning
  * of "no pausing".

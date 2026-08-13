@@ -7,7 +7,7 @@ import { timeAgo } from "@/lib/time";
 export const Route = createFileRoute("/tags/$tag")({
   head: ({ params }) => ({
     meta: [
-      { title: `#${params.tag} – Eclipta Forum` },
+      { title: `#${params.tag} - Eclipta Forum` },
       { name: "description", content: `Threads tagged #${params.tag} on the Eclipta forum.` },
     ],
   }),

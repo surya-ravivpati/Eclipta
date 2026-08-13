@@ -3,7 +3,7 @@ import { ECLIPTARS, type Ecliptar } from "@/lib/ecliptars";
 /**
  * Draft Battle: pick 1 of 3 offered Ecliptars, three times, before the match
  * starts. In-match, the team fights as a sequence of ordinary Battle-mode
- * duels — this file only builds the team; `resolveNextTeamMember` (used by the
+ * duels - this file only builds the team; `resolveNextTeamMember` (used by the
  * engine) is the entire "what happens on KO" logic, and it is just "start a
  * fresh single duel with the next Ecliptar," reusing the existing setup path
  * rather than inventing a new one.

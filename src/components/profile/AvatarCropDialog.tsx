@@ -44,7 +44,7 @@ interface DragOrigin {
  * Circular crop step between picking a photo and uploading it.
  *
  * Avatars render as circles everywhere in the app, so uploading raw meant the
- * browser's centre-crop decided what got cut off — which for most phone photos
+ * browser's centre-crop decided what got cut off - which for most phone photos
  * is the subject's head. Pan and zoom only: rotation and filters were
  * deliberately left out.
  */
@@ -60,7 +60,7 @@ export function AvatarCropDialog({ file, onCancel, onConfirm }: AvatarCropDialog
   const [saving, setSaving] = useState(false);
 
   // Created in an effect, not during render, so the cleanup that revokes it is
-  // always paired with the URL it revokes — including under StrictMode's
+  // always paired with the URL it revokes - including under StrictMode's
   // double-invoke, where a render-time URL would be revoked and never replaced.
   useEffect(() => {
     const url = URL.createObjectURL(file);

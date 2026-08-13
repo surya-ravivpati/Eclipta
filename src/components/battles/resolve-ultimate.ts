@@ -131,7 +131,7 @@ function runOps(
           seconds: op.seconds,
           damagePerUnusedSecond: op.damagePerUnusedSecond,
         };
-        out.notes.push(`Next clock pinned to ${op.seconds}s — unused seconds become damage.`);
+        out.notes.push(`Next clock pinned to ${op.seconds}s - unused seconds become damage.`);
         break;
 
       case "extraTurn":
@@ -141,14 +141,14 @@ function runOps(
 
       case "rewindHp": {
         // hpHistory[0] is one turn ago, so index turnsAgo-1. Falls back to the
-        // oldest entry we have, and never rewinds *downward* — this is a heal.
+        // oldest entry we have, and never rewinds *downward* - this is a heal.
         const idx = Math.min(op.turnsAgo - 1, ctx.hpHistory.length - 1);
         const past = idx >= 0 ? ctx.hpHistory[idx] : undefined;
         if (past !== undefined && past > out.caster.hp) {
           const gained = Math.min(past, out.caster.maxHp) - out.caster.hp;
           out.caster.hp += gained;
           out.healed += gained;
-          out.notes.push(`Rewinds ${op.turnsAgo} turns — restores ${gained} HP.`);
+          out.notes.push(`Rewinds ${op.turnsAgo} turns - restores ${gained} HP.`);
         } else {
           out.notes.push(`Rewinds time, but the past held no more HP.`);
         }
@@ -175,7 +175,7 @@ function runOps(
         break;
 
       case "stealScoreMult": {
-        // Can only take what the target actually has above a neutral 1.0×.
+        // Can only take what the target actually has above a neutral 1.0x.
         const available = Math.max(0, out.target.scoreMult - 1);
         const taken = Math.min(op.amount, available);
         out.target.scoreMult -= taken;
@@ -276,9 +276,9 @@ function runOps(
 
 function applyHeal(amount: number, out: UltimateOutcome): void {
   // An ultimate's healing still respects a heal block and a class that cannot
-  // heal at all — Tank's "cannot heal" is not bypassed by its own ultimate.
+  // heal at all - Tank's "cannot heal" is not bypassed by its own ultimate.
   if (out.caster.arch.healAmount === null) {
-    out.notes.push(`Healing has no effect — this class cannot heal.`);
+    out.notes.push(`Healing has no effect - this class cannot heal.`);
     return;
   }
   if (out.caster.effects.some((e) => e.kind === "healBlock")) {
@@ -322,7 +322,7 @@ function dealDamage(
     );
     if (debuff > 0) raw *= Math.max(0, 1 - debuff);
 
-    // True damage skips DEF and the target's damageReduction effects alike —
+    // True damage skips DEF and the target's damageReduction effects alike -
     // that is what makes Newton's apple worth 45 flat.
     let incoming = Math.max(1, Math.floor(raw));
     if (!op.trueDamage) {
@@ -363,12 +363,12 @@ function dealDamage(
 
   out.damageDealt += dealt;
   out.notes.push(
-    `${dealt} damage${hits > 1 ? ` over ${hits} hits` : ""}${crits > 0 ? ` (${crits} crit${crits > 1 ? "s" : ""})` : ""}${op.trueDamage ? " — true damage" : ""}${op.ignoreShield ? " — through shields" : ""}.`,
+    `${dealt} damage${hits > 1 ? ` over ${hits} hits` : ""}${crits > 0 ? ` (${crits} crit${crits > 1 ? "s" : ""})` : ""}${op.trueDamage ? " - true damage" : ""}${op.ignoreShield ? " - through shields" : ""}.`,
   );
 
   // Griffinink: one immediate repeat if the volley left the target standing.
   if (op.repeatIfTargetSurvives && out.target.hp > 0) {
-    out.notes.push(`The target survives — diving again.`);
+    out.notes.push(`The target survives - diving again.`);
     dealt += dealDamage({ ...op, repeatIfTargetSurvives: false }, out, ctx, rng);
   }
 

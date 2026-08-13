@@ -16,7 +16,7 @@
 export type EasingCurve = [number, number, number, number];
 
 export const EASING = {
-  /** Decisive arrival — fast start, long settle. The default for entrances. */
+  /** Decisive arrival - fast start, long settle. The default for entrances. */
   swiftSettle: [0.22, 1, 0.36, 1],
   /** Near-instant start, very long tail. For large or hero elements. */
   dramaticSettle: [0.16, 1, 0.3, 1],

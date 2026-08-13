@@ -2,14 +2,14 @@
  * The schema type the app actually talks to.
  *
  * `types.ts` is regenerated wholesale by `supabase gen types`, so nothing
- * hand-written may live there — it would be silently erased on the next
+ * hand-written may live there - it would be silently erased on the next
  * regeneration. Two gaps in that generated output used to be papered over
  * with `as any` at the call sites, which switches off checking for the
  * whole surrounding expression rather than just the unknown name:
  *
  *   1. A handful of schema objects are missing entirely.
  *   2. Every `RETURNS jsonb` function is typed `Returns: Json`, which is
- *      true but useless — `Json` carries no fields, so reading one always
+ *      true but useless - `Json` carries no fields, so reading one always
  *      required a cast.
  *
  * This module is the one hand-maintained seam. It declares the missing
@@ -17,7 +17,7 @@
  * functions actually build, read off the `jsonb_build_object` calls in
  * `supabase/migrations`. Import `Database` from here, never from `./types`.
  *
- * These payloads are asserted, not validated — exactly as the generated
+ * These payloads are asserted, not validated - exactly as the generated
  * types assert the shape of every other RPC. The safeguard is that each
  * one cites the migration it was read from: when you change that SQL,
  * change the type in the same commit.
@@ -26,7 +26,7 @@ import type { Database as GeneratedDatabase, Json } from "./types";
 
 type PublicSchema = GeneratedDatabase["public"];
 
-// ── Missing schema objects ───────────────────────────────────────────────
+// -- Missing schema objects -----------------------------------------------
 
 /**
  * Views the generator omits.
@@ -43,7 +43,7 @@ type SupplementalViews = {
    */
   admin_moderation_queue: {
     Row: {
-      /** discriminant — `"thread" | "answer" | "comment"` */
+      /** discriminant - `"thread" | "answer" | "comment"` */
       target_type: string | null;
       target_id: string | null;
       author_id: string | null;
@@ -67,7 +67,7 @@ type SupplementalViews = {
 /** Functions the generator omits entirely. */
 type SupplementalFunctions = {
   /**
-   * Applies a finished bot battle at a reduced rating change. Idempotent —
+   * Applies a finished bot battle at a reduced rating change. Idempotent -
    * the session's `rating_applied` flag makes a replay a no-op, which is
    * what `already_completed` reports.
    * Source: `20260614020000_bot-battles-count.sql`.
@@ -114,7 +114,7 @@ type SupplementalFunctions = {
   };
   /**
    * Security-definer lookup of a username by user_id, bypassing
-   * user_profiles' own-row-only SELECT policy — the same reason
+   * user_profiles' own-row-only SELECT policy - the same reason
    * get_public_profile exists, just keyed the other direction. Null if the
    * user doesn't exist or never set a username.
    * Source: `20260806000000_get-username-by-id.sql`.
@@ -130,8 +130,8 @@ type SupplementalFunctions = {
  *
  * `supabase gen types` emits every `text` parameter as a non-nullable
  * `string`, because a Postgres signature records no nullability. For these
- * the SQL genuinely treats NULL as meaningful — an optional subject line, a
- * join by code rather than by id — and callers have always passed it. The
+ * the SQL genuinely treats NULL as meaningful - an optional subject line, a
+ * join by code rather than by id - and callers have always passed it. The
  * casts previously hid the mismatch; these declarations state it instead.
  */
 type FunctionArgOverrides = {
@@ -176,7 +176,7 @@ type FunctionArgOverrides = {
   };
 };
 
-// ── jsonb payloads ───────────────────────────────────────────────────────
+// -- jsonb payloads -------------------------------------------------------
 
 /**
  * Result of applying a single player's rating change, as returned by the bot
@@ -195,7 +195,7 @@ interface RatingApplication {
 
 /**
  * The moves a battle turn can be. `submit_pvp_turn_action` rejects anything
- * else outright, so the `text` column can only ever hold one of these — it is a
+ * else outright, so the `text` column can only ever hold one of these - it is a
  * union in practice, and typed as one here.
  *
  * `wild` is retained: the action was replaced by per-Ecliptar `ultimate` casts
@@ -231,7 +231,7 @@ interface PvpTurnResolution {
   actions: PvpTurnAction[];
 }
 
-/** Discriminated on `matched` — the unmatched branch carries nothing else. */
+/** Discriminated on `matched` - the unmatched branch carries nothing else. */
 type PvpMatchAttempt =
   | { matched: false }
   | {
@@ -243,7 +243,7 @@ type PvpMatchAttempt =
       opponent_rating: number;
     };
 
-/** Discriminated on `accepted` — the rejected branch carries nothing else. */
+/** Discriminated on `accepted` - the rejected branch carries nothing else. */
 type PvpChallengeResponse =
   | { accepted: false }
   | {
@@ -339,7 +339,7 @@ type FunctionReturnOverrides = {
     Returns: PvpChallengeResponse;
   };
   /**
-   * `p_reason` is `DEFAULT NULL` — moderators aren't required to explain.
+   * `p_reason` is `DEFAULT NULL` - moderators aren't required to explain.
    * Source: `20260516152538_forum-moderation-overhaul.sql`.
    */
   set_moderation_status: {
@@ -372,7 +372,7 @@ type FunctionReturnOverrides = {
   };
 };
 
-// ── The merged schema ────────────────────────────────────────────────────
+// -- The merged schema ----------------------------------------------------
 
 export type Database = Omit<GeneratedDatabase, "public"> & {
   public: Omit<PublicSchema, "Views" | "Functions"> & {

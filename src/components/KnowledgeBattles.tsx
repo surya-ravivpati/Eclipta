@@ -4735,6 +4735,12 @@ interface LbRow {
   score: number;
   wins?: number;
   losses?: number;
+  /**
+   * Rated but hasn't finished a match yet. Shown rather than hidden — the old
+   * board dropped these players entirely — but marked, because a starting 1000
+   * and an earned 1000 are not the same claim.
+   */
+  provisional?: boolean;
 }
 
 const MEDAL: Record<1 | 2 | 3, { color: string; label: string; Icon: typeof Crown }> = {
@@ -4799,6 +4805,7 @@ function LeaderboardCard() {
             rating: number;
             wins: number;
             losses: number;
+            games: number;
           }[]
         ).map((r, i) => ({
           rank: i + 1,
@@ -4809,6 +4816,7 @@ function LeaderboardCard() {
           score: r.rating,
           wins: r.wins,
           losses: r.losses,
+          provisional: r.games === 0,
         })),
       );
       setLoading(false);
@@ -4943,9 +4951,11 @@ function LeaderboardCard() {
                     <div className="btt-lb-pod-score">{fmtScore(row.score)}</div>
                     <div className="btt-lb-pod-sub">
                       {tab === "rating"
-                        ? wr !== null
-                          ? `${row.wins}W ${row.losses}L · ${wr}%`
-                          : `${row.wins ?? 0}W ${row.losses ?? 0}L`
+                        ? row.provisional
+                          ? "Provisional · no matches yet"
+                          : wr !== null
+                            ? `${row.wins}W ${row.losses}L · ${wr}%`
+                            : `${row.wins ?? 0}W ${row.losses ?? 0}L`
                         : unit}
                     </div>
                     {row.isUser && <div className="btt-lb-you">YOU</div>}
@@ -4979,9 +4989,11 @@ function LeaderboardCard() {
                       <div className="btt-lb-row-num">{fmtScore(row.score)}</div>
                       <div className="btt-lb-row-sub">
                         {tab === "rating"
-                          ? wr !== null
-                            ? `${row.wins}W ${row.losses}L · ${wr}%`
-                            : `${row.wins ?? 0}W ${row.losses ?? 0}L`
+                          ? row.provisional
+                            ? "Provisional · no matches yet"
+                            : wr !== null
+                              ? `${row.wins}W ${row.losses}L · ${wr}%`
+                              : `${row.wins ?? 0}W ${row.losses ?? 0}L`
                           : unit}
                       </div>
                     </div>

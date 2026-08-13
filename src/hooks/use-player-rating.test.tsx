@@ -7,7 +7,7 @@ vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(),
 }));
 vi.mock("@/repositories/battles", () => ({
-  getPlayerRating: vi.fn(),
+  getPlayerStanding: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -20,7 +20,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { useAuth } from "@/hooks/use-auth";
-import { getPlayerRating } from "@/repositories/battles";
+import { getPlayerStanding } from "@/repositories/battles";
 import { usePlayerRating } from "./use-player-rating";
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -46,7 +46,7 @@ describe("usePlayerRating", () => {
 
   it("starts in a loading state before the first fetch resolves", () => {
     mockAuthedAs("u1");
-    vi.mocked(getPlayerRating).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getPlayerStanding).mockReturnValue(new Promise(() => {}));
 
     const { result } = renderHook(() => usePlayerRating(), { wrapper });
 
@@ -69,12 +69,12 @@ describe("usePlayerRating", () => {
       ranked: false,
       loading: false,
     });
-    expect(getPlayerRating).not.toHaveBeenCalled();
+    expect(getPlayerStanding).not.toHaveBeenCalled();
   });
 
   it("reports the default unranked state for a player who has never battled", async () => {
     mockAuthedAs("u1");
-    vi.mocked(getPlayerRating).mockResolvedValue(null);
+    vi.mocked(getPlayerStanding).mockResolvedValue(null);
 
     const { result } = renderHook(() => usePlayerRating(), { wrapper });
 
@@ -82,15 +82,14 @@ describe("usePlayerRating", () => {
     expect(result.current).toMatchObject({ rating: 1000, peakRating: 1000, ranked: false });
   });
 
-  it("surfaces a real rating row and derives ranked from wins + losses", async () => {
+  it("surfaces a real standing", async () => {
     mockAuthedAs("u1");
-    vi.mocked(getPlayerRating).mockResolvedValue({
-      user_id: "u1",
+    vi.mocked(getPlayerStanding).mockResolvedValue({
       rating: 1240,
-      peak_rating: 1300,
+      peakRating: 1300,
       wins: 5,
       losses: 2,
-      updated_at: "2026-01-01T00:00:00Z",
+      ranked: true,
     });
 
     const { result } = renderHook(() => usePlayerRating(), { wrapper });
@@ -105,20 +104,22 @@ describe("usePlayerRating", () => {
     });
   });
 
-  it("is not ranked when a row exists but the player has zero recorded games", async () => {
+  it("stays ranked with zero games once a rating row exists", async () => {
+    // Changed deliberately: `ranked` used to mean "has finished a match", which
+    // hid every player who had entered the ladder but not yet completed one.
+    // The server now answers it from the rating row itself.
     mockAuthedAs("u1");
-    vi.mocked(getPlayerRating).mockResolvedValue({
-      user_id: "u1",
+    vi.mocked(getPlayerStanding).mockResolvedValue({
       rating: 1000,
-      peak_rating: 1000,
+      peakRating: 1000,
       wins: 0,
       losses: 0,
-      updated_at: "2026-01-01T00:00:00Z",
+      ranked: true,
     });
 
     const { result } = renderHook(() => usePlayerRating(), { wrapper });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.ranked).toBe(false);
+    expect(result.current).toMatchObject({ ranked: true, wins: 0, losses: 0 });
   });
 });

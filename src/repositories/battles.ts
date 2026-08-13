@@ -26,6 +26,44 @@ export async function getPlayerRating(userId: string): Promise<PlayerRatingRow |
   return data;
 }
 
+/** A player's ladder standing, with W/L derived the same way the board derives it. */
+export interface PlayerStanding {
+  rating: number;
+  peakRating: number;
+  wins: number;
+  losses: number;
+  /** True once a rating row exists — i.e. the player has entered the ladder. */
+  ranked: boolean;
+}
+
+/**
+ * Read a player's standing through `get_player_standing`.
+ *
+ * Deliberately not a `player_ratings` select: the `wins`/`losses` columns on
+ * that table are counters that the leaderboard stopped trusting, and reading
+ * them here is what made the Trophy Road card disagree with the board. The RPC
+ * derives both from the match rows, so every surface shows one number.
+ */
+export async function getPlayerStanding(userId: string): Promise<PlayerStanding | null> {
+  const { data, error } = await supabase.rpc("get_player_standing", { p_user: userId });
+  if (error) throw new Error(error.message);
+  const d = data as {
+    rating?: number;
+    peak_rating?: number;
+    wins?: number;
+    losses?: number;
+    ranked?: boolean;
+  } | null;
+  if (!d) return null;
+  return {
+    rating: d.rating ?? 1000,
+    peakRating: d.peak_rating ?? 1000,
+    wins: d.wins ?? 0,
+    losses: d.losses ?? 0,
+    ranked: d.ranked ?? false,
+  };
+}
+
 // ── Matchmaking ─────────────────────────────────────────────────────────────
 
 /**

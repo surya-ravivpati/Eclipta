@@ -2324,6 +2324,7 @@ export type Database = {
       get_pvp_leaderboard: {
         Args: { p_limit?: number }
         Returns: {
+          games: number
           losses: number
           rating: number
           user_id: string
@@ -2331,6 +2332,7 @@ export type Database = {
           wins: number
         }[]
       }
+      get_player_standing: { Args: { p_user?: string }; Returns: Json }
       get_pvp_turn_resolution: {
         Args: { p_battle_id: string; p_turn_number: number }
         Returns: Json

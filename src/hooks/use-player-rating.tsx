@@ -23,7 +23,7 @@ import { useEffect } from "react";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { getPlayerRating } from "@/repositories/battles";
+import { getPlayerStanding } from "@/repositories/battles";
 
 export interface PlayerRatingState {
   rating: number;
@@ -58,7 +58,7 @@ export function usePlayerRating(): UsePlayerRatingResult {
 
   const query = useQuery({
     queryKey: user ? playerRatingQueryKey(user.id) : ["player-rating", "signed-out"],
-    queryFn: user ? () => getPlayerRating(user.id) : skipToken,
+    queryFn: user ? () => getPlayerStanding(user.id) : skipToken,
   });
 
   useEffect(() => {
@@ -93,10 +93,13 @@ export function usePlayerRating(): UsePlayerRatingResult {
 
   return {
     rating: row.rating,
-    peakRating: row.peak_rating,
+    peakRating: row.peakRating,
     wins: row.wins,
     losses: row.losses,
-    ranked: row.wins + row.losses > 0,
+    // "Ranked" now means "has entered the ladder", which the RPC answers from
+    // the rating row itself. Deriving it from wins + losses > 0 hid every
+    // player who holds a rating but has not finished a match yet.
+    ranked: row.ranked,
     loading: query.isLoading,
     refresh,
   };

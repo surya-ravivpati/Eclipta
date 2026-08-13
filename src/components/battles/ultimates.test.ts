@@ -123,6 +123,28 @@ describe("ULTIMATES registry", () => {
     }
   });
 
+  /**
+   * No ultimate may be *only* a lasting effect.
+   *
+   * Five of them used to be exactly that: `ops: [eff(...)]` and nothing else.
+   * You spent a full charge, the screen did not move, and the only feedback was
+   * a status badge. That reads as a bug even while working correctly.
+   *
+   * The rule is deliberately structural rather than behavioural. An earlier
+   * version of this test resolved each ultimate and demanded a visible change,
+   * which failed honest designs for the wrong reasons: Wheel of Fortune has an
+   * intentionally empty branch (a roulette you can lose is the point), and
+   * Perfect Balance correctly does nothing to two identical fighters. Both are
+   * working as designed. What is never right is a payload with no action in it
+   * at all, and that is checkable from the data alone.
+   */
+  it("never makes an ultimate out of lasting effects alone", () => {
+    for (const [slug, ult] of Object.entries(ULTIMATES)) {
+      const actions = ult.ops.filter((op) => op.op !== "effect");
+      expect(actions.length, `${slug} applies effects but never acts`).toBeGreaterThan(0);
+    }
+  });
+
   it("returns null for an unknown or missing slug", () => {
     expect(getUltimate(null)).toBeNull();
     expect(getUltimate("not-a-real-ecliptar")).toBeNull();

@@ -109,12 +109,14 @@ export const ULTIMATES = {
     slug: "einsteinium",
     name: "Theory of Relativity",
     description:
-      "Slows time, freezing the opponent for one turn, doubles the next attack's damage, and heals 10 HP.",
-    tag: "Freeze · 2× next · +10 HP",
+      "Slows time — the opponent loses a turn to the freeze and 6 seconds off the clock after it, while the next attack lands at double damage.",
+    tag: "Freeze · −6s · 2× next",
     ops: [
       eff("opponent", { kind: "freeze", magnitude: 1, turnsLeft: 1 }),
       eff("self", { kind: "damageMult", magnitude: 2, usesLeft: 1 }),
-      { op: "heal", amount: 10 },
+      // Was `heal 10`, which lands on nobody at full HP — so a healthy caster
+      // spent a charge and felt nothing. A clock cut always registers.
+      { op: "timerDelta", seconds: -6, target: "opponent" },
     ],
   },
   temporobys: {
@@ -162,12 +164,12 @@ export const ULTIMATES = {
     slug: "speedster-d",
     name: "Cyclone Kick",
     description:
-      "Creates a tornado kick dealing 35 damage, removes 5 seconds from the opponent's timer, and heals 10 HP.",
-    tag: "35 · −5s · +10 HP",
+      "Spins into a three-hit tornado and rides the momentum — 12 damage a hit, then six seconds swing off the opponent's clock and onto its own.",
+    tag: "3×12 · swing 6s",
     ops: [
-      { op: "damage", amount: 35 },
-      { op: "timerDelta", seconds: -5, target: "opponent" },
-      { op: "heal", amount: 10 },
+      { op: "damage", amount: 12, hits: 3 },
+      { op: "timerDelta", seconds: -6, target: "opponent" },
+      { op: "timerDelta", seconds: 6, target: "self" },
     ],
   },
 
@@ -185,9 +187,13 @@ export const ULTIMATES = {
   "tank-b": {
     slug: "tank-b",
     name: "Adaptive Armor",
-    description: "Reconfigures its armor, reducing all incoming damage by 60% for 3 turns.",
-    tag: "−60% damage · 3 turns",
-    ops: [eff("self", { kind: "damageReduction", magnitude: 0.6, turnsLeft: 3 })],
+    description:
+      "Slams fresh plating into place for 20 shield, then reconfigures — all incoming damage cut by 60% for 3 turns.",
+    tag: "20 shield · −60% dmg · 3T",
+    ops: [
+      { op: "shield", amount: 20 },
+      eff("self", { kind: "damageReduction", magnitude: 0.6, turnsLeft: 3 }),
+    ],
   },
   "tank-c": {
     slug: "tank-c",
@@ -396,9 +402,10 @@ export const ULTIMATES = {
   "healer-c": {
     slug: "healer-c",
     name: "World Tree",
-    description: "Summons ancient roots that heal 15 HP per turn for 4 turns.",
-    tag: "+15 HP/turn · 4 turns",
-    ops: [eff("self", { kind: "regen", magnitude: 15, turnsLeft: 4 })],
+    description:
+      "Roots take hold for an immediate 15 HP, then keep giving — 15 HP a turn for 4 turns.",
+    tag: "+15 now · +15/turn · 4T",
+    ops: [{ op: "heal", amount: 15 }, eff("self", { kind: "regen", magnitude: 15, turnsLeft: 4 })],
   },
   "healer-d": {
     slug: "healer-d",
@@ -469,24 +476,34 @@ export const ULTIMATES = {
     slug: "accelerator-a",
     name: "Venom Surge",
     description:
-      "Injects a deadly toxin that poisons the opponent for 5 turns, with damage increasing each turn.",
-    tag: "Escalating poison · 5T",
-    ops: [eff("opponent", { kind: "poison", magnitude: 8, turnsLeft: 5, escalate: 4 })],
+      "Sinks the fangs in for 10 damage, then leaves a toxin that worsens every turn for 5 turns.",
+    tag: "10 · escalating poison 5T",
+    ops: [
+      { op: "damage", amount: 10 },
+      eff("opponent", { kind: "poison", magnitude: 8, turnsLeft: 5, escalate: 4 }),
+    ],
   },
   "accelerator-b": {
     slug: "accelerator-b",
     name: "Steam Reactor",
-    description: "Overclocks its engines, granting +12 damage for the next 3 attacks.",
-    tag: "+12 DMG ×3",
-    ops: [eff("self", { kind: "damageBuff", magnitude: 12, usesLeft: 3 })],
+    description:
+      "Blows the pressure valves for 8 scalding damage, then runs hot — +12 damage on each of the next 3 attacks.",
+    tag: "8 · +12 DMG ×3",
+    ops: [
+      { op: "damage", amount: 8 },
+      eff("self", { kind: "damageBuff", magnitude: 12, usesLeft: 3 }),
+    ],
   },
   "accelerator-c": {
     slug: "accelerator-c",
     name: "Predator's Instinct",
     description:
-      "Enters a hyper-focused state where every attack critically hits for the next 2 turns.",
-    tag: "Guaranteed crits · 2T",
-    ops: [eff("self", { kind: "guaranteedCrit", magnitude: 1, turnsLeft: 2 })],
+      "Locks on, and the world slows — 6 extra seconds on its own next clock, and every attack crits for 2 turns.",
+    tag: "+6s · guaranteed crits 2T",
+    ops: [
+      { op: "timerDelta", seconds: 6, target: "self" },
+      eff("self", { kind: "guaranteedCrit", magnitude: 1, turnsLeft: 2 }),
+    ],
   },
   "accelerator-d": {
     slug: "accelerator-d",

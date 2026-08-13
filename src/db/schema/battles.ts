@@ -153,6 +153,12 @@ export const pvpBattles = pgTable(
       .notNull()
       .default("active"),
     winner_id: uuid("winner_id"),
+    /**
+     * Who walked, when the match was decided by walk-away rather than played
+     * out. The row is still `completed` with a `winner_id`, so a forfeit counts
+     * as an ordinary loss everywhere; this only records how it ended.
+     */
+    abandoned_by: uuid("abandoned_by"),
     ratings_applied: boolean("ratings_applied").notNull().default(false),
     challenger_rating_before: integer("challenger_rating_before"),
     opponent_rating_before: integer("opponent_rating_before"),

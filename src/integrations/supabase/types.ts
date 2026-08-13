@@ -1017,6 +1017,7 @@ export type Database = {
       }
       pvp_battles: {
         Row: {
+          abandoned_by: string | null
           challenger_archetype: string
           challenger_id: string
           challenger_rating_after: number | null
@@ -1035,6 +1036,7 @@ export type Database = {
           winner_id: string | null
         }
         Insert: {
+          abandoned_by?: string | null
           challenger_archetype: string
           challenger_id: string
           challenger_rating_after?: number | null
@@ -1053,6 +1055,7 @@ export type Database = {
           winner_id?: string | null
         }
         Update: {
+          abandoned_by?: string | null
           challenger_archetype?: string
           challenger_id?: string
           challenger_rating_after?: number | null

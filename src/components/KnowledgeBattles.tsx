@@ -1713,6 +1713,14 @@ function BattleArena() {
         async (payload) => {
           const row = payload.new as TableRow<"pvp_battles">;
           if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
+            // A battle can also be resolved by the server's reaper when the
+            // other side goes quiet. Say so — otherwise the win arrives out of
+            // nowhere and reads as a bug rather than a forfeit.
+            if (row.abandoned_by && row.abandoned_by !== myUserIdRef.current) {
+              toast(`${opponentRef.current.name} left the battle.`, {
+                description: "The match is yours by abandonment.",
+              });
+            }
             finishBattle(row.winner_id === myUserIdRef.current);
           }
           if (row.rematch_battle_id && !rematchStartedRef.current) {

@@ -161,8 +161,22 @@ if (lines < floor - EPSILON) {
   process.exit(1);
 }
 
+// The gain is a property of *making* a commit, so it is only demanded at
+// commit time. Two reasons, both learned the hard way:
+//
+//   1. It is not idempotent otherwise. Once a commit raises the floor, a later
+//      run against the same commit sees coverage == floor and asks for another
+//      point on top - punishing the same change twice, forever.
+//   2. Percentage is a ratio, and the denominator moves on its own. The
+//      formatter that runs during `git commit` reflowed 162 files here and
+//      added 92 lines to the total, which dropped the percentage while covered
+//      lines actually went up. Judging the gain after that has already happened
+//      measures the formatter, not the author.
+//
+// Push keeps the guard that matters and cannot drift: coverage may never fall.
+const enforceGain = process.argv.includes("--staged");
 const files = changedFiles();
-const owesGain = touchesProductionCode(files);
+const owesGain = enforceGain && touchesProductionCode(files);
 const target = floor + REQUIRED_GAIN;
 
 if (owesGain && lines < target - EPSILON) {
@@ -190,6 +204,6 @@ if (lines > floor + EPSILON) {
 
 console.log(
   `Line coverage holding at ${shown}%` +
-    (owesGain ? "" : " (no production-code changes, so no gain required)") +
+    (enforceGain && !owesGain ? " (no production-code changes, so no gain required)" : "") +
     ".",
 );

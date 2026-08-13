@@ -2,6 +2,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "server/**/*.ts",
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "e2e/**/*.ts",

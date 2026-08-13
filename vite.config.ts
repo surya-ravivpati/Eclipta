@@ -20,6 +20,12 @@ export default defineConfig({
     nitro({
       preset: "vercel",
       compatibilityDate: "2025-09-24",
+      // Nitro 3 disables filesystem route scanning by default (`serverDir:
+      // false`), so a handler dropped into a conventional folder is silently
+      // ignored and the build still succeeds. Pointing it at `server/` is what
+      // registers `server/api/*` — currently the unsubscribe endpoint every
+      // lifecycle email's footer and List-Unsubscribe header depends on.
+      serverDir: "./server",
       routeRules: {
         "/**": {
           headers: {

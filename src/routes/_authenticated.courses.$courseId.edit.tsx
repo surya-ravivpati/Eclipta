@@ -265,7 +265,7 @@ function CourseEditor() {
                 value={course.title}
                 onChange={(e) => setCourse({ ...course, title: e.target.value })}
                 onBlur={(e) => updateCourseField({ title: e.target.value })}
-                className="w-full bg-transparent text-2xl md:text-3xl font-display font-bold tracking-tight focus:outline-none focus:bg-secondary/30 px-1 -mx-1"
+                className="w-full bg-transparent text-2xl md:text-3xl font-display font-bold tracking-tight focus:bg-secondary/30 px-1 -mx-1"
               />
               <textarea
                 value={course.summary || ""}
@@ -273,7 +273,7 @@ function CourseEditor() {
                 onBlur={(e) => updateCourseField({ summary: e.target.value })}
                 placeholder="Short summary that learners see on the course card..."
                 rows={2}
-                className="w-full mt-2 bg-transparent text-sm text-muted-foreground focus:outline-none focus:bg-secondary/30 px-1 -mx-1 resize-none"
+                className="w-full mt-2 bg-transparent text-sm text-muted-foreground focus:bg-secondary/30 px-1 -mx-1 resize-none"
               />
             </div>
             <div className="flex gap-2 shrink-0">
@@ -370,7 +370,7 @@ function CourseEditor() {
                               )
                             }
                             onBlur={(e) => renameModule(mod.id, e.target.value)}
-                            className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                            className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus-visible:ring-1 focus-visible:ring-neon-purple"
                           />
                           <button
                             onClick={() => deleteModule(mod.id)}
@@ -529,7 +529,7 @@ function TextBlockEditor({
       onBlur={() => text !== data.text && onChange({ ...data, text })}
       placeholder="Write your lesson... Markdown-friendly. Use **bold**, _italic_, and line breaks for emphasis."
       rows={6}
-      className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-y"
+      className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple resize-y"
     />
   );
 }
@@ -551,7 +551,7 @@ function YouTubeBlockEditor({
         onChange={(e) => setUrl(e.target.value)}
         onBlur={() => url !== data.url && onChange({ ...data, url })}
         placeholder="Paste YouTube URL or video ID..."
-        className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+        className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
       />
       {id ? (
         <div className="aspect-video bg-black/40 border border-border">
@@ -573,7 +573,7 @@ function YouTubeBlockEditor({
         onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== data.caption && onChange({ ...data, caption })}
         placeholder="Optional caption..."
-        className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
+        className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus-visible:ring-1 focus-visible:ring-neon-purple"
       />
     </div>
   );
@@ -650,7 +650,7 @@ function ImageBlockEditor({
         onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== data.caption && onChange({ ...data, caption })}
         placeholder="Optional caption..."
-        className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
+        className="w-full bg-secondary/20 border border-input px-3 py-1.5 text-xs text-muted-foreground focus-visible:ring-1 focus-visible:ring-neon-purple"
       />
     </div>
   );
@@ -685,7 +685,7 @@ function QuizBlockEditor({
         onChange={(e) => setQuestion(e.target.value)}
         onBlur={() => question !== data.question && commit({ question })}
         placeholder="Question..."
-        className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus:outline-none focus:ring-1 focus:ring-neon-purple"
+        className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm font-display font-bold focus-visible:ring-1 focus-visible:ring-neon-purple"
       />
       <div className="space-y-2">
         {options.map((opt, i) => (
@@ -713,7 +713,7 @@ function QuizBlockEditor({
               }}
               onBlur={() => commit({ options })}
               placeholder={`Option ${i + 1}`}
-              className="flex-1 bg-secondary/30 border border-input px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+              className="flex-1 bg-secondary/30 border border-input px-3 py-1.5 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
             />
           </div>
         ))}

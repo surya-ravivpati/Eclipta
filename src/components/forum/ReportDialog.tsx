@@ -76,7 +76,7 @@ export function ReportDialog({
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
             >
               {REASONS.map((r) => (
                 <option key={r} value={r}>
@@ -95,7 +95,7 @@ export function ReportDialog({
               maxLength={500}
               rows={3}
               placeholder="Add any context that helps moderators."
-              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
+              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple resize-none"
             />
             <p className="text-[10px] text-muted-foreground mt-1">{details.length}/500</p>
           </div>

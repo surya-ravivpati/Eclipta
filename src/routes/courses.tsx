@@ -246,7 +246,7 @@ function CoursesHub() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search courses, topics, skills..."
-                  className="w-full pl-10 pr-9 py-2.5 rounded-md bg-secondary/30 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                  className="w-full pl-10 pr-9 py-2.5 rounded-md bg-secondary/30 border border-border text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/50 transition-shadow"
                   aria-label="Search courses"
                 />
                 {query && (

@@ -21,7 +21,9 @@ function ResetPasswordPage() {
       setReady(true);
     }
     // Also listen for auth state change with recovery event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setReady(true);
     });
     return () => subscription.unsubscribe();
@@ -29,7 +31,10 @@ function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
@@ -57,17 +62,27 @@ function ResetPasswordPage() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="New password (min 6 chars)" required minLength={6}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-neon-purple/50"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="New password (min 6 chars)"
+              required
+              minLength={6}
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-2 focus-visible:ring-neon-purple/50"
             />
           </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-3 rounded-lg bg-neon-purple text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-neon-purple text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+          >
             {loading ? "Updating..." : "Update Password"}
           </button>
         </form>
-        <Link to="/login" className="block text-center text-xs text-muted-foreground hover:text-foreground mt-4 transition-colors">
+        <Link
+          to="/login"
+          className="block text-center text-xs text-muted-foreground hover:text-foreground mt-4 transition-colors"
+        >
           Back to login
         </Link>
       </div>

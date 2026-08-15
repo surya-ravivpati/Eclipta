@@ -189,7 +189,7 @@ export function AnswerComments({
               onChange={(e) => setReply(e.target.value)}
               maxLength={1000}
               placeholder="Add a comment... (@mention to ping)"
-              className="flex-1 bg-secondary/30 border border-input px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-neon-purple"
+              className="flex-1 bg-secondary/30 border border-input px-2 py-1 text-xs focus-visible:ring-1 focus-visible:ring-neon-purple"
             />
             <button
               type="submit"

@@ -553,7 +553,7 @@ function ThreadPage() {
                   rows={5}
                   maxLength={4000}
                   placeholder="Share your insight. Markdown supported - use ```lang code```, $math$, or @username to ping."
-                  className="w-full mt-2 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
+                  className="w-full mt-2 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple resize-none"
                 />
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-[10px] text-muted-foreground">{reply.length}/4000</span>

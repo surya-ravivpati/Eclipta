@@ -700,7 +700,7 @@ function SettingsPanel({
               onChange={(e) => setUsername(e.target.value)}
               maxLength={20}
               placeholder="your_username"
-              className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+              className="flex-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
             />
             <button
               onClick={saveUsername}
@@ -789,7 +789,7 @@ function SettingsPanel({
             onChange={(e) => setBio(e.target.value.slice(0, 280))}
             placeholder="e.g. Senior majoring in CS. Currently grinding system design + ML foundations."
             rows={3}
-            className="w-full px-3 py-2 text-sm bg-background border border-border focus:border-neon-purple/60 focus:outline-none rounded resize-none"
+            className="w-full px-3 py-2 text-sm bg-background border border-border focus-visible:border-neon-purple/60 rounded resize-none"
           />
           <div className="flex items-center justify-between mt-2">
             <p className="text-[10px] text-muted-foreground">{bio.length}/280 characters</p>
@@ -921,7 +921,7 @@ function SettingsPanel({
               onChange={(e) => setLunaNotes(e.target.value.slice(0, 600))}
               placeholder="e.g. Use shorter responses. Prefer cooking analogies. I'm a college freshman."
               rows={3}
-              className="w-full px-3 py-2 text-xs bg-background border border-border focus:border-neon-purple/60 focus:outline-none rounded resize-none"
+              className="w-full px-3 py-2 text-xs bg-background border border-border focus-visible:border-neon-purple/60 rounded resize-none"
             />
             <p className="text-[10px] text-muted-foreground mt-1">
               {lunaNotes.length}/600 characters

@@ -25,13 +25,18 @@
  * is the intended escape hatch: a commit whose whole job is backfilling tests
  * should never be blocked for not adding enough of them.
  *
+ * ── Checking never writes ───────────────────────────────────────────────────
+ * Raising the floor is something a *commit* earns, so only `--advance` (which
+ * the pre-commit hook passes) may move it. An earlier version raised the floor
+ * on any passing run, which meant checking your work before committing quietly
+ * banked the gain - and the hook then asked for another point on top of it, for
+ * the same code. Running this by hand as often as you like is now free.
+ *
  * Usage:
- *   node scripts/coverage-ratchet.mjs            check against the baseline
- *   node scripts/coverage-ratchet.mjs --accept   record the current number
+ *   node scripts/coverage-ratchet.mjs            check only, never writes
  *   node scripts/coverage-ratchet.mjs --staged   judge the staged diff
- *                                                (pre-commit); default is the
- *                                                diff against the upstream
- *                                                branch (pre-push)
+ *   node scripts/coverage-ratchet.mjs --advance  raise the floor when earned
+ *   node scripts/coverage-ratchet.mjs --accept   force-record the current number
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -45,8 +50,20 @@ const summaryPath = join(repoRoot, "coverage", "coverage-summary.json");
 /** Percentage points a production-code commit must add. */
 const REQUIRED_GAIN = 1.0;
 
-/** Coverage is a float; compare with a tolerance so 12.0 vs 11.999999 is not a failure. */
-const EPSILON = 0.005;
+/**
+ * How far the percentage may dip before it counts as a regression.
+ *
+ * Not float noise - real churn. Coverage is a ratio, and the formatter that
+ * runs in lint-staged moves the denominator on its own: reflowing a few files
+ * added 9 lines to the total on one commit here and dropped the figure by
+ * 0.01pp while not one line of behaviour changed. A gate that fails on that is
+ * measuring prettier.
+ *
+ * 0.05pp is about five lines out of nine thousand - far below anything a real
+ * slug of untested code moves, and the +1pp gain requirement is the guard that
+ * actually catches new untested work.
+ */
+const EPSILON = 0.05;
 
 function git(args) {
   try {
@@ -120,6 +137,8 @@ function readCoverage() {
 }
 
 const accept = process.argv.includes("--accept");
+/** Only a real commit may bank a gain - see "Checking never writes" above. */
+const advance = process.argv.includes("--advance");
 
 runCoverage();
 const { lines, covered, totalLines } = readCoverage();
@@ -194,11 +213,18 @@ if (owesGain && lines < target - EPSILON) {
 }
 
 if (lines > floor + EPSILON) {
-  write(lines);
-  console.log(
-    `Line coverage rose from ${floor.toFixed(2)}% to ${shown}% ` +
-      `(${covered}/${totalLines} lines). Floor raised — commit coverage-baseline.json.`,
-  );
+  if (advance) {
+    write(lines);
+    console.log(
+      `Line coverage rose from ${floor.toFixed(2)}% to ${shown}% ` +
+        `(${covered}/${totalLines} lines). Floor raised - commit coverage-baseline.json.`,
+    );
+  } else {
+    console.log(
+      `Line coverage is ${shown}%, above the ${floor.toFixed(2)}% floor ` +
+        `(${covered}/${totalLines} lines). Floor unchanged - a commit banks the gain.`,
+    );
+  }
   process.exit(0);
 }
 

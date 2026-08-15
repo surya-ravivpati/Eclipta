@@ -123,7 +123,7 @@ export function UserSearchDialog({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="username..."
-            className="w-full bg-secondary/40 border border-border/60 px-3 py-2 text-sm focus:outline-none focus:border-neon-cyan/60"
+            className="w-full bg-secondary/40 border border-border/60 px-3 py-2 text-sm focus-visible:border-neon-cyan/60"
           />
 
           <div className="flex items-center gap-2 text-[10px] tracking-widest font-bold uppercase text-muted-foreground">

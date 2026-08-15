@@ -271,7 +271,10 @@ export default tseslint.config(
       // may never rise, so no new violations get in while the backlog drains.
       // Each rule is promoted to "error" as it reaches zero.
       "vibesafe/interactive-states": "warn",
-      "vibesafe/no-unfocusable-outline": "warn",
+      // Promoted: at zero as of the outline pass. Every element that stripped
+      // its outline now either relies on the global :focus-visible ring or
+      // replaces it with a keyboard-only one of its own.
+      "vibesafe/no-unfocusable-outline": "error",
       "vibesafe/theme-aware-colors": "warn",
       "vibesafe/responsive-grid-columns": "warn",
       // Comment style: this codebase's convention is long explanatory block

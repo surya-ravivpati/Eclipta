@@ -300,7 +300,7 @@ export function CourseBuilder() {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="e.g. Quantum Computing Fundamentals"
-                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple font-display text-lg"
+                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-neon-purple font-display text-lg"
                   />
                 </div>
                 <div>
@@ -312,7 +312,7 @@ export function CourseBuilder() {
                     onChange={(e) => setTopicDescription(e.target.value)}
                     placeholder="What will learners gain from this course? Describe the scope and key outcomes..."
                     rows={4}
-                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
+                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-neon-purple resize-none"
                   />
                 </div>
               </div>
@@ -431,7 +431,7 @@ export function CourseBuilder() {
                     value={prerequisites}
                     onChange={(e) => setPrerequisites(e.target.value)}
                     placeholder="e.g. Basic linear algebra, Python fundamentals"
-                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-neon-purple"
                   />
                 </div>
 
@@ -444,7 +444,7 @@ export function CourseBuilder() {
                     onChange={(e) => setCreatorReasoning(e.target.value)}
                     placeholder="Explain your background, expertise, or motivation for teaching this topic..."
                     rows={3}
-                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
+                    className="w-full bg-secondary/50 border border-input rounded-sm px-4 py-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-neon-purple resize-none"
                   />
                 </div>
               </div>

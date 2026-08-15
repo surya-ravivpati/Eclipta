@@ -223,7 +223,7 @@ export function GlobalSearch() {
             onChange={(e) => search.setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={t("search.placeholder")}
-            className="flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
+            className="flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground"
           />
           <button
             type="button"

@@ -1,10 +1,9 @@
 {
-  "warnings": 803,
+  "warnings": 765,
   "counts": {
     "vibesafe/interactive-states": 250,
     "@typescript-eslint/no-unsafe-assignment": 13,
     "@typescript-eslint/no-floating-promises": 79,
-    "vibesafe/no-unfocusable-outline": 38,
     "vibesafe/theme-aware-colors": 53,
     "@typescript-eslint/prefer-nullish-coalescing": 89,
     "no-restricted-syntax": 155,
@@ -27,5 +26,5 @@
     "@typescript-eslint/no-unsafe-enum-comparison": 1,
     "@typescript-eslint/no-redundant-type-constituents": 1
   },
-  "updated": "2026-08-13"
+  "updated": "2026-08-15"
 }

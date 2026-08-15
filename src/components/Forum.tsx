@@ -331,7 +331,7 @@ function NewThreadDialog({
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               placeholder="Be specific. What are you trying to figure out?"
-              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -347,7 +347,7 @@ function NewThreadDialog({
                 <select
                   value={course}
                   onChange={(e) => setCourse(e.target.value)}
-                  className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                  className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
                 >
                   {COURSES.map((c) => (
                     <option key={c} value={c}>
@@ -365,7 +365,7 @@ function NewThreadDialog({
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="algorithms, dp, mindset"
-                className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+                className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
               />
             </div>
           </div>
@@ -379,7 +379,7 @@ function NewThreadDialog({
               maxLength={4000}
               rows={6}
               placeholder="Provide context, what you've tried, and where you got stuck. Markdown supported - ```code```, $math$, and @username pings."
-              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none"
+              className="w-full mt-1 bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple resize-none"
             />
             <p className="text-[10px] text-muted-foreground mt-1">{body.length}/4000</p>
           </div>
@@ -604,7 +604,7 @@ export function Forum({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search threads, tags..."
-              className="w-full bg-secondary/30 border border-input pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-neon-purple"
+              className="w-full bg-secondary/30 border border-input pl-10 pr-4 py-2.5 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
             />
           </div>
           {isAuthenticated ? (

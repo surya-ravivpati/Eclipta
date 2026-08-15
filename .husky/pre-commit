@@ -8,4 +8,4 @@ node scripts/check-prose.mjs
 # Line coverage. Checked here rather than on push because the gain is a
 # property of the commit being made: it must be asked for exactly once, from
 # the person making the change, and never again afterwards.
-node scripts/coverage-ratchet.mjs --staged
+node scripts/coverage-ratchet.mjs --staged --advance

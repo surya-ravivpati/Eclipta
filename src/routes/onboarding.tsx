@@ -278,7 +278,7 @@ function OnboardingPage() {
                     onChange={(e) => setForm({ ...form, username: e.target.value })}
                     placeholder="your_handle"
                     maxLength={20}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-2 focus-visible:ring-primary/50"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -301,7 +301,7 @@ function OnboardingPage() {
                     value={form.age}
                     onChange={(e) => setForm({ ...form, age: e.target.value })}
                     placeholder="e.g. 17"
-                    className="w-32 px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-32 px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-2 focus-visible:ring-primary/50"
                   />
                 </div>
                 <div>
@@ -317,7 +317,7 @@ function OnboardingPage() {
                     placeholder="A line about you - interests, goals, anything."
                     rows={3}
                     maxLength={240}
-                    className="w-full px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   />
                   <p className="text-[11px] text-muted-foreground mt-1 text-right">
                     {form.bio.length}/240

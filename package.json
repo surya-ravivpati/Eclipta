@@ -34,7 +34,8 @@
     "prepare": "husky",
     "sync:sprites": "node scripts/sync-ecliptar-sprites.mjs",
     "coverage:ratchet": "node scripts/coverage-ratchet.mjs",
-    "coverage:ratchet:accept": "node scripts/coverage-ratchet.mjs --accept"
+    "coverage:ratchet:accept": "node scripts/coverage-ratchet.mjs --accept",
+    "prose": "node scripts/check-prose.mjs --all"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

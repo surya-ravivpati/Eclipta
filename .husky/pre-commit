@@ -1,6 +1,10 @@
 node scripts/check-secrets.mjs
 pnpm exec lint-staged
 
+# Public-facing prose. Only the copy this commit adds is judged, and nothing
+# below "clean" passes - errors and warnings both block.
+node scripts/check-prose.mjs
+
 # Line coverage. Checked here rather than on push because the gain is a
 # property of the commit being made: it must be asked for exactly once, from
 # the person making the change, and never again afterwards.

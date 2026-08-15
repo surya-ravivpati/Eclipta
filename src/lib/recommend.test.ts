@@ -42,6 +42,19 @@ const CATALOGUE = [
   course(QUANTUM, { subject: "Science" }),
 ];
 
+/**
+ * First element, asserted present.
+ *
+ * Indexed access is `string | undefined` under the strict config but plain
+ * `string` under the default one, so a `!` is required by one and flagged as
+ * redundant by the other. Narrowing once here satisfies both.
+ */
+function first<T>(xs: readonly T[]): T {
+  const x = xs[0];
+  if (x === undefined) throw new Error("expected a non-empty list");
+  return x;
+}
+
 function learner(over: Partial<LearnerState> = {}): LearnerState {
   return {
     completedSlugs: new Set(),
@@ -70,7 +83,7 @@ describe("deriveMastery", () => {
   it("counts being enrolled for much less than having finished", () => {
     const enrolled = deriveMastery(learner({ enrolledSlugs: new Set([CALCULUS]) }));
     const done = deriveMastery(learner({ completedSlugs: new Set([CALCULUS]) }));
-    const [taught] = conceptsOf(CALCULUS).teaches;
+    const taught = first(conceptsOf(CALCULUS).teaches);
     expect(enrolled.get(taught)).toBeLessThan(done.get(taught) ?? 0);
   });
 
@@ -78,7 +91,7 @@ describe("deriveMastery", () => {
     const m = deriveMastery(
       learner({ completedSlugs: new Set([CALCULUS]), enrolledSlugs: new Set([CALCULUS]) }),
     );
-    const [taught] = conceptsOf(CALCULUS).teaches;
+    const taught = first(conceptsOf(CALCULUS).teaches);
     expect(m.get(taught)).toBeGreaterThanOrEqual(0.9);
   });
 
@@ -110,7 +123,7 @@ describe("readiness", () => {
 
   it("rises as prerequisites are met", () => {
     const req = conceptsOf(ML).requires;
-    const partial = new Map([[req[0], 1]]);
+    const partial = new Map([[first(req), 1]]);
     const full = new Map(req.map((r) => [r, 1]));
     expect(readiness(ML, partial)).toBeGreaterThan(0);
     expect(readiness(ML, partial)).toBeLessThan(1);

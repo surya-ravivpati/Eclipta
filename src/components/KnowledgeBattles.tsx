@@ -4242,7 +4242,7 @@ function BattleArena() {
           <div className="flex justify-end mb-2">
             <button
               onClick={() => setConfirmExit(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-foreground/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors"
               title="Leave the battle (counts as a loss)"
             >
               <X className="w-3 h-3" /> Forfeit

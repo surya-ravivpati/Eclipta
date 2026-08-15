@@ -554,6 +554,8 @@ function YouTubeBlockEditor({
         className="w-full bg-secondary/30 border border-input px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-neon-purple"
       />
       {id ? (
+        // A letterbox behind media stays dark in both themes.
+        // eslint-disable-next-line vibesafe/theme-aware-colors
         <div className="aspect-video bg-black/40 border border-border">
           <iframe
             src={`https://www.youtube.com/embed/${id}`}
@@ -616,6 +618,8 @@ function ImageBlockEditor({
           <img
             src={data.url}
             alt={caption || "Course image"}
+            // A letterbox behind media stays dark in both themes.
+            // eslint-disable-next-line vibesafe/theme-aware-colors
             className="w-full max-h-96 object-contain bg-black/20 border border-border"
           />
           <button

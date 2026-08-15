@@ -46,7 +46,7 @@ function Heatmap({ practiced }: { practiced: Set<string> }) {
                 title={d}
                 className={cn(
                   "w-4 h-4 rounded-sm",
-                  on ? "bg-primary" : "bg-white/[0.05]",
+                  on ? "bg-primary" : "bg-foreground/[0.05]",
                   isToday && "ring-2 ring-primary/70",
                 )}
               />
@@ -103,7 +103,7 @@ function StreakPage() {
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+              className="rounded-xl border border-foreground/10 bg-foreground/[0.03] p-4"
             >
               <s.Icon className="w-4 h-4 text-primary mb-2" />
               <div className="font-display text-2xl font-bold tabular-nums">{s.value}</div>
@@ -119,7 +119,7 @@ function StreakPage() {
           <h2 className="font-mono text-[11px] tracking-[0.24em] uppercase text-muted-foreground mb-3">
             Last 8 weeks
           </h2>
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-xl border border-foreground/10 bg-foreground/[0.03] p-4">
             <Heatmap practiced={practiced} />
           </div>
         </section>
@@ -145,7 +145,7 @@ function StreakPage() {
                       ? "border-primary/40 bg-primary/[0.06]"
                       : current
                         ? "border-neon-cyan/40 bg-neon-cyan/[0.05]"
-                        : "border-white/10 bg-white/[0.02]",
+                        : "border-foreground/10 bg-foreground/[0.02]",
                   )}
                 >
                   <div
@@ -153,7 +153,7 @@ function StreakPage() {
                       "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
                       achieved
                         ? "bg-primary/20 text-primary"
-                        : "bg-white/[0.04] text-muted-foreground",
+                        : "bg-foreground/[0.04] text-muted-foreground",
                     )}
                   >
                     {achieved ? <Check className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}

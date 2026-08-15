@@ -457,7 +457,7 @@ function ArchetypePanel({ id, reduce }: { id: ArchetypeId; reduce: boolean }) {
               fontFamily: F_SERIF,
               fontStyle: "italic",
               fontSize: "clamp(19px, 2.2vw, 28px)",
-              color: "#b9bfcc",
+              color: "var(--muted-foreground)",
               opacity: 0.85,
             }}
           >
@@ -484,7 +484,7 @@ function ArchetypePanel({ id, reduce }: { id: ArchetypeId; reduce: boolean }) {
         style={{
           fontSize: "clamp(14px, 1.4vw, 16.5px)",
           lineHeight: 1.6,
-          color: "#c8cdd8",
+          color: "var(--muted-foreground)",
           fontWeight: 300,
         }}
       >
@@ -540,7 +540,7 @@ function StatCell({ label, value, aura }: { label: string; value: string; aura: 
           fontSize: 9,
           letterSpacing: "0.26em",
           textTransform: "uppercase",
-          color: "#767b87",
+          color: "var(--muted-foreground)",
         }}
       >
         {label}

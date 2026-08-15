@@ -61,7 +61,7 @@ function EcliptarCell({
       onClick={() => onOpen(e)}
       className={cn(
         "relative rounded-xl border p-4 flex flex-col items-center text-center transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-        owned ? "border-primary/40 bg-primary/[0.06]" : "border-white/10 bg-white/[0.02]",
+        owned ? "border-primary/40 bg-primary/[0.06]" : "border-foreground/10 bg-foreground/[0.02]",
       )}
     >
       {equipped && (
@@ -138,7 +138,7 @@ function EcliptarDetail({
       }}
     >
       <DialogContent
-        className="max-w-3xl p-0 overflow-hidden border-white/10"
+        className="max-w-3xl p-0 overflow-hidden border-foreground/10"
         style={{ background: "var(--brand-bg, #0B1020)" }}
       >
         <div className="grid sm:grid-cols-2">
@@ -278,7 +278,7 @@ function CollectionPage() {
           </p>
 
           {/* Completion meter */}
-          <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="mt-5 rounded-xl border border-foreground/10 bg-foreground/[0.03] p-4">
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="font-mono tracking-widest uppercase text-muted-foreground">
                 Collected
@@ -287,7 +287,7 @@ function CollectionPage() {
                 {ownedCount} / {total}
               </span>
             </div>
-            <div className="h-2.5 rounded-full bg-white/8 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-foreground/8 overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-neon-cyan to-primary"
                 initial={{ width: 0 }}
@@ -350,7 +350,7 @@ function CollectionPage() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 overflow-hidden"
+                    className="mb-4 rounded-xl border border-foreground/10 bg-foreground/[0.03] p-4 overflow-hidden"
                   >
                     <p className="text-sm text-muted-foreground mb-3">{meta.description}</p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -385,7 +385,7 @@ function CollectionPage() {
         <div className="mt-10 text-center">
           <Link
             to="/progress"
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.68_0.12_70)] px-5 py-2.5 text-sm font-bold text-[color:var(--brand-bg)] hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/70 px-5 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity"
           >
             <Zap className="w-4 h-4" /> Claim more on the Trophy Road
           </Link>

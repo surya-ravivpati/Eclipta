@@ -41,7 +41,7 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
   const today = todayUtc();
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 relative overflow-hidden">
+    <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.03] p-5 sm:p-6 relative overflow-hidden">
       {/* ambient flame glow */}
       {streak.dailyStreak > 0 && (
         <div
@@ -112,10 +112,10 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
                     className={cn(
                       "w-full aspect-square max-w-[26px] rounded-md flex items-center justify-center",
                       on
-                        ? "bg-primary/90 text-[color:var(--brand-bg)]"
+                        ? "bg-primary/90 text-primary-foreground"
                         : isToday
                           ? "border-2 border-dashed border-primary/60 bg-primary/5"
-                          : "border border-white/10 bg-white/[0.02]",
+                          : "border border-foreground/10 bg-foreground/[0.02]",
                     )}
                   >
                     {on && <Flame className="w-3 h-3" />}
@@ -161,7 +161,7 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
                   {streak.dailyStreak}/{next}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-white/8 overflow-hidden">
+              <div className="h-2 rounded-full bg-foreground/8 overflow-hidden">
                 <motion.div
                   className="h-full rounded-full bg-gradient-to-r from-neon-cyan to-primary"
                   initial={{ width: 0 }}
@@ -176,7 +176,7 @@ export function StreakHub({ compact = false }: { compact?: boolean }) {
           {!done && (
             <Link
               to="/battles"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.68_0.12_70)] px-4 py-2 text-xs font-bold text-[color:var(--brand-bg)] hover:opacity-90 transition-opacity"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/70 px-4 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
             >
               {atRisk ? "Save my streak" : "Practice now"} <ArrowRight className="w-3.5 h-3.5" />
             </Link>

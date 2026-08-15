@@ -57,7 +57,7 @@ const components: Components = {
     }
     const lang = langMatch?.[1];
     return (
-      <div className="my-2 rounded-md border border-border bg-[#0b0b14] overflow-hidden">
+      <div className="my-2 rounded-md border border-border bg-background overflow-hidden">
         {lang && (
           <div className="px-3 py-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase border-b border-border/60 bg-secondary/30">
             {lang}

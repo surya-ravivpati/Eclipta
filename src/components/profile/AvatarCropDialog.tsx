@@ -186,6 +186,8 @@ export function AvatarCropDialog({ file, onCancel, onConfirm }: AvatarCropDialog
           onPointerMove={continueDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
+          // A letterbox behind media stays dark in both themes.
+          // eslint-disable-next-line vibesafe/theme-aware-colors
           className="relative mx-auto aspect-square w-full max-w-[320px] overflow-hidden rounded-md bg-black/60 touch-none cursor-grab active:cursor-grabbing"
         >
           {imageUrl && (
@@ -216,7 +218,7 @@ export function AvatarCropDialog({ file, onCancel, onConfirm }: AvatarCropDialog
               stage's overflow clips back to the crop area. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-full border border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]"
+            className="pointer-events-none absolute inset-0 rounded-full border border-foreground/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]"
           />
         </div>
 

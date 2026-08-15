@@ -99,6 +99,18 @@
   --btt-mono: var(--font-mono);
 }
 
+/* Light theme. The team cues were only ever tuned against the midnight
+   background: on ivory, the steel-silver FOE sits at roughly 1.6:1 and the
+   brand gold at 1.9:1, so "who is winning" stops being readable at a glance -
+   the same failure a previous pass fixed for dark mode and never revisited
+   here. Both are darkened to keep the gold-vs-silver read while clearing
+   contrast against paper. */
+.light {
+  --btt-you: #9a7b1e; /* the light theme's own gold, matching --primary */
+  --btt-foe: oklch(0.45 0.03 250); /* steel, darkened for ivory */
+  --btt-fog: #5b6173; /* matches --muted-foreground in light */
+}
+
 /* ─── Enhanced glassmorphism in battles context ───────────────── */
 /* The aurora shows through backdrop-filter since it's at z-index: 0 */
 .btt-shell .glass-panel {

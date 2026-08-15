@@ -53,6 +53,9 @@ export function StreakCelebrationListener() {
       {active && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          // A scrim is dark in both themes by definition - it exists to push the
+          // page back, and an ivory one in light mode would push nothing back.
+          // eslint-disable-next-line vibesafe/theme-aware-colors
           style={{ background: "rgba(4,6,12,0.78)", backdropFilter: "blur(8px)" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -84,7 +87,7 @@ export function StreakCelebrationListener() {
           </div>
 
           <motion.div
-            className="relative rounded-3xl border border-primary/30 bg-[#121831] px-8 py-9 text-center max-w-sm w-full"
+            className="relative rounded-3xl border border-primary/30 bg-card px-8 py-9 text-center max-w-sm w-full"
             style={{
               boxShadow: "0 40px 120px rgba(0,0,0,0.7), 0 0 70px oklch(0.78 0.13 88 / 0.22)",
             }}

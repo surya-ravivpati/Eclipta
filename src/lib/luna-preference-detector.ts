@@ -66,7 +66,10 @@ const TRIGGER_PATTERNS: { rx: RegExp; build: (m: RegExpMatchArray) => string }[]
  * Returns null when nothing preference-like was detected.
  */
 export function extractPreference(text: string): string | null {
-  const trimmed = text.trim();
+  // Collapse runs of whitespace before matching. People double-space and wrap
+  // lines, and every pattern below is written for single spaces, so without
+  // this "write  shorter  responses" detects nothing at all.
+  const trimmed = text.replace(/\s+/g, " ").trim();
   if (trimmed.length < 4 || trimmed.length > 400) return null;
   for (const { rx, build } of TRIGGER_PATTERNS) {
     const m = trimmed.match(rx);
@@ -88,8 +91,13 @@ export function extractPreference(text: string): string | null {
 export function preferenceCategory(line: string): string | null {
   const t = line.toLowerCase().trim();
   if (/respond in\s+\w+/.test(t)) return "language";
-  if (/\b(short|long|brief|concise|detailed|thorough)\b.*responses?/.test(t)) return "length";
-  if (/\b(short|brief|concise|detailed|thorough) responses?/.test(t)) return "length";
+  // The `\w*` matters. extractPreference emits the comparative form -
+  // "shorter responses", "longer responses" - and a bare `\bshort\b` never
+  // matches that, so the length category never fired on this module's own
+  // output. The visible effect was that "shorter" and "longer" sat in the
+  // notes together as contradictory standing orders, which is exactly what
+  // categories exist to prevent.
+  if (/\b(short|long|brief|concise|detail|thorough)\w*\b.*responses?/.test(t)) return "length";
   if (/\b(fewer|less|more)\s+(words|sentences|paragraphs|details|steps)\b/.test(t)) return "length";
   if (t.includes("analog")) return "analogies";
   if (t.includes("example")) return "examples";

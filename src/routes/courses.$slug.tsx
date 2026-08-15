@@ -259,6 +259,8 @@ function CommunityCoursePage() {
                       <img
                         src={b.data.url}
                         alt={b.data.caption || ""}
+                        // A letterbox behind media stays dark in both themes.
+                        // eslint-disable-next-line vibesafe/theme-aware-colors
                         className="w-full max-h-[600px] object-contain bg-black/20"
                       />
                       {b.data.caption && (

@@ -275,7 +275,10 @@ export default tseslint.config(
       // its outline now either relies on the global :focus-visible ring or
       // replaces it with a keyboard-only one of its own.
       "vibesafe/no-unfocusable-outline": "error",
-      "vibesafe/theme-aware-colors": "warn",
+      // Promoted: at zero. Raw white/black alphas became foreground/background
+      // tokens, hardcoded hexes became the tokens they were copies of, and the
+      // genuine exceptions (scrims, media letterboxes) are recorded as such.
+      "vibesafe/theme-aware-colors": "error",
       "vibesafe/responsive-grid-columns": "warn",
       // Comment style: this codebase's convention is long explanatory block
       // comments, which these two rules exist to prevent. Left off rather than
@@ -344,6 +347,17 @@ export default tseslint.config(
     ],
     plugins: { vibesafe },
     rules: { "vibesafe/ascii-only": "error" },
+  },
+
+  // The two battle-board renderers colour everything from the --btt-* team
+  // variables. Those ARE theme-aware - Battles.css defines light overrides for
+  // them - but vibesafe/theme-aware-colors reads the arbitrary-value syntax
+  // `text-[color:var(--btt-you)]` as a raw colour and cannot see the variable
+  // inside it. Ten findings in two files, all the same false positive, so the
+  // rule is scoped off here rather than papered over line by line.
+  {
+    files: ["src/components/battles/TerritoryGrid.tsx", "src/components/battles/TugOfWarBar.tsx"],
+    rules: { "vibesafe/theme-aware-colors": "off" },
   },
 
   // Must stay last: switches off every rule Prettier already decides.

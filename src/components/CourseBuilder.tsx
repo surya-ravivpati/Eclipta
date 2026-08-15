@@ -415,7 +415,7 @@ export function CourseBuilder() {
                       max="30"
                       value={timeCommitment}
                       onChange={(e) => setTimeCommitment(e.target.value)}
-                      className="w-full accent-[oklch(0.55_0.25_290)]"
+                      className="w-full accent-primary"
                     />
                     <span className="font-display font-bold text-neon-purple min-w-[3ch] text-right">
                       {timeCommitment}h

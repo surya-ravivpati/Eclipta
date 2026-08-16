@@ -98,7 +98,7 @@ export function StreakCelebrationListener() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground active:scale-[0.97]"
               onClick={() => setActive(null)}
               aria-label="Close"
             >

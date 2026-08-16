@@ -88,7 +88,7 @@ export function WeakSpotPractice({
     >
       <button
         onClick={onClose}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-5 transition-colors"
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-5 transition-colors active:scale-[0.97]"
       >
         <ArrowLeft className="w-3 h-3" /> Back to arena
       </button>
@@ -114,7 +114,7 @@ export function WeakSpotPractice({
           </p>
           <button
             onClick={onBattle}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors active:scale-[0.97]"
           >
             <Swords className="w-3.5 h-3.5" /> To battle
           </button>
@@ -142,7 +142,7 @@ export function WeakSpotPractice({
               </div>
               <button
                 onClick={() => setActive(w.concept)}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-primary/40 text-primary text-xs font-bold tracking-widest uppercase hover:bg-primary/10 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-primary/40 text-primary text-xs font-bold tracking-widest uppercase hover:bg-primary/10 transition-colors active:scale-[0.97]"
               >
                 Warm up <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -151,7 +151,7 @@ export function WeakSpotPractice({
           <div className="pt-3 flex justify-end">
             <button
               onClick={onBattle}
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
             >
               Skip to battle <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -224,13 +224,13 @@ function PracticeSession({
         <div className="flex flex-wrap justify-center gap-2">
           <button
             onClick={onDone}
-            className="px-4 py-2 rounded-md border border-border text-xs font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+            className="px-4 py-2 rounded-md border border-border text-xs font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
           >
             Back to weak spots
           </button>
           <button
             onClick={onBattle}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors active:scale-[0.97]"
           >
             <Swords className="w-3.5 h-3.5" /> Take it into battle
           </button>
@@ -279,7 +279,7 @@ function PracticeSession({
         <div className="mt-6 flex justify-end">
           <button
             onClick={next}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase hover:bg-primary/90 transition-colors active:scale-[0.97]"
           >
             {idx < SESSION_LEN - 1 ? "Next" : "Finish"} <ArrowRight className="w-3.5 h-3.5" />
           </button>

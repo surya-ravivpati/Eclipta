@@ -295,7 +295,7 @@ function ThreadPage() {
                       onClick={() => vote("thread", thread.id, 1)}
                       className={`p-1 ${votes[`thread:${thread.id}`] === 1 ? "text-neon-purple" : "text-muted-foreground hover:text-foreground"}`}
                     >
-                      <ChevronUp className="w-5 h-5" />
+                      <ChevronUp className="w-5 h-5 active:scale-[0.97]" />
                     </button>
                     <span
                       className={`text-sm font-bold font-display ${thread.votes > 0 ? "text-neon-purple" : "text-muted-foreground"}`}
@@ -306,7 +306,7 @@ function ThreadPage() {
                       onClick={() => vote("thread", thread.id, -1)}
                       className={`p-1 ${votes[`thread:${thread.id}`] === -1 ? "text-neon-pink" : "text-muted-foreground hover:text-foreground"}`}
                     >
-                      <ChevronDown className="w-5 h-5" />
+                      <ChevronDown className="w-5 h-5 active:scale-[0.97]" />
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -361,7 +361,7 @@ function ThreadPage() {
                                   load();
                                 } else toast.error(r.error);
                               }}
-                              className="ml-3 inline-flex items-center gap-1 underline hover:text-neon-cyan"
+                              className="ml-3 inline-flex items-center gap-1 underline hover:text-neon-cyan active:scale-[0.97]"
                             >
                               <RotateCcw className="w-3 h-3" />
                               Restore
@@ -395,7 +395,7 @@ function ThreadPage() {
                       {user && user.id !== thread.user_id && (
                         <button
                           onClick={() => setReport({ type: "thread", id: thread.id })}
-                          className="inline-flex items-center gap-1 text-muted-foreground hover:text-neon-pink transition-colors"
+                          className="inline-flex items-center gap-1 text-muted-foreground hover:text-neon-pink transition-colors active:scale-[0.97]"
                         >
                           <Flag className="w-3 h-3" />
                           Report
@@ -404,7 +404,7 @@ function ThreadPage() {
                       {(user?.id === thread.user_id || isModerator) && (
                         <button
                           onClick={deleteThread}
-                          className="inline-flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors"
+                          className="inline-flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors active:scale-[0.97]"
                         >
                           <Trash2 className="w-3 h-3" />
                           Delete{isModerator && user?.id !== thread.user_id ? " (mod)" : ""}
@@ -432,7 +432,7 @@ function ThreadPage() {
                           onClick={() => vote("answer", a.id, 1)}
                           className={`p-1 ${votes[`answer:${a.id}`] === 1 ? "text-neon-purple" : "text-muted-foreground hover:text-foreground"}`}
                         >
-                          <ChevronUp className="w-5 h-5" />
+                          <ChevronUp className="w-5 h-5 active:scale-[0.97]" />
                         </button>
                         <span
                           className={`text-sm font-bold font-display ${a.votes > 0 ? "text-neon-purple" : "text-muted-foreground"}`}
@@ -443,7 +443,7 @@ function ThreadPage() {
                           onClick={() => vote("answer", a.id, -1)}
                           className={`p-1 ${votes[`answer:${a.id}`] === -1 ? "text-neon-pink" : "text-muted-foreground hover:text-foreground"}`}
                         >
-                          <ChevronDown className="w-5 h-5" />
+                          <ChevronDown className="w-5 h-5 active:scale-[0.97]" />
                         </button>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -490,7 +490,7 @@ function ThreadPage() {
                                       load();
                                     } else toast.error(r.error);
                                   }}
-                                  className="ml-3 inline-flex items-center gap-1 underline hover:text-neon-cyan"
+                                  className="ml-3 inline-flex items-center gap-1 underline hover:text-neon-cyan active:scale-[0.97]"
                                 >
                                   <RotateCcw className="w-3 h-3" />
                                   Restore
@@ -506,7 +506,7 @@ function ThreadPage() {
                             {user && user.id !== a.user_id && (
                               <button
                                 onClick={() => setReport({ type: "answer", id: a.id })}
-                                className="inline-flex items-center gap-1 hover:text-neon-pink transition-colors"
+                                className="inline-flex items-center gap-1 hover:text-neon-pink transition-colors active:scale-[0.97]"
                               >
                                 <Flag className="w-3 h-3" />
                                 Report
@@ -515,7 +515,7 @@ function ThreadPage() {
                             {(user?.id === a.user_id || isModerator) && (
                               <button
                                 onClick={() => deleteAnswer(a.id)}
-                                className="inline-flex items-center gap-1 hover:text-destructive transition-colors"
+                                className="inline-flex items-center gap-1 hover:text-destructive transition-colors active:scale-[0.97]"
                               >
                                 <Trash2 className="w-3 h-3" />
                                 Delete
@@ -525,7 +525,7 @@ function ThreadPage() {
                           {!a.accepted && user?.id === thread.user_id && (
                             <button
                               onClick={() => acceptAnswer(a.id)}
-                              className="text-[10px] font-bold tracking-widest text-neon-cyan hover:bg-neon-cyan/10 px-2 py-1 transition-colors"
+                              className="text-[10px] font-bold tracking-widest text-neon-cyan hover:bg-neon-cyan/10 px-2 py-1 transition-colors active:scale-[0.97]"
                             >
                               ACCEPT ANSWER
                             </button>
@@ -560,7 +560,7 @@ function ThreadPage() {
                   <button
                     type="submit"
                     disabled={submitting || reply.trim().length < 10}
-                    className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center gap-2"
+                    className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
                   >
                     {submitting && <Loader2 className="w-3 h-3 animate-spin" />}POST ANSWER
                   </button>

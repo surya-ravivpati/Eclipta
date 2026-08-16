@@ -345,7 +345,7 @@ function OnboardingPage() {
                       }
                       className={`p-4 text-left glass-panel rounded-md transition-colors hover:border-primary/50 ${
                         active ? "border-primary bg-primary/10" : ""
-                      }`}
+                      } active:scale-[0.97]`}
                     >
                       <Icon
                         className={`w-5 h-5 mb-2.5 ${active ? "text-primary" : "text-muted-foreground"}`}
@@ -369,7 +369,7 @@ function OnboardingPage() {
                       onClick={() => setForm({ ...form, hours: h.value })}
                       className={`p-4 text-left glass-panel rounded-md transition-colors flex items-center gap-3 hover:border-primary/50 ${
                         active ? "border-primary bg-primary/10" : ""
-                      }`}
+                      } active:scale-[0.97]`}
                     >
                       <Clock
                         className={`w-5 h-5 ${active ? "text-primary" : "text-muted-foreground"}`}
@@ -396,7 +396,7 @@ function OnboardingPage() {
                       onClick={() => setForm({ ...form, style: s.id })}
                       className={`w-full p-4 text-left glass-panel rounded-md transition-colors flex items-start gap-4 hover:border-primary/50 ${
                         active ? "border-primary bg-primary/10" : ""
-                      }`}
+                      } active:scale-[0.97]`}
                     >
                       <div
                         className={`w-10 h-10 shrink-0 border flex items-center justify-center ${
@@ -428,7 +428,7 @@ function OnboardingPage() {
             type="button"
             onClick={back}
             disabled={step === 0}
-            className="px-4 py-3 text-sm font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground disabled:opacity-30 inline-flex items-center gap-2 transition-colors"
+            className="px-4 py-3 text-sm font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground disabled:opacity-30 inline-flex items-center gap-2 transition-colors active:scale-[0.97]"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
@@ -436,7 +436,7 @@ function OnboardingPage() {
             type="button"
             onClick={next}
             disabled={!canAdvance || saving}
-            className="px-6 py-3 rounded-md bg-primary text-primary-foreground font-bold text-sm tracking-widest uppercase inline-flex items-center gap-2 transition-colors hover:bg-primary/90 disabled:opacity-40 elev-1"
+            className="px-6 py-3 rounded-md bg-primary text-primary-foreground font-bold text-sm tracking-widest uppercase inline-flex items-center gap-2 transition-colors hover:bg-primary/90 disabled:opacity-40 elev-1 active:scale-[0.97]"
           >
             {saving ? "Saving..." : step === total - 1 ? "Enter the arena" : "Continue"}
             <ArrowRight className="w-4 h-4" />

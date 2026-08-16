@@ -267,7 +267,7 @@ export function CourseBuilder() {
                       : i < step
                         ? "text-neon-purple border border-neon-purple/30 hover:border-neon-purple/60"
                         : "text-muted-foreground border border-border"
-                  }`}
+                  } active:scale-[0.97]`}
                 >
                   <Icon className="w-3 h-3" />
                   <span className="hidden md:inline">{s.label}</span>
@@ -332,7 +332,7 @@ export function CourseBuilder() {
                         level === l.value
                           ? "border-neon-purple bg-neon-purple/10 neon-glow-purple"
                           : "border-border bg-secondary/30 hover:border-muted-foreground"
-                      }`}
+                      } active:scale-[0.97]`}
                     >
                       <div
                         className={`w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
@@ -367,7 +367,7 @@ export function CourseBuilder() {
                         structure === s.value
                           ? "border-neon-purple bg-neon-purple/10 neon-glow-purple"
                           : "border-border bg-secondary/30 hover:border-muted-foreground"
-                      }`}
+                      } active:scale-[0.97]`}
                     >
                       <span className="font-display font-bold tracking-wide text-lg">
                         {s.label}
@@ -394,7 +394,7 @@ export function CourseBuilder() {
                           depth === d.value
                             ? "border-neon-purple bg-neon-purple/10"
                             : "border-border bg-secondary/30 hover:border-muted-foreground"
-                        }`}
+                        } active:scale-[0.97]`}
                       >
                         <span className="font-display font-bold text-sm">{d.label}</span>
                         <p className="text-xs text-muted-foreground mt-0.5">{d.hours}</p>
@@ -488,7 +488,7 @@ export function CourseBuilder() {
                 {reviewStatus === "idle" && (
                   <button
                     onClick={submitProposal}
-                    className="w-full py-3 bg-neon-purple text-primary-foreground font-display font-bold tracking-widest text-sm hover:opacity-90 transition-opacity neon-glow-purple flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-neon-purple text-primary-foreground font-display font-bold tracking-widest text-sm hover:opacity-90 transition-opacity neon-glow-purple flex items-center justify-center gap-2 active:scale-[0.97]"
                   >
                     <Sparkles className="w-4 h-4" />
                     SUBMIT FOR REVIEW
@@ -546,7 +546,7 @@ export function CourseBuilder() {
                         </p>
                         <button
                           onClick={goToEditor}
-                          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity"
+                          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity active:scale-[0.97]"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           OPEN COURSE EDITOR
@@ -576,7 +576,7 @@ export function CourseBuilder() {
                         <div className="flex justify-center gap-2 mt-4">
                           <button
                             onClick={reset}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors active:scale-[0.97]"
                           >
                             <RefreshCw className="w-3.5 h-3.5" />
                             REVISE & RESUBMIT
@@ -604,7 +604,7 @@ export function CourseBuilder() {
                         </p>
                         <button
                           onClick={reset}
-                          className="px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors"
+                          className="px-4 py-2 text-xs font-bold tracking-widest border border-neon-purple text-neon-purple hover:bg-neon-purple/10 transition-colors active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           TRY AGAIN
                         </button>
@@ -622,7 +622,7 @@ export function CourseBuilder() {
           <button
             onClick={() => setStep((s) => s - 1)}
             disabled={step === 0}
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold tracking-widest border border-border hover:border-neon-purple text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold tracking-widest border border-border hover:border-neon-purple text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.97]"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             BACK
@@ -631,7 +631,7 @@ export function CourseBuilder() {
             <button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canProceed()}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.97]"
             >
               NEXT
               <ArrowRight className="w-3.5 h-3.5" />

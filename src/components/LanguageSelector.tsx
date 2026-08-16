@@ -98,7 +98,7 @@ export function LanguageList({ className }: { className?: string }) {
                   setLocale(l.code);
                 }}
                 className={cn(
-                  "w-full flex items-center justify-between gap-2 px-3 py-2 rounded border text-sm transition-colors",
+                  "w-full flex items-center justify-between gap-2 px-3 py-2 rounded border text-sm transition-colors active:scale-[0.97]",
                   active
                     ? "border-primary/60 bg-primary/10 text-foreground"
                     : "border-border hover:bg-secondary/40",

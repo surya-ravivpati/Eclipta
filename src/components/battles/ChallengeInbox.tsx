@@ -224,7 +224,7 @@ export function ChallengeInbox() {
               <button
                 onClick={() => respond(c, true)}
                 disabled={busy === c.id}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-neon-cyan border border-neon-cyan/50 bg-neon-cyan/10 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-neon-cyan border border-neon-cyan/50 bg-neon-cyan/10 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50 active:scale-[0.97]"
               >
                 {busy === c.id ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -236,7 +236,7 @@ export function ChallengeInbox() {
               <button
                 onClick={() => respond(c, false)}
                 disabled={busy === c.id}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-muted-foreground border border-border/60 hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-muted-foreground border border-border/60 hover:bg-secondary/50 transition-colors disabled:opacity-50 active:scale-[0.97]"
               >
                 <X className="w-3 h-3" /> DECLINE
               </button>

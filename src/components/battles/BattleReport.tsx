@@ -617,7 +617,7 @@ export function BattleReport({
         )}
         <button
           onClick={onBack}
-          className="px-6 py-2.5 border border-border text-xs font-bold tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+          className="px-6 py-2.5 border border-border text-xs font-bold tracking-widest text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
         >
           BACK
         </button>

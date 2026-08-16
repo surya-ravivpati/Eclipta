@@ -48,7 +48,7 @@ function EcliptarPicker({
         <button
           type="button"
           key={e.slug}
-          className={`sr-ec ${value === e.slug ? "is-on" : ""}`}
+          className={`sr-ec ${value === e.slug ? "is-on" : ""} active:scale-[0.97] hover:opacity-90`}
           onClick={() => onChange(e.slug)}
         >
           <e.icon size={20} />
@@ -121,10 +121,16 @@ function StudyRoomsLobby() {
         </header>
 
         <div className="sr-toolbar">
-          <button className="sr-btn sr-btn--solid" onClick={() => setShowCreate(true)}>
+          <button
+            className="sr-btn sr-btn--solid active:scale-[0.97] hover:opacity-90"
+            onClick={() => setShowCreate(true)}
+          >
             <Plus size={15} /> Create a room
           </button>
-          <button className="sr-btn" onClick={() => setShowJoin(true)}>
+          <button
+            className="sr-btn active:scale-[0.97] hover:opacity-90"
+            onClick={() => setShowJoin(true)}
+          >
             <KeyRound size={15} /> Join with a code
           </button>
         </div>
@@ -193,7 +199,7 @@ function StudyRoomsLobby() {
 
 function RoomCard({ room, onOpen }: { room: StudyRoom; onOpen: (r: StudyRoom) => void }) {
   return (
-    <button className="sr-card" onClick={() => onOpen(room)}>
+    <button className="sr-card active:scale-[0.97] hover:opacity-90" onClick={() => onOpen(room)}>
       <div className="sr-card-top">
         <span className="sr-card-name">{room.name}</span>
         <span className={`sr-tag ${room.is_public ? "sr-tag--public" : "sr-tag--private"}`}>
@@ -262,7 +268,11 @@ function CreateModal({
   return (
     <div className="sr-modal-bg" onClick={onClose}>
       <div className="sr-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="sr-back" onClick={onClose} style={{ float: "right" }}>
+        <button
+          className="sr-back active:scale-[0.97] hover:opacity-90"
+          onClick={onClose}
+          style={{ float: "right" }}
+        >
           <X size={16} />
         </button>
         <h3>Create a room</h3>
@@ -294,13 +304,13 @@ function CreateModal({
           <label>Visibility</label>
           <div className="sr-toggle-row">
             <button
-              className={`sr-seg ${isPublic ? "is-on" : ""}`}
+              className={`sr-seg ${isPublic ? "is-on" : ""} active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
               onClick={() => setIsPublic(true)}
             >
               <Globe size={12} /> Public
             </button>
             <button
-              className={`sr-seg ${!isPublic ? "is-on" : ""}`}
+              className={`sr-seg ${!isPublic ? "is-on" : ""} active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
               onClick={() => setIsPublic(false)}
             >
               <Lock size={12} /> Private
@@ -313,10 +323,17 @@ function CreateModal({
         </div>
 
         <div className="sr-modal-actions">
-          <button className="sr-btn" onClick={onClose}>
+          <button
+            className="sr-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button className="sr-btn sr-btn--solid" onClick={submit} disabled={busy}>
+          <button
+            className="sr-btn sr-btn--solid active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={submit}
+            disabled={busy}
+          >
             {busy ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />} Create
           </button>
         </div>
@@ -365,7 +382,11 @@ function JoinModal({
   return (
     <div className="sr-modal-bg" onClick={onClose}>
       <div className="sr-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="sr-back" onClick={onClose} style={{ float: "right" }}>
+        <button
+          className="sr-back active:scale-[0.97] hover:opacity-90"
+          onClick={onClose}
+          style={{ float: "right" }}
+        >
           <X size={16} />
         </button>
         <h3>Join with a code</h3>
@@ -392,10 +413,17 @@ function JoinModal({
           <EcliptarPicker ownedSlugs={ownedSlugs} value={slug} onChange={setSlug} />
         </div>
         <div className="sr-modal-actions">
-          <button className="sr-btn" onClick={onClose}>
+          <button
+            className="sr-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button className="sr-btn sr-btn--solid" onClick={submit} disabled={busy}>
+          <button
+            className="sr-btn sr-btn--solid active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={submit}
+            disabled={busy}
+          >
             {busy ? <Loader2 className="animate-spin" size={14} /> : <KeyRound size={14} />} Join
           </button>
         </div>

@@ -67,7 +67,10 @@ function LegalPage() {
                 This document has been prepared to describe how Eclipta actually works, but it has
                 not yet been reviewed by qualified counsel and should not be relied on as a final
                 statement of your rights or ours. Questions:{" "}
-                <a href={`mailto:${LEGAL_CONTACT}`} className="underline">
+                <a
+                  href={`mailto:${LEGAL_CONTACT}`}
+                  className="underline active:scale-[0.97] hover:opacity-90"
+                >
                   {LEGAL_CONTACT}
                 </a>
                 .

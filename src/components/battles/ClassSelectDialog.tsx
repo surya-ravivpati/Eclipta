@@ -110,7 +110,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
       >
         <button
           onClick={() => setPickedArch(null)}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors active:scale-[0.97]"
         >
           <ArrowLeft className="w-3 h-3" /> Back to archetypes
         </button>

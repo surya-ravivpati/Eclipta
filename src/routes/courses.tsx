@@ -253,7 +253,7 @@ function CoursesHub() {
                   <button
                     onClick={() => setQuery("")}
                     aria-label="Clear search"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground active:scale-[0.97]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -284,7 +284,7 @@ function CoursesHub() {
                   subject ? (
                     <button
                       onClick={() => setSubject(null)}
-                      className="inline-flex items-center gap-1 text-[11px] font-mono tracking-widest uppercase text-muted-foreground hover:text-foreground"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono tracking-widest uppercase text-muted-foreground hover:text-foreground active:scale-[0.97]"
                     >
                       <X className="w-3 h-3" /> Clear
                     </button>
@@ -359,7 +359,7 @@ function CoursesHub() {
                           key={s}
                           onClick={() => setSubject(s)}
                           disabled={n === 0}
-                          className="group inline-flex items-center gap-2 px-4 py-2.5 glass-panel text-sm transition-colors hover:border-primary/50 disabled:opacity-40 disabled:cursor-default"
+                          className="group inline-flex items-center gap-2 px-4 py-2.5 glass-panel text-sm transition-colors hover:border-primary/50 disabled:opacity-40 disabled:cursor-default active:scale-[0.97]"
                         >
                           <span className="font-medium">{s}</span>
                           <span className="font-mono text-[10px] text-muted-foreground tabular-nums">

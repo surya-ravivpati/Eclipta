@@ -172,7 +172,7 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors active:scale-[0.97]"
         aria-keyshortcuts="Meta+K Control+K"
       >
         <Search className="w-3.5 h-3.5" aria-hidden="true" />
@@ -229,7 +229,7 @@ export function GlobalSearch() {
             type="button"
             onClick={close}
             aria-label={t("a11y.closeDialog")}
-            className="p-1 text-muted-foreground hover:text-foreground"
+            className="p-1 text-muted-foreground hover:text-foreground active:scale-[0.97]"
           >
             <X className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -251,7 +251,7 @@ export function GlobalSearch() {
                 aria-pressed={active}
                 onClick={() => search.toggleKind(kind)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] transition-colors",
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] transition-colors active:scale-[0.97]",
                   active
                     ? "border-primary/60 bg-primary/15 text-foreground"
                     : "border-border text-muted-foreground hover:text-foreground",
@@ -428,7 +428,7 @@ function Suggestions({
           <button
             type="button"
             onClick={action.onClick}
-            className="text-[10px] text-muted-foreground hover:text-foreground underline"
+            className="text-[10px] text-muted-foreground hover:text-foreground underline active:scale-[0.97]"
           >
             {action.label}
           </button>
@@ -440,7 +440,7 @@ function Suggestions({
             <button
               type="button"
               onClick={() => onPick(q)}
-              className="px-2.5 py-1 rounded-full border border-border text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              className="px-2.5 py-1 rounded-full border border-border text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors active:scale-[0.97]"
             >
               {q}
             </button>

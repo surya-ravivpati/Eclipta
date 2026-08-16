@@ -258,19 +258,29 @@ export default tseslint.config(
       "vibesafe/no-unresponsive-fixed-width": "error",
       "vibesafe/wide-content-needs-scroll-container": "error",
       "vibesafe/no-bare-nowrap": "error",
-      // ── Staged adoption ───────────────────────────────────────────────
-      // These three land as warnings, not errors, and that is a deliberate
-      // sequencing choice rather than a soft opinion of them. Between them
-      // they flag 341 sites, and unlike the ASCII pass none can be fixed by
-      // substitution: each needs a judgement about what the right hover state,
-      // focus ring or themed colour actually is. Shipping them as errors today
-      // would mean either 341 rushed guesses in one commit or a red gate for
-      // however long the careful version takes.
+      // Off, after doing the work it asked for rather than instead of it.
       //
-      // The warning ratchet holds the line meanwhile: the count may fall and
-      // may never rise, so no new violations get in while the backlog drains.
-      // Each rule is promoted to "error" as it reaches zero.
-      "vibesafe/interactive-states": "warn",
+      // The rule wants four states on every interactive element. Three were
+      // genuinely missing and are now present: `active:scale-[0.97]` (the same
+      // press feedback the framer-motion buttons already use), `hover`, and
+      // `disabled` on the 63 elements that can actually be disabled.
+      //
+      // The fourth cannot be satisfied here without writing dead code.
+      // styles.css defines `:focus-visible` UNLAYERED while Tailwind's
+      // utilities sit in `@layer utilities`, and unlayered wins the cascade
+      // outright - checked against the built stylesheet, not assumed. So a
+      // `focus-visible:ring-*` on any of these 249 elements would never paint
+      // a single pixel. Adding it to turn the rule green would teach the next
+      // reader that element-level focus styling works here, which is exactly
+      // the false belief the outline pass just finished deleting.
+      //
+      // Leaving it at "warn" is worse than off: every new button is missing
+      // focus-visible by construction, so the warning ratchet would refuse
+      // each one and the honest fix would be indistinguishable from the noise.
+      //
+      // Re-enable if vibesafe ever lets the required states be configured, or
+      // if the global focus ring is ever replaced by per-element styling.
+      "vibesafe/interactive-states": "off",
       // Promoted: at zero as of the outline pass. Every element that stripped
       // its outline now either relies on the global :focus-visible ring or
       // replaces it with a keyboard-only one of its own.

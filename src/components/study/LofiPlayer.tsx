@@ -45,7 +45,7 @@ export function LofiPlayer() {
         onPause={() => setPlaying(false)}
       />
       <button
-        className="sr-lofi-toggle"
+        className="sr-lofi-toggle active:scale-[0.97] hover:opacity-90"
         onClick={toggle}
         aria-label={playing ? "Pause lofi" : "Play lofi"}
         title={missing ? "Add public/lofi.mp3 to enable music" : "Lofi beats"}
@@ -55,7 +55,7 @@ export function LofiPlayer() {
         <span className="sr-lofi-label">{playing ? "lofi | playing" : "lofi beats"}</span>
       </button>
       <button
-        className="sr-lofi-mute"
+        className="sr-lofi-mute active:scale-[0.97] hover:opacity-90"
         onClick={() => setMuted((m) => !m)}
         aria-label={muted ? "Unmute" : "Mute"}
       >

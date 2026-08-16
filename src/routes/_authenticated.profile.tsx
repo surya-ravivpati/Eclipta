@@ -252,7 +252,7 @@ function ProfilePage() {
             </div>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 text-xs font-bold tracking-widest border border-border hover:border-neon-pink text-muted-foreground hover:text-neon-pink transition-colors inline-flex items-center gap-2"
+              className="px-4 py-2 text-xs font-bold tracking-widest border border-border hover:border-neon-pink text-muted-foreground hover:text-neon-pink transition-colors inline-flex items-center gap-2 active:scale-[0.97]"
             >
               <LogOut className="w-3.5 h-3.5" />
               SIGN OUT
@@ -711,7 +711,7 @@ function SettingsPanel({
                 availability === "invalid" ||
                 availability === "checking"
               }
-              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
+              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
             >
               {saving ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -762,7 +762,7 @@ function SettingsPanel({
                 key={id}
                 onClick={() => setTheme(id)}
                 className={cn(
-                  "flex-1 px-3 py-2 text-xs font-bold tracking-widest border transition-colors inline-flex items-center justify-center gap-2",
+                  "flex-1 px-3 py-2 text-xs font-bold tracking-widest border transition-colors inline-flex items-center justify-center gap-2 active:scale-[0.97]",
                   theme === id
                     ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
                     : "border-border text-muted-foreground hover:border-neon-purple/40",
@@ -796,7 +796,7 @@ function SettingsPanel({
             <button
               onClick={saveBio}
               disabled={savingBio || bio.trim() === (profile?.bio || "").trim()}
-              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
+              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
             >
               {savingBio ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -845,7 +845,7 @@ function SettingsPanel({
                     key={opt}
                     onClick={() => setPace(opt)}
                     className={cn(
-                      "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
+                      "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors active:scale-[0.97]",
                       pace === opt
                         ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan"
                         : "border-border text-muted-foreground hover:border-neon-cyan/40",
@@ -887,7 +887,7 @@ function SettingsPanel({
                     key={opt}
                     onClick={() => setStyle(opt)}
                     className={cn(
-                      "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors",
+                      "flex-1 px-2 py-1.5 text-[10px] font-bold tracking-widest border transition-colors active:scale-[0.97]",
                       style === opt
                         ? "border-neon-pink bg-neon-pink/10 text-neon-pink"
                         : "border-border text-muted-foreground hover:border-neon-pink/40",
@@ -937,7 +937,7 @@ function SettingsPanel({
                 <button
                   onClick={clearAutoNotes}
                   disabled={clearingAuto}
-                  className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-neon-pink disabled:opacity-40 transition-colors inline-flex items-center gap-1.5"
+                  className="text-[10px] font-bold tracking-widest text-muted-foreground hover:text-neon-pink disabled:opacity-40 transition-colors inline-flex items-center gap-1.5 active:scale-[0.97]"
                 >
                   {clearingAuto ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -973,7 +973,7 @@ function SettingsPanel({
                   style === profile?.preferred_style &&
                   lunaNotes.trim() === (profile?.luna_notes || "").trim())
               }
-              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2"
+              className="px-4 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
             >
               {savingPrefs ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -998,7 +998,7 @@ function SettingsPanel({
           <button
             onClick={deleteAccount}
             className={cn(
-              "px-4 py-2 text-xs font-bold tracking-widest border transition-colors",
+              "px-4 py-2 text-xs font-bold tracking-widest border transition-colors active:scale-[0.97]",
               confirmDelete
                 ? "border-destructive bg-destructive text-destructive-foreground"
                 : "border-destructive/40 text-destructive hover:bg-destructive/10",
@@ -1204,7 +1204,7 @@ function PrefInfo({
         <button
           type="button"
           aria-label={`More info about ${title}`}
-          className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-border text-muted-foreground hover:text-neon-purple hover:border-neon-purple/60 transition-colors"
+          className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-border text-muted-foreground hover:text-neon-purple hover:border-neon-purple/60 transition-colors active:scale-[0.97]"
         >
           <Info className="w-2.5 h-2.5" />
         </button>

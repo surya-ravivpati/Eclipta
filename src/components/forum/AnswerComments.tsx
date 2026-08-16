@@ -162,7 +162,7 @@ export function AnswerComments({
                 {isAuthenticated && user?.id !== c.user_id && (
                   <button
                     onClick={() => setReporting(c.id)}
-                    className="text-muted-foreground hover:text-neon-pink inline-flex items-center gap-0.5"
+                    className="text-muted-foreground hover:text-neon-pink inline-flex items-center gap-0.5 active:scale-[0.97]"
                     title="Report comment"
                   >
                     <Flag className="w-2.5 h-2.5" />
@@ -171,7 +171,7 @@ export function AnswerComments({
                 {(user?.id === c.user_id || isModerator) && (
                   <button
                     onClick={() => remove(c.id)}
-                    className="text-muted-foreground hover:text-destructive inline-flex items-center gap-0.5"
+                    className="text-muted-foreground hover:text-destructive inline-flex items-center gap-0.5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete comment"
                   >
                     <Trash2 className="w-2.5 h-2.5" />
@@ -194,7 +194,7 @@ export function AnswerComments({
             <button
               type="submit"
               disabled={submitting || reply.trim().length < 2}
-              className="px-3 py-1 text-[10px] font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity"
+              className="px-3 py-1 text-[10px] font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-opacity active:scale-[0.97]"
             >
               POST
             </button>

@@ -110,7 +110,7 @@ export function SessionClock({
         </span>
         <div className="sr-clock-pattern">
           <button
-            className="sr-clock-pbtn"
+            className="sr-clock-pbtn active:scale-[0.97] hover:opacity-90"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-haspopup="menu"
@@ -124,13 +124,16 @@ export function SessionClock({
               {PRESETS.map((p) => (
                 <button
                   key={p.label}
-                  className="sr-clock-menu-item"
+                  className="sr-clock-menu-item active:scale-[0.97] hover:opacity-90"
                   onClick={() => apply(p.w, p.b)}
                 >
                   {p.label}
                 </button>
               ))}
-              <button className="sr-clock-menu-item" onClick={() => setCustomOpen((v) => !v)}>
+              <button
+                className="sr-clock-menu-item active:scale-[0.97] hover:opacity-90"
+                onClick={() => setCustomOpen((v) => !v)}
+              >
                 Custom...
               </button>
               {customOpen && (
@@ -156,7 +159,7 @@ export function SessionClock({
                     />
                   </label>
                   <button
-                    className="sr-clock-apply"
+                    className="sr-clock-apply active:scale-[0.97] hover:opacity-90"
                     onClick={() => {
                       const w = Math.max(1, Math.min(180, parseInt(customW, 10) || 0));
                       const b = Math.max(1, Math.min(60, parseInt(customB, 10) || 0));

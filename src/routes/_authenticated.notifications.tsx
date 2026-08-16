@@ -125,7 +125,7 @@ function Header({ unread, onMarkAllRead }: { unread: number; onMarkAllRead: () =
       {unread > 0 && (
         <button
           onClick={onMarkAllRead}
-          className="text-[11px] font-bold tracking-widest text-neon-purple hover:bg-neon-purple/10 border border-neon-purple/40 px-3 py-1.5 transition-colors inline-flex items-center gap-1.5"
+          className="text-[11px] font-bold tracking-widest text-neon-purple hover:bg-neon-purple/10 border border-neon-purple/40 px-3 py-1.5 transition-colors inline-flex items-center gap-1.5 active:scale-[0.97]"
         >
           <Check className="w-3 h-3" /> MARK ALL READ
         </button>
@@ -163,7 +163,7 @@ function FilterChips({
             key={f.value}
             onClick={() => setFilter(f.value)}
             className={cn(
-              "shrink-0 px-3 py-1.5 text-[11px] font-bold tracking-widest border transition-colors inline-flex items-center gap-2",
+              "shrink-0 px-3 py-1.5 text-[11px] font-bold tracking-widest border transition-colors inline-flex items-center gap-2 active:scale-[0.97]",
               active
                 ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
                 : "border-border text-muted-foreground hover:border-neon-purple/40 hover:text-foreground",
@@ -272,7 +272,7 @@ function NotificationRow({
           e.stopPropagation();
           onRemove();
         }}
-        className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity active:scale-[0.97]"
         aria-label="Dismiss"
         title="Dismiss"
       >
@@ -293,7 +293,7 @@ function NotificationRow({
             if (!notification.read) onRead();
             go(link);
           }}
-          className="block"
+          className="block active:scale-[0.97] hover:opacity-90"
         >
           {body}
         </a>

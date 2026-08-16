@@ -117,7 +117,7 @@ function ContactForm() {
         <button
           type="button"
           onClick={() => setSent(false)}
-          className="ab-link"
+          className="ab-link active:scale-[0.97] hover:opacity-90"
           style={{ borderRadius: 6 }}
         >
           Send another
@@ -222,7 +222,11 @@ function ContactForm() {
           By submitting, you agree we may reply to{" "}
           <span style={{ color: "var(--ab-dim)" }}>{email.trim() || "your email"}</span>.
         </p>
-        <button type="submit" disabled={submitting} className="ab-btn ab-btn--accent">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="ab-btn ab-btn--accent active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           {submitting ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -342,7 +346,7 @@ function FounderCard({
       </div>
       <h3 className="ab-person-name">{name}</h3>
       <p className="ab-person-role">{role}</p>
-      <a href={`mailto:${email}`} className="ab-person-mail">
+      <a href={`mailto:${email}`} className="ab-person-mail active:scale-[0.97] hover:opacity-90">
         {email}
       </a>
     </div>

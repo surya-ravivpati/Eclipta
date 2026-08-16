@@ -1100,7 +1100,7 @@ function BattleChat({
               showPanel
                 ? "border-neon-purple/60 text-neon-purple bg-neon-purple/10"
                 : "border-border/40 text-muted-foreground hover:border-border"
-            }`}
+            } active:scale-[0.97]`}
           >
             <MessageSquare className="w-3 h-3" />
           </button>
@@ -1113,7 +1113,7 @@ function BattleChat({
               muted
                 ? "border-neon-pink/60 text-neon-pink bg-neon-pink/10"
                 : "border-border/40 text-muted-foreground hover:border-border"
-            }`}
+            } active:scale-[0.97]`}
           >
             {muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
           </button>
@@ -1134,7 +1134,7 @@ function BattleChat({
                   key={phrase}
                   onClick={() => send(phrase)}
                   disabled={onCooldown}
-                  className="px-2 py-1 border border-border/40 hover:border-neon-purple/50 text-[10px] font-bold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-2 py-1 border border-border/40 hover:border-neon-purple/50 text-[10px] font-bold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
                 >
                   {phrase}
                 </button>
@@ -3995,7 +3995,7 @@ function BattleArena() {
           </motion.button>
           <button
             onClick={() => setShowPractice(true)}
-            className="btt-mono-text inline-flex items-center gap-2 px-6 py-4 font-bold text-[11px] tracking-widest text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors"
+            className="btt-mono-text inline-flex items-center gap-2 px-6 py-4 font-bold text-[11px] tracking-widest text-muted-foreground hover:text-foreground border border-border hover:border-foreground/30 transition-colors active:scale-[0.97]"
           >
             <Target className="w-4 h-4" />
             PRACTICE WEAK SPOTS
@@ -4242,7 +4242,7 @@ function BattleArena() {
           <div className="flex justify-end mb-2">
             <button
               onClick={() => setConfirmExit(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-foreground/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-foreground/15 text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-destructive/50 transition-colors active:scale-[0.97]"
               title="Leave the battle (counts as a loss)"
             >
               <X className="w-3 h-3" /> Forfeit
@@ -4708,7 +4708,7 @@ function BattleArena() {
           <div className="flex gap-2 justify-end mt-2">
             <button
               onClick={() => setConfirmExit(false)}
-              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md border border-border hover:border-foreground/30 transition-colors"
+              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md border border-border hover:border-foreground/30 transition-colors active:scale-[0.97]"
             >
               KEEP FIGHTING
             </button>
@@ -4717,7 +4717,7 @@ function BattleArena() {
                 setConfirmExit(false);
                 finishBattle(false);
               }}
-              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+              className="px-4 py-2 text-xs font-bold tracking-widest rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity active:scale-[0.97]"
             >
               FORFEIT (LOSS)
             </button>
@@ -4907,7 +4907,7 @@ function LeaderboardCard() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`btt-lb-tab ${tab === t ? "is-on" : ""}`}
+              className={`btt-lb-tab ${tab === t ? "is-on" : ""} active:scale-[0.97] hover:opacity-90`}
             >
               {t === "rating" ? "PvP Rating" : "XP"}
             </button>
@@ -5153,7 +5153,7 @@ function DailyChallengeCard() {
             claimed
               ? "bg-secondary/40 text-muted-foreground cursor-default"
               : "bg-neon-cyan text-background hover:bg-neon-cyan/90 disabled:opacity-60"
-          }`}
+          } active:scale-[0.97]`}
         >
           {claimed ? "✓ CLAIMED" : claiming ? "CLAIMING..." : "CLAIM +100 XP"}
         </button>
@@ -5205,14 +5205,14 @@ export function KnowledgeBattles() {
             <div className="flex items-center justify-end gap-2 mb-3">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="btt-ghost-btn btt-ghost-btn--cyan"
+                className="btt-ghost-btn btt-ghost-btn--cyan active:scale-[0.97] hover:opacity-90"
                 aria-label="Find player"
               >
                 <Users className="w-3 h-3" /> FIND PLAYER
               </button>
               <button
                 onClick={() => setHowOpen(true)}
-                className="btt-ghost-btn btt-ghost-btn--purple"
+                className="btt-ghost-btn btt-ghost-btn--purple active:scale-[0.97] hover:opacity-90"
                 aria-label="Battle info"
               >
                 <Info className="w-3 h-3" /> INFO

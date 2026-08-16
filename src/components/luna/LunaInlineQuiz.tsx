@@ -86,7 +86,7 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
               `I just took your ${topic} quiz and scored ${score}/${questions.length}. What should I work on next?`,
             )
           }
-          className="mt-2 text-[10px] font-bold tracking-widest text-neon-pink hover:text-neon-purple"
+          className="mt-2 text-[10px] font-bold tracking-widest text-neon-pink hover:text-neon-purple active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ASK LUNA WHAT'S NEXT -&gt;
         </button>
@@ -136,7 +136,7 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
               setIdx((i) => i + 1);
               setStartedAt(Date.now());
             }}
-            className="ml-2 text-neon-pink font-bold tracking-widest hover:text-neon-purple"
+            className="ml-2 text-neon-pink font-bold tracking-widest hover:text-neon-purple active:scale-[0.97]"
           >
             NEXT -&gt;
           </button>

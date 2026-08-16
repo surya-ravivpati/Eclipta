@@ -186,7 +186,7 @@ function AppShell() {
   return (
     <>
       {/* First tab stop on every page. */}
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" className="skip-link active:scale-[0.97] hover:opacity-90">
         {t("a11y.skipToContent")}
       </a>
 

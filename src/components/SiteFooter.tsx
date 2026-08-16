@@ -96,7 +96,7 @@ export function SiteFooter() {
           <div className="flex items-center gap-3">
             <a
               href="mailto:hello@eclipta.app"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
               aria-label="Contact"
             >
               <Mail className="w-4 h-4" />

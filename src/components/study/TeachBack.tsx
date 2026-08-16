@@ -73,7 +73,7 @@ export function TeachBackBar({ room, members }: { room: StudyRoom; members: Room
           <span className="sr-tb-off-note">Needs 2+ people in the room to run</span>
         ) : (
           <button
-            className={`sr-tb-toggle ${enabled ? "is-on" : ""}`}
+            className={`sr-tb-toggle ${enabled ? "is-on" : ""} active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
             onClick={() => toggle(!enabled)}
             disabled={busy}
             role="switch"
@@ -183,7 +183,7 @@ export function TeachBackCard({
               {REACTIONS.map((r) => (
                 <button
                   key={r.key}
-                  className={`sr-tb-react ${mine === r.key ? "is-mine" : ""}`}
+                  className={`sr-tb-react ${mine === r.key ? "is-mine" : ""} active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
                   onClick={() => react(r.key)}
                   title={r.label}
                   aria-label={`${r.label}${r.count > 0 ? ` (${r.count})` : ""}`}
@@ -201,7 +201,11 @@ export function TeachBackCard({
             (mySkipUsed ? (
               <span className="sr-tb-skip-spent">skip used</span>
             ) : (
-              <button className="sr-tb-skip" onClick={skip} disabled={skipping}>
+              <button
+                className="sr-tb-skip active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={skip}
+                disabled={skipping}
+              >
                 {skipping ? (
                   <Loader2 size={11} className="animate-spin" />
                 ) : (

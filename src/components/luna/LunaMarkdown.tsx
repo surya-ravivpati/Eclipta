@@ -97,7 +97,7 @@ const components: Components = {
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="text-neon-cyan hover:text-neon-pink underline"
+        className="text-neon-cyan hover:text-neon-pink underline active:scale-[0.97]"
       >
         {children}
       </a>

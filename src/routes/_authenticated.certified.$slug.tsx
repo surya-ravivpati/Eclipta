@@ -151,7 +151,7 @@ function CourseDetail() {
                 <button
                   onClick={enroll}
                   disabled={loading}
-                  className="px-6 py-3 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity neon-glow-purple flex items-center gap-2"
+                  className="px-6 py-3 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity neon-glow-purple flex items-center gap-2 active:scale-[0.97]"
                 >
                   {loading ? "LOADING..." : "ENROLL NOW"}
                 </button>

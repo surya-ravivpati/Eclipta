@@ -152,7 +152,10 @@ export function LunaFullSession() {
               <span>{durationLabel} session</span>
             </div>
           </div>
-          <button onClick={resetSession} className="luna-reset-btn">
+          <button
+            onClick={resetSession}
+            className="luna-reset-btn active:scale-[0.97] hover:opacity-90"
+          >
             <RotateCcw size={12} />
             New session
           </button>
@@ -217,7 +220,7 @@ export function LunaFullSession() {
                       type="button"
                       onClick={retryLast}
                       disabled={isStreaming}
-                      className="luna-retry-btn"
+                      className="luna-retry-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <RotateCcw size={11} /> Retry
                     </button>
@@ -247,7 +250,7 @@ export function LunaFullSession() {
               <button
                 type="button"
                 onClick={voice.clearVoiceError}
-                className="luna-voice-error-close"
+                className="luna-voice-error-close active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ✕
               </button>
@@ -262,7 +265,7 @@ export function LunaFullSession() {
               <button
                 type="button"
                 onClick={() => setPendingImage(null)}
-                className="luna-screen-remove"
+                className="luna-screen-remove active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Remove"
               >
                 <X size={13} />
@@ -282,7 +285,7 @@ export function LunaFullSession() {
               onClick={handleScreenShare}
               disabled={capturing || isStreaming}
               title="Share your screen with Luna"
-              className="luna-act-btn"
+              className="luna-act-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {capturing ? <Loader2 size={16} className="animate-spin" /> : <Monitor size={16} />}
             </button>
@@ -292,7 +295,7 @@ export function LunaFullSession() {
               onClick={() => fileInputRef.current?.click()}
               disabled={isStreaming}
               title="Upload an image"
-              className="luna-act-btn"
+              className="luna-act-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ImagePlus size={16} />
             </button>
@@ -342,7 +345,7 @@ export function LunaFullSession() {
             <button
               type="submit"
               disabled={(!input.trim() && !pendingImage) || isStreaming}
-              className="luna-send-btn"
+              className="luna-send-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={16} />
             </button>

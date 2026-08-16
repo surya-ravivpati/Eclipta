@@ -241,7 +241,7 @@ export function Navbar() {
               </Link>
               <button
                 onClick={handleLogout}
-                className="p-2 text-muted-foreground hover:text-neon-pink transition-colors"
+                className="p-2 text-muted-foreground hover:text-neon-pink transition-colors active:scale-[0.97]"
                 title={t("nav.signOut")}
                 aria-label={t("nav.signOut")}
               >
@@ -266,7 +266,7 @@ export function Navbar() {
           )}
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="lg:hidden p-2 text-foreground hover:text-muted-foreground transition-colors"
+            className="lg:hidden p-2 text-foreground hover:text-muted-foreground transition-colors active:scale-[0.97]"
             aria-label={mobileOpen ? t("a11y.closeMenu") : t("a11y.openMenu")}
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"

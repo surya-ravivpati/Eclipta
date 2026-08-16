@@ -132,7 +132,7 @@ export function GoalPin({
           />
         ) : room.goal_text ? (
           <button
-            className="sr-pin-goaltext"
+            className="sr-pin-goaltext active:scale-[0.97] hover:opacity-90"
             onClick={() => setEditingGoal(true)}
             title="Click to edit the goal"
           >
@@ -142,7 +142,10 @@ export function GoalPin({
             {room.goal_text}
           </button>
         ) : (
-          <button className="sr-pin-goalempty" onClick={() => setEditingGoal(true)}>
+          <button
+            className="sr-pin-goalempty active:scale-[0.97] hover:opacity-90"
+            onClick={() => setEditingGoal(true)}
+          >
             Set a goal for this session
           </button>
         )}
@@ -156,14 +159,14 @@ export function GoalPin({
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="sr-pin-chip-link"
+              className="sr-pin-chip-link active:scale-[0.97] hover:opacity-90"
               title={l.url}
             >
               <ExternalLink size={11} />
               <span className="sr-pin-chip-lbl">{l.label || hostOf(l.url)}</span>
             </a>
             <button
-              className="sr-pin-chip-x"
+              className="sr-pin-chip-x active:scale-[0.97] hover:opacity-90"
               onClick={() => removeLink(i)}
               aria-label="Remove link"
             >
@@ -212,7 +215,7 @@ export function GoalPin({
                 }}
               />
               <button
-                className="sr-pin-addok"
+                className="sr-pin-addok active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={addLink}
                 disabled={savingLink}
                 aria-label="Add link"
@@ -220,7 +223,7 @@ export function GoalPin({
                 {savingLink ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
               </button>
               <button
-                className="sr-pin-addcancel"
+                className="sr-pin-addcancel active:scale-[0.97] hover:opacity-90"
                 onClick={() => {
                   setAdding(false);
                   setLinkErr(null);
@@ -233,7 +236,10 @@ export function GoalPin({
               </button>
             </span>
           ) : (
-            <button className="sr-pin-slot" onClick={() => setAdding(true)}>
+            <button
+              className="sr-pin-slot active:scale-[0.97] hover:opacity-90"
+              onClick={() => setAdding(true)}
+            >
               <Plus size={12} /> Add a link
               <span className="sr-pin-slot-count">
                 {links.length}/{MAX_LINKS}

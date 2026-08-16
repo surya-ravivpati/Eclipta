@@ -68,7 +68,7 @@ export function TerritoryGridView({
                   : `${owner === "player" ? "Your" : "Opponent's"} tile${i === CENTER_INDEX ? ", center" : ""}`
               }
               className={cn(
-                "w-9 h-9 sm:w-11 sm:h-11 rounded-md border flex items-center justify-center transition-colors relative",
+                "w-9 h-9 sm:w-11 sm:h-11 rounded-md border flex items-center justify-center transition-colors relative active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed",
                 owner === "player" &&
                   "bg-[color:var(--btt-you)]/25 border-[color:var(--btt-you)]/60",
                 owner === "opponent" &&

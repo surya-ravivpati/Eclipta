@@ -34,7 +34,7 @@ export function LunaActions({ actions, onSendBack }: Props) {
               href={a.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-neon-cyan/40 bg-neon-cyan/5 text-xs text-neon-cyan hover:bg-neon-cyan/15 transition-colors w-fit"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-neon-cyan/40 bg-neon-cyan/5 text-xs text-neon-cyan hover:bg-neon-cyan/15 transition-colors w-fit active:scale-[0.97]"
             >
               <ExternalLink className="w-3 h-3" />
               {a.title}
@@ -53,7 +53,7 @@ export function LunaActions({ actions, onSendBack }: Props) {
                 {openQuiz !== key && (
                   <button
                     onClick={() => setOpenQuiz(key)}
-                    className="text-[10px] font-bold tracking-widest text-neon-pink hover:text-neon-purple"
+                    className="text-[10px] font-bold tracking-widest text-neon-pink hover:text-neon-purple active:scale-[0.97]"
                   >
                     START -&gt;
                   </button>

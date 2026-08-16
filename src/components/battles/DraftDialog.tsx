@@ -190,7 +190,7 @@ export function DraftDialog({ onComplete }: { onComplete: (team: Ecliptar[]) => 
                         disabled={i === 0}
                         onClick={() => move(i, -1)}
                         aria-label={`Move ${e.name} earlier`}
-                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 active:scale-[0.97]"
                       >
                         <ArrowUp className="w-3 h-3" />
                       </button>
@@ -199,7 +199,7 @@ export function DraftDialog({ onComplete }: { onComplete: (team: Ecliptar[]) => 
                         disabled={i === drafted.length - 1}
                         onClick={() => move(i, 1)}
                         aria-label={`Move ${e.name} later`}
-                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 active:scale-[0.97]"
                       >
                         <ArrowDown className="w-3 h-3" />
                       </button>

@@ -335,7 +335,7 @@ function AdminForumPage() {
                 tab === t
                   ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
                   : "border-border text-muted-foreground hover:border-neon-purple/40"
-              }`}
+              } active:scale-[0.97]`}
             >
               {t === "queue"
                 ? "AUTO-FLAGGED QUEUE"
@@ -356,7 +356,7 @@ function AdminForumPage() {
                   filter === f
                     ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan"
                     : "border-border text-muted-foreground hover:border-neon-cyan/40"
-                }`}
+                } active:scale-[0.97]`}
               >
                 {f.toUpperCase()}
               </button>
@@ -442,7 +442,7 @@ function AdminForumPage() {
                         onClick={() =>
                           setStatus(q.target_type, q.target_id, "visible", "Mod restore")
                         }
-                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors inline-flex items-center gap-1"
+                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                       >
                         <RotateCcw className="w-3 h-3" />
                         RESTORE
@@ -451,7 +451,7 @@ function AdminForumPage() {
                     {q.moderation_status !== "hidden" && (
                       <button
                         onClick={() => setStatus(q.target_type, q.target_id, "hidden", "Mod hide")}
-                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-pink/40 text-neon-pink hover:bg-neon-pink/10 transition-colors inline-flex items-center gap-1"
+                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-pink/40 text-neon-pink hover:bg-neon-pink/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                       >
                         <EyeOff className="w-3 h-3" />
                         HIDE
@@ -462,7 +462,7 @@ function AdminForumPage() {
                         onClick={() =>
                           setStatus(q.target_type, q.target_id, "removed", "Mod remove")
                         }
-                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1"
+                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                       >
                         <Trash2 className="w-3 h-3" />
                         REMOVE
@@ -556,7 +556,7 @@ function AdminForumPage() {
                           `Mod hide via report: ${r.reason.slice(0, 80)}`,
                         )
                       }
-                      className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-pink/40 text-neon-pink hover:bg-neon-pink/10 transition-colors inline-flex items-center gap-1"
+                      className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-pink/40 text-neon-pink hover:bg-neon-pink/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                     >
                       <EyeOff className="w-3 h-3" />
                       HIDE
@@ -570,7 +570,7 @@ function AdminForumPage() {
                           `Mod remove via report: ${r.reason.slice(0, 80)}`,
                         )
                       }
-                      className="px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1"
+                      className="px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                     >
                       <Trash2 className="w-3 h-3" />
                       REMOVE
@@ -578,7 +578,7 @@ function AdminForumPage() {
                     {r.status === "pending" && (
                       <button
                         onClick={() => dismissReport(r.id)}
-                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                       >
                         <X className="w-3 h-3" />
                         DISMISS REPORT
@@ -586,7 +586,7 @@ function AdminForumPage() {
                     )}
                     <button
                       onClick={() => deleteTarget(r)}
-                      className="ml-auto px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/60 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1"
+                      className="ml-auto px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/60 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
                     >
                       <Trash2 className="w-3 h-3" />
                       HARD DELETE

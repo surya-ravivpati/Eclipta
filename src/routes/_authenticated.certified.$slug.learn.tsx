@@ -208,7 +208,7 @@ function CoursePlayer() {
       {/* Mobile sidebar trigger */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed bottom-4 right-4 z-30 px-4 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest shadow-lg flex items-center gap-2"
+        className="lg:hidden fixed bottom-4 right-4 z-30 px-4 py-3 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest shadow-lg flex items-center gap-2 active:scale-[0.97] hover:opacity-90"
       >
         <Menu className="w-4 h-4" /> SYLLABUS
       </button>
@@ -221,7 +221,7 @@ function CoursePlayer() {
           {sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden absolute top-4 right-4 p-2 text-foreground"
+              className="lg:hidden absolute top-4 right-4 p-2 text-foreground active:scale-[0.97] hover:opacity-90"
             >
               <X className="w-5 h-5" />
             </button>
@@ -280,7 +280,7 @@ function CoursePlayer() {
                               active
                                 ? "bg-neon-purple/15 text-neon-purple border-l-2 border-neon-purple"
                                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border-l-2 border-transparent"
-                            }`}
+                            } active:scale-[0.97]`}
                           >
                             {done ? (
                               <Check className="w-3 h-3 text-neon-cyan shrink-0" />
@@ -374,7 +374,7 @@ function CoursePlayer() {
               <button
                 onClick={() => goTo(currentIndex - 1)}
                 disabled={currentIndex === 0}
-                className="px-5 py-2.5 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:border-neon-purple/40 hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:border-border inline-flex items-center justify-center gap-2"
+                className="px-5 py-2.5 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:border-neon-purple/40 hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:border-border inline-flex items-center justify-center gap-2 active:scale-[0.97]"
               >
                 <ArrowLeft className="w-3 h-3" /> PREVIOUS
               </button>
@@ -383,7 +383,7 @@ function CoursePlayer() {
                 {!isDone && (
                   <button
                     onClick={markComplete}
-                    className="px-5 py-2.5 text-xs font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors inline-flex items-center justify-center gap-2"
+                    className="px-5 py-2.5 text-xs font-bold tracking-widest border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors inline-flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Check className="w-3 h-3" /> MARK COMPLETE
                   </button>
@@ -391,7 +391,7 @@ function CoursePlayer() {
                 <button
                   onClick={next}
                   disabled={currentIndex === totalLessons - 1 && isDone}
-                  className="px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center justify-center gap-2"
+                  className="px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center justify-center gap-2 active:scale-[0.97]"
                 >
                   {currentIndex === totalLessons - 1
                     ? isDone

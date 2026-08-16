@@ -78,7 +78,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       {/* Google */}
       <button
         onClick={handleGoogle}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground"
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/60 transition-colors text-sm font-medium text-foreground active:scale-[0.97]"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path
@@ -134,7 +134,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -156,7 +156,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-lg bg-neon-purple text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="w-full py-3 rounded-lg bg-neon-purple text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40 active:scale-[0.97]"
         >
           {loading ? "Loading..." : mode === "login" ? "Sign In" : "Create Account"}
         </button>

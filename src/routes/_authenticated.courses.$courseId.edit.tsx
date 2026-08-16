@@ -292,7 +292,7 @@ function CourseEditor() {
                   course.status === "published"
                     ? "border border-border text-muted-foreground hover:border-foreground"
                     : "bg-neon-purple text-primary-foreground hover:opacity-90 neon-glow-purple"
-                }`}
+                } active:scale-[0.97]`}
               >
                 {course.status === "published" ? (
                   <>
@@ -316,7 +316,7 @@ function CourseEditor() {
                 </h3>
                 <button
                   onClick={addModule}
-                  className="text-neon-purple hover:text-neon-pink transition-colors"
+                  className="text-neon-purple hover:text-neon-pink transition-colors active:scale-[0.97]"
                   title="Add module"
                 >
                   <Plus className="w-4 h-4" />
@@ -331,7 +331,7 @@ function CourseEditor() {
                       activeModuleId === m.id
                         ? "bg-neon-purple/15 text-neon-purple border-l-2 border-neon-purple"
                         : "text-muted-foreground hover:bg-secondary/40 border-l-2 border-transparent"
-                    }`}
+                    } active:scale-[0.97]`}
                   >
                     <span className="font-mono text-[10px] mt-0.5">
                       {String(i + 1).padStart(2, "0")}
@@ -374,7 +374,7 @@ function CourseEditor() {
                           />
                           <button
                             onClick={() => deleteModule(mod.id)}
-                            className="px-3 py-2 border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
+                            className="px-3 py-2 border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors active:scale-[0.97]"
                             title="Delete module"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -441,7 +441,7 @@ function CourseEditor() {
                   </p>
                   <button
                     onClick={addModule}
-                    className="px-4 py-2 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity inline-flex items-center gap-2"
+                    className="px-4 py-2 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
                   >
                     <Plus className="w-3.5 h-3.5" /> ADD MODULE
                   </button>
@@ -467,7 +467,7 @@ function BlockButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center justify-center gap-2 py-3 border border-border hover:border-neon-purple/60 hover:text-neon-purple text-muted-foreground transition-colors text-xs font-bold tracking-widest"
+      className="flex items-center justify-center gap-2 py-3 border border-border hover:border-neon-purple/60 hover:text-neon-purple text-muted-foreground transition-colors text-xs font-bold tracking-widest active:scale-[0.97]"
     >
       {icon}
       {label}
@@ -498,7 +498,7 @@ function BlockEditor({
         </span>
         <button
           onClick={onDelete}
-          className="opacity-40 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-1 transition-all"
+          className="opacity-40 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-1 transition-all active:scale-[0.97]"
           title="Delete block"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -624,7 +624,7 @@ function ImageBlockEditor({
           />
           <button
             onClick={() => onChange({ ...data, url: "" })}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-bold tracking-widest bg-background/80 border border-border hover:border-destructive hover:text-destructive transition-colors"
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-bold tracking-widest bg-background/80 border border-border hover:border-destructive hover:text-destructive transition-colors active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             REPLACE
           </button>
@@ -703,7 +703,7 @@ function QuizBlockEditor({
                 correctIndex === i
                   ? "border-neon-cyan bg-neon-cyan/20"
                   : "border-border hover:border-neon-cyan/40"
-              }`}
+              } active:scale-[0.97]`}
               title={correctIndex === i ? "Correct answer" : "Mark as correct"}
             >
               {correctIndex === i && <Check className="w-3 h-3 text-neon-cyan" />}

@@ -171,7 +171,7 @@ export function LunaChatPanel({
                   voice.stopSpeaking();
                   onClose();
                 }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -226,7 +226,7 @@ export function LunaChatPanel({
                         type="button"
                         onClick={retryLast}
                         disabled={isStreaming}
-                        className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink transition-colors disabled:opacity-50"
+                        className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-neon-purple hover:text-neon-pink transition-colors disabled:opacity-50 active:scale-[0.97]"
                       >
                         <RotateCcw className="w-3 h-3" /> RETRY
                       </button>
@@ -251,7 +251,7 @@ export function LunaChatPanel({
                 <button
                   type="button"
                   onClick={voice.clearVoiceError}
-                  className="shrink-0 opacity-70 hover:opacity-100"
+                  className="shrink-0 opacity-70 hover:opacity-100 active:scale-[0.97]"
                 >
                   ✕
                 </button>
@@ -270,7 +270,7 @@ export function LunaChatPanel({
                 <button
                   type="button"
                   onClick={() => setPendingImage(null)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Remove screen attachment"
                 >
                   <X className="w-3 h-3" />
@@ -289,7 +289,7 @@ export function LunaChatPanel({
                 onClick={handleScreenShare}
                 disabled={capturing || isStreaming}
                 title="Share your screen with Luna"
-                className="p-2 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-sm"
+                className="p-2 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-sm active:scale-[0.97]"
               >
                 {capturing ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -302,7 +302,7 @@ export function LunaChatPanel({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isStreaming}
                 title="Upload an image"
-                className="p-2 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-sm"
+                className="p-2 border border-input bg-secondary/30 hover:border-neon-cyan/50 hover:text-neon-cyan transition-colors disabled:opacity-30 rounded-sm active:scale-[0.97]"
               >
                 <ImagePlus className="w-3.5 h-3.5" />
               </button>
@@ -322,7 +322,7 @@ export function LunaChatPanel({
                     }
                     disabled={isStreaming}
                     title={voice.listening ? "Stop listening" : "Speak to Luna"}
-                    className={`p-2 border border-input transition-colors disabled:opacity-30 rounded-sm ${voice.listening ? "bg-neon-pink/20 border-neon-pink text-neon-pink" : "bg-secondary/30 hover:border-neon-pink/50 hover:text-neon-pink"}`}
+                    className={`p-2 border border-input transition-colors disabled:opacity-30 rounded-sm ${voice.listening ? "bg-neon-pink/20 border-neon-pink text-neon-pink" : "bg-secondary/30 hover:border-neon-pink/50 hover:text-neon-pink"} active:scale-[0.97]`}
                   >
                     {voice.listening ? (
                       <MicOff className="w-3.5 h-3.5" />
@@ -334,7 +334,7 @@ export function LunaChatPanel({
                     type="button"
                     onClick={() => voice.setSpeakEnabled((v: boolean) => !v)}
                     title={voice.speakEnabled ? "Mute Luna's voice" : "Hear Luna's replies"}
-                    className={`p-2 border border-input transition-colors rounded-sm ${voice.speakEnabled ? "bg-neon-purple/20 border-neon-purple text-neon-purple" : "bg-secondary/30 hover:border-neon-purple/50 hover:text-neon-purple"}`}
+                    className={`p-2 border border-input transition-colors rounded-sm ${voice.speakEnabled ? "bg-neon-purple/20 border-neon-purple text-neon-purple" : "bg-secondary/30 hover:border-neon-purple/50 hover:text-neon-purple"} active:scale-[0.97]`}
                   >
                     {voice.speakEnabled ? (
                       <Volume2 className="w-3.5 h-3.5" />
@@ -353,7 +353,7 @@ export function LunaChatPanel({
               <button
                 type="submit"
                 disabled={(!input.trim() && !pendingImage) || isStreaming}
-                className="p-2 bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 rounded-sm"
+                className="p-2 bg-neon-purple text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-30 rounded-sm active:scale-[0.97]"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>

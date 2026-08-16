@@ -182,7 +182,7 @@ export function UserSearchDialog({
                 <button
                   onClick={() => challenge(r)}
                   disabled={busyId === r.user_id}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-neon-pink border border-neon-pink/50 bg-neon-pink/10 hover:bg-neon-pink/20 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-neon-pink border border-neon-pink/50 bg-neon-pink/10 hover:bg-neon-pink/20 transition-colors disabled:opacity-50 active:scale-[0.97]"
                 >
                   {busyId === r.user_id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />

@@ -272,7 +272,7 @@ function StudyTimer() {
           }
         }}
         aria-label={startedAt === null ? t("dashboard.startTimer") : t("dashboard.pauseTimer")}
-        className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground"
+        className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground active:scale-[0.97]"
       >
         {startedAt === null ? (
           <Play className="w-3 h-3" aria-hidden="true" />

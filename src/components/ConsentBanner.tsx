@@ -58,14 +58,14 @@ export function ConsentBanner() {
           <button
             type="button"
             onClick={() => decide("accepted")}
-            className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold"
+            className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-[0.97] hover:opacity-90"
           >
             {t("consent.accept")}
           </button>
           <button
             type="button"
             onClick={() => decide("essential-only")}
-            className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground text-sm font-bold"
+            className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground text-sm font-bold active:scale-[0.97] hover:opacity-90"
           >
             {t("consent.essentialOnly")}
           </button>

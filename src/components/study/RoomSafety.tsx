@@ -22,7 +22,7 @@ export function RegenerateCodeButton({ roomId }: { roomId: string }) {
   };
   return (
     <button
-      className="sr-btn"
+      className="sr-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
       style={{ marginTop: 8, fontSize: 11, padding: "6px 12px" }}
       onClick={run}
       disabled={busy}
@@ -56,7 +56,7 @@ export function RemoveMemberButton({
   if (!confirming) {
     return (
       <button
-        className="sr-host-remove"
+        className="sr-host-remove active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => setConfirming(true)}
         aria-label={`Remove ${name} from the room`}
         title="Remove from room"
@@ -68,7 +68,7 @@ export function RemoveMemberButton({
   return (
     <span className="sr-host-confirm">
       <button
-        className="sr-host-confirm-yes"
+        className="sr-host-confirm-yes active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={run}
         disabled={busy}
         aria-label={`Confirm removing ${name}`}
@@ -76,7 +76,7 @@ export function RemoveMemberButton({
         {busy ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Remove
       </button>
       <button
-        className="sr-host-confirm-no"
+        className="sr-host-confirm-no active:scale-[0.97] hover:opacity-90"
         onClick={() => setConfirming(false)}
         aria-label="Cancel removal"
       >
@@ -132,7 +132,7 @@ export function MessageMenu({
   return (
     <div className="sr-msgmenu" ref={ref}>
       <button
-        className="sr-msgmenu-btn"
+        className="sr-msgmenu-btn active:scale-[0.97] hover:opacity-90"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -143,7 +143,7 @@ export function MessageMenu({
       {open && (
         <div className="sr-msgmenu-pop" role="menu">
           <button
-            className="sr-msgmenu-item"
+            className="sr-msgmenu-item active:scale-[0.97] hover:opacity-90"
             role="menuitem"
             onClick={() => {
               setOpen(false);
@@ -154,7 +154,7 @@ export function MessageMenu({
           </button>
           {canBlock && (
             <button
-              className="sr-msgmenu-item"
+              className="sr-msgmenu-item active:scale-[0.97] hover:opacity-90"
               role="menuitem"
               onClick={() => {
                 setOpen(false);
@@ -221,7 +221,12 @@ function ReportDialog({
         aria-modal="true"
         aria-label="Report message"
       >
-        <button className="sr-back" onClick={onClose} style={{ float: "right" }} aria-label="Close">
+        <button
+          className="sr-back active:scale-[0.97] hover:opacity-90"
+          onClick={onClose}
+          style={{ float: "right" }}
+          aria-label="Close"
+        >
           <X size={16} />
         </button>
         <h3>Report this message</h3>
@@ -244,10 +249,17 @@ function ReportDialog({
           style={{ resize: "none" }}
         />
         <div className="sr-modal-actions">
-          <button className="sr-btn" onClick={onClose}>
+          <button
+            className="sr-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button className="sr-btn sr-btn--solid" onClick={submit} disabled={busy}>
+          <button
+            className="sr-btn sr-btn--solid active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={submit}
+            disabled={busy}
+          >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <Flag size={13} />} Submit
             report
           </button>

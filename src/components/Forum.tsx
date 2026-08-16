@@ -102,7 +102,7 @@ function ThreadCard({
           <div className="flex flex-col items-center gap-1 pt-1">
             <button
               onClick={(e) => handleVote(e, 1)}
-              className={`p-1 transition-colors ${userVote === 1 ? "text-neon-purple" : "text-muted-foreground hover:text-foreground"}`}
+              className={`p-1 transition-colors ${userVote === 1 ? "text-neon-purple" : "text-muted-foreground hover:text-foreground"} active:scale-[0.97]`}
               aria-label="Upvote"
             >
               <ChevronUp className="w-5 h-5" />
@@ -114,7 +114,7 @@ function ThreadCard({
             </span>
             <button
               onClick={(e) => handleVote(e, -1)}
-              className={`p-1 transition-colors ${userVote === -1 ? "text-neon-pink" : "text-muted-foreground hover:text-foreground"}`}
+              className={`p-1 transition-colors ${userVote === -1 ? "text-neon-pink" : "text-muted-foreground hover:text-foreground"} active:scale-[0.97]`}
               aria-label="Downvote"
             >
               <ChevronDown className="w-5 h-5" />
@@ -176,7 +176,7 @@ function ThreadCard({
               {canDelete && (
                 <button
                   onClick={handleDelete}
-                  className="inline-flex items-center gap-1 hover:text-destructive transition-colors ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-destructive transition-colors ml-auto active:scale-[0.97]"
                   aria-label="Delete thread"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -317,7 +317,10 @@ function NewThreadDialog({
       <div className="glass-panel w-full max-w-2xl p-6 my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display font-bold text-xl tracking-tight">Start a thread</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground active:scale-[0.97]"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -387,14 +390,14 @@ function NewThreadDialog({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors"
+              className="px-4 py-2 text-xs font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               CANCEL
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center gap-2"
+              className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-purple text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
             >
               {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
               POST THREAD
@@ -610,7 +613,7 @@ export function Forum({
           {isAuthenticated ? (
             <button
               onClick={() => setShowNew(true)}
-              className="px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
+              className="px-5 py-2.5 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2 active:scale-[0.97]"
             >
               <Plus className="w-3.5 h-3.5" />
               NEW THREAD
@@ -644,7 +647,7 @@ export function Forum({
                   selectedCourse === c
                     ? "border-neon-purple bg-neon-purple/10 text-neon-purple"
                     : "border-border text-muted-foreground hover:border-neon-purple/40"
-                }`}
+                } active:scale-[0.97]`}
               >
                 {c.toUpperCase()}
               </button>
@@ -658,7 +661,7 @@ export function Forum({
             <button
               key={s}
               onClick={() => setSortBy(s)}
-              className={`transition-colors ${sortBy === s ? "text-neon-purple" : "hover:text-foreground"}`}
+              className={`transition-colors ${sortBy === s ? "text-neon-purple" : "hover:text-foreground"} active:scale-[0.97]`}
             >
               {s.toUpperCase()}
             </button>
@@ -698,7 +701,7 @@ export function Forum({
                 {isAuthenticated && threads.length === 0 && (
                   <button
                     onClick={() => setShowNew(true)}
-                    className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center gap-2"
+                    className="px-5 py-2 text-xs font-bold tracking-widest bg-neon-pink text-foreground hover:opacity-90 transition-opacity inline-flex items-center gap-2 active:scale-[0.97]"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     START THE FIRST THREAD
@@ -726,7 +729,7 @@ export function Forum({
                     <li key={tag}>
                       <button
                         onClick={() => setSearchQuery(tag)}
-                        className="w-full flex items-center justify-between text-left group"
+                        className="w-full flex items-center justify-between text-left group active:scale-[0.97] hover:opacity-90"
                       >
                         <span className="text-xs text-foreground group-hover:text-neon-purple transition-colors truncate">
                           #{tag}

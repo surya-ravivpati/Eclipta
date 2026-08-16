@@ -459,14 +459,22 @@ function TrophyNode({
       )}
 
       {showClaim && (
-        <button className="tr-node-act" onClick={handleClaim} disabled={busy}>
+        <button
+          className="tr-node-act active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleClaim}
+          disabled={busy}
+        >
           {busy ? "|||" : "Claim"}
         </button>
       )}
       {isEcliptarNode && allOwned && <span className="tr-node-status">Claimed</span>}
 
       {showFinalClaim && (
-        <button className="tr-node-act" onClick={handleClaimFinal} disabled={busy}>
+        <button
+          className="tr-node-act active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleClaimFinal}
+          disabled={busy}
+        >
           {busy ? "|||" : "Claim"}
         </button>
       )}
@@ -476,7 +484,7 @@ function TrophyNode({
 
       {showChestOpen && (
         <button
-          className="tr-node-act"
+          className="tr-node-act active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleOpenChest}
           disabled={busy}
           title={`+${CHEST_BONUS_XP[chestKey] ?? 0} bonus XP`}

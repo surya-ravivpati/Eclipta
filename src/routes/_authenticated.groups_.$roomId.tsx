@@ -449,7 +449,10 @@ function StudyRoomView() {
     return (
       <div className="sr">
         <div className="sr-wrap">
-          <button className="sr-back" onClick={() => navigate({ to: "/groups" })}>
+          <button
+            className="sr-back active:scale-[0.97] hover:opacity-90"
+            onClick={() => navigate({ to: "/groups" })}
+          >
             <ArrowLeft size={13} /> Study Rooms
           </button>
           <div className="sr-empty">
@@ -464,7 +467,10 @@ function StudyRoomView() {
     return (
       <div className="sr">
         <div className="sr-wrap">
-          <button className="sr-back" onClick={() => navigate({ to: "/groups" })}>
+          <button
+            className="sr-back active:scale-[0.97] hover:opacity-90"
+            onClick={() => navigate({ to: "/groups" })}
+          >
             <ArrowLeft size={13} /> Study Rooms
           </button>
           <div className="sr-empty">
@@ -493,7 +499,10 @@ function StudyRoomView() {
   return (
     <div className="sr">
       <div className="sr-wrap">
-        <button className="sr-back" onClick={() => navigate({ to: "/groups" })}>
+        <button
+          className="sr-back active:scale-[0.97] hover:opacity-90"
+          onClick={() => navigate({ to: "/groups" })}
+        >
           <ArrowLeft size={13} /> Study Rooms
         </button>
 
@@ -513,7 +522,7 @@ function StudyRoomView() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LofiPlayer />
-            <button className="sr-btn" onClick={leave}>
+            <button className="sr-btn active:scale-[0.97] hover:opacity-90" onClick={leave}>
               <LogOut size={14} /> Leave
             </button>
           </div>
@@ -575,7 +584,7 @@ function StudyRoomView() {
                 </span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <button
-                    className="sr-btn"
+                    className="sr-btn active:scale-[0.97] hover:opacity-90"
                     style={{ marginTop: 10, fontSize: 11, padding: "6px 12px" }}
                     onClick={copyCode}
                   >
@@ -682,7 +691,10 @@ function StudyRoomView() {
             </div>
             {visiblePending.length > 0 && (
               <div className="sr-pending">
-                <button className="sr-pending-btn" onClick={revealPending}>
+                <button
+                  className="sr-pending-btn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={revealPending}
+                >
                   {visiblePending.length} new message{visiblePending.length === 1 ? "" : "s"} - tap
                   to show
                 </button>
@@ -705,7 +717,11 @@ function StudyRoomView() {
                 placeholder="Message the room..."
                 maxLength={1000}
               />
-              <button className="sr-send" onClick={send} disabled={sending || !draft.trim()}>
+              <button
+                className="sr-send active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={send}
+                disabled={sending || !draft.trim()}
+              >
                 {sending ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
               </button>
             </div>

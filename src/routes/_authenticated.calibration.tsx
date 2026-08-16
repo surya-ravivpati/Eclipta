@@ -182,7 +182,7 @@ function CalibrationPage() {
               </p>
               <button
                 onClick={advanceTeach}
-                className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 bg-neon-cyan/10 border border-neon-cyan/40 text-neon-cyan text-xs font-bold tracking-widest hover:bg-neon-cyan/20 transition-colors"
+                className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 bg-neon-cyan/10 border border-neon-cyan/40 text-neon-cyan text-xs font-bold tracking-widest hover:bg-neon-cyan/20 transition-colors active:scale-[0.97]"
               >
                 GOT IT <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -212,7 +212,7 @@ function CalibrationPage() {
                       selected === i
                         ? "border-neon-purple bg-neon-purple/10 text-foreground"
                         : "border-border hover:border-neon-purple/40 text-muted-foreground hover:text-foreground"
-                    }`}
+                    } active:scale-[0.97]`}
                   >
                     <span className="font-mono text-[10px] text-muted-foreground mr-3">
                       {String.fromCharCode(65 + i)}
@@ -233,7 +233,7 @@ function CalibrationPage() {
                   ) : (
                     <button
                       onClick={() => setUsedHint(true)}
-                      className="inline-flex items-center gap-2 text-xs text-neon-cyan hover:underline"
+                      className="inline-flex items-center gap-2 text-xs text-neon-cyan hover:underline active:scale-[0.97]"
                     >
                       <Lightbulb className="w-3.5 h-3.5" /> Show me a hint
                     </button>
@@ -254,7 +254,7 @@ function CalibrationPage() {
                       confidence === c
                         ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan"
                         : "border-border text-muted-foreground hover:border-neon-cyan/40"
-                    }`}
+                    } active:scale-[0.97]`}
                   >
                     {CONFIDENCE_LABELS[c]}
                   </button>
@@ -265,7 +265,7 @@ function CalibrationPage() {
                 {step.item.allowHint ? (
                   <button
                     onClick={skipStruggle}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <SkipForward className="w-3.5 h-3.5" /> Skip this one
                   </button>
@@ -275,7 +275,7 @@ function CalibrationPage() {
                 <button
                   onClick={submitAnswer}
                   disabled={selected === null || confidence === null}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-neon-purple text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity active:scale-[0.97]"
                 >
                   CONTINUE <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -322,7 +322,7 @@ function CalibrationPage() {
               <div className="flex gap-3 justify-center flex-wrap">
                 <button
                   onClick={() => navigate({ to: "/battles" })}
-                  className="px-6 py-3 bg-neon-pink text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity"
+                  className="px-6 py-3 bg-neon-pink text-primary-foreground text-xs font-bold tracking-widest hover:opacity-90 transition-opacity active:scale-[0.97]"
                 >
                   START LEARNING
                 </button>

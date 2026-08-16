@@ -175,7 +175,7 @@ function CommunityCoursePage() {
                 enrolled
                   ? "bg-neon-purple/15 border border-neon-purple/40 text-neon-purple cursor-default"
                   : "bg-neon-purple text-primary-foreground hover:opacity-90 neon-glow-purple"
-              }`}
+              } active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {enrolled ? (
                 <>
@@ -203,7 +203,7 @@ function CommunityCoursePage() {
                       activeId === m.id
                         ? "bg-neon-purple/15 text-neon-purple border-l-2 border-neon-purple"
                         : "text-muted-foreground hover:bg-secondary/40 border-l-2 border-transparent"
-                    }`}
+                    } active:scale-[0.97]`}
                   >
                     <span className="font-mono text-[10px] mt-0.5">
                       {String(i + 1).padStart(2, "0")}
@@ -293,7 +293,7 @@ function CommunityCoursePage() {
                                     : isPicked
                                       ? "border-destructive bg-destructive/10 text-destructive"
                                       : "border-border bg-secondary/20 opacity-60"
-                              }`}
+                              } active:scale-[0.97]`}
                             >
                               {opt || <span className="italic text-muted-foreground">(blank)</span>}
                             </button>

@@ -18,7 +18,11 @@ export function CrisisSupport({ open, onClose }: { open: boolean; onClose: () =>
       onClick={onClose}
     >
       <div className="cs-card" onClick={(e) => e.stopPropagation()}>
-        <button className="cs-close" onClick={onClose} aria-label="Close">
+        <button
+          className="cs-close active:scale-[0.97] hover:opacity-90"
+          onClick={onClose}
+          aria-label="Close"
+        >
           <X size={16} />
         </button>
         <div className="cs-head">
@@ -32,7 +36,12 @@ export function CrisisSupport({ open, onClose }: { open: boolean; onClose: () =>
           {SELF_HARM_RESOURCES.map((r) => (
             <li key={r.label}>
               {r.href ? (
-                <a href={r.href} target="_blank" rel="noopener noreferrer" className="cs-res">
+                <a
+                  href={r.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cs-res active:scale-[0.97] hover:opacity-90"
+                >
                   <b>{r.label}</b>
                   <span>{r.detail}</span>
                 </a>
@@ -45,7 +54,7 @@ export function CrisisSupport({ open, onClose }: { open: boolean; onClose: () =>
             </li>
           ))}
         </ul>
-        <button className="cs-ok" onClick={onClose}>
+        <button className="cs-ok active:scale-[0.97] hover:opacity-90" onClick={onClose}>
           Thanks
         </button>
       </div>

@@ -59,7 +59,11 @@ export function AskLuna() {
       {answer && (
         <div className="sr-ask-answer">
           {answer}
-          <button className="sr-ask-clear" onClick={() => setAnswer("")} aria-label="Clear">
+          <button
+            className="sr-ask-clear active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setAnswer("")}
+            aria-label="Clear"
+          >
             <X size={12} />
           </button>
         </div>
@@ -77,7 +81,11 @@ export function AskLuna() {
           placeholder="Hint, explanation, check my reasoning..."
           maxLength={1000}
         />
-        <button className="sr-ask-send" onClick={ask} disabled={busy || !q.trim()}>
+        <button
+          className="sr-ask-send active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={ask}
+          disabled={busy || !q.trim()}
+        >
           {busy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
         </button>
       </div>
@@ -105,7 +113,10 @@ export function StuckLauncher({ roomId }: { roomId: string }) {
 
   if (!open) {
     return (
-      <button className="sr-toolbtn" onClick={() => setOpen(true)}>
+      <button
+        className="sr-toolbtn active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={() => setOpen(true)}
+      >
         <HelpCircle size={13} /> I'm stuck
       </button>
     );
@@ -126,11 +137,15 @@ export function StuckLauncher({ roomId }: { roomId: string }) {
           if (e.key === "Escape") setOpen(false);
         }}
       />
-      <button className="sr-toolbtn sr-toolbtn--go" onClick={post} disabled={busy}>
+      <button
+        className="sr-toolbtn sr-toolbtn--go active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={post}
+        disabled={busy}
+      >
         {busy ? <Loader2 size={13} className="animate-spin" /> : "Ask the room"}
       </button>
       <button
-        className="sr-toolbtn"
+        className="sr-toolbtn active:scale-[0.97] hover:opacity-90"
         onClick={() => {
           setOpen(false);
           setNote("");
@@ -191,7 +206,11 @@ export function StuckCard({
             Luna jumps in in <b>{secsLeft}s</b> if no one answers
           </span>
           {!isAsker && (
-            <button className="sr-stuck-take" onClick={takeIt} disabled={resolving}>
+            <button
+              className="sr-stuck-take active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={takeIt}
+              disabled={resolving}
+            >
               {resolving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}{" "}
               I've got this
             </button>
@@ -283,13 +302,17 @@ export function RecapPanel({
 
   return (
     <>
-      <button className="sr-toolbtn" onClick={run}>
+      <button className="sr-toolbtn active:scale-[0.97] hover:opacity-90" onClick={run}>
         <ListChecks size={13} /> Recap so far
       </button>
       {open && (
         <div className="sr-modal-bg" onClick={() => setOpen(false)}>
           <div className="sr-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="sr-back" onClick={() => setOpen(false)} style={{ float: "right" }}>
+            <button
+              className="sr-back active:scale-[0.97] hover:opacity-90"
+              onClick={() => setOpen(false)}
+              style={{ float: "right" }}
+            >
               <X size={16} />
             </button>
             <h3>Session recap</h3>
@@ -311,7 +334,10 @@ export function RecapPanel({
               <>
                 <pre className="sr-recap-text whitespace-pre-wrap">{text}</pre>
                 <div className="sr-modal-actions">
-                  <button className="sr-toolbtn" onClick={copy}>
+                  <button
+                    className="sr-toolbtn active:scale-[0.97] hover:opacity-90"
+                    onClick={copy}
+                  >
                     <Copy size={13} /> Copy
                   </button>
                 </div>

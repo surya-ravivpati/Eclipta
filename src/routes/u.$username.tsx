@@ -275,7 +275,7 @@ function PublicProfilePage() {
                   onClick={toggleFollow}
                   disabled={followBusy}
                   className={cn(
-                    "inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border transition-colors disabled:opacity-50",
+                    "inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border transition-colors disabled:opacity-50 active:scale-[0.97]",
                     isFollowing
                       ? "border-border bg-secondary/40 text-foreground hover:bg-destructive/20 hover:border-destructive/50"
                       : "border-neon-purple/60 bg-neon-purple/10 text-neon-purple hover:bg-neon-purple/20",
@@ -305,7 +305,7 @@ function PublicProfilePage() {
                 <button
                   onClick={sendChallenge}
                   disabled={challengeBusy}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border border-neon-pink/60 bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase border border-neon-pink/60 bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20 transition-colors disabled:opacity-50 active:scale-[0.97]"
                 >
                   {challengeBusy ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

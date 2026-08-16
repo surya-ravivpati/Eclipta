@@ -60,7 +60,7 @@ function EcliptarCell({
       type="button"
       onClick={() => onOpen(e)}
       className={cn(
-        "relative rounded-xl border p-4 flex flex-col items-center text-center transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+        "relative rounded-xl border p-4 flex flex-col items-center text-center transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[0.97]",
         owned ? "border-primary/40 bg-primary/[0.06]" : "border-foreground/10 bg-foreground/[0.02]",
       )}
     >
@@ -161,7 +161,7 @@ function EcliptarDetail({
                 ) : (
                   <button
                     onClick={() => onEquip(e)}
-                    className="text-[11px] font-bold tracking-widest text-primary/80 hover:text-primary border border-primary/30 hover:border-primary/60 rounded-full px-5 py-2 transition-colors"
+                    className="text-[11px] font-bold tracking-widest text-primary/80 hover:text-primary border border-primary/30 hover:border-primary/60 rounded-full px-5 py-2 transition-colors active:scale-[0.97]"
                   >
                     EQUIP
                   </button>
@@ -313,7 +313,7 @@ function CollectionPage() {
                   type="button"
                   onClick={() => setExpandedArch(isExpanded ? null : arch)}
                   aria-expanded={isExpanded}
-                  className="w-full flex items-center justify-between gap-3 mb-3 text-left"
+                  className="w-full flex items-center justify-between gap-3 mb-3 text-left active:scale-[0.97] hover:opacity-90"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <ArchIcon

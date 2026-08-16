@@ -50,6 +50,9 @@ export function TerritoryGridView({
       <div
         role="grid"
         aria-label="Territory board"
+        // The 5x5 board. Its column count is the game rule, not a layout
+        // choice - reflowing it to one column would not be a board.
+        // eslint-disable-next-line vibesafe/responsive-grid-columns
         className="grid grid-cols-5 gap-1 p-2 rounded-xl border border-border bg-secondary/10"
       >
         {grid.map((owner, i) => {

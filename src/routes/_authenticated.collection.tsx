@@ -353,6 +353,9 @@ function CollectionPage() {
                     className="mb-4 rounded-xl border border-foreground/10 bg-foreground/[0.03] p-4 overflow-hidden"
                   >
                     <p className="text-sm text-muted-foreground mb-3">{meta.description}</p>
+                    {/* Already responsive: 3 up on phones, 4 from sm. These
+                        are small square tiles, so 3 across is the intent. */}
+                    {/* eslint-disable-next-line vibesafe/responsive-grid-columns */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                       <ArchStat label="HP" value={meta.maxHp} />
                       <ArchStat label="DMG" value={meta.baseDamage} />

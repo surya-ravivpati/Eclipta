@@ -332,6 +332,8 @@ function PublicProfilePage() {
                 No ecliptars claimed yet.
               </p>
             ) : (
+              // Nine small creature tiles. 3 across is legible at 320px.
+              // eslint-disable-next-line vibesafe/responsive-grid-columns
               <div className="grid grid-cols-3 gap-2">
                 {ecliptars.slice(0, 9).map((e) => {
                   const arch = ARCHETYPES[e.archetype as MonsterArchetypeKey];

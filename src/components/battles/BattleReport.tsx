@@ -280,6 +280,9 @@ export function BattleReport({
 
         {/* Overview */}
         <TabsContent value="overview">
+          {/* Three compact stat tiles; they stay side by side so the result
+              reads as one row rather than a list. */}
+          {/* eslint-disable-next-line vibesafe/responsive-grid-columns */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <StatCard
               icon={Target}

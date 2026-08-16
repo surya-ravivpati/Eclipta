@@ -1,46 +1,63 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import { planInterruptions } from "./distraction";
+import { at } from "@/lib/test-helpers";
+
+/**
+ * Only the scheduling half of the distraction layer is tested here. The rest
+ * synthesises room tone through Web Audio, which does not exist in Node and
+ * would need a real browser to mean anything.
+ *
+ * The scheduling is worth pinning on its own, because it encodes a teaching
+ * decision rather than a technical one: interruptions stop before the end of a
+ * session, since interrupting someone during their final minutes teaches
+ * nothing and only costs them marks.
+ */
 
 describe("planInterruptions", () => {
-  it("returns nothing for a non-positive count", () => {
+  it("returns nothing when none were asked for", () => {
     expect(planInterruptions(600, 0)).toEqual([]);
     expect(planInterruptions(600, -1)).toEqual([]);
   });
 
-  it("returns nothing for a session shorter than 120 seconds, regardless of count", () => {
+  it("returns nothing for a session too short to interrupt", () => {
+    // Under two minutes there is no room to break concentration and recover.
+    expect(planInterruptions(60, 3)).toEqual([]);
     expect(planInterruptions(119, 3)).toEqual([]);
   });
 
-  it("returns exactly `count` timestamps for a valid session", () => {
-    const result = planInterruptions(600, 4);
-    expect(result).toHaveLength(4);
+  it("schedules as many interruptions as asked", () => {
+    expect(planInterruptions(1200, 3)).toHaveLength(3);
   });
 
-  it("never schedules an interruption before the session starts or after it ends", () => {
-    for (let trial = 0; trial < 50; trial++) {
-      const result = planInterruptions(600, 5);
-      for (const t of result) {
-        expect(t).toBeGreaterThanOrEqual(0);
-        expect(t).toBeLessThanOrEqual(600);
+  it("keeps every interruption inside the session", () => {
+    for (let i = 0; i < 50; i++) {
+      for (const delay of planInterruptions(600, 4)) {
+        expect(delay).toBeGreaterThan(0);
+        expect(delay).toBeLessThan(600);
       }
     }
   });
 
-  it("spaces interruptions roughly evenly across the usable (first 80%) window", () => {
-    // With generous jitter tolerance, each timestamp should land near its
-    // slot: usable=480 (600*0.8), spacing=480/(4+1)=96, slots at 96,192,288,384.
-    const result = planInterruptions(600, 4);
-    const expectedSlots = [96, 192, 288, 384];
-    expect(result).toHaveLength(expectedSlots.length);
-    // Zip rather than index, so no element access needs a bounds assertion.
-    for (const [actual, expected] of result.map((t, i) => [t, expectedSlots[i]] as const)) {
-      if (expected === undefined) throw new Error("unreachable: lengths were just asserted equal");
-      // Jitter is +/- 20% of spacing (96 * 0.2 = 19.2).
-      expect(Math.abs(actual - expected)).toBeLessThanOrEqual(20);
+  it("leaves the last stretch of the session alone", () => {
+    // The 20% tail is deliberate: nobody learns from being interrupted while
+    // they are finishing. Sampled repeatedly because the spacing is jittered.
+    const duration = 1000;
+    for (let i = 0; i < 100; i++) {
+      for (const delay of planInterruptions(duration, 3)) {
+        expect(delay).toBeLessThan(duration * 0.9);
+      }
     }
   });
 
-  it("is exactly at the 120-second boundary: still returns [] one second short, but works at exactly 120", () => {
-    expect(planInterruptions(120, 1)).toHaveLength(1);
+  it("spreads them out rather than bunching at one moment", () => {
+    const delays = planInterruptions(1800, 3).sort((a, b) => a - b);
+    expect(delays).toHaveLength(3);
+    const gaps = delays.slice(1).map((d, i) => d - at(delays, i));
+    for (const gap of gaps) expect(gap).toBeGreaterThan(0);
+  });
+
+  it("varies between runs, so a repeat session is not identical", () => {
+    const runs = new Set(Array.from({ length: 20 }, () => planInterruptions(1200, 3).join(",")));
+    expect(runs.size).toBeGreaterThan(1);
   });
 });

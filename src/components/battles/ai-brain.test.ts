@@ -453,3 +453,83 @@ describe("botThinkDelayMs", () => {
     expect(Math.max(...samples)).toBeLessThanOrEqual(BOT_PACING.ceilingMs);
   });
 });
+
+// --- Pressure lines, branch by branch ---------------------------------------
+
+describe("getPressureLogLine - every branch it can take", () => {
+  const name = "Rival";
+
+  it("stays silent most of the time", () => {
+    // The first roll gates everything: above the threshold, nothing is said no
+    // matter how dramatic the situation. A narrator that never shuts up stops
+    // being a narrator.
+    mockRandomSequence([0.99]);
+    const memory: BattleMemory = { ...createBattleMemory(), playerMissStreak: 9 };
+    expect(getPressureLogLine(memory, AI_PERSONALITIES.god, name, 0.1, true)).toBeNull();
+  });
+
+  it("calls out a pattern counter before a miss streak", () => {
+    // Ordering matters: both conditions hold here, and the pattern line is the
+    // more useful thing to tell the player.
+    const memory: BattleMemory = {
+      ...createBattleMemory(),
+      patternConfidence: 0.9,
+      playerMissStreak: 5,
+    };
+    // hp 0.9 skips the clutch guard without rolling, so: gate, pattern roll,
+    // message index.
+    mockRandomSequence([0.1, 0.1, 0]);
+    const line = getPressureLogLine(memory, AI_PERSONALITIES.tank, name, 0.9, true);
+    expect(line).toMatch(/read your patterns|adapts/);
+  });
+
+  it("comments on a long AI success streak", () => {
+    const memory: BattleMemory = { ...createBattleMemory(), aiSuccessStreak: 6 };
+    // No clutch, no pattern, no miss streak - each guard is false and rolls
+    // nothing - so: gate, streak roll, message index.
+    mockRandomSequence([0.1, 0.1, 0]);
+    const line = getPressureLogLine(memory, AI_PERSONALITIES.tank, name, 0.9, false);
+    expect(line).toMatch(/on fire|momentum/);
+  });
+
+  it("says nothing when no situation is dramatic enough", () => {
+    mockRandomSequence([0.1]);
+    expect(
+      getPressureLogLine(createBattleMemory(), AI_PERSONALITIES.tank, name, 0.9, false),
+    ).toBeNull();
+  });
+
+  it("always names the opponent when it does speak", () => {
+    const memory: BattleMemory = { ...createBattleMemory(), playerMissStreak: 4 };
+    mockRandomSequence([0.1, 0.1, 0]);
+    const line = getPressureLogLine(memory, AI_PERSONALITIES.tank, "Vulpix", 0.9, false);
+    if (line) expect(line).toContain("Vulpix");
+  });
+});
+
+describe("pickAiAction - it only ever returns a legal action", () => {
+  it("holds for every personality across the roll range", () => {
+    const legal = ["attack", "defend", "charge", "ultimate"];
+    for (const key of Object.keys(AI_PERSONALITIES) as (keyof typeof AI_PERSONALITIES)[]) {
+      for (const roll of [0, 0.2, 0.5, 0.8, 0.999]) {
+        mockRandomSequence([roll]);
+        const action = pickAiAction(createBattleMemory(), AI_PERSONALITIES[key], opp(), player());
+        expect(legal, `${key} at ${roll} returned ${action}`).toContain(action);
+        vi.restoreAllMocks();
+      }
+    }
+  });
+
+  it("still returns something legal when nothing is available", () => {
+    // No focus, no heal, no ultimate - attack is all that is left, and the
+    // picker must not return a disabled action or undefined.
+    mockRandomSequence([0.5]);
+    const action = pickAiAction(
+      createBattleMemory(),
+      AI_PERSONALITIES.tank,
+      opp({ canHeal: false, ultimateReady: false, focus: 0 }),
+      player(),
+    );
+    expect(action).toBe("attack");
+  });
+});

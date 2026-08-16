@@ -265,6 +265,9 @@ function ProfilePage() {
             </div>
           ) : (
             <Tabs defaultValue="overview" className="w-full">
+              {/* Three tabs, side by side at every width. Stacked tabs stop
+                  reading as tabs. */}
+              {/* eslint-disable-next-line vibesafe/responsive-grid-columns */}
               <TabsList className="grid w-full grid-cols-3 mb-6 h-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="creator">Creator</TabsTrigger>

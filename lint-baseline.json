@@ -1,5 +1,5 @@
 {
-  "warnings": 462,
+  "warnings": 456,
   "counts": {
     "@typescript-eslint/no-unsafe-assignment": 13,
     "@typescript-eslint/no-floating-promises": 79,
@@ -12,7 +12,6 @@
     "react-hooks/exhaustive-deps": 13,
     "@typescript-eslint/no-explicit-any": 14,
     "@typescript-eslint/no-unsafe-argument": 1,
-    "vibesafe/responsive-grid-columns": 6,
     "@typescript-eslint/no-unsafe-unary-minus": 1,
     "react-refresh/only-export-components": 10,
     "@typescript-eslint/consistent-type-imports": 1,

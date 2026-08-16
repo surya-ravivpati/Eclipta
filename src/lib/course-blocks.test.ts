@@ -19,6 +19,13 @@ function row(over: Partial<CourseBlockRow> = {}): CourseBlockRow {
   return { id: "b1", module_id: "m1", type: "text", data: {}, position: 0, ...over };
 }
 
+/** Narrow to a text block, so `data.text` is reachable without a cast. */
+function textBlock(data: Json) {
+  const [block] = toCourseBlock(row({ type: "text", data }));
+  if (block?.type !== "text") throw new Error("expected a text block, got none");
+  return block;
+}
+
 describe("toCourseBlock", () => {
   it("keeps the row's identity on the narrowed block", () => {
     const [block] = toCourseBlock(row({ id: "b9", module_id: "m4", position: 3 }));
@@ -54,8 +61,7 @@ describe("toCourseBlock", () => {
   });
 
   it("treats a field of the wrong type as absent rather than coercing it", () => {
-    const [text] = toCourseBlock(row({ type: "text", data: { text: 42 } }));
-    expect(text?.data.text).toBeUndefined();
+    expect(textBlock({ text: 42 }).data.text).toBeUndefined();
 
     const [quiz] = toCourseBlock(
       row({ type: "quiz", data: { question: null, options: "a,b", correctIndex: "1" } }),
@@ -69,8 +75,7 @@ describe("toCourseBlock", () => {
 
   it("survives a data column that is not an object at all", () => {
     for (const data of [null, "text", 7, true, [1, 2]] as Json[]) {
-      const [block] = toCourseBlock(row({ type: "text", data }));
-      expect(block?.data.text, `data=${JSON.stringify(data)}`).toBeUndefined();
+      expect(textBlock(data).data.text, `data=${JSON.stringify(data)}`).toBeUndefined();
     }
   });
 

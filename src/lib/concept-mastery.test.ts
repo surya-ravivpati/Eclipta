@@ -11,18 +11,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * merge arithmetic on top of existing rows, not the SQL.
  */
 
-const insertBattleQuestionRecords = vi.fn();
-const getConceptMasteryEvidence = vi.fn();
-const upsertConceptMastery = vi.fn();
-const getWeakConceptRows = vi.fn();
+const insertBattleQuestionRecords = vi.fn<(rows: unknown[]) => Promise<void>>();
+const getConceptMasteryEvidence =
+  vi.fn<(userId: string, concepts: string[]) => Promise<unknown[]>>();
+const upsertConceptMastery = vi.fn<(rows: unknown[]) => Promise<void>>();
+const getWeakConceptRows = vi.fn<(userId: string, limit: number) => Promise<unknown[]>>();
 
-vi.mock("@/repositories/battles", () => ({
-  insertBattleQuestionRecords: (...args: unknown[]) => insertBattleQuestionRecords(...args),
-}));
+// The factories run lazily, on first import of the mocked module, so they can
+// close over the consts above even though `vi.mock` itself is hoisted.
+vi.mock("@/repositories/battles", () => ({ insertBattleQuestionRecords }));
 vi.mock("@/repositories/courses", () => ({
-  getConceptMasteryEvidence: (...args: unknown[]) => getConceptMasteryEvidence(...args),
-  upsertConceptMastery: (...args: unknown[]) => upsertConceptMastery(...args),
-  getWeakConceptRows: (...args: unknown[]) => getWeakConceptRows(...args),
+  getConceptMasteryEvidence,
+  upsertConceptMastery,
+  getWeakConceptRows,
 }));
 
 const { deriveState, getWeakConcepts, recordOutcomes } = await import("./concept-mastery");
@@ -94,7 +95,7 @@ describe("recordOutcomes", () => {
 
   it("appends every answer to the evidence stream", async () => {
     await recordOutcomes("u1", [outcome({ correct: true }), outcome({ correct: false })]);
-    const rows = insertBattleQuestionRecords.mock.calls[0]?.[0] as unknown[];
+    const rows = insertBattleQuestionRecords.mock.calls[0]?.[0] ?? [];
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({ user_id: "u1", concept: "Algebra", correct: true });
   });

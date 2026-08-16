@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
 
 /**
  * This module is the only thing standing between an unawaited promise and
@@ -15,8 +15,8 @@ async function freshModule() {
 }
 
 describe("installGlobalErrorReporting", () => {
-  let addEventListener: ReturnType<typeof vi.spyOn>;
-  let consoleError: ReturnType<typeof vi.spyOn>;
+  let addEventListener: MockInstance<typeof window.addEventListener>;
+  let consoleError: MockInstance<typeof console.error>;
 
   beforeEach(() => {
     addEventListener = vi.spyOn(window, "addEventListener");
@@ -95,10 +95,12 @@ describe("installGlobalErrorReporting", () => {
 
 /** Pull the listener the module registered for `type`. */
 function handlerFor(
-  spy: ReturnType<typeof vi.spyOn>,
+  spy: MockInstance<typeof window.addEventListener>,
   type: string,
 ): (event: Record<string, unknown>) => void {
   const call = spy.mock.calls.find((c) => c[0] === type);
   if (!call) throw new Error(`no listener registered for "${type}"`);
-  return call[1] as (event: Record<string, unknown>) => void;
+  // addEventListener's type allows a handleEvent object; the module only ever
+  // registers a plain function, so narrowing through unknown is safe here.
+  return call[1] as unknown as (event: Record<string, unknown>) => void;
 }

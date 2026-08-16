@@ -16,7 +16,7 @@ import {
   ListChecks,
   RefreshCw,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edge-function";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { insertCourseProposal } from "@/repositories/courses";
@@ -179,11 +179,11 @@ export function CourseBuilder() {
     }, 1200);
 
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke("review-course-proposal", {
-        body: { proposalId },
+      const { data, error: fnErr } = await invokeEdgeFunction<Verdict>("review-course-proposal", {
+        proposalId,
       });
-      if (fnErr) throw fnErr;
-      const v = data as Verdict;
+      if (fnErr || !data) throw new Error(fnErr ?? "The review returned nothing.");
+      const v = data;
       setVerdict(v);
 
       // Update last two checks based on verdict

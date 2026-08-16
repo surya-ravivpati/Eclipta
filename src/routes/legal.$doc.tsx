@@ -6,9 +6,8 @@ import { LEGAL_CONTACT } from "@/content/legal/types";
 export const Route = createFileRoute("/legal/$doc")({
   loader: ({ params }) => {
     const doc = getLegalDocument(params.doc);
-    // TanStack's notFound() returns a router sentinel that is *meant* to be
-    // thrown from a loader; it is not an Error subclass, which the rule cannot know.
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    // notFound() returns a router sentinel that is meant to be thrown from a
+    // loader. The rule knows the type is allowed - see eslint.config.js.
     if (!doc) throw notFound();
     return doc;
   },

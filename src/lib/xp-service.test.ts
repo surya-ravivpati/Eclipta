@@ -21,12 +21,24 @@ vi.mock("./milestones", () => ({
 
 import { supabase } from "@/integrations/supabase/client";
 import {
+  adminGrantXpRpc,
+  adminSetXpRpc,
   awardXpRpc,
   awardBattleXpRpc,
   awardVerifiedBattleXpRpc,
+  claimChestRpc,
+  getClaimedChestNodeIds,
   getUserXp,
 } from "@/repositories/profile";
-import { awardXp, awardBattleXp, awardVerifiedBattleXp } from "./xp-service";
+import {
+  adminGrantXp,
+  adminSetXp,
+  awardXp,
+  awardBattleXp,
+  awardVerifiedBattleXp,
+  claimChest,
+  fetchClaimedChestNodeIds,
+} from "./xp-service";
 
 function mockSignedInAs(userId: string) {
   vi.mocked(supabase.auth.getUser).mockResolvedValue({
@@ -88,5 +100,77 @@ describe("awardVerifiedBattleXp", () => {
   it("does not call an award RPC when there are no verified challenges", async () => {
     await expect(awardVerifiedBattleXp([])).resolves.toEqual({ lunaMessages: [], newXp: 0 });
     expect(awardVerifiedBattleXpRpc).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The chest path is what a player experiences as opening a reward, and every
+ * eligibility decision belongs to the server. What this side owes is a refusal
+ * to even ask when the request is nonsense - an unknown node id, or a node that
+ * is not a chest at all - so a mistyped id can never reach the claim RPC.
+ */
+describe("claimChest", () => {
+  it("claims a real chest node and returns the bonus the server credited", async () => {
+    mockSignedInAs("u1");
+    vi.mocked(claimChestRpc).mockResolvedValue(250);
+
+    expect(await claimChest(3, "Bronze Chest")).toBe(250);
+    expect(claimChestRpc).toHaveBeenCalledWith(3, "Bronze Chest");
+  });
+
+  it("refuses a node id that is not on the road", async () => {
+    mockSignedInAs("u1");
+    expect(await claimChest(99999, "Bronze Chest")).toBe(0);
+    expect(claimChestRpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses a node that exists but is not a chest", async () => {
+    // Node 1 is a rank marker. Asking to open it would be a caller bug, and
+    // the RPC should never see it.
+    mockSignedInAs("u1");
+    expect(await claimChest(1, "Bronze Chest")).toBe(0);
+    expect(claimChestRpc).not.toHaveBeenCalled();
+  });
+
+  it("returns nothing for a signed-out caller", async () => {
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null } } as never);
+    expect(await claimChest(3, "Bronze Chest")).toBe(0);
+    expect(claimChestRpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchClaimedChestNodeIds", () => {
+  it("returns the claimed ids as a set", async () => {
+    mockSignedInAs("u1");
+    vi.mocked(getClaimedChestNodeIds).mockResolvedValue([3, 5, 3]);
+    expect(await fetchClaimedChestNodeIds()).toEqual(new Set([3, 5]));
+  });
+
+  it("is empty when signed out, without querying", async () => {
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null } } as never);
+    expect(await fetchClaimedChestNodeIds()).toEqual(new Set());
+    expect(getClaimedChestNodeIds).not.toHaveBeenCalled();
+  });
+});
+
+describe("admin XP", () => {
+  it("keeps grant and set distinct - one increments, the other replaces", async () => {
+    // Both take (userId, amount) in the same order, so a swapped call would
+    // typecheck and silently overwrite someone's total instead of adding.
+    vi.mocked(adminGrantXpRpc).mockResolvedValue(1200);
+    vi.mocked(adminSetXpRpc).mockResolvedValue(500);
+
+    expect(await adminGrantXp("u2", 200)).toBe(1200);
+    expect(adminGrantXpRpc).toHaveBeenCalledWith("u2", 200);
+
+    expect(await adminSetXp("u2", 500)).toBe(500);
+    expect(adminSetXpRpc).toHaveBeenCalledWith("u2", 500);
+  });
+
+  it("passes a null through when the server refuses", async () => {
+    vi.mocked(adminGrantXpRpc).mockResolvedValue(null);
+    vi.mocked(adminSetXpRpc).mockResolvedValue(null);
+    expect(await adminGrantXp("u2", 10)).toBeNull();
+    expect(await adminSetXp("u2", 10)).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { recordAnswer } from "@/lib/luna-context";
 import { supabase } from "@/integrations/supabase/client";
+import { env } from "@/config/env";
 
 interface Q {
   question: string;
@@ -35,13 +36,13 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-quiz`, {
+        const token = session?.access_token ?? env.SUPABASE_PUBLISHABLE_KEY;
+        const resp = await fetch(`${env.SUPABASE_URL}/functions/v1/luna-quiz`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            apikey: env.SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ topic, count }),
         });

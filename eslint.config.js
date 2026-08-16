@@ -185,8 +185,12 @@ export default tseslint.config(
           message: "Read config from src/config/env.ts, never process.env directly.",
         },
         {
+          // Vite's own build flags (DEV, PROD, MODE, SSR, BASE_URL) are exempt:
+          // they are constants the bundler substitutes at build time, not
+          // environment variables, so they have no business in a Zod-validated
+          // config schema that expects to find them in the environment.
           selector:
-            "MemberExpression[object.property.name='env'][object.object.type='MetaProperty']",
+            "MemberExpression[object.property.name='env'][object.object.type='MetaProperty']:not([property.name=/^(DEV|PROD|MODE|SSR|BASE_URL)$/])",
           message: "Read config from src/config/env.ts, never import.meta.env directly.",
         },
       ],

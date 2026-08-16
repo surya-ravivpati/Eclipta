@@ -4,7 +4,7 @@
  * moderation pipeline to re-scan the target; it never removes content by count.
  * The reporter only ever gets a generic acknowledgement.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "./edge-function";
 
 export type ReportTargetType = "thread" | "answer" | "comment" | "username" | "chat_message";
 
@@ -14,15 +14,13 @@ export async function submitReport(args: {
   category?: string | null;
   note?: string | null;
 }): Promise<string | null> {
-  const { error } = await supabase.functions.invoke("report", {
-    body: {
-      target_type: args.targetType,
-      target_id: args.targetId ?? null,
-      category: args.category ?? null,
-      note: args.note ?? null,
-    },
+  const { error } = await invokeEdgeFunction("report", {
+    target_type: args.targetType,
+    target_id: args.targetId ?? null,
+    category: args.category ?? null,
+    note: args.note ?? null,
   });
-  return error ? error.message : null;
+  return error;
 }
 
 /** Generic, calm outcome label for a reporter's own report - never specifics

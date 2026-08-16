@@ -16,6 +16,7 @@
  * or two its visibility flips if the AI decides to hide it.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "./edge-function";
 
 export type ModerationVerdict = "allow" | "hide" | "block" | "pending";
 export type ModerationTarget = "thread" | "answer" | "comment" | "username";
@@ -44,8 +45,11 @@ export async function moderateContent(
   try {
     // Pre-insert gate: 'check' mode returns a verdict WITHOUT logging/side
     // effects, so the authoritative record happens once (post-insert / record).
-    const { data, error } = await supabase.functions.invoke("moderate-content", {
-      body: { text, targetType, targetId: targetId ?? null, mode: "check" },
+    const { data, error } = await invokeEdgeFunction<unknown>("moderate-content", {
+      text,
+      targetType,
+      targetId: targetId ?? null,
+      mode: "check",
     });
     if (error) {
       console.error("moderateContent: invoke error", error);
@@ -145,11 +149,9 @@ export async function moderate(
   opts?: { mode?: "check" | "record"; targetId?: string | null },
 ): Promise<ModerationOutcome> {
   try {
-    const { data, error } = await supabase.functions.invoke<ModerationResponsePayload>(
+    const { data, error } = await invokeEdgeFunction<ModerationResponsePayload>(
       "moderate-content",
-      {
-        body: { text, targetType, targetId: opts?.targetId ?? null, mode: opts?.mode ?? "record" },
-      },
+      { text, targetType, targetId: opts?.targetId ?? null, mode: opts?.mode ?? "record" },
     );
     if (error || !data || typeof data !== "object") return SAFE_OUTCOME;
     const decision: ModerationDecision =

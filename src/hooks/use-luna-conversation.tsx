@@ -17,6 +17,7 @@ import {
 } from "@/lib/luna-context";
 import { captureScreenFrame } from "@/lib/luna-screen";
 import { supabase } from "@/integrations/supabase/client";
+import { env } from "@/config/env";
 import { useLunaProfile } from "@/hooks/use-luna-profile";
 import { extractPreference, mergePreference } from "@/lib/luna-preference-detector";
 import { recordDailyPractice } from "@/lib/record-practice";
@@ -248,7 +249,7 @@ export function useLunaConversation({
             try {
               const session = (await supabase.auth.getSession()).data.session;
               if (session?.access_token && text) {
-                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-memory`, {
+                fetch(`${env.SUPABASE_URL}/functions/v1/luna-memory`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",

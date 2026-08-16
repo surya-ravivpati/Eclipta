@@ -6,21 +6,22 @@
  * Recap. Recap is fed ONLY structured events, never chat.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { env } from "@/config/env";
 import type { TeachBackRound } from "./study-teachback";
 
-const ROOM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luna-room`;
+const ROOM_URL = `${env.SUPABASE_URL}/functions/v1/luna-room`;
 
 async function callRoom(payload: Record<string, unknown>): Promise<Response> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const token = session?.access_token ?? env.SUPABASE_PUBLISHABLE_KEY;
   return fetch(ROOM_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      apikey: env.SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify(payload),
   });
@@ -153,8 +154,12 @@ export async function generateRecap(
             ? "Recap isn't set up on the server yet (deploy the luna-room function)."
             : `Recap failed (${r.status}).`,
       };
-    const d = await r.json();
-    return { text: typeof d?.text === "string" ? d.text : "" };
+    // The response is JSON from a network call, so it is unknown until
+    // proven otherwise - a recap that came back malformed becomes empty text
+    // rather than "[object Object]" in the room.
+    const d: unknown = await r.json();
+    const text = typeof d === "object" && d !== null && "text" in d ? d.text : null;
+    return { text: typeof text === "string" ? text : "" };
   } catch {
     return { error: "Recap request failed. Check your connection." };
   }

@@ -60,7 +60,7 @@ export function WeakSpotPractice({
   const [active, setActive] = useState<string | null>(initialConcept);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();

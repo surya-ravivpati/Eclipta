@@ -42,7 +42,7 @@ export function LunaThinkingIndicator({ compact = false }: { compact?: boolean }
     let alive = true;
     function frame(now: number) {
       if (!alive) return;
-      if (t0Ref.current === null) t0Ref.current = now;
+      t0Ref.current ??= now;
       const t = ((now - t0Ref.current) % CYCLE_MS) / CYCLE_MS;
       pathRef.current?.setAttribute("d", litPath(t));
       rafRef.current = requestAnimationFrame(frame);

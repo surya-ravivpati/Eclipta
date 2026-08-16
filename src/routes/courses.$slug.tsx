@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, Check, Layers, User as UserIcon, Loader2, Play } from "lucide-react";
@@ -17,12 +17,18 @@ import {
 } from "@/repositories/courses";
 
 export const Route = createFileRoute("/courses/$slug")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `Course - Eclipta` },
-      { name: "description", content: `Community-built course on Eclipta.` },
-    ],
-  }),
+  // The course itself is fetched client-side, so the slug is all the title has
+  // to work with here. Reading it still beats shipping one identical title for
+  // every course in the catalogue.
+  head: ({ params }) => {
+    const name = params.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return {
+      meta: [
+        { title: `${name} - Eclipta` },
+        { name: "description", content: `${name}, a community-built course on Eclipta.` },
+      ],
+    };
+  },
   component: CommunityCoursePage,
 });
 
@@ -32,7 +38,7 @@ type Module = CourseModuleRow;
 function ytId(url: string): string | null {
   if (!url) return null;
   const m =
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/.exec(url) ||
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/.exec(url) ??
     /^([a-zA-Z0-9_-]{11})$/.exec(url);
   return m ? m[1] : null;
 }
@@ -51,7 +57,7 @@ function CommunityCoursePage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const c = await getCourseBySlug(slug);
       if (!c || cancelled) {
         setLoading(false);
@@ -114,7 +120,7 @@ function CommunityCoursePage() {
         </div>
       </div>
     );
-  if (!course || course.status !== "published")
+  if (course?.status !== "published")
     return (
       <div className="min-h-screen bg-background">
         <div className="pt-32 text-center px-6">
@@ -277,7 +283,7 @@ function CommunityCoursePage() {
                     <div key={b.id} className="glass-panel p-5">
                       <p className="font-display font-bold text-base mb-3">{b.data.question}</p>
                       <div className="space-y-2">
-                        {(b.data.options || []).map((opt: string, i: number) => {
+                        {(b.data.options ?? []).map((opt: string, i: number) => {
                           const isPicked = picked === i;
                           const isCorrect = b.data.correctIndex === i;
                           const showResult = picked !== null && picked !== undefined;

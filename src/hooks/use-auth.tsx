@@ -26,7 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       bindLunaContextToUser(session?.user?.id ?? null);
       setState({
         user: session?.user ?? null,
@@ -36,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    void supabase.auth.getSession().then(({ data: { session } }) => {
       bindLunaContextToUser(session?.user?.id ?? null);
       setState({
         user: session?.user ?? null,

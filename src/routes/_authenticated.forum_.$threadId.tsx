@@ -116,7 +116,7 @@ function ThreadPage() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [threadId]);
 
   useEffect(() => {
@@ -232,18 +232,18 @@ function ThreadPage() {
       toast.success("Answer posted");
       if (inserted?.id) void moderateAfterInsert(body, "answer", inserted.id);
     }
-    load();
+    void load();
   };
 
   const acceptAnswer = async (answerId: string) => {
-    if (!user || !thread || thread.user_id !== user.id) return;
+    if (!user || thread?.user_id !== user.id) return;
     const { error } = await supabase
       .from("forum_answers")
       .update({ accepted: true })
       .eq("id", answerId);
     if (error) return toast.error(error.message);
     toast.success("Answer accepted");
-    load();
+    void load();
   };
 
   const deleteThread = async () => {
@@ -253,7 +253,7 @@ function ThreadPage() {
     const { error } = await supabase.from("forum_threads").delete().eq("id", thread.id);
     if (error) return toast.error(error.message);
     toast.success("Thread deleted");
-    navigate({ to: "/forum" });
+    void navigate({ to: "/forum" });
   };
 
   const deleteAnswer = async (answerId: string) => {
@@ -261,7 +261,7 @@ function ThreadPage() {
     const { error } = await supabase.from("forum_answers").delete().eq("id", answerId);
     if (error) return toast.error(error.message);
     toast.success("Answer deleted");
-    load();
+    void load();
   };
 
   return (
@@ -358,7 +358,7 @@ function ThreadPage() {
                                 );
                                 if (r.ok) {
                                   toast.success("Restored");
-                                  load();
+                                  void load();
                                 } else toast.error(r.error);
                               }}
                               className="ml-3 inline-flex items-center gap-1 underline hover:text-neon-cyan active:scale-[0.97]"
@@ -487,7 +487,7 @@ function ThreadPage() {
                                     );
                                     if (r.ok) {
                                       toast.success("Restored");
-                                      load();
+                                      void load();
                                     } else toast.error(r.error);
                                   }}
                                   className="ml-3 inline-flex items-center gap-1 underline hover:text-neon-cyan active:scale-[0.97]"

@@ -111,8 +111,26 @@ export default tseslint.config(
          Promote each to "error" once its count reaches zero. */
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-floating-promises": "warn",
-      "@typescript-eslint/prefer-nullish-coalescing": "warn",
-      "@typescript-eslint/only-throw-error": "warn",
+      /* Strings are exempt on purpose. Throughout the UI an empty string means
+         "absent": `profile.username || "Learner"` has to fall through when a
+         user saved a blank name, and `??` would render nothing at all there.
+         So for strings `||` is the intended operator, not an oversight. Every
+         other type still has to use `??`, where the difference between null
+         and 0/false is a real distinction. */
+      "@typescript-eslint/prefer-nullish-coalescing": [
+        "warn",
+        { ignorePrimitives: { string: true } },
+      ],
+      /* Both frameworks in use signal control flow by throwing a Response:
+         TanStack Start's server middleware throws one to short-circuit a
+         request, and Router's `redirect()` returns a `Response & {...}` that
+         is meant to be thrown. Neither is a mistake, so allow the type rather
+         than scatter disable comments over every route guard. Anything else
+         thrown must still be an Error. */
+      "@typescript-eslint/only-throw-error": [
+        "warn",
+        { allow: [{ from: "lib", name: "Response" }] },
+      ],
       "@typescript-eslint/no-empty-function": "warn",
       "@typescript-eslint/no-base-to-string": "warn",
       "@typescript-eslint/restrict-template-expressions": "warn",

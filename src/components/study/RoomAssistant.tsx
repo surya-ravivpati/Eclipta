@@ -295,7 +295,7 @@ export function RecapPanel({
 
   const copy = () => {
     if (text) {
-      navigator.clipboard?.writeText(text);
+      void navigator.clipboard?.writeText(text);
       toast.success("Recap copied");
     }
   };

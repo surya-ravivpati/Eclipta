@@ -28,7 +28,7 @@ export function LunaInlineQuiz({ topic, count, onSendBack }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         // luna-quiz authenticates the caller, so send the user's session JWT,
         // not the publishable key (which has no user -> "Unauthorized").

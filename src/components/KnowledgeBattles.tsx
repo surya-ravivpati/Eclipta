@@ -13,13 +13,10 @@ import {
   Skull,
   Dices,
   User,
-  Bot,
   HelpCircle,
   Info,
   FastForward,
   Users,
-  TrendingUp,
-  TrendingDown,
   MessageSquare,
   VolumeX,
   Volume2,
@@ -454,7 +451,6 @@ function FocusBar({
   // time focus crossed 25, regardless of whether spending it was possible.
   const isCharged = current >= chargeCost && (!isPlayer || canCharge);
   const isWarm = current >= chargeCost - 10 && !isCharged;
-  const fillRatio = max > 0 ? current / max : 0;
   const pulseSpeed = isCharged ? 0.55 : isWarm ? 0.95 : 1.6;
   return (
     <div
@@ -995,14 +991,12 @@ let _chatIdCounter = 0;
 function BattleChat({
   pvpChannelRef,
   opponentType,
-  opponentName,
   playerName,
   phase,
   incomingItems,
 }: {
   pvpChannelRef: React.MutableRefObject<RealtimeChannel | null>;
   opponentType: OpponentType;
-  opponentName: string;
   playerName: string;
   phase: Phase;
   incomingItems: ChatItem[];
@@ -1047,7 +1041,7 @@ function BattleChat({
     setTick(Date.now()); // kick countdown interval
 
     if (opponentType === "live" && pvpChannelRef.current) {
-      pvpChannelRef.current.send({
+      void pvpChannelRef.current.send({
         type: "broadcast",
         event: "chat",
         payload: { text, sender_name: playerName },
@@ -1583,7 +1577,6 @@ function BattleArena() {
   const fightShownRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const battleMemoryRef = useRef<BattleMemory | null>(null);
-  const [playerXp, setPlayerXp] = useState<number>(0);
 
   // Issue 1: ref-based log pipeline - prevents React batching from swallowing
   // multiple synchronous addLog calls and eliminates nested-setState side-effects.
@@ -1612,11 +1605,8 @@ function BattleArena() {
   const [confirmExit, setConfirmExit] = useState(false);
   const [matchStatus, setMatchStatus] = useState("Finding opponent...");
   const [pvpBattleId, setPvpBattleId] = useState<string | null>(null);
-  const [playerRating, setPlayerRating] = useState(1000);
   const [playerUsername, setPlayerUsername] = useState<string | null>(null);
-  const [opponentRating, setOpponentRating] = useState(1000);
   const [ratingChange, setRatingChange] = useState<number | null>(null);
-  const [liveTurnNumber, setLiveTurnNumber] = useState(1);
   const [liveActionLocked, setLiveActionLocked] = useState(false);
   const [liveOpponentLocked, setLiveOpponentLocked] = useState(false);
   const [liveResolvingTurn, setLiveResolvingTurn] = useState(false);
@@ -1652,19 +1642,17 @@ function BattleArena() {
 
   // Fetch player profile (XP + rating + username)
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
       myUserIdRef.current = user.id;
       const [profileRes, ratingData] = await Promise.all([
-        supabase.from("user_profiles").select("xp, username").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_profiles").select("username").eq("user_id", user.id).maybeSingle(),
         fetchPlayerRating(),
       ]);
-      setPlayerXp(profileRes.data?.xp ?? 0);
       setPlayerUsername(profileRes.data?.username ?? null);
-      setPlayerRating(ratingData.rating);
       playerRatingRef.current = ratingData.rating;
     })();
   }, []);
@@ -1856,7 +1844,6 @@ function BattleArena() {
 
   const resetLiveTurnLocks = useCallback((nextTurn: number) => {
     liveTurnNumberRef.current = nextTurn;
-    setLiveTurnNumber(nextTurn);
     liveActionLockedRef.current = false;
     liveOpponentLockedRef.current = false;
     liveResolvingRef.current = false;
@@ -3091,7 +3078,7 @@ function BattleArena() {
       announce(won ? t("battle.victoryAnnouncement") : t("battle.defeatAnnouncement"), "assertive");
       const winnerId = won ? myUserIdRef.current : opponentUserIdRef.current;
       if (opponentTypeRef.current === "live" && pvpChannelRef.current && winnerId) {
-        pvpChannelRef.current.send({
+        void pvpChannelRef.current.send({
           type: "broadcast",
           event: "battle_end",
           payload: { winner_id: winnerId },
@@ -3131,7 +3118,7 @@ function BattleArena() {
       }, 1700);
 
       // Persist battle to learning_history + increment daily challenge on win
-      (async () => {
+      void (async () => {
         try {
           const {
             data: { user },
@@ -3195,7 +3182,6 @@ function BattleArena() {
                 : data?.opponent_rating_after;
               if (typeof nextRating === "number") {
                 setRatingChange(nextRating - playerRatingRef.current);
-                setPlayerRating(nextRating);
                 playerRatingRef.current = nextRating;
                 window.dispatchEvent(new Event("pvp-leaderboard-updated"));
               }
@@ -3211,7 +3197,6 @@ function BattleArena() {
               toast.error("Couldn't record this battle's rating change.");
             } else if (typeof data?.rating_after === "number") {
               setRatingChange(data.rating_delta ?? 0);
-              setPlayerRating(data.rating_after);
               playerRatingRef.current = data.rating_after;
               window.dispatchEvent(new Event("pvp-leaderboard-updated"));
             }
@@ -3744,7 +3729,6 @@ function BattleArena() {
         // Sync refs for async-safe use inside callbacks
         setOpponentType(match.type);
         opponentTypeRef.current = match.type;
-        setOpponentRating(match.opponentRating);
         opponentRatingRef.current = match.opponentRating;
 
         const baseArch = ARCHETYPES[cls];
@@ -3860,7 +3844,6 @@ function BattleArena() {
 
       setOpponentType("live");
       opponentTypeRef.current = "live";
-      setOpponentRating(opts.opponentRating ?? 1000);
       opponentRatingRef.current = opts.opponentRating ?? 1000;
       setPvpBattleId(opts.battleId);
 
@@ -4672,7 +4655,6 @@ function BattleArena() {
         <BattleChat
           pvpChannelRef={pvpChannelRef}
           opponentType={opponentType}
-          opponentName={opponent.name}
           playerName={player.name}
           phase={phase}
           incomingItems={incomingChats}
@@ -4870,8 +4852,8 @@ function LeaderboardCard() {
       if (pending) clearTimeout(pending);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pvp-leaderboard-updated", scheduleRefresh);
-      supabase.removeChannel(xpChan);
-      supabase.removeChannel(pvpChan);
+      void supabase.removeChannel(xpChan);
+      void supabase.removeChannel(pvpChan);
     };
   }, []);
 
@@ -5046,7 +5028,7 @@ function DailyChallengeCard() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
     const handler = () => refresh();
     window.addEventListener("daily-challenge-updated", handler);
     return () => window.removeEventListener("daily-challenge-updated", handler);

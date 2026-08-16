@@ -73,7 +73,7 @@ export function AnswerComments({
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [answerId]);
 
   const submit = async (e: React.FormEvent) => {
@@ -124,14 +124,14 @@ export function AnswerComments({
     } else if (inserted?.id) {
       void moderateAfterInsert(body, "comment", inserted.id);
     }
-    load();
+    void load();
   };
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("forum_comments").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Comment removed");
-    load();
+    void load();
   };
 
   return (

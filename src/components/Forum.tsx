@@ -472,10 +472,10 @@ export function Forum({
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, []);
   useEffect(() => {
-    if (user) fetchUserVotes(user.id);
+    if (user) void fetchUserVotes(user.id);
   }, [user]);
 
   const handleVote = async (threadId: string, dir: 1 | -1) => {

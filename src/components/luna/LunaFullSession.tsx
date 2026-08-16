@@ -34,8 +34,6 @@ import { useLunaVoice } from "@/hooks/use-luna-voice";
 import { processUserImage } from "@/lib/luna-image";
 import "./LunaSession.css";
 
-type LunaMessage = ConversationMessage;
-
 const INTRO_CONTENT =
   "Welcome to a deep learning session. 🌙 I'm Luna, your Socratic tutor. Tell me what you're working on, or pick a topic, and I'll guide you through it step by step. No shortcuts, just real understanding.";
 const BREAK_MESSAGE =
@@ -77,7 +75,7 @@ export function LunaFullSession() {
     const last = messages[messages.length - 1];
     if (last?.role === "assistant" && last.content && last.id !== lastSpokenRef.current) {
       lastSpokenRef.current = last.id ?? last.content.slice(0, 32);
-      voice.speak(last.content);
+      void voice.speak(last.content);
     }
   }, [messages, isStreaming, voice]);
 
@@ -276,7 +274,7 @@ export function LunaFullSession() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              send();
+              void send();
             }}
             className="luna-input-row"
           >

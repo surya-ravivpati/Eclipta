@@ -19,7 +19,7 @@ export async function processUserImage(file: File): Promise<string | null> {
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-      reader.onerror = () => reject(reader.error || new Error("read failed"));
+      reader.onerror = () => reject(reader.error ?? new Error("read failed"));
       reader.readAsDataURL(file);
     });
     if (!dataUrl) return null;

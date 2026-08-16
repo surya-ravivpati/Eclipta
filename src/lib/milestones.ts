@@ -1,5 +1,5 @@
 // Milestone detection for XP thresholds and trophy road unlocks
-import { ROAD_NODES, type RoadNode } from "./trophy-road-data";
+import { ROAD_NODES } from "./trophy-road-data";
 import { toast } from "sonner";
 
 // XP milestone thresholds (beyond trophy road)

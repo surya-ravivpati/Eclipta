@@ -24,7 +24,7 @@ export function useLunaProfile() {
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -69,7 +69,7 @@ export function useLunaProfile() {
 
     return () => {
       cancelled = true;
-      if (channel) supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, []);
 

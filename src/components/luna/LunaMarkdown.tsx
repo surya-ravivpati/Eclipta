@@ -38,11 +38,26 @@ function normalizeLatex(input: string): string {
   return out;
 }
 
+/**
+ * Flatten a code node's children to plain text.
+ *
+ * remark hands `code` a string in every normal case, but the type is the full
+ * ReactNode union, and `String()` on an element renders "[object Object]" into
+ * the code box. Walking the union keeps a nested node readable and drops
+ * anything with no text of its own.
+ */
+function nodeText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(nodeText).join("");
+  return "";
+}
+
 const components: Components = {
   // Block + inline code. ReactMarkdown >=9 passes `inline` via parent context,
   // so we sniff the className for `language-*` to decide.
   code({ className, children, ...props }) {
-    const text = String(children ?? "").replace(/\n$/, "");
+    const text = nodeText(children).replace(/\n$/, "");
     const langMatch = /language-(\w+)/.exec(className || "");
     const isBlock = !!langMatch || text.includes("\n");
     if (!isBlock) {

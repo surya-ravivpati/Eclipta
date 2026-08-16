@@ -563,7 +563,6 @@ function ProgressRail({
   useEffect(() => {
     setActive(Math.round(activeIndex.get()));
   }, [activeIndex]);
-  const N = ORDER.length;
 
   return (
     <div

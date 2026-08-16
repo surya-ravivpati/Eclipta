@@ -31,7 +31,7 @@ function AuthCallback() {
     const finish = () => {
       if (done) return;
       done = true;
-      navigate({ to: "/" });
+      void navigate({ to: "/" });
     };
 
     // Surface an explicit provider error from the URL (query or hash).
@@ -45,7 +45,7 @@ function AuthCallback() {
     }
 
     // If the session is already there (fast exchange), go straight in.
-    supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }) => {
       if (data.session) finish();
     });
 

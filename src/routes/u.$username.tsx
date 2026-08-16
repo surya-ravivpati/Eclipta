@@ -74,7 +74,7 @@ function PublicProfilePage() {
   const [challengeArch, setChallengeArch] = useState<ArchetypeId>("speedster");
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       setLoading(true);
       // Use the SECURITY DEFINER RPC so only the 8 safe public fields are
       // returned regardless of who is calling (anon or authenticated).

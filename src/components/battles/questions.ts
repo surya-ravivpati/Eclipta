@@ -12,12 +12,6 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-const TOPICS: Record<Difficulty, string[]> = {
-  easy: ["Addition", "Subtraction", "Basic Arithmetic"],
-  medium: ["Multiplication", "Division", "Fractions"],
-  hard: ["Exponents", "Order of Operations", "Algebra"],
-};
-
 export function generateQuestion(difficulty: Difficulty): MathQuestion {
   let a: number, b: number, answer: number, q: string;
   let topic: string;

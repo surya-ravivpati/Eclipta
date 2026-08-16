@@ -34,7 +34,7 @@ export function FollowingFeedCard({ userId }: { userId: string }) {
   const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       setLoading(true);
       const { data: follows } = await supabase
         .from("user_follows")

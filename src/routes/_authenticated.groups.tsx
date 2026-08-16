@@ -12,7 +12,7 @@ import {
   type StudyRoomDetails,
 } from "@/lib/study-rooms";
 import { useOwnedEcliptars } from "@/hooks/use-player-xp";
-import { ECLIPTARS, getEcliptarBySlug } from "@/lib/ecliptars";
+import { ECLIPTARS } from "@/lib/ecliptars";
 
 export const Route = createFileRoute("/_authenticated/groups")({
   head: () => ({
@@ -89,7 +89,7 @@ function StudyRoomsLobby() {
 
   const openRoom = async (room: StudyRoom) => {
     if (room.am_member) {
-      navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
+      void navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
       return;
     }
     // Public room you're not in yet - join, then enter.
@@ -103,7 +103,7 @@ function StudyRoomsLobby() {
       toast.error("Couldn't join", { description: error });
       return;
     }
-    navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
+    void navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
   };
 
   return (
@@ -177,7 +177,7 @@ function StudyRoomsLobby() {
           onClose={() => setShowCreate(false)}
           onCreated={(room) => {
             setShowCreate(false);
-            navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
+            void navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
           }}
         />
       )}
@@ -189,7 +189,7 @@ function StudyRoomsLobby() {
           onClose={() => setShowJoin(false)}
           onJoined={(room) => {
             setShowJoin(false);
-            navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
+            void navigate({ to: "/groups/$roomId", params: { roomId: room.id } });
           }}
         />
       )}

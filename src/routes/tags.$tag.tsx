@@ -35,7 +35,7 @@ function TagPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       setLoading(true);
       const { data } = await supabase
         .from("forum_threads")

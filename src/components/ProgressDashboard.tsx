@@ -55,7 +55,7 @@ export function ProgressDashboard() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const [p, e, t] = await Promise.all([
         supabase
           .from("user_profiles")

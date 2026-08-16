@@ -26,15 +26,20 @@ export function useXpMilestones(opts: { onLunaMessages?: (msgs: string[]) => voi
         return;
       }
       const prevXp = lastXpRef.current;
-      if (newXp <= prevXp) { lastXpRef.current = newXp; return; }
+      if (newXp <= prevXp) {
+        lastXpRef.current = newXp;
+        return;
+      }
       lastXpRef.current = newXp;
       const { toasts, lunaMessages } = checkMilestones(prevXp, newXp);
       fireMilestoneToasts(toasts);
       if (lunaMessages.length > 0) onLunaMessagesRef.current?.(lunaMessages);
     };
 
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (cancelled || !user) return;
       const { data } = await supabase
         .from("user_profiles")
@@ -47,17 +52,23 @@ export function useXpMilestones(opts: { onLunaMessages?: (msgs: string[]) => voi
         .channel(`xp-milestones:${user.id}:${Math.random().toString(36).slice(2)}`)
         .on<TableRow<"user_profiles">>(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "user_profiles", filter: `user_id=eq.${user.id}` },
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "user_profiles",
+            filter: `user_id=eq.${user.id}`,
+          },
           (payload) => {
-            if ("xp" in payload.new && typeof payload.new.xp === "number") handleNewXp(payload.new.xp);
-          }
+            if ("xp" in payload.new && typeof payload.new.xp === "number")
+              handleNewXp(payload.new.xp);
+          },
         )
         .subscribe();
     })();
 
     return () => {
       cancelled = true;
-      if (channel) supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, []);
 }

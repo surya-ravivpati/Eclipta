@@ -14,7 +14,6 @@ import {
   Eye,
   Globe,
   EyeOff,
-  Save,
   AlertTriangle,
   Check,
 } from "lucide-react";
@@ -95,12 +94,12 @@ function CourseEditor() {
     }
     if (!c) {
       toast.error("Couldn't load course");
-      navigate({ to: "/profile" });
+      void navigate({ to: "/profile" });
       return;
     }
     if (c.user_id !== user.id) {
       toast.error("Not your course");
-      navigate({ to: "/profile" });
+      void navigate({ to: "/profile" });
       return;
     }
     setCourse(c);
@@ -122,7 +121,7 @@ function CourseEditor() {
   }, [courseId, user, navigate, activeModuleId]);
 
   useEffect(() => {
-    reload();
+    void reload();
   }, [reload]);
 
   if (!user || loading || !course) {
@@ -668,7 +667,7 @@ function QuizBlockEditor({
   onChange: (d: QuizBlockData) => void;
 }) {
   const [question, setQuestion] = useState(data.question || "");
-  const [options, setOptions] = useState<string[]>(data.options || ["", "", "", ""]);
+  const [options, setOptions] = useState<string[]>(data.options ?? ["", "", "", ""]);
   const [correctIndex, setCorrectIndex] = useState<number>(
     typeof data.correctIndex === "number" ? data.correctIndex : 0,
   );

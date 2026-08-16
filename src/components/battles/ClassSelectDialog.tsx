@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Lock, ArrowLeft, Zap, Swords, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ARCHETYPES, ARCHETYPE_ABILITY_COPY } from "./archetypes";
-import type { ArchetypeId } from "./types";
+import type { Archetype, ArchetypeId } from "./types";
 import { DAMAGE_TUNING } from "@/config/battle-tuning";
 import { getUnlockedArchetypes, ROAD_NODES } from "@/lib/trophy-road-data";
 import { cn } from "@/lib/utils";
@@ -24,13 +24,7 @@ function StatPill({ label, value, dim }: { label: string; value: string; dim?: b
   );
 }
 
-function ArchStatGrid({
-  arch,
-  isUnlocked,
-}: {
-  arch: import("./types").Archetype;
-  isUnlocked: boolean;
-}) {
+function ArchStatGrid({ arch, isUnlocked }: { arch: Archetype; isUnlocked: boolean }) {
   const rnd = arch.statsAreRandom;
   // Ranged stats read as a span; the Gambler hides everything until it rolls.
   const dmgVal = rnd
@@ -78,7 +72,7 @@ export function ClassSelectDialog({ onSelect }: { onSelect: (sel: ClassSelection
   const [equippedSlug, setEquippedSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();

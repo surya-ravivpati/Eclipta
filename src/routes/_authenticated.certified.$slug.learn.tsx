@@ -9,7 +9,6 @@ import {
   Menu,
   X,
   BookOpen,
-  PlayCircle,
   MessagesSquare,
   Trophy,
   Lightbulb,
@@ -156,7 +155,7 @@ function CoursePlayer() {
   const goTo = (idx: number) => {
     const target = lessons[idx];
     if (!target) return;
-    navigate({
+    void navigate({
       to: "/certified/$slug/learn",
       params: { slug: course.slug },
       search: { m: target.moduleIdx, l: target.lessonIdx },

@@ -127,7 +127,7 @@ export function useLunaConversation({
       void recordDailyPractice();
       const pref = extractPreference(text);
       if (pref) {
-        (async () => {
+        void (async () => {
           try {
             const {
               data: { user },
@@ -213,7 +213,7 @@ export function useLunaConversation({
       onDone: () => {
         setIsStreaming(false);
         setAwaitingFirstToken(false);
-        (async () => {
+        void (async () => {
           try {
             const {
               data: { user },
@@ -257,8 +257,8 @@ export function useLunaConversation({
                   body: JSON.stringify({
                     userTurn: text.slice(0, 600),
                     assistantTurn: cleanedSummary.slice(0, 600),
-                    currentWeak: (profileRef.current?.weak_areas as string[] | undefined) || [],
-                    currentStrong: (profileRef.current?.strong_areas as string[] | undefined) || [],
+                    currentWeak: (profileRef.current?.weak_areas as string[] | undefined) ?? [],
+                    currentStrong: (profileRef.current?.strong_areas as string[] | undefined) ?? [],
                   }),
                 }).catch((error) => {
                   console.warn("luna-memory background extraction failed", error);

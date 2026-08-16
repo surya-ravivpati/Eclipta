@@ -14,7 +14,7 @@ const GENERIC_INTROS = [
 function pickIntro(profile: Record<string, unknown> | null): string {
   if (!profile) return GENERIC_INTROS[Math.floor(Math.random() * GENERIC_INTROS.length)];
   const name = (profile.username as string | null) || "";
-  const weak = (profile.weak_areas as string[] | null) || [];
+  const weak = (profile.weak_areas as string[] | null) ?? [];
   const streak = (profile.current_streak as number) || 0;
   const xp = (profile.xp as number) || 0;
 
@@ -44,7 +44,7 @@ export function Luna() {
   const [introContent, setIntroContent] = useState<string>("");
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();

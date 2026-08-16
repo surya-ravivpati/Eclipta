@@ -232,9 +232,9 @@ function AdminForumPage() {
 
   useEffect(() => {
     if (!isModerator) return;
-    if (tab === "queue") loadQueue();
-    else if (tab === "reports") loadReports();
-    else loadLog();
+    if (tab === "queue") void loadQueue();
+    else if (tab === "reports") void loadReports();
+    else void loadLog();
   }, [isModerator, tab, filter]);
 
   const setStatus = async (
@@ -248,8 +248,8 @@ function AdminForumPage() {
     toast.success(
       `${status === "visible" ? "Restored" : status === "hidden" ? "Hidden" : "Removed"}`,
     );
-    if (tab === "queue") loadQueue();
-    else if (tab === "reports") loadReports();
+    if (tab === "queue") void loadQueue();
+    else if (tab === "reports") void loadReports();
   };
 
   const dismissReport = async (id: string) => {
@@ -259,7 +259,7 @@ function AdminForumPage() {
       .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Dismissed");
-    loadReports();
+    void loadReports();
   };
 
   const deleteTarget = async (r: Report) => {
@@ -278,7 +278,7 @@ function AdminForumPage() {
     const { error } = await supabase.from(table).delete().eq("id", r.target_id);
     if (error) return toast.error(error.message);
     toast.success(`${r.target_type} deleted`);
-    loadReports();
+    void loadReports();
   };
 
   if (roleLoading) {

@@ -14,7 +14,7 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { LunaMark } from "./LunaMark";
-import { parseLunaTag, LUNA_TAG_CONFIG } from "@/lib/luna-api";
+import { LUNA_TAG_CONFIG } from "@/lib/luna-api";
 import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { Link } from "@tanstack/react-router";
 import { LunaMarkdown } from "./LunaMarkdown";
@@ -87,7 +87,7 @@ export function LunaChatPanel({
     const last = messages[messages.length - 1];
     if (last?.role === "assistant" && last.content && last.id !== lastSpokenRef.current) {
       lastSpokenRef.current = last.id ?? last.content.slice(0, 32);
-      voice.speak(last.content);
+      void voice.speak(last.content);
     }
   }, [messages, isStreaming, voice]);
 
@@ -280,7 +280,7 @@ export function LunaChatPanel({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                send();
+                void send();
               }}
               className="flex items-center gap-2"
             >

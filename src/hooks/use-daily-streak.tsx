@@ -92,7 +92,7 @@ export function useDailyStreak() {
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       await refresh();
       if (cancelled || !userIdRef.current) return;
       channel = supabase
@@ -111,13 +111,13 @@ export function useDailyStreak() {
     })();
 
     const onVisible = () => {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState === "visible") void refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", onVisible);
-      if (channel) supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [refresh]);
 

@@ -64,7 +64,7 @@ export function ChallengeInbox() {
 
   // Load my equipped archetype to use as default response class
   useEffect(() => {
-    (async () => {
+    void (async () => {
       if (!user) return;
       const { data } = await supabase
         .from("user_profiles")

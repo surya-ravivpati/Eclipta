@@ -226,7 +226,7 @@ export function CourseBuilder() {
 
   const goToEditor = () => {
     if (verdict?.courseId) {
-      navigate({ to: "/courses/$courseId/edit", params: { courseId: verdict.courseId } });
+      void navigate({ to: "/courses/$courseId/edit", params: { courseId: verdict.courseId } });
     }
   };
 

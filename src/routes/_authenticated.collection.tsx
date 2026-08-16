@@ -222,7 +222,7 @@ function CollectionPage() {
   const [expandedArch, setExpandedArch] = useState<MonsterArchetypeKey | null>(null);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();

@@ -108,7 +108,7 @@ function OnboardingPage() {
 
   // Prefill username from email handle when available
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    void supabase.auth.getUser().then(({ data }) => {
       const handle = data.user?.email
         ?.split("@")[0]
         ?.replace(/[^a-z0-9_]/gi, "")
@@ -217,7 +217,7 @@ function OnboardingPage() {
       }
 
       toast.success("You're in. Welcome to the arena.");
-      navigate({ to: "/" });
+      void navigate({ to: "/" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Try again.");
     } finally {
@@ -227,7 +227,7 @@ function OnboardingPage() {
 
   const next = () => {
     if (!canAdvance) return;
-    if (step === total - 1) handleFinish();
+    if (step === total - 1) void handleFinish();
     else setStep((s) => s + 1);
   };
   const back = () => setStep((s) => Math.max(0, s - 1));

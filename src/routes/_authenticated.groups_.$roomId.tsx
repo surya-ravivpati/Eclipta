@@ -8,6 +8,7 @@ import { SessionClock } from "@/components/study/SessionClock";
 import { GoalPin } from "@/components/study/GoalPin";
 import { AskLuna, StuckLauncher, StuckCard, RecapPanel } from "@/components/study/RoomAssistant";
 import { TeachBackBar, TeachBackCard } from "@/components/study/TeachBack";
+import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getEcliptarBySlug } from "@/lib/ecliptars";
 import {
@@ -154,7 +155,7 @@ function StudyRoomView() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const me = await getMyRoomIdentity();
       meRef.current = me;
       let r = await getRoom(roomId);
@@ -260,13 +261,13 @@ function StudyRoomView() {
         // First SUBSCRIBED is the initial connect (already loaded on mount).
         // Every SUBSCRIBED after that is a RE-connect: realtime drops events
         // while disconnected, so resync the full snapshot to undo any drift.
-        if (status === "SUBSCRIBED") {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
           if (subscribedOnceRef.current) void loadSnapshots();
           else subscribedOnceRef.current = true;
         }
       });
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [roomId, denied, refreshMembers, upsertStuck, upsertRound, loadSnapshots]);
 
@@ -299,7 +300,7 @@ function StudyRoomView() {
     if (denied || !room) return;
     const tick = () => {
       const r = roomRef.current;
-      if (!r || r.phase !== "work") return;
+      if (r?.phase !== "work") return;
       const idleMs = Date.now() - new Date(r.last_activity_at).getTime();
       if (idleMs > 10 * 60_000) void postIdleNudge(roomId);
     };
@@ -420,7 +421,7 @@ function StudyRoomView() {
     leftRef.current = true; // so the member-list change reads as "I left", not "removed"
     await leaveStudyRoom(roomId);
     toast("You left the room");
-    navigate({ to: "/groups" });
+    void navigate({ to: "/groups" });
   };
 
   const blockAuthor = async (userId: string, name: string) => {
@@ -431,7 +432,7 @@ function StudyRoomView() {
 
   const copyCode = () => {
     if (!room?.join_code) return;
-    navigator.clipboard?.writeText(room.join_code);
+    void navigator.clipboard?.writeText(room.join_code);
     toast.success("Join code copied");
   };
 

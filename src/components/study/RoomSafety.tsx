@@ -89,21 +89,24 @@ export function RemoveMemberButton({
 /* -- Per-message overflow menu: quiet Report + Block. Low-friction by design -
    it lives behind a small ⋯, not a prominent button. -- */
 export function MessageMenu({
-  roomId,
   targetId = null,
   authorKind,
-  reportedUserId,
   authorName,
   snapshot,
   canBlock,
   onBlock,
 }: {
+  /** Where the report came from, and who it is about. Callers pass both, but
+   *  `submitReport` has nowhere to put them yet: the report payload carries
+   *  only a target id, so a moderator cannot see the room or the reported
+   *  account. Both need to reach the backend before a moderation queue can be
+   *  useful; until then they are accepted and deliberately unused. */
   roomId: string;
+  reportedUserId: string | null;
   /** The study_room_messages row id, so the pipeline can re-scan it. Null for
    *  AI/system content with no message row (report is logged, not re-scanned). */
   targetId?: string | null;
   authorKind: ReportAuthorKind;
-  reportedUserId: string | null;
   authorName: string;
   snapshot: string;
   canBlock: boolean;

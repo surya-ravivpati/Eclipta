@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   Star,
   Clock,
-  Users,
   BookOpen,
   ArrowLeft,
   Check,
@@ -52,7 +51,7 @@ function CourseDetail() {
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const enrolled = await isEnrolledInCourse(user.id, course.slug);
       if (cancelled) return;
       setIsEnrolled(enrolled);
@@ -78,7 +77,7 @@ function CourseDetail() {
     setIsEnrolled(true);
     toast.success(`Enrolled in ${course.title}`);
     // Send straight into the player on first enroll.
-    navigate({ to: "/certified/$slug/learn", params: { slug: course.slug } });
+    void navigate({ to: "/certified/$slug/learn", params: { slug: course.slug } });
   };
 
   return (

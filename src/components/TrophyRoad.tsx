@@ -656,7 +656,7 @@ function CinemaRoad({
       smoothXRef.current += diff * 0.1;
       if (Math.abs(diff) < 0.3) smoothXRef.current = targetXRef.current;
 
-      road.style.transform = `translate3d(${-smoothXRef.current.toFixed(2)}px, 0, 0)`;
+      road.style.transform = `translate3d(${(-smoothXRef.current).toFixed(2)}px, 0, 0)`;
 
       // Progress bar
       const pct = maxXRef.current > 0 ? (smoothXRef.current / maxXRef.current) * 100 : 0;
@@ -822,7 +822,7 @@ function CinemaRoad({
 
         {/* The road */}
         <div className="tr-cinema-road" ref={roadRef}>
-          {roadItems.map((item, idx) => {
+          {roadItems.map((item) => {
             if (item.type === "divider") {
               const t = TIERS[item.tier];
               return (

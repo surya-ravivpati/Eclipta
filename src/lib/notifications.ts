@@ -35,18 +35,33 @@ export interface NotificationTypeMeta {
   fallbackLink?: (meta: Record<string, unknown>) => string | null;
 }
 
+/**
+ * Notification metadata arrives as untyped JSON from the database, so a field
+ * that should hold a name or an id can hold anything. Interpolating a value
+ * straight from it risks printing "[object Object]" into someone's
+ * notification list, or worse, into the query string of a link. Every read
+ * goes through here, so a malformed row degrades to a fallback rather than to
+ * nonsense.
+ */
+function scalar(meta: Record<string, unknown>, key: string): string | null {
+  const value = meta[key];
+  if (typeof value === "string") return value.length > 0 ? value : null;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return null;
+}
+
 function actor(meta: Record<string, unknown>): string {
   return (
-    (meta.author as string | undefined) ??
-    (meta.username as string | undefined) ??
-    (meta.challenger_username as string | undefined) ??
-    (meta.opponent_username as string | undefined) ??
+    scalar(meta, "author") ??
+    scalar(meta, "username") ??
+    scalar(meta, "challenger_username") ??
+    scalar(meta, "opponent_username") ??
     "Someone"
   );
 }
 
 function title(meta: Record<string, unknown>, fallback = "your thread"): string {
-  return (meta.title as string | undefined) ?? fallback;
+  return scalar(meta, "title") ?? fallback;
 }
 
 export const NOTIFICATION_TYPES: Record<string, NotificationTypeMeta> = {
@@ -96,16 +111,24 @@ export const NOTIFICATION_TYPES: Record<string, NotificationTypeMeta> = {
     icon: Swords,
     category: "battle",
     color: "text-neon-pink",
-    describe: (m) =>
-      `${actor(m)} challenged you to a battle${m.archetype ? ` as ${m.archetype}` : ""}`,
-    fallbackLink: (m) => (m.challenge_id ? `/battles?challenge=${m.challenge_id}` : "/battles"),
+    describe: (m) => {
+      const archetype = scalar(m, "archetype");
+      return `${actor(m)} challenged you to a battle${archetype ? ` as ${archetype}` : ""}`;
+    },
+    fallbackLink: (m) => {
+      const id = scalar(m, "challenge_id");
+      return id ? `/battles?challenge=${encodeURIComponent(id)}` : "/battles";
+    },
   },
   challenge_accepted: {
     icon: Check,
     category: "battle",
     color: "text-neon-cyan",
     describe: (m) => `${actor(m)} accepted your challenge - battle starting`,
-    fallbackLink: (m) => (m.battle_id ? `/battles?battle=${m.battle_id}` : "/battles"),
+    fallbackLink: (m) => {
+      const id = scalar(m, "battle_id");
+      return id ? `/battles?battle=${encodeURIComponent(id)}` : "/battles";
+    },
   },
   challenge_rejected: {
     icon: X,

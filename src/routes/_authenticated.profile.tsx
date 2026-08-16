@@ -69,7 +69,7 @@ interface Profile {
   avatar_url: string | null;
   luna_notes: string | null;
   luna_auto_notes: string | null;
-  learner_profile: unknown | null;
+  learner_profile: unknown;
 }
 interface Ecliptar {
   id: string;
@@ -86,12 +86,6 @@ interface Enrollment {
 interface ForumActivity {
   id: string;
   title: string;
-  created_at: string;
-}
-interface Proposal {
-  id: string;
-  topic: string;
-  status: string;
   created_at: string;
 }
 interface ProposalFull {
@@ -174,22 +168,22 @@ function ProfilePage() {
         .select("id", { count: "exact", head: true })
         .eq("follower_id", user.id),
     ]);
-    setProfile(p.data || null);
+    setProfile(p.data ?? null);
     setEcliptars((e.data as Ecliptar[]) || []);
     setEnrollments((en.data as Enrollment[]) || []);
     setThreads((t.data as ForumActivity[]) || []);
-    setAnswersCount(a.count || 0);
+    setAnswersCount(a.count ?? 0);
     const allProps = (pr.data as ProposalFull[]) || [];
     setDeniedProposals(allProps.filter((p) => p.status === "denied"));
     setPendingProposals(allProps.filter((p) => p.status !== "denied" && p.status !== "approved"));
     setMyCourses((uc.data as UserCourse[]) || []);
-    setFollowerCount(fc.count || 0);
-    setFollowingCount(fgc.count || 0);
+    setFollowerCount(fc.count ?? 0);
+    setFollowingCount(fgc.count ?? 0);
     setLoading(false);
   };
 
   useEffect(() => {
-    reload();
+    void reload();
   }, [user]);
 
   const handleLogout = async () => {

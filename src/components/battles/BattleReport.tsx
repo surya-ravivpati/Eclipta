@@ -84,7 +84,7 @@ export function BattleReport({
     if (xpSavedRef.current) return;
     xpSavedRef.current = true;
 
-    (async () => {
+    void (async () => {
       try {
         const {
           data: { user },

@@ -89,7 +89,7 @@ function CoursesHub() {
   // Load published community courses + (if signed in) enrollment & progress.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const data = await getPublishedCommunityCourses(120);
       if (cancelled) return;
       setCommunity(communityToUnified(data));
@@ -109,7 +109,7 @@ function CoursesHub() {
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const en = await getEnrollmentSlugsWithDates(user.id);
       if (cancelled) return;
       setEnrolledSlugs(new Set(en.map((r) => r.course_slug)));

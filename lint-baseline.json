@@ -1,18 +1,15 @@
 {
-  "warnings": 240,
+  "warnings": 206,
   "counts": {
     "@typescript-eslint/no-unsafe-assignment": 13,
     "no-restricted-syntax": 155,
-    "@typescript-eslint/no-empty-function": 8,
-    "@typescript-eslint/no-misused-promises": 10,
+    "@typescript-eslint/no-empty-function": 1,
     "@typescript-eslint/no-unsafe-member-access": 8,
-    "react-hooks/exhaustive-deps": 13,
+    "react-hooks/exhaustive-deps": 10,
     "@typescript-eslint/no-explicit-any": 14,
     "@typescript-eslint/no-unsafe-argument": 1,
-    "react-refresh/only-export-components": 10,
-    "@typescript-eslint/no-unused-vars": 2,
     "@typescript-eslint/no-unsafe-return": 3,
-    "@typescript-eslint/only-throw-error": 3
+    "parse-error": 1
   },
   "updated": "2026-08-16"
 }

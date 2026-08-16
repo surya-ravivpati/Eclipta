@@ -22,6 +22,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { useAuth } from "@/hooks/use-auth";
 import { getPlayerStanding } from "@/repositories/battles";
 import { usePlayerRating } from "./use-player-rating";
+import { neverSettles } from "@/lib/test-helpers";
 
 function wrapper({ children }: { children: ReactNode }) {
   // A fresh, retry-free client per test so a deliberately-failing fetch in
@@ -46,7 +47,7 @@ describe("usePlayerRating", () => {
 
   it("starts in a loading state before the first fetch resolves", () => {
     mockAuthedAs("u1");
-    vi.mocked(getPlayerStanding).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getPlayerStanding).mockReturnValue(neverSettles());
 
     const { result } = renderHook(() => usePlayerRating(), { wrapper });
 

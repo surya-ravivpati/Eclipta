@@ -110,7 +110,9 @@ export function MessageMenu({
   authorName: string;
   snapshot: string;
   canBlock: boolean;
-  onBlock: () => void;
+  /** Only reached when `canBlock` is true, so callers that never show the
+   *  block action have nothing to supply. */
+  onBlock?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -161,7 +163,7 @@ export function MessageMenu({
               role="menuitem"
               onClick={() => {
                 setOpen(false);
-                onBlock();
+                onBlock?.();
               }}
             >
               <Ban size={12} /> Block {authorName}

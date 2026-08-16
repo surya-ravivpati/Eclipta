@@ -121,15 +121,21 @@ export default tseslint.config(
         "warn",
         { ignorePrimitives: { string: true } },
       ],
-      /* Both frameworks in use signal control flow by throwing a Response:
-         TanStack Start's server middleware throws one to short-circuit a
-         request, and Router's `redirect()` returns a `Response & {...}` that
-         is meant to be thrown. Neither is a mistake, so allow the type rather
-         than scatter disable comments over every route guard. Anything else
-         thrown must still be an Error. */
+      /* Both frameworks in use signal control flow by throwing something that
+         is not an Error: TanStack Start's server middleware throws a Response
+         to short-circuit a request, Router's `redirect()` returns a
+         `Response & {...}` meant to be thrown, and its `notFound()` returns a
+         plain `NotFoundError` object. None of these is a mistake, so allow the
+         types rather than scatter disable comments over every route guard.
+         Anything else thrown must still be an Error. */
       "@typescript-eslint/only-throw-error": [
         "warn",
-        { allow: [{ from: "lib", name: "Response" }] },
+        {
+          allow: [
+            { from: "lib", name: "Response" },
+            { from: "package", package: "@tanstack/router-core", name: "NotFoundError" },
+          ],
+        },
       ],
       "@typescript-eslint/no-empty-function": "warn",
       "@typescript-eslint/no-base-to-string": "warn",
@@ -204,6 +210,25 @@ export default tseslint.config(
   {
     files: ["vitest.config.ts", "playwright.config.ts", "vite.config.ts", "drizzle.config.ts"],
     rules: { "no-restricted-syntax": "off" },
+  },
+
+  // shadcn/ui owns these files: AGENTS.md says install them through its CLI
+  // and never hand-roll a primitive, so they get regenerated wholesale. Their
+  // house style pairs a component with its variants (`Button` +
+  // `buttonVariants`) or its hook (`useSidebar`, `useFormField`) in one file,
+  // which costs fast refresh in dev and nothing in production. Editing them
+  // back would be undone by the next `shadcn add`.
+  {
+    files: ["src/components/ui/**"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
+
+  // A context, its provider, and the hook that reads it belong together - the
+  // hook is meaningless without the provider, and splitting them to please a
+  // dev-only fast-refresh rule buys nothing.
+  {
+    files: ["src/hooks/use-auth.tsx", "src/hooks/use-theme.tsx", "src/router.tsx"],
+    rules: { "react-refresh/only-export-components": "off" },
   },
 
   // Tests assert against loose fixtures and may reach for escape hatches.

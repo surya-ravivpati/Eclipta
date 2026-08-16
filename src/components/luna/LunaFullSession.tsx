@@ -27,7 +27,7 @@ import { useLunaSessionTimer } from "@/hooks/use-luna-session-timer";
 import { LunaMarkdown } from "./LunaMarkdown";
 import { useXpMilestones } from "@/hooks/use-xp-milestones";
 import { useLunaHistory } from "@/hooks/use-luna-history";
-import { useLunaConversation, type ConversationMessage } from "@/hooks/use-luna-conversation";
+import { useLunaConversation } from "@/hooks/use-luna-conversation";
 import { LunaActions } from "./LunaActions";
 import { LunaThinkingIndicator } from "./LunaThinkingIndicator";
 import { useLunaVoice } from "@/hooks/use-luna-voice";

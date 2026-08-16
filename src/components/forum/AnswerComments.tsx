@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { MessageCircle, Loader2, Flag, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,7 +61,7 @@ export function AnswerComments({
   const [submitting, setSubmitting] = useState(false);
   const [reporting, setReporting] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from("forum_comments")
@@ -70,11 +70,11 @@ export function AnswerComments({
       .order("created_at", { ascending: true });
     setComments((data as Comment[]) || []);
     setLoading(false);
-  };
+  }, [answerId]);
 
   useEffect(() => {
     void load();
-  }, [answerId]);
+  }, [load]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -42,7 +42,7 @@ function ResetPasswordPage() {
       toast.error(error.message);
     } else {
       toast.success("Password updated! Redirecting...");
-      setTimeout(() => navigate({ to: "/" }), 1500);
+      setTimeout(() => void navigate({ to: "/" }), 1500);
     }
   };
 

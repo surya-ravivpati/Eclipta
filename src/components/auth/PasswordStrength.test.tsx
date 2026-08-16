@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { PasswordStrength, scorePassword } from "./PasswordStrength";
+import { PasswordStrength } from "./PasswordStrength";
+import { scorePassword } from "@/lib/password-strength";
 
 describe("scorePassword", () => {
   it("scores an empty password as the weakest", () => {

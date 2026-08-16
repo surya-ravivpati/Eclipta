@@ -1,25 +1,5 @@
 import { useMemo } from "react";
-
-export interface StrengthResult {
-  score: 0 | 1 | 2 | 3 | 4;
-  label: string;
-  color: string;
-}
-
-export function scorePassword(pw: string): StrengthResult {
-  let score = 0;
-  if (pw.length >= 8) score++;
-  if (pw.length >= 12) score++;
-  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
-  if (/\d/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  // Cap at 4
-  const capped = Math.min(score, 4) as 0 | 1 | 2 | 3 | 4;
-  const labels = ["Too weak", "Weak", "Fair", "Strong", "Excellent"];
-  // Palette: red (functional weak) -> blue -> gold (strong).
-  const colors = ["bg-destructive", "bg-destructive", "bg-neon-cyan", "bg-neon-cyan", "bg-primary"];
-  return { score: capped, label: labels[capped], color: colors[capped] };
-}
+import { scorePassword } from "@/lib/password-strength";
 
 export function PasswordStrength({ password }: { password: string }) {
   const { score, label, color } = useMemo(() => scorePassword(password), [password]);

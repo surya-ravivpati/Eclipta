@@ -1674,20 +1674,22 @@ function BattleArena() {
           table: "pvp_turn_actions",
           filter: `battle_id=eq.${pvpBattleId}`,
         },
-        async (payload) => {
-          const row = payload.new as { turn_number: number; actor_id: string };
-          if (row.turn_number !== liveTurnNumberRef.current) return;
-          if (row.actor_id !== myUserIdRef.current) {
-            liveOpponentLockedRef.current = true;
-            setLiveOpponentLocked(true);
-          }
-          if (liveActionLockedRef.current) {
-            const { data } = await supabase.rpc("get_pvp_turn_resolution", {
-              p_battle_id: pvpBattleId,
-              p_turn_number: row.turn_number,
-            });
-            if (data?.ready) liveResolutionRef.current(data.actions ?? [], row.turn_number);
-          }
+        (payload) => {
+          void (async () => {
+            const row = payload.new as { turn_number: number; actor_id: string };
+            if (row.turn_number !== liveTurnNumberRef.current) return;
+            if (row.actor_id !== myUserIdRef.current) {
+              liveOpponentLockedRef.current = true;
+              setLiveOpponentLocked(true);
+            }
+            if (liveActionLockedRef.current) {
+              const { data } = await supabase.rpc("get_pvp_turn_resolution", {
+                p_battle_id: pvpBattleId,
+                p_turn_number: row.turn_number,
+              });
+              if (data?.ready) liveResolutionRef.current(data.actions ?? [], row.turn_number);
+            }
+          })();
         },
       )
       .on(
@@ -1698,35 +1700,37 @@ function BattleArena() {
           table: "pvp_battles",
           filter: `id=eq.${pvpBattleId}`,
         },
-        async (payload) => {
-          const row = payload.new as TableRow<"pvp_battles">;
-          if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
-            // A battle can also be resolved by the server's reaper when the
-            // other side goes quiet. Say so - otherwise the win arrives out of
-            // nowhere and reads as a bug rather than a forfeit.
-            if (row.abandoned_by && row.abandoned_by !== myUserIdRef.current) {
-              toast(`${opponentRef.current.name} left the battle.`, {
-                description: "The match is yours by abandonment.",
+        (payload) => {
+          void (async () => {
+            const row = payload.new as TableRow<"pvp_battles">;
+            if (row.status === "completed" && row.winner_id && !battleFinishedRef.current) {
+              // A battle can also be resolved by the server's reaper when the
+              // other side goes quiet. Say so - otherwise the win arrives out of
+              // nowhere and reads as a bug rather than a forfeit.
+              if (row.abandoned_by && row.abandoned_by !== myUserIdRef.current) {
+                toast(`${opponentRef.current.name} left the battle.`, {
+                  description: "The match is yours by abandonment.",
+                });
+              }
+              finishBattle(row.winner_id === myUserIdRef.current);
+            }
+            if (row.rematch_battle_id && !rematchStartedRef.current) {
+              rematchStartedRef.current = true;
+              setLiveRematchState("starting");
+              await startLiveBattleFromId(row.rematch_battle_id);
+            } else if (
+              Array.isArray(row.rematch_requested_by) &&
+              row.rematch_requested_by.length === 1 &&
+              row.rematch_requested_by[0] !== myUserIdRef.current &&
+              liveRematchStateRef.current === "idle"
+            ) {
+              // Opponent asked for a rematch first - surface it so the player
+              // knows clicking QUICK REMATCH will jump straight into another match.
+              toast(`${opponentRef.current.name} wants a rematch.`, {
+                description: "Click QUICK REMATCH on the result screen to accept.",
               });
             }
-            finishBattle(row.winner_id === myUserIdRef.current);
-          }
-          if (row.rematch_battle_id && !rematchStartedRef.current) {
-            rematchStartedRef.current = true;
-            setLiveRematchState("starting");
-            await startLiveBattleFromId(row.rematch_battle_id);
-          } else if (
-            Array.isArray(row.rematch_requested_by) &&
-            row.rematch_requested_by.length === 1 &&
-            row.rematch_requested_by[0] !== myUserIdRef.current &&
-            liveRematchStateRef.current === "idle"
-          ) {
-            // Opponent asked for a rematch first - surface it so the player
-            // knows clicking QUICK REMATCH will jump straight into another match.
-            toast(`${opponentRef.current.name} wants a rematch.`, {
-              description: "Click QUICK REMATCH on the result screen to accept.",
-            });
-          }
+          })();
         },
       )
       .on("broadcast", { event: "battle_end" }, ({ payload }) => {
@@ -2796,7 +2800,7 @@ function BattleArena() {
             // until both actions are recorded or the turn moves on.
             const turnAtSubmit = liveTurnNumberRef.current;
             const battleIdAtSubmit = pvpBattleIdRef.current;
-            const poll = setInterval(async () => {
+            const pollOnce = async () => {
               if (
                 !battleIdAtSubmit ||
                 liveTurnNumberRef.current !== turnAtSubmit ||
@@ -2815,7 +2819,8 @@ function BattleArena() {
                 clearInterval(poll);
                 liveResolutionRef.current(res.actions ?? [], turnAtSubmit);
               }
-            }, 1500);
+            };
+            const poll = setInterval(() => void pollOnce(), 1500);
           }
         })();
         return;
@@ -5029,7 +5034,7 @@ function DailyChallengeCard() {
 
   useEffect(() => {
     void refresh();
-    const handler = () => refresh();
+    const handler = () => void refresh();
     window.addEventListener("daily-challenge-updated", handler);
     return () => window.removeEventListener("daily-challenge-updated", handler);
   }, [refresh]);

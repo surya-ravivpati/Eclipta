@@ -225,11 +225,13 @@ function StudyRoomView() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "study_rooms", filter: `id=eq.${roomId}` },
-        async () => {
-          // Pattern change, phase flip, or activity-clock bump - re-fetch
-          // the full room (RPC returns clock columns + member flags).
-          const fresh = await refetchRoom(roomId);
-          if (fresh) setRoom(fresh);
+        () => {
+          void (async () => {
+            // Pattern change, phase flip, or activity-clock bump - re-fetch
+            // the full room (RPC returns clock columns + member flags).
+            const fresh = await refetchRoom(roomId);
+            if (fresh) setRoom(fresh);
+          })();
         },
       )
       .on(
@@ -626,7 +628,6 @@ function StudyRoomView() {
                               authorName="System"
                               snapshot={m.body}
                               canBlock={false}
-                              onBlock={() => {}}
                             />
                           </div>
                         ) : (

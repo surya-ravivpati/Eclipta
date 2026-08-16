@@ -8,7 +8,11 @@ export type ScreenCaptureResult =
 export async function captureScreenFrame(): Promise<ScreenCaptureResult> {
   try {
     if (!navigator.mediaDevices?.getDisplayMedia) {
-      return { ok: false, error: "unsupported", message: "Screen sharing isn't supported in this browser." };
+      return {
+        ok: false,
+        error: "unsupported",
+        message: "Screen sharing isn't supported in this browser.",
+      };
     }
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: 1 },
@@ -41,7 +45,11 @@ export async function captureScreenFrame(): Promise<ScreenCaptureResult> {
   } catch (e) {
     const name = (e as Error).name;
     if (name === "NotAllowedError") {
-      return { ok: false, error: "denied", message: "Screen sharing was denied. You can try again when you're ready." };
+      return {
+        ok: false,
+        error: "denied",
+        message: "Screen sharing was denied. You can try again when you're ready.",
+      };
     }
     console.error("Screen capture failed:", e);
     return { ok: false, error: "failed", message: "Screen capture failed. Try again in a moment." };

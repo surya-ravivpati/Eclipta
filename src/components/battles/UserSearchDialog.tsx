@@ -65,7 +65,7 @@ export function UserSearchDialog({
       return;
     }
     setLoading(true);
-    debounceRef.current = setTimeout(async () => {
+    const search = async () => {
       const { data, error } = await supabase.rpc("search_users", {
         p_query: query.trim(),
         p_limit: 12,
@@ -77,7 +77,8 @@ export function UserSearchDialog({
       }
       setResults((data as Result[] | null)?.filter((r) => r.user_id !== user?.id) ?? []);
       setLoading(false);
-    }, 250);
+    };
+    debounceRef.current = setTimeout(() => void search(), 250);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };

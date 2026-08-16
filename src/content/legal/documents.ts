@@ -481,9 +481,7 @@ const copyright: LegalDocument = {
     },
     {
       heading: "Repeat infringers",
-      body: [
-        "We terminate the accounts of users who repeatedly infringe copyright.",
-      ],
+      body: ["We terminate the accounts of users who repeatedly infringe copyright."],
     },
     {
       heading: "Third-party software",

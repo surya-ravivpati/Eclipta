@@ -67,8 +67,9 @@ assignableBothWays<
 );
 
 // -- user_profiles - learner_profile (jsonb) and preferred_pace/style (enum) are narrowed --
-const NARROWED_COLUMNS = ["learner_profile", "preferred_pace", "preferred_style"] as const;
-type NarrowedColumn = (typeof NARROWED_COLUMNS)[number];
+// A type, not a const: nothing here runs, and a runtime array would only be
+// read back through typeof anyway.
+type NarrowedColumn = "learner_profile" | "preferred_pace" | "preferred_style";
 
 export type _userProfilesKeys = Assert<
   KeysMatch<InferSelectModel<typeof userProfiles>, SupabaseTables["user_profiles"]["Row"]>

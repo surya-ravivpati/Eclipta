@@ -23,6 +23,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { useAuth } from "@/hooks/use-auth";
 import { getOwnedEcliptarSlugs, getUserXp } from "@/repositories/profile";
 import { usePlayerXp, useOwnedEcliptars } from "./use-player-xp";
+import { neverSettles } from "@/lib/test-helpers";
 
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -54,7 +55,7 @@ beforeEach(() => {
 describe("usePlayerXp", () => {
   it("starts loading before the first fetch resolves", () => {
     mockAuthedAs("u1");
-    vi.mocked(getUserXp).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getUserXp).mockReturnValue(neverSettles());
 
     const { result } = renderHook(() => usePlayerXp(), { wrapper });
 

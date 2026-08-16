@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { PasswordStrength, scorePassword } from "./PasswordStrength";
+import { PasswordStrength } from "./PasswordStrength";
+import { scorePassword } from "@/lib/password-strength";
 
 interface AuthFormProps {
   mode: "login" | "signup";

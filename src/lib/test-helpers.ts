@@ -32,3 +32,14 @@ export function need<T>(value: T | undefined | null, what = "value"): T {
   if (value === undefined || value === null) throw new Error(`expected ${what} to be present`);
   return value;
 }
+
+/**
+ * A promise that never settles, standing in for a request still in flight.
+ *
+ * `new Promise(() => {})` says the same thing, but an empty function body is
+ * indistinguishable from one someone forgot to fill in - here the name carries
+ * the intent.
+ */
+export function neverSettles<T>(): Promise<T> {
+  return new Promise<T>(() => undefined);
+}

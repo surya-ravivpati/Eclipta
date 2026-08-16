@@ -11,12 +11,13 @@ interface ThemeCtx {
   toggle: () => void;
 }
 
-const ThemeContext = createContext<ThemeCtx>({
-  theme: "dark",
-  resolvedTheme: "dark",
-  setTheme: () => {},
-  toggle: () => {},
-});
+/**
+ * No default value on purpose. A default made a component rendered outside
+ * ThemeProvider look like it worked: it read "dark" and its toggle silently
+ * did nothing, which is a bug that only shows up as a control that refuses to
+ * respond. `useTheme` throws instead, so the mistake surfaces where it is.
+ */
+const ThemeContext = createContext<ThemeCtx | null>(null);
 
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === "undefined" || !window.matchMedia) return "dark";
@@ -78,6 +79,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useTheme() {
-  return useContext(ThemeContext);
+export function useTheme(): ThemeCtx {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used inside a ThemeProvider");
+  return ctx;
 }

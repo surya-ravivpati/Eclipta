@@ -7,7 +7,11 @@
  * hook without re-querying or re-modelling blocking.
  */
 import { useCallback, useEffect, useState } from "react";
-import { fetchBlockedUserIds, blockUser as blockRpc, unblockUser as unblockRpc } from "@/lib/study-safety";
+import {
+  fetchBlockedUserIds,
+  blockUser as blockRpc,
+  unblockUser as unblockRpc,
+} from "@/lib/study-safety";
 
 export function useBlockedUsers() {
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
@@ -18,23 +22,44 @@ export function useBlockedUsers() {
     setLoaded(true);
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
-
-  const block = useCallback(async (id: string) => {
-    setBlocked((prev) => new Set(prev).add(id));   // optimistic
-    const err = await blockRpc(id);
-    if (err) { await refresh(); return err; }
-    return null;
+  useEffect(() => {
+    void refresh();
   }, [refresh]);
 
-  const unblock = useCallback(async (id: string) => {
-    setBlocked((prev) => { const n = new Set(prev); n.delete(id); return n; });
-    const err = await unblockRpc(id);
-    if (err) { await refresh(); return err; }
-    return null;
-  }, [refresh]);
+  const block = useCallback(
+    async (id: string) => {
+      setBlocked((prev) => new Set(prev).add(id)); // optimistic
+      const err = await blockRpc(id);
+      if (err) {
+        await refresh();
+        return err;
+      }
+      return null;
+    },
+    [refresh],
+  );
 
-  const isBlocked = useCallback((id: string | null | undefined) => !!id && blocked.has(id), [blocked]);
+  const unblock = useCallback(
+    async (id: string) => {
+      setBlocked((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
+      const err = await unblockRpc(id);
+      if (err) {
+        await refresh();
+        return err;
+      }
+      return null;
+    },
+    [refresh],
+  );
+
+  const isBlocked = useCallback(
+    (id: string | null | undefined) => !!id && blocked.has(id),
+    [blocked],
+  );
 
   return { blocked, loaded, isBlocked, block, unblock, refresh };
 }

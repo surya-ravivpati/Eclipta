@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
@@ -118,7 +118,7 @@ function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     if (!user) return;
     const [p, e, en, t, a, pr, uc, fc, fgc] = await Promise.all([
       supabase
@@ -180,11 +180,11 @@ function ProfilePage() {
     setFollowerCount(fc.count ?? 0);
     setFollowingCount(fgc.count ?? 0);
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     void reload();
-  }, [user]);
+  }, [reload]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -563,13 +563,14 @@ function SettingsPanel({
       return;
     }
     setAvailability("checking");
-    const handle = setTimeout(async () => {
+    const checkAvailability = async () => {
       const { count } = await supabase
         .from("user_profiles")
         .select("user_id", { count: "exact", head: true })
         .eq("username", trimmed);
       setAvailability((count ?? 0) > 0 ? "taken" : "available");
-    }, 400);
+    };
+    const handle = setTimeout(() => void checkAvailability(), 400);
     return () => clearTimeout(handle);
   }, [username, profile?.username]);
 

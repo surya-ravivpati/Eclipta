@@ -119,40 +119,42 @@ export function ChallengeInbox() {
           table: "pvp_challenges",
           filter: `challenger_id=eq.${user.id}`,
         },
-        async (payload) => {
-          const row = payload.new as Challenge;
-          if (row.status === "accepted" && row.battle_id) {
-            // Look up opponent username + their chosen archetype from pvp_battles
-            const { data: battle } = await supabase
-              .from("pvp_battles")
-              .select("opponent_archetype, opponent_id")
-              .eq("id", row.battle_id)
-              .maybeSingle();
-            // Written by this client on enqueue, so the `text` column holds an
-            // ArchetypeId by construction.
-            const oppArch =
-              (battle?.opponent_archetype as ArchetypeId | undefined) ?? row.challenger_archetype;
-            const oppId = battle?.opponent_id;
-            let oppName = "Challenger";
-            if (oppId) {
-              const { data: prof } = await supabase
-                .from("user_profiles")
-                .select("username")
-                .eq("user_id", oppId)
+        (payload) => {
+          void (async () => {
+            const row = payload.new as Challenge;
+            if (row.status === "accepted" && row.battle_id) {
+              // Look up opponent username + their chosen archetype from pvp_battles
+              const { data: battle } = await supabase
+                .from("pvp_battles")
+                .select("opponent_archetype, opponent_id")
+                .eq("id", row.battle_id)
                 .maybeSingle();
-              oppName = prof?.username ?? oppName;
+              // Written by this client on enqueue, so the `text` column holds an
+              // ArchetypeId by construction.
+              const oppArch =
+                (battle?.opponent_archetype as ArchetypeId | undefined) ?? row.challenger_archetype;
+              const oppId = battle?.opponent_id;
+              let oppName = "Challenger";
+              if (oppId) {
+                const { data: prof } = await supabase
+                  .from("user_profiles")
+                  .select("username")
+                  .eq("user_id", oppId)
+                  .maybeSingle();
+                oppName = prof?.username ?? oppName;
+              }
+              toast.success(`${oppName} accepted! Starting battle...`);
+              dispatchDirectBattle({
+                battleId: row.battle_id,
+                myArchetype: row.challenger_archetype,
+                opponentArchetype: oppArch,
+                opponentName: oppName,
+                iAmChallenger: true,
+              });
+            } else if (row.status === "rejected") {
+              toast.error("Challenge declined.");
             }
-            toast.success(`${oppName} accepted! Starting battle...`);
-            dispatchDirectBattle({
-              battleId: row.battle_id,
-              myArchetype: row.challenger_archetype,
-              opponentArchetype: oppArch,
-              opponentName: oppName,
-              iAmChallenger: true,
-            });
-          } else if (row.status === "rejected") {
-            toast.error("Challenge declined.");
-          }
+          })();
         },
       )
       .subscribe();

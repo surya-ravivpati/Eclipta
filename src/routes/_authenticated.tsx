@@ -8,7 +8,9 @@ export const Route = createFileRoute("/_authenticated")({
     // Defer the check to the client.
     if (typeof window === "undefined") return;
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       throw redirect({
         to: "/login",

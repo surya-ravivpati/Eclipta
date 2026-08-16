@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
@@ -99,7 +99,7 @@ function ThreadPage() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [report, setReport] = useState<{ type: "thread" | "answer"; id: string } | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const [{ data: t }, { data: a }] = await Promise.all([
       supabase.from("forum_threads").select("*").eq("id", threadId).maybeSingle(),
@@ -113,18 +113,21 @@ function ThreadPage() {
     setThread(t as Thread | null);
     setAnswers((a as Answer[]) || []);
     setLoading(false);
-  };
-
-  useEffect(() => {
-    void load();
   }, [threadId]);
 
   useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
     if (!user || !thread) return;
-    supabase
-      .from("forum_thread_views")
-      .insert({ thread_id: thread.id, user_id: user.id })
-      .then(() => {});
+    // Awaited inside an IIFE rather than left bare: PostgREST's builder is
+    // lazy, so nothing is sent until something subscribes to it. The result is
+    // genuinely uninteresting - a view that fails to record is not worth
+    // telling the reader about - but the request itself has to happen.
+    void (async () => {
+      await supabase.from("forum_thread_views").insert({ thread_id: thread.id, user_id: user.id });
+    })();
   }, [user, thread?.id]);
 
   useEffect(() => {

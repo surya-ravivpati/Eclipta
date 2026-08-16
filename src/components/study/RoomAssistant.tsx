@@ -248,7 +248,6 @@ export function StuckCard({
                 authorName="Luna"
                 snapshot={stuck.resolution_summary}
                 canBlock={false}
-                onBlock={() => {}}
               />
             </div>
           )}

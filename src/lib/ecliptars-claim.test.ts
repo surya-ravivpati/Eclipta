@@ -18,12 +18,22 @@ import { at } from "./test-helpers";
 const rpc = vi.fn<(fn: string, args: unknown) => Promise<{ error: unknown }>>();
 const getUser = vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>();
 let ownedRows: { ecliptar_slug: string }[] = [];
+/** Rows for the node_id read that fetchEcliptarClaimsByNode makes. */
+let nodeRows: { node_id: number }[] = [];
+let selecting: "slug" | "node" = "slug";
 
-/** Minimal stand-in for the PostgREST builder: .select(...).eq(...) resolves. */
+/**
+ * Minimal stand-in for the PostgREST builder: .select(...).eq(...) resolves.
+ * Which rows come back depends on the column asked for, since two different
+ * reads go through the same table.
+ */
 function selectChain() {
   const chain = {
-    select: () => chain,
-    eq: () => Promise.resolve({ data: ownedRows, error: null }),
+    select: (columns: string) => {
+      selecting = columns.includes("node_id") ? "node" : "slug";
+      return chain;
+    },
+    eq: () => Promise.resolve({ data: selecting === "node" ? nodeRows : ownedRows, error: null }),
   };
   return chain;
 }
@@ -41,6 +51,8 @@ const {
   claimArchetypeReward,
   claimEcliptarBySlug,
   claimEcliptarsBySlugs,
+  claimRandomEcliptar,
+  fetchEcliptarClaimsByNode,
   fetchOwnedEcliptarSlugs,
   getEcliptarsByArchetype,
 } = await import("./ecliptars");
@@ -52,6 +64,8 @@ beforeEach(() => {
   getUser.mockResolvedValue({ data: { user: { id: "me" } } });
   rpc.mockResolvedValue({ error: null });
   ownedRows = [];
+  nodeRows = [];
+  selecting = "slug";
 });
 
 describe("fetchOwnedEcliptarSlugs", () => {
@@ -185,5 +199,100 @@ describe("claimArchetypeReward", () => {
   it("returns nothing when signed out", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     expect(await claimArchetypeReward("tank", 12)).toEqual([]);
+  });
+});
+
+/**
+ * The draw itself lives in the RPC, so what this side owes is faithful
+ * reporting: resolve the slug the server picked to the creature the UI knows,
+ * and never present an exhausted pool as a failure. "Nothing left to draw" is
+ * an outcome, not an error, and showing it as one would put a red toast in
+ * front of a player who has simply completed the set.
+ */
+describe("claimRandomEcliptar", () => {
+  it("asks the server to pick, sending only the archetype and the node", async () => {
+    rpc.mockResolvedValue({
+      error: null,
+      data: { granted: true, slug: "tank-c", name: "Mammorock", remaining: 1 },
+    } as never);
+
+    const roll = await claimRandomEcliptar("tank", 61);
+    expect(rpc).toHaveBeenCalledWith("claim_random_ecliptar", {
+      p_archetype: "tank",
+      p_node_id: 61,
+    });
+    expect(roll.ecliptar?.slug).toBe("tank-c");
+    expect(roll.remaining).toBe(1);
+    expect(roll.error).toBeNull();
+  });
+
+  it("resolves the server's slug to the creature the UI displays", async () => {
+    rpc.mockResolvedValue({
+      error: null,
+      data: { granted: true, slug: "healer-d", remaining: 0 },
+    } as never);
+
+    const roll = await claimRandomEcliptar("healer", 68);
+    expect(roll.ecliptar?.name).toBe("Mossy Golem");
+    expect(roll.ecliptar?.archetype).toBe("healer");
+  });
+
+  it("reports an exhausted pool as an outcome, not a failure", async () => {
+    rpc.mockResolvedValue({
+      error: null,
+      data: { granted: false, reason: "none_left", remaining: 0 },
+    } as never);
+
+    expect(await claimRandomEcliptar("tank", 61)).toEqual({
+      ecliptar: null,
+      remaining: 0,
+      error: null,
+    });
+  });
+
+  it("returns a message when the call itself fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    rpc.mockResolvedValue({ error: { message: "Not authenticated" } });
+
+    const roll = await claimRandomEcliptar("tank", 61);
+    expect(roll.ecliptar).toBeNull();
+    expect(roll.error).toBe("Not authenticated");
+  });
+
+  it("survives a slug this build does not know", async () => {
+    // The catalog is the server's copy of the roster and the two are held in
+    // step by a test, but a partially-applied migration could still hand back
+    // something unknown. That must not throw at the player.
+    rpc.mockResolvedValue({
+      error: null,
+      data: { granted: true, slug: "unknown-x", remaining: 2 },
+    } as never);
+
+    const roll = await claimRandomEcliptar("tank", 61);
+    expect(roll.ecliptar).toBeNull();
+    expect(roll.error).toBeNull();
+    expect(roll.remaining).toBe(2);
+  });
+});
+
+describe("fetchEcliptarClaimsByNode", () => {
+  it("counts how many each node has handed out", async () => {
+    nodeRows = [{ node_id: 2 }, { node_id: 2 }, { node_id: 61 }];
+    expect(await fetchEcliptarClaimsByNode()).toEqual(
+      new Map([
+        [2, 2],
+        [61, 1],
+      ]),
+    );
+  });
+
+  it("is empty for a player who has claimed nothing", async () => {
+    nodeRows = [];
+    expect(await fetchEcliptarClaimsByNode()).toEqual(new Map());
+  });
+
+  it("is empty when signed out", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    expect(await fetchEcliptarClaimsByNode()).toEqual(new Map());
   });
 });

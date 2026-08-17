@@ -6,7 +6,7 @@ import {
   isCurrentNode,
   type RoadNode,
 } from "./trophy-road-data";
-import { getEcliptarBySlug } from "./ecliptars";
+import { ECLIPTARS } from "./ecliptars";
 
 /** Indexes ROAD_NODES with a real runtime guard instead of a `!` assertion. */
 function nodeAt(index: number): RoadNode {
@@ -32,14 +32,41 @@ describe("ROAD_NODES data invariants", () => {
     expect(finals.map((n) => n.finalMonster).sort()).toEqual(["ecliptadon", "newton"]);
   });
 
-  it("every ecliptarSlugs entry resolves to a real Ecliptar", () => {
-    const missing: string[] = [];
+  it("only offers rolls on a node that names the archetype to roll from", () => {
+    // The roll asks the server for "one more of this archetype". A node
+    // offering rolls without an archetype would have nothing to ask for.
     for (const node of ROAD_NODES) {
-      for (const slug of node.ecliptarSlugs ?? []) {
-        if (!getEcliptarBySlug(slug)) missing.push(`${node.label} (id ${node.id}): ${slug}`);
-      }
+      if (!node.ecliptarRolls) continue;
+      expect(node.archetype, `${node.label} (id ${node.id}) rolls from nothing`).toBeDefined();
+      expect(node.ecliptarRolls).toBeGreaterThan(0);
     }
-    expect(missing).toEqual([]);
+  });
+
+  it("never offers an archetype more rolls than it has Ecliptars", () => {
+    // Rolls draw without replacement, so an archetype promising more than its
+    // pool holds would leave a node permanently showing an unclaimable draw.
+    const rollsByArchetype = new Map<string, number>();
+    for (const node of ROAD_NODES) {
+      if (!node.ecliptarRolls || !node.archetype) continue;
+      rollsByArchetype.set(
+        node.archetype,
+        (rollsByArchetype.get(node.archetype) ?? 0) + node.ecliptarRolls,
+      );
+    }
+
+    for (const [archetype, rolls] of rollsByArchetype) {
+      const pool = ECLIPTARS.filter((e) => e.archetype === archetype).length;
+      expect(
+        rolls,
+        `${archetype} promises ${rolls} rolls from a pool of ${pool}`,
+      ).toBeLessThanOrEqual(pool);
+    }
+  });
+
+  it("gives every archetype with a monster node something to draw", () => {
+    for (const node of ROAD_NODES.filter((n) => n.type === "monster")) {
+      expect(node.ecliptarRolls, `${node.label} grants no Ecliptar`).toBeGreaterThan(0);
+    }
   });
 
   it("every monster-type node declares an archetype", () => {

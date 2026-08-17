@@ -19,12 +19,27 @@ import {
 } from "lucide-react";
 import type { MonsterArchetypeKey } from "./trophy-road-data";
 import { ROAD_NODES } from "./trophy-road-data";
+import {
+  claimRandomEcliptarRpc,
+  countUnownedEcliptarsRpc,
+  getEcliptarClaimCountsByNode,
+} from "@/repositories/profile";
 
 export interface Ecliptar {
   slug: string;
   name: string;
   archetype: MonsterArchetypeKey;
   icon: LucideIcon;
+  /**
+   * Whether a Trophy Road draw can produce this Ecliptar.
+   *
+   * False only for Newton and Ecliptadon: they share the god archetype but are
+   * earned by reaching their own final nodes, so rolling the god pool partway
+   * up the road must not hand out the ending early. Mirrors the `rollable`
+   * column in ecliptar_catalog, which is what the server actually enforces -
+   * ecliptars.catalog.test.ts holds the two in step.
+   */
+  rollable: boolean;
   /** Lore blurb shown on the collection detail view. Empty until written. */
   description?: string;
 }
@@ -63,10 +78,10 @@ export const ECLIPTARS: Ecliptar[] = (Object.keys(ARCH_ICON) as MonsterArchetype
   (arch): Ecliptar[] => {
     if (arch === "god") {
       return [
-        { slug: "newton", name: "Newton", archetype: "god", icon: Apple },
-        { slug: "ecliptadon", name: "Ecliptadon", archetype: "god", icon: Atom },
-        { slug: "einsteinium", name: "Einsteinium", archetype: "god", icon: Crown },
-        { slug: "temporobys", name: "Temporubyss", archetype: "god", icon: Crown },
+        { slug: "newton", name: "Newton", archetype: "god", icon: Apple, rollable: false },
+        { slug: "ecliptadon", name: "Ecliptadon", archetype: "god", icon: Atom, rollable: false },
+        { slug: "einsteinium", name: "Einsteinium", archetype: "god", icon: Crown, rollable: true },
+        { slug: "temporobys", name: "Temporubyss", archetype: "god", icon: Crown, rollable: true },
       ];
     }
     // Four claimable per archetype, all granted from the archetype's monster node.
@@ -75,6 +90,7 @@ export const ECLIPTARS: Ecliptar[] = (Object.keys(ARCH_ICON) as MonsterArchetype
       name,
       archetype: arch,
       icon: ARCH_ICON[arch],
+      rollable: true,
     }));
   },
 );
@@ -227,6 +243,93 @@ export async function claimArchetypeReward(
     if (ok) granted.push(e);
   }
   return granted;
+}
+
+/**
+ * How many Ecliptars each Trophy Road node has already handed this player.
+ *
+ * With fixed slugs, a node's own reward told you whether it had been claimed:
+ * you either owned those creatures or you did not. A random roll cannot answer
+ * that, so the answer comes from `node_id`, which the claim has always
+ * recorded. A node is spent once its row count reaches its `ecliptarRolls`.
+ */
+export async function fetchEcliptarClaimsByNode(): Promise<Map<number, number>> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return new Map();
+
+  try {
+    return await getEcliptarClaimCountsByNode(user.id);
+  } catch (error) {
+    // A road that cannot read its claims should still render; it just offers
+    // draws it will find are already spent.
+    console.error("fetchEcliptarClaimsByNode", error);
+    return new Map();
+  }
+}
+
+/** The outcome of one Trophy Road roll. */
+export interface EcliptarRoll {
+  /** What was rolled, or null when the pool was already complete. */
+  ecliptar: Ecliptar | null;
+  /** How many of this archetype the player still has left to collect. */
+  remaining: number;
+  error: string | null;
+}
+
+/**
+ * Roll one Ecliptar from an archetype the player has just unlocked.
+ *
+ * The roll happens inside the RPC, in the same statement that records it.
+ * Doing it here would not be a roll: a player could refresh before claiming
+ * and try again, or simply ask for the creature they wanted. The server also
+ * owns the roster, so it decides what "unowned" means rather than trusting a
+ * list from this side.
+ */
+export async function claimRandomEcliptar(
+  archetype: MonsterArchetypeKey,
+  nodeId: number,
+): Promise<EcliptarRoll> {
+  let result;
+  try {
+    result = await claimRandomEcliptarRpc(archetype, nodeId);
+  } catch (error) {
+    console.error("claimRandomEcliptar", error);
+    const message = error instanceof Error ? error.message : "Couldn't open this reward.";
+    return { ecliptar: null, remaining: 0, error: message };
+  }
+
+  // Not granted means the pool is already complete. That is an outcome, not a
+  // failure - showing it as an error would put a red toast in front of a
+  // player who has simply finished the set.
+  if (!result.granted || !result.slug) {
+    return { ecliptar: null, remaining: result.remaining, error: null };
+  }
+
+  // The catalog and this roster are kept in step by ecliptars.catalog.test.ts,
+  // so a slug that does not resolve here means they have drifted apart - a
+  // partially applied migration, say. Report the draw rather than throwing.
+  return {
+    ecliptar: getEcliptarBySlug(result.slug) ?? null,
+    remaining: result.remaining,
+    error: null,
+  };
+}
+
+/** The Ecliptars of an archetype a Trophy Road draw can actually produce. */
+export function getRollableEcliptars(arch: MonsterArchetypeKey): Ecliptar[] {
+  return getEcliptarsByArchetype(arch).filter((e) => e.rollable);
+}
+
+/** How many Ecliptars of an archetype the player has still to collect. */
+export async function countUnownedEcliptars(archetype: MonsterArchetypeKey): Promise<number> {
+  try {
+    return await countUnownedEcliptarsRpc(archetype);
+  } catch (error) {
+    console.error("countUnownedEcliptars", error);
+    return 0;
+  }
 }
 
 /** Returns the trophy road node id for a given archetype's monster node, if any. */

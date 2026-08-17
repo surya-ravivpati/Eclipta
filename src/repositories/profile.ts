@@ -154,3 +154,68 @@ export async function getPreferredLanguage(userId: string): Promise<string | nul
     .maybeSingle();
   return data?.preferred_language ?? null;
 }
+
+/** What the server's Ecliptar draw hands back. */
+export interface RandomEcliptarResult {
+  granted: boolean;
+  slug: string | null;
+  /** How many of the archetype the caller still has left to collect. */
+  remaining: number;
+}
+
+/**
+ * Draw one Ecliptar from an archetype's pool.
+ *
+ * The pick happens inside the routine, in the same statement that records it.
+ * Doing it on the client would not be a draw at all: a player could refresh
+ * before claiming and try again, or simply ask for the creature they wanted.
+ * The server also owns the roster, so it decides what "unowned" means.
+ */
+export async function claimRandomEcliptarRpc(
+  archetype: string,
+  nodeId: number,
+): Promise<RandomEcliptarResult> {
+  const { data, error } = await supabase.rpc(
+    "claim_random_ecliptar" as never,
+    { p_archetype: archetype, p_node_id: nodeId } as never,
+  );
+  if (error) throw new Error(error.message);
+
+  const result = data as { granted?: boolean; slug?: string; remaining?: number } | null;
+  return {
+    granted: result?.granted === true,
+    slug: typeof result?.slug === "string" ? result.slug : null,
+    remaining: typeof result?.remaining === "number" ? result.remaining : 0,
+  };
+}
+
+/** How many Ecliptars of an archetype the caller has still to collect. */
+export async function countUnownedEcliptarsRpc(archetype: string): Promise<number> {
+  const { data, error } = await supabase.rpc(
+    "count_unowned_ecliptars" as never,
+    { p_archetype: archetype } as never,
+  );
+  if (error) throw new Error(error.message);
+  return typeof data === "number" ? data : 0;
+}
+
+/**
+ * How many Ecliptars each Trophy Road node has already handed this user.
+ *
+ * With fixed rewards, a node's own creatures told you whether it had been
+ * claimed. A random draw cannot answer that, so the answer comes from
+ * `node_id`, which the claim has always recorded.
+ */
+export async function getEcliptarClaimCountsByNode(userId: string): Promise<Map<number, number>> {
+  const { data, error } = await supabase
+    .from("user_ecliptars")
+    .select("node_id")
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+
+  const counts = new Map<number, number>();
+  for (const row of data ?? []) {
+    counts.set(row.node_id, (counts.get(row.node_id) ?? 0) + 1);
+  }
+  return counts;
+}

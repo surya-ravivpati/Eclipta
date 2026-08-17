@@ -36,9 +36,10 @@ import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { usePlayerRating } from "@/hooks/use-player-rating";
 import { ratingLeague, leagueProgress } from "@/lib/rating";
 import {
-  claimEcliptarsBySlugs,
+  claimRandomEcliptar,
   claimEcliptarBySlug,
-  getEcliptarsByArchetype,
+  fetchEcliptarClaimsByNode,
+  getRollableEcliptars,
 } from "@/lib/ecliptars";
 import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
 import "./TrophyRoad.css";
@@ -295,12 +296,15 @@ function TrophyNode({
   node,
   ownedSlugs,
   claimedChestIds,
+  ecliptarClaimsByNode,
   onClaimed,
   onChestClaimed,
 }: {
   node: RoadNode;
   ownedSlugs: Set<string>;
   claimedChestIds: Set<number>;
+  /** Ecliptars each node has already handed out - see fetchEcliptarClaimsByNode. */
+  ecliptarClaimsByNode: Map<number, number>;
   onClaimed: () => void;
   onChestClaimed: () => void;
 }) {
@@ -309,16 +313,22 @@ function TrophyNode({
 
   const archetype = node.archetype ? ARCHETYPES[node.archetype] : null;
 
-  const isMonster = node.type === "monster" && !!node.archetype;
-  // Ecliptar-granting nodes: a monster node hands out its archetype's first two
-  // (a/b); that tier's boss node hands out the other two (c/d). The specific
-  // slugs live on the node so the roster unlocks across the road, not all at once.
-  const grantSlugs =
-    node.ecliptarSlugs ??
-    (isMonster ? getEcliptarsByArchetype(node.archetype!).map((e) => e.slug) : []);
-  const isEcliptarNode = grantSlugs.length > 0;
-  const allOwned = isEcliptarNode && grantSlugs.every((s) => ownedSlugs.has(s));
-  const showClaim = isEcliptarNode && node.unlocked && !allOwned;
+  // Ecliptar-granting nodes roll from their archetype's pool: a monster node is
+  // worth two rolls, each of that archetype's later nodes one more. Which
+  // creature comes out is the server's to decide, so what has already been
+  // handed out is counted from the claims themselves rather than inferred from
+  // owning a particular slug.
+  const rollArchetype = node.archetype ?? null;
+  const rollsOffered = rollArchetype ? (node.ecliptarRolls ?? 0) : 0;
+  const rollsTaken = ecliptarClaimsByNode.get(node.id) ?? 0;
+  const rollsLeft = Math.max(0, rollsOffered - rollsTaken);
+  // Nothing left in the pool means nothing to offer, however many rolls the
+  // node is nominally worth - a player who already owns the archetype outright.
+  const poolLeft = rollArchetype
+    ? getRollableEcliptars(rollArchetype).filter((e) => !ownedSlugs.has(e.slug)).length
+    : 0;
+  const isEcliptarNode = rollsOffered > 0;
+  const showClaim = isEcliptarNode && node.unlocked && rollsLeft > 0 && poolLeft > 0;
 
   const finalSlug = node.type === "final" ? (node.finalMonster ?? null) : null;
   const finalOwned = finalSlug ? ownedSlugs.has(finalSlug) : false;
@@ -332,13 +342,31 @@ function TrophyNode({
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isEcliptarNode || busy) return;
+    if (!rollArchetype || rollsLeft <= 0 || busy) return;
     setBusy(true);
-    const { granted, error } = await claimEcliptarsBySlugs(grantSlugs, node.id);
+
+    // One RPC per roll. Rolling in a loop rather than asking for several at
+    // once keeps each draw independent, and a failure partway still leaves the
+    // player whatever already landed - the node's remaining rolls are counted
+    // from the claims, so it simply offers the rest next time.
+    const rolled: string[] = [];
+    let failure: string | null = null;
+    for (let i = 0; i < rollsLeft; i++) {
+      const { ecliptar, remaining, error } = await claimRandomEcliptar(rollArchetype, node.id);
+      if (error) {
+        failure = error;
+        break;
+      }
+      if (!ecliptar) break; // pool exhausted - not an error
+      rolled.push(ecliptar.name);
+      if (remaining === 0) break;
+    }
+
     setBusy(false);
-    if (granted.length > 0) {
-      toast(`${granted.length > 1 ? "Ecliptars" : granted[0].name} unlocked`, {
-        description: `You now own ${granted.map((g) => g.name).join(" & ")} for battle.`,
+
+    if (rolled.length > 0) {
+      toast(`${rolled.length > 1 ? "Ecliptars" : rolled[0]} unlocked`, {
+        description: `You drew ${rolled.join(" & ")}. Equip in your profile to battle with them.`,
         duration: 6000,
         action: {
           label: "View in Profile",
@@ -348,10 +376,13 @@ function TrophyNode({
         },
       });
       onClaimed();
-    } else if (error) {
-      // Surface the reason instead of failing silently (e.g. the server's
-      // ecliptar allowlist migration hasn't been applied yet).
-      toast.error("Couldn't unlock this Ecliptar", { description: error, duration: 7000 });
+    } else if (failure) {
+      toast.error("Couldn't open this reward", { description: failure, duration: 7000 });
+    } else {
+      toast("Nothing left to draw", {
+        description: "You already own every Ecliptar in this archetype.",
+      });
+      onClaimed();
     }
   };
 
@@ -463,11 +494,14 @@ function TrophyNode({
           className="tr-node-act active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleClaim}
           disabled={busy}
+          title={`Draws ${rollsLeft} random Ecliptar${rollsLeft > 1 ? "s" : ""} from this archetype`}
         >
-          {busy ? "|||" : "Claim"}
+          {busy ? "|||" : rollsLeft > 1 ? `Draw ${rollsLeft}` : "Draw"}
         </button>
       )}
-      {isEcliptarNode && allOwned && <span className="tr-node-status">Claimed</span>}
+      {isEcliptarNode && !showClaim && node.unlocked && (
+        <span className="tr-node-status">{poolLeft === 0 ? "Complete" : "Drawn"}</span>
+      )}
 
       {showFinalClaim && (
         <button
@@ -495,7 +529,7 @@ function TrophyNode({
       {isChest && chestClaimed && <span className="tr-node-status">Opened</span>}
 
       <AnimatePresence>
-        {hovered && isMonster && archetype && (
+        {hovered && node.type === "monster" && archetype && (
           <motion.div
             className="tr-tooltip"
             initial={{ opacity: 0, y: 6 }}
@@ -531,12 +565,14 @@ function CinemaRoad({
   allNodes,
   ownedSlugs,
   claimedChestIds,
+  ecliptarClaimsByNode,
   onClaimed,
   onChestClaimed,
 }: {
   allNodes: RoadNode[];
   ownedSlugs: Set<string>;
   claimedChestIds: Set<number>;
+  ecliptarClaimsByNode: Map<number, number>;
   onClaimed: () => void;
   onChestClaimed: () => void;
 }) {
@@ -854,6 +890,7 @@ function CinemaRoad({
                   node={node}
                   ownedSlugs={ownedSlugs}
                   claimedChestIds={claimedChestIds}
+                  ecliptarClaimsByNode={ecliptarClaimsByNode}
                   onClaimed={onClaimed}
                   onChestClaimed={onChestClaimed}
                 />
@@ -1020,10 +1057,21 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   const { rating, peakRating, wins, losses, ranked, loading: ratingLoading } = usePlayerRating();
   const { slugs: ownedSlugs, refresh: refreshOwned } = useOwnedEcliptars();
   const [claimedChestIds, setClaimedChestIds] = useState<Set<number>>(new Set());
+  const [ecliptarClaimsByNode, setEcliptarClaimsByNode] = useState<Map<number, number>>(new Map());
   const refreshChests = async () => setClaimedChestIds(await fetchClaimedChestNodeIds());
+  const refreshEcliptarClaims = async () =>
+    setEcliptarClaimsByNode(await fetchEcliptarClaimsByNode());
+
   useEffect(() => {
     void refreshChests();
+    void refreshEcliptarClaims();
   }, []);
+
+  // A roll changes both what is owned and what the node has left to give.
+  const handleClaimed = () => {
+    refreshOwned();
+    void refreshEcliptarClaims();
+  };
 
   const allNodes = useMemo(() => deriveNodes(playerXp), [playerXp]);
 
@@ -1145,7 +1193,8 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
         allNodes={allNodes}
         ownedSlugs={ownedSlugs}
         claimedChestIds={claimedChestIds}
-        onClaimed={refreshOwned}
+        ecliptarClaimsByNode={ecliptarClaimsByNode}
+        onClaimed={handleClaimed}
         onChestClaimed={() => {
           void refreshChests();
         }}

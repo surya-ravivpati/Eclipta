@@ -1,5 +1,5 @@
 // Milestone detection for XP thresholds and trophy road unlocks
-import { ROAD_NODES } from "./trophy-road-data";
+import { ROAD_NODES, type MonsterArchetypeKey, type TierId } from "./trophy-road-data";
 import { toast } from "sonner";
 
 // XP milestone thresholds (beyond trophy road)
@@ -23,29 +23,60 @@ const XP_MESSAGES: Record<number, { title: string; desc: string }> = {
   },
 };
 
-const NODE_MESSAGES: Record<string, string> = {
-  Speedster: "You've unlocked the Speedster! Lightning-fast reflexes, meet lightning-fast mind. ⚡",
-  Tank: "The Tank is yours! Nothing can stop you now. 🛡️",
-  Apex: "Apex joins your roster! Unpredictable and powerful. 🃏",
-  Gambler: "The Gambler emerges! Fortune favors the bold. 🎲",
-  Healer: "Healer unlocked! Knowledge heals all wounds. 💚",
-  Fulcrum: "The Fulcrum awakens! Balance of all forces. ⚖️",
-  Accelerator: "Accelerator online! Time bends to your will. 🚀",
-  "God Archetype": "The God Archetype is yours. You've transcended. 👑",
-  Newton: "🍎 NEWTON UNLOCKED - the gravity of your knowledge reshapes reality.",
-  ECLIPTADON: "🐉 ECLIPTADON - the celestial destroyer acknowledges your mastery. You are LEGEND.",
+/**
+ * Every lookup below is keyed on a node's typed field - `archetype`, `tier`,
+ * `finalMonster` - rather than on its display label.
+ *
+ * They used to be keyed on the label, and the two sets had drifted completely
+ * apart: the tier table still held "Bronze I" and "Gold I" while the road had
+ * long since been renamed to "Dawn I" and "Meridian I", so not one of the
+ * eight tier-up messages could ever fire. The archetype table had the same
+ * problem on one entry ("God Archetype" against an actual label of "Eclipse
+ * Archetype"). Keying on the unions makes that class of drift a build error:
+ * rename a tier and this file stops compiling until it is updated too.
+ */
+const ARCHETYPE_MESSAGES: Record<MonsterArchetypeKey, string> = {
+  speedster: "You've unlocked the Speedster! Lightning-fast reflexes, meet lightning-fast mind. ⚡",
+  tank: "The Tank is yours! Nothing can stop you now. 🛡️",
+  chud: "Apex joins your roster! Unpredictable and powerful. 🃏",
+  gambler: "The Gambler emerges! Fortune favors the bold. 🎲",
+  healer: "Healer unlocked! Knowledge heals all wounds. 💚",
+  fulcrum: "The Fulcrum awakens! Balance of all forces. ⚖️",
+  accelerator: "Accelerator online! Time bends to your will. 🚀",
+  god: "The Eclipse Archetype is yours. You've transcended. 👑",
 };
 
-const TIER_MESSAGES: Record<string, string> = {
-  "Bronze I": "Welcome to the arena, recruit! Bronze tier unlocked. 🥉",
-  "Silver I": "Silver tier! You're leaving the rookies behind. 🥈",
-  "Gold I": "Gold tier - now we're talking. The real battles begin. 🥇",
-  "Diamond I": "Diamond tier! You sparkle with knowledge. 💎",
-  "Platinum I": "Platinum! Only the elite reach this far. ✨",
-  Champion: "CHAMPION tier! The arena trembles at your name. 🏆",
-  Unreal: "UNREAL tier! Beyond mortal comprehension. 🌟",
-  "God Tier": "GOD TIER. You have ascended. 👁️",
+const FINAL_MESSAGES: Record<"newton" | "ecliptadon", string> = {
+  newton: "🍎 NEWTON UNLOCKED - the gravity of your knowledge reshapes reality.",
+  ecliptadon: "🐉 ECLIPTADON - the celestial destroyer acknowledges your mastery. You are LEGEND.",
 };
+
+const TIER_MESSAGES: Record<TierId, string> = {
+  bronze: "Welcome to the arena, recruit. Dawn tier unlocked. 🥉",
+  silver: "Moonrise tier! You're leaving the rookies behind. 🥈",
+  gold: "Meridian tier - now we're talking. The real battles begin. 🥇",
+  diamond: "Penumbra tier! You sparkle with knowledge. 💎",
+  platinum: "Umbra tier! Only the elite reach this far. ✨",
+  champion: "NIGHTFALL tier! The arena trembles at your name. 🏆",
+  unreal: "TOTALITY tier! Beyond mortal comprehension. 🌟",
+  god: "ECLIPSE TIER. You have ascended. 👁️",
+};
+
+/**
+ * The first rank node of each tier - crossing one of these is what "reaching a
+ * new tier" means. Derived rather than listed, so inserting a rank node cannot
+ * silently move which one announces the tier.
+ */
+const TIER_OPENING_NODE_IDS: ReadonlySet<number> = new Set(
+  Object.values(
+    ROAD_NODES.reduce<Partial<Record<TierId, number>>>((firstOfTier, node) => {
+      if (node.type === "rank" && firstOfTier[node.tier] === undefined) {
+        firstOfTier[node.tier] = node.id;
+      }
+      return firstOfTier;
+    }, {}),
+  ).filter((id): id is number => id !== undefined),
+);
 
 // Track which milestones have been shown this session
 const shownMilestones = new Set<string>();
@@ -80,18 +111,18 @@ export function checkMilestones(
     if (prevXp < node.xp && currentXp >= node.xp && !shownMilestones.has(key)) {
       shownMilestones.add(key);
 
-      if (node.type === "monster" || node.type === "final") {
-        const msg = NODE_MESSAGES[node.label];
-        if (msg) {
-          toasts.push({ title: `🐲 ${node.label} Unlocked!`, description: msg });
-          lunaMessages.push(msg);
-        }
-      } else if (node.type === "rank") {
-        const msg = TIER_MESSAGES[node.label];
-        if (msg) {
-          toasts.push({ title: `🏅 ${node.label}`, description: msg });
-          lunaMessages.push(msg);
-        }
+      if (node.type === "monster" && node.archetype) {
+        const msg = ARCHETYPE_MESSAGES[node.archetype];
+        toasts.push({ title: `🐲 ${node.label} Unlocked!`, description: msg });
+        lunaMessages.push(msg);
+      } else if (node.type === "final" && node.finalMonster) {
+        const msg = FINAL_MESSAGES[node.finalMonster];
+        toasts.push({ title: `🐲 ${node.label} Unlocked!`, description: msg });
+        lunaMessages.push(msg);
+      } else if (node.type === "rank" && TIER_OPENING_NODE_IDS.has(node.id)) {
+        const msg = TIER_MESSAGES[node.tier];
+        toasts.push({ title: `🏅 ${node.label}`, description: msg });
+        lunaMessages.push(msg);
       } else if (node.type === "chest") {
         toasts.push({
           title: `🎁 ${node.label} ready`,

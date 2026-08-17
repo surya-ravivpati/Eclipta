@@ -15,8 +15,16 @@ export interface RoadNode {
   finalMonster?: "newton" | "ecliptadon";
   /** Chest server key (claim_chest) - set when the display label differs. */
   rewardKey?: string;
-  /** Specific Ecliptar slugs this node grants (monster = a/b, that tier's boss = c/d). */
-  ecliptarSlugs?: string[];
+  /**
+   * How many Ecliptars this node rolls from its archetype's pool.
+   *
+   * The node used to name the exact slugs it handed out, which meant the
+   * reward was known before it was opened. The server picks now
+   * (claim_random_ecliptar), so all this side decides is how many rolls the
+   * node is worth - two for an archetype's own monster node, one for each of
+   * its later nodes.
+   */
+  ecliptarRolls?: number;
   /** Thematic band - used for visual section headers in the UI */
   band?: "training" | "trials" | "ascension" | "mastery" | "summit";
 }
@@ -41,17 +49,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 400,
     band: "training",
     archetype: "speedster",
-    ecliptarSlugs: ["speedster-a", "speedster-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 59,
     tier: "bronze",
     type: "ecliptar",
-    label: "Correr",
+    label: "Speedster Egg I",
     xp: 650,
     band: "training",
     archetype: "speedster",
-    ecliptarSlugs: ["speedster-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 3,
@@ -77,11 +85,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 60,
     tier: "bronze",
     type: "ecliptar",
-    label: "Zypheroo",
+    label: "Speedster Egg II",
     xp: 5200,
     band: "training",
     archetype: "speedster",
-    ecliptarSlugs: ["speedster-d"],
+    ecliptarRolls: 1,
   },
   { id: 7, tier: "bronze", type: "rank", label: "Dawn III", xp: 6000, band: "training" },
 
@@ -95,17 +103,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 9000,
     band: "training",
     archetype: "tank",
-    ecliptarSlugs: ["tank-a", "tank-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 61,
     tier: "silver",
     type: "ecliptar",
-    label: "Mammorock",
+    label: "Tank Egg I",
     xp: 9700,
     band: "training",
     archetype: "tank",
-    ecliptarSlugs: ["tank-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 10,
@@ -131,11 +139,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 62,
     tier: "silver",
     type: "ecliptar",
-    label: "Ironhide",
+    label: "Tank Egg II",
     xp: 17200,
     band: "training",
     archetype: "tank",
-    ecliptarSlugs: ["tank-d"],
+    ecliptarRolls: 1,
   },
   { id: 14, tier: "silver", type: "rank", label: "Moonrise III", xp: 18000, band: "training" },
 
@@ -154,17 +162,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 22000,
     band: "trials",
     archetype: "chud",
-    ecliptarSlugs: ["chud-a", "chud-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 63,
     tier: "gold",
     type: "ecliptar",
-    label: "Nighthorn",
+    label: "Apex Egg I",
     xp: 23000,
     band: "trials",
     archetype: "chud",
-    ecliptarSlugs: ["chud-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 17,
@@ -190,11 +198,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 64,
     tier: "gold",
     type: "ecliptar",
-    label: "Nitpick",
+    label: "Apex Egg II",
     xp: 36000,
     band: "trials",
     archetype: "chud",
-    ecliptarSlugs: ["chud-d"],
+    ecliptarRolls: 1,
   },
   { id: 21, tier: "gold", type: "rank", label: "Meridian III", xp: 38000, band: "trials" },
 
@@ -208,17 +216,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 46000,
     band: "trials",
     archetype: "gambler",
-    ecliptarSlugs: ["gambler-a", "gambler-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 65,
     tier: "diamond",
     type: "ecliptar",
-    label: "Snailouette",
+    label: "Gambler Egg I",
     xp: 47500,
     band: "trials",
     archetype: "gambler",
-    ecliptarSlugs: ["gambler-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 24,
@@ -244,11 +252,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 66,
     tier: "diamond",
     type: "ecliptar",
-    label: "Fortunox",
+    label: "Gambler Egg II",
     xp: 67500,
     band: "trials",
     archetype: "gambler",
-    ecliptarSlugs: ["gambler-d"],
+    ecliptarRolls: 1,
   },
   { id: 28, tier: "diamond", type: "rank", label: "Penumbra III", xp: 70000, band: "trials" },
 
@@ -267,17 +275,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 84000,
     band: "ascension",
     archetype: "healer",
-    ecliptarSlugs: ["healer-a", "healer-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 67,
     tier: "platinum",
     type: "ecliptar",
-    label: "Bloomheart",
+    label: "Healer Egg I",
     xp: 87000,
     band: "ascension",
     archetype: "healer",
-    ecliptarSlugs: ["healer-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 31,
@@ -310,11 +318,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 68,
     tier: "platinum",
     type: "ecliptar",
-    label: "Mossy Golem",
+    label: "Healer Egg II",
     xp: 124000,
     band: "ascension",
     archetype: "healer",
-    ecliptarSlugs: ["healer-d"],
+    ecliptarRolls: 1,
   },
   { id: 35, tier: "platinum", type: "rank", label: "Umbra III", xp: 130000, band: "ascension" },
 
@@ -328,17 +336,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 157000,
     band: "ascension",
     archetype: "fulcrum",
-    ecliptarSlugs: ["fulcrum-a", "fulcrum-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 69,
     tier: "champion",
     type: "ecliptar",
-    label: "Ticonder",
+    label: "Fulcrum Egg I",
     xp: 163000,
     band: "ascension",
     archetype: "fulcrum",
-    ecliptarSlugs: ["fulcrum-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 38,
@@ -371,11 +379,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 70,
     tier: "champion",
     type: "ecliptar",
-    label: "Equinox",
+    label: "Fulcrum Egg II",
     xp: 230000,
     band: "ascension",
     archetype: "fulcrum",
-    ecliptarSlugs: ["fulcrum-d"],
+    ecliptarRolls: 1,
   },
   { id: 42, tier: "champion", type: "rank", label: "Nightfall III", xp: 240000, band: "ascension" },
 
@@ -394,17 +402,17 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 285000,
     band: "mastery",
     archetype: "accelerator",
-    ecliptarSlugs: ["accelerator-a", "accelerator-b"],
+    ecliptarRolls: 2,
   },
   {
     id: 71,
     tier: "unreal",
     type: "ecliptar",
-    label: "Adrenalynx",
+    label: "Accelerator Egg I",
     xp: 296000,
     band: "mastery",
     archetype: "accelerator",
-    ecliptarSlugs: ["accelerator-c"],
+    ecliptarRolls: 1,
   },
   {
     id: 45,
@@ -430,11 +438,11 @@ export const ROAD_NODES: RoadNode[] = [
     id: 72,
     tier: "unreal",
     type: "ecliptar",
-    label: "Chronovex",
+    label: "Accelerator Egg II",
     xp: 405000,
     band: "mastery",
     archetype: "accelerator",
-    ecliptarSlugs: ["accelerator-d"],
+    ecliptarRolls: 1,
   },
   { id: 49, tier: "unreal", type: "rank", label: "Totality III", xp: 420000, band: "mastery" },
 
@@ -454,7 +462,7 @@ export const ROAD_NODES: RoadNode[] = [
     xp: 495000,
     band: "summit",
     archetype: "god",
-    ecliptarSlugs: ["einsteinium", "temporobys"],
+    ecliptarRolls: 2,
   },
   {
     id: 52,

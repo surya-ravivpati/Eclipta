@@ -248,3 +248,100 @@ describe("ratingDelta", () => {
     expect(highRatingDelta).toBeLessThan(lowRatingDelta);
   });
 });
+
+/**
+ * The review copy is the part a learner actually reads, and the module's stated
+ * design is that it stays supportive without becoming useless: strengths first
+ * always, observations that name the behaviour rather than the failure, and
+ * never more than three things to work on. That is a product decision living in
+ * a chain of ifs, which is exactly the kind of thing that erodes silently.
+ */
+describe("the review it writes", () => {
+  it("names unanswered questions as pacing, not as not knowing", () => {
+    const items = [item(), item({ answered: false }), item({ answered: false })];
+    const { observations } = scorePressureSession(items, [], "exam", 30);
+
+    const line = observations.find((o) => o.includes("unanswered"));
+    expect(line).toContain("2 questions were");
+    expect(line).toMatch(/pacing, not knowledge/);
+  });
+
+  it("counts a single unanswered question in the singular", () => {
+    const { observations } = scorePressureSession(
+      [item(), item({ answered: false })],
+      [],
+      "exam",
+      30,
+    );
+    expect(observations.find((o) => o.includes("unanswered"))).toContain("1 question was");
+  });
+
+  it("points out answers the learner was sure about and got wrong", () => {
+    const items = [item({ correct: false, statedConfidence: 0.9 }), item()];
+    const { observations } = scorePressureSession(items, [], "exam", 30);
+    expect(observations.some((o) => o.includes("sure about turned out wrong"))).toBe(true);
+  });
+
+  it("credits answers the learner got right while doubting themselves", () => {
+    // Being right while unsure is the encouraging case, and the module treats
+    // it as one rather than as noise.
+    const items = [item({ correct: true, statedConfidence: 0.2 }), item()];
+    const { observations, recommendations } = scorePressureSession(items, [], "exam", 30);
+
+    expect(observations.some((o) => o.includes("doubting yourself"))).toBe(true);
+    expect(recommendations.some((r) => r.includes("first instinct"))).toBe(true);
+  });
+
+  it("reports a late drop-off as stamina rather than ability", () => {
+    const items = [
+      item({ correct: true }),
+      item({ correct: true }),
+      item({ correct: false }),
+      item({ correct: false }),
+    ];
+    const { observations } = scorePressureSession(items, [], "exam", 30);
+    expect(observations.some((o) => o.includes("stamina, not ability"))).toBe(true);
+  });
+
+  it("never offers more than three things to work on", () => {
+    // A session that trips every branch would otherwise produce a wall.
+    const items = Array.from({ length: 6 }, (_, i) =>
+      item({
+        answered: i % 2 === 0,
+        correct: i % 3 === 0,
+        answerChanges: 4,
+        statedConfidence: i % 2 === 0 ? 0.9 : 0.1,
+      }),
+    );
+    const { recommendations } = scorePressureSession(items, [], "exam", 15);
+    expect(recommendations.length).toBeLessThanOrEqual(3);
+  });
+
+  it("still finds something to suggest after a clean session", () => {
+    const items = Array.from({ length: 4 }, () => item({ correct: true, statedConfidence: 0.8 }));
+    const { recommendations } = scorePressureSession(items, [], "exam", 30);
+    expect(recommendations.length).toBeGreaterThan(0);
+    expect(recommendations[0]).toContain("difficulty");
+  });
+
+  it("credits reaching every question, and steady performance", () => {
+    const items = Array.from({ length: 4 }, () => item({ correct: true }));
+    const { strengths } = scorePressureSession(items, [], "exam", 30);
+    expect(strengths.some((s) => s.includes("every question"))).toBe(true);
+  });
+
+  it("says something kind about a session with nothing to praise", () => {
+    const items = Array.from({ length: 4 }, () =>
+      item({ correct: false, answered: false, answerChanges: 5, revisits: 5 }),
+    );
+    const { strengths } = scorePressureSession(items, [], "exam", 5);
+    expect(strengths.length).toBeGreaterThan(0);
+    expect(strengths.join(" ")).toMatch(/finished|steady|every question|strong|pace|sense/i);
+  });
+
+  it("scores an empty session without dividing by zero", () => {
+    const result = scorePressureSession([], [], "exam", 30);
+    expect(Number.isFinite(result.score)).toBe(true);
+    expect(result.strengths.length).toBeGreaterThan(0);
+  });
+});

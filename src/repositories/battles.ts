@@ -253,3 +253,40 @@ export async function getAllArchetypeMastery(userId: string): Promise<ArchetypeM
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+/** How a bot battle moved the ladder, once the server has judged it. */
+export interface BotBattleOutcome {
+  /** False when too few verified answers came back to judge the session. */
+  rated: boolean;
+  /** The server's verdict, not the browser's. Absent on an unrated session. */
+  won: boolean | null;
+  ratingAfter: number | null;
+  ratingDelta: number;
+}
+
+/**
+ * Apply a finished bot battle to the ladder.
+ *
+ * The outcome is recomputed from `battle_question_challenges` - the questions
+ * the server issued and marked itself - rather than taken from the browser's
+ * account of who won. That is the whole reason this exists: the older
+ * `complete_bot_battle` trusted a client-written `won` flag, which made a
+ * forged victory worth free rating, and was revoked rather than fixed.
+ */
+export async function completeBotBattleVerified(
+  sessionId: string,
+  challengeIds: string[],
+): Promise<BotBattleOutcome> {
+  const { data, error } = await supabase.rpc("complete_bot_battle_verified", {
+    p_session_id: sessionId,
+    p_challenge_ids: challengeIds,
+  });
+  if (error) throw new Error(error.message);
+
+  return {
+    rated: data?.rated === true,
+    won: typeof data?.won === "boolean" ? data.won : null,
+    ratingAfter: typeof data?.rating_after === "number" ? data.rating_after : null,
+    ratingDelta: typeof data?.rating_delta === "number" ? data.rating_delta : 0,
+  };
+}

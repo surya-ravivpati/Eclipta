@@ -220,3 +220,78 @@ describe("activeSubject", () => {
     expect(s).toBe("Science");
   });
 });
+
+/**
+ * Every recommendation carries a sentence explaining itself, and which
+ * sentence you get is the whole point: "because you finished X" is a different
+ * promise from "you're 70% ready". The strongest applicable signal is meant to
+ * win, so these pin which branch fires when several could.
+ */
+describe("the reason it gives", () => {
+  it("says nothing at all to a learner it knows nothing about", () => {
+    // No completions, no strengths, no weaknesses - there is no honest reason
+    // to offer, and inventing one is worse than an empty shelf.
+    expect(recommend(CATALOGUE, learner())).toEqual([]);
+  });
+
+  it("leads with remediation when a weak area has a course that fixes it", () => {
+    const recs = recommend(CATALOGUE, learner({ weakAreas: ["limits"] }));
+    const remediation = recs.find((r) => r.kind === "remediation");
+    expect(remediation?.reason).toMatch(/^Review this to strengthen/);
+    // Remediation is pushed before anything scored, so it comes first.
+    expect(first(recs).kind).toBe("remediation");
+  });
+
+  it("credits the course a learner actually finished", () => {
+    const recs = recommend(
+      CATALOGUE,
+      learner({ completedSlugs: new Set([CALCULUS]), strongAreas: ["limits", "derivatives"] }),
+    );
+    const next = recs.find((r) => r.kind === "next");
+    if (next) expect(next.reason).toMatch(/^Because you finished/);
+  });
+
+  it("gives a percentage and the concept standing in the way", () => {
+    const recs = recommend(CATALOGUE, learner({ strongAreas: ["linear-algebra"] }));
+    const ready = recs.find((r) => r.kind === "ready");
+    if (ready) {
+      expect(ready.reason).toMatch(/\d+% ready/);
+      expect(ready.reason).toContain("will get you there");
+    }
+  });
+
+  it("never leaves a recommendation without a reason or a kind", () => {
+    const recs = recommend(
+      CATALOGUE,
+      learner({ strongAreas: ["linear-algebra"], weakAreas: ["statistics"] }),
+    );
+    expect(recs.length).toBeGreaterThan(0);
+    for (const rec of recs) {
+      expect(rec.reason.length, rec.course.slug).toBeGreaterThan(0);
+      expect(["remediation", "next", "ready", "affinity", "popular"]).toContain(rec.kind);
+    }
+  });
+
+  it("never recommends something already finished", () => {
+    const recs = recommend(
+      CATALOGUE,
+      learner({ completedSlugs: new Set([CALCULUS, ML]), strongAreas: ["limits"] }),
+    );
+    expect(recs.map((r) => r.course.slug)).not.toContain(CALCULUS);
+    expect(recs.map((r) => r.course.slug)).not.toContain(ML);
+  });
+
+  it("never repeats a course, even when several signals point at it", () => {
+    const recs = recommend(
+      CATALOGUE,
+      learner({ weakAreas: ["linear-algebra"], strongAreas: ["linear-algebra"] }),
+    );
+    const slugs = recs.map((r) => r.course.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("honours the limit it is given", () => {
+    const recs = recommend(CATALOGUE, learner({ strongAreas: ["linear-algebra"] }), 1);
+    expect(recs.length).toBeLessThanOrEqual(1);
+  });
+});

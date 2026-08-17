@@ -14,7 +14,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { supabase } from "@/integrations/supabase/client";
-import { getPlayerRating, insertBattleQuestionRecords } from "./battles";
+import { completeBotBattleVerified, getPlayerRating, insertBattleQuestionRecords } from "./battles";
 
 function mockFrom(result: { data: unknown; error: unknown }) {
   const maybeSingle = vi.fn().mockResolvedValue(result);
@@ -106,5 +106,97 @@ describe("insertBattleQuestionRecords", () => {
     vi.mocked(supabase.from).mockReturnValue({ insert } as never);
 
     await expect(insertBattleQuestionRecords([])).rejects.toThrow("connection reset");
+  });
+});
+
+/**
+ * The whole point of this call is that it does not send an outcome. The older
+ * `complete_bot_battle` took a client-written `won` flag, which made a forged
+ * victory worth free rating and got it revoked; this one hands over the
+ * questions the server issued and lets the server judge them.
+ *
+ * So the two things worth asserting are that nothing resembling a result goes
+ * out in the request, and that an unrated session comes back as a fact rather
+ * than an error - a player who answered too few questions to be judged has not
+ * done anything wrong.
+ */
+describe("completeBotBattleVerified", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sends the challenge ids and no claim about who won", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { rated: true, won: true, rating_after: 1006, rating_delta: 6 },
+      error: null,
+    } as never);
+
+    await completeBotBattleVerified("session-1", ["c1", "c2", "c3"]);
+
+    expect(supabase.rpc).toHaveBeenCalledWith("complete_bot_battle_verified", {
+      p_session_id: "session-1",
+      p_challenge_ids: ["c1", "c2", "c3"],
+    });
+
+    const [, args] = vi.mocked(supabase.rpc).mock.calls[0] as [string, Record<string, unknown>];
+    expect(Object.keys(args).sort()).toEqual(["p_challenge_ids", "p_session_id"]);
+    expect(args).not.toHaveProperty("p_won");
+  });
+
+  it("reports the rating the server settled on", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { rated: true, won: true, rating_after: 1006, rating_delta: 6 },
+      error: null,
+    } as never);
+
+    expect(await completeBotBattleVerified("s", ["c"])).toEqual({
+      rated: true,
+      won: true,
+      ratingAfter: 1006,
+      ratingDelta: 6,
+    });
+  });
+
+  it("carries a loss through as a loss", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { rated: true, won: false, rating_after: 994, rating_delta: -6 },
+      error: null,
+    } as never);
+
+    const outcome = await completeBotBattleVerified("s", ["c"]);
+    expect(outcome.won).toBe(false);
+    expect(outcome.ratingDelta).toBe(-6);
+  });
+
+  it("treats an unrated session as an outcome, not a failure", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { already_completed: false, rated: false, reason: "not_enough_verified_answers" },
+      error: null,
+    } as never);
+
+    expect(await completeBotBattleVerified("s", ["c"])).toEqual({
+      rated: false,
+      won: null,
+      ratingAfter: null,
+      ratingDelta: 0,
+    });
+  });
+
+  it("does not invent a rating change from a malformed response", async () => {
+    for (const data of [null, {}, { rated: true }, { rated: "yes", rating_delta: "6" }]) {
+      vi.mocked(supabase.rpc).mockResolvedValue({ data, error: null } as never);
+      const outcome = await completeBotBattleVerified("s", ["c"]);
+      expect(outcome.ratingDelta, JSON.stringify(data)).toBe(0);
+      expect(outcome.ratingAfter).toBeNull();
+    }
+  });
+
+  it("throws when the call itself fails, so the caller can say so", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: "Not authenticated" },
+    } as never);
+
+    await expect(completeBotBattleVerified("s", ["c"])).rejects.toThrow("Not authenticated");
   });
 });

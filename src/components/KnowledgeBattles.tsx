@@ -142,6 +142,7 @@ import { getTodayChallenge } from "@/lib/daily-challenge";
 import { findMatch, type MatchResult, type OpponentType } from "@/lib/matchmaking";
 import { fetchPlayerRating, ratingToTier } from "@/lib/rating";
 import { awardXp, awardVerifiedBattleXp } from "@/lib/xp-service";
+import { completeBotBattleVerified } from "@/repositories/battles";
 import { toast } from "sonner";
 import "./Battles.css";
 
@@ -3192,18 +3193,26 @@ function BattleArena() {
               }
             }
           } else if (opponentTypeRef.current === "bot" && sessionId) {
-            // Bot battles count too, at a reduced rating change (server-enforced),
-            // and update the W/L record via the same applied-session truth model.
-            const { data, error } = await supabase.rpc("complete_bot_battle", {
-              p_session_id: sessionId,
-            });
-            if (error) {
-              console.error("complete_bot_battle failed", error);
+            // Bot battles move the ladder too, at half the ranked K-factor.
+            // The questions are handed over rather than the result: the server
+            // issued them and marked them, so it recomputes who won from its
+            // own rows instead of believing this one.
+            try {
+              const outcome = await completeBotBattleVerified(
+                sessionId,
+                answeredChallengeIdsRef.current,
+              );
+              if (outcome.rated && outcome.ratingAfter !== null) {
+                setRatingChange(outcome.ratingDelta);
+                playerRatingRef.current = outcome.ratingAfter;
+                window.dispatchEvent(new Event("pvp-leaderboard-updated"));
+              }
+              // An unrated session is not an error - too few of the server's
+              // questions were answered to judge it, so the ladder is left
+              // alone and there is nothing to tell the player.
+            } catch (error) {
+              console.error("completeBotBattleVerified failed", error);
               toast.error("Couldn't record this battle's rating change.");
-            } else if (typeof data?.rating_after === "number") {
-              setRatingChange(data.rating_delta ?? 0);
-              playerRatingRef.current = data.rating_after;
-              window.dispatchEvent(new Event("pvp-leaderboard-updated"));
             }
           }
         } catch (error) {

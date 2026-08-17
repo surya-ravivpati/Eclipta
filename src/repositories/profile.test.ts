@@ -15,7 +15,10 @@ import {
   awardVerifiedBattleXpRpc,
   awardXpRpc,
   claimChestRpc,
+  claimRandomEcliptarRpc,
+  countUnownedEcliptarsRpc,
   getClaimedChestNodeIds,
+  getEcliptarClaimCountsByNode,
   getOwnedEcliptarSlugs,
   getUsername,
   getUserXp,
@@ -209,5 +212,134 @@ describe("adminSetXpRpc", () => {
 
     await expect(adminSetXpRpc("u1", 5000)).resolves.toBe(5000);
     expect(supabase.rpc).toHaveBeenCalledWith("admin_set_xp", { p_user_id: "u1", p_xp: 5000 });
+  });
+});
+
+/**
+ * The draw is the server's to make, so these check that this layer asks
+ * correctly and reports faithfully - and, in particular, that it never invents
+ * a result. A malformed response has to read as "nothing was granted" rather
+ * than as a creature the player did not get, because the caller turns that
+ * straight into a celebration toast.
+ */
+describe("claimRandomEcliptarRpc", () => {
+  it("sends the archetype and the node, and nothing resembling a pick", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { granted: true, slug: "tank-c", remaining: 1 },
+      error: null,
+    } as never);
+
+    await claimRandomEcliptarRpc("tank", 61);
+
+    expect(supabase.rpc).toHaveBeenCalledWith("claim_random_ecliptar", {
+      p_archetype: "tank",
+      p_node_id: 61,
+    });
+  });
+
+  it("reports what the server drew", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { granted: true, slug: "tank-c", remaining: 1 },
+      error: null,
+    } as never);
+
+    expect(await claimRandomEcliptarRpc("tank", 61)).toEqual({
+      granted: true,
+      slug: "tank-c",
+      remaining: 1,
+    });
+  });
+
+  it("reports an exhausted pool without a slug", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { granted: false, reason: "none_left", remaining: 0 },
+      error: null,
+    } as never);
+
+    expect(await claimRandomEcliptarRpc("tank", 61)).toEqual({
+      granted: false,
+      slug: null,
+      remaining: 0,
+    });
+  });
+
+  it("never invents a draw from a malformed response", async () => {
+    for (const data of [null, {}, { granted: "yes" }, { granted: true, slug: 42 }]) {
+      vi.mocked(supabase.rpc).mockResolvedValue({ data, error: null } as never);
+      const result = await claimRandomEcliptarRpc("tank", 61);
+      expect(result.slug, JSON.stringify(data)).toBeNull();
+    }
+  });
+
+  it("throws when the call fails, so the caller can say so", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: "Invalid archetype" },
+    } as never);
+
+    await expect(claimRandomEcliptarRpc("nonsense", 61)).rejects.toThrow("Invalid archetype");
+  });
+});
+
+describe("countUnownedEcliptarsRpc", () => {
+  it("returns the count the server gave", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 3, error: null } as never);
+    expect(await countUnownedEcliptarsRpc("healer")).toBe(3);
+  });
+
+  it("reads a non-numeric answer as none left", async () => {
+    for (const data of [null, undefined, "3", {}]) {
+      vi.mocked(supabase.rpc).mockResolvedValue({ data, error: null } as never);
+      expect(await countUnownedEcliptarsRpc("healer"), JSON.stringify(data)).toBe(0);
+    }
+  });
+
+  it("throws when the call fails", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: "denied" },
+    } as never);
+    await expect(countUnownedEcliptarsRpc("healer")).rejects.toThrow("denied");
+  });
+});
+
+describe("getEcliptarClaimCountsByNode", () => {
+  /** The node_id read is a plain select().eq(), resolved by awaiting the chain. */
+  function mockNodeRows(result: { data: unknown; error: unknown }) {
+    const eq = vi.fn().mockResolvedValue(result);
+    const select = vi.fn().mockReturnValue({ eq });
+    vi.mocked(supabase.from).mockReturnValue({ select } as never);
+    return { select, eq };
+  }
+
+  it("counts a node once per Ecliptar it handed out", async () => {
+    mockNodeRows({ data: [{ node_id: 2 }, { node_id: 2 }, { node_id: 61 }], error: null });
+
+    expect(await getEcliptarClaimCountsByNode("u1")).toEqual(
+      new Map([
+        [2, 2],
+        [61, 1],
+      ]),
+    );
+  });
+
+  it("reads only the caller's own claims", async () => {
+    const { select, eq } = mockNodeRows({ data: [], error: null });
+
+    await getEcliptarClaimCountsByNode("u1");
+
+    expect(supabase.from).toHaveBeenCalledWith("user_ecliptars");
+    expect(select).toHaveBeenCalledWith("node_id");
+    expect(eq).toHaveBeenCalledWith("user_id", "u1");
+  });
+
+  it("is empty for someone who has claimed nothing", async () => {
+    mockNodeRows({ data: [], error: null });
+    expect(await getEcliptarClaimCountsByNode("u1")).toEqual(new Map());
+  });
+
+  it("throws when the read fails", async () => {
+    mockNodeRows({ data: null, error: { message: "denied" } });
+    await expect(getEcliptarClaimCountsByNode("u1")).rejects.toThrow("denied");
   });
 });

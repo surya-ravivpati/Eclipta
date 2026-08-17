@@ -399,6 +399,7 @@ function makeBot(r: () => number, used: Set<string>, index: number): BotProfile 
     Math.round((games / 20) * (0.5 + r())) + (rating > 1500 ? 2 : 0),
   );
   const shuffled = [...ACHIEVEMENTS].sort(() => r() - 0.5);
+  const currentStreak = int(r, 0, Math.min(14, Math.round(ageDays / 20)));
 
   return {
     slug: `bot-${String(index).padStart(4, "0")}`,
@@ -415,8 +416,11 @@ function makeBot(r: () => number, used: Set<string>, index: number): BotProfile 
     wins,
     losses,
     xp: games * int(r, 60, 160),
-    currentStreak: int(r, 0, Math.min(14, Math.round(ageDays / 20))),
-    bestStreak: int(r, 3, Math.max(4, Math.round(ageDays / 10))),
+    currentStreak,
+    // Drawn independently of the current streak, then floored by it: a profile
+    // whose best-ever run is shorter than the one it is on right now reads as
+    // a bug to anyone who looks at it.
+    bestStreak: Math.max(currentStreak, int(r, 3, Math.max(4, Math.round(ageDays / 10)))),
     progression,
     achievements: shuffled.slice(0, Math.max(0, achievementCount)),
     accuracy,

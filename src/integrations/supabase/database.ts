@@ -77,6 +77,15 @@ type SupplementalFunctions = {
     Returns: RatingApplication;
   };
   /**
+   * Applies a bot battle to the ladder from answers the server issued and
+   * marked itself, rather than from the browser's account of who won.
+   * Source: `20260816010000_bot-battles-affect-rating-again.sql`.
+   */
+  complete_bot_battle_verified: {
+    Args: { p_session_id: string; p_challenge_ids: string[] };
+    Returns: VerifiedBotBattleResult;
+  };
+  /**
    * Public contact form submission. Validates, rate-limits per email and
    * runs the forum moderation matcher before inserting.
    * Source: `20260516200335_contact-messages.sql`.
@@ -190,6 +199,27 @@ interface RatingApplication {
   already_completed: boolean;
   rating_before: number | null;
   rating_after: number | null;
+  rating_delta: number | null;
+}
+
+/**
+ * A bot battle applied from verified answers.
+ *
+ * `rated` is false when too few of the questions the server issued came back
+ * answered to judge the session. That is not a failure: the battle is closed
+ * so it cannot be retried with a better set, and the ladder is left alone.
+ * Every rating field is absent in that case.
+ */
+interface VerifiedBotBattleResult {
+  already_completed: boolean;
+  rated?: boolean;
+  reason?: string;
+  won?: boolean;
+  accuracy?: number;
+  answered?: number;
+  correct?: number;
+  rating_before?: number | null;
+  rating_after?: number | null;
   rating_delta: number | null;
 }
 

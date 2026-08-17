@@ -158,16 +158,54 @@ export function absorbWithShield(
   return { hpLoss: damage - absorbed, shieldLeft: shield - absorbed };
 }
 
-/** Shield granted by a Defend, respecting the bank cap. Zero for most classes. */
+/**
+ * What a heal is worth after `consecutive` heals in a row before it.
+ *
+ * Zero means this is the first heal of a chain and nothing is taken off. The
+ * chain resets the moment any other action is taken, so this only ever bites
+ * the player who is repeating themselves.
+ *
+ * The problem it addresses is narrow on purpose. For six of the eight
+ * archetypes Heal is already the weakest action available, so they never chain
+ * it and never feel this; Healer's Heal is worth roughly double the next-best
+ * sustain in the game, on the easiest question band, with a shield attached
+ * that is not wasted even at full health - which makes "heal whenever not
+ * topped off" close to its optimal policy and reads, to an opponent, as
+ * stalling. Taxing repetition keeps "outlast them" and removes "hold one
+ * button".
+ */
+export function healFalloff(consecutive: number): number {
+  if (consecutive <= 0) return 1;
+  const { consecutiveHealFalloff, minHealFraction } = DAMAGE_TUNING;
+  return Math.max(minHealFraction, consecutiveHealFalloff ** consecutive);
+}
+
+/** A heal's actual value once the consecutive-heal tax is applied. */
+export function healAfterFalloff(base: number, consecutive: number): number {
+  if (base <= 0) return 0;
+  // At least 1, so a long chain tapers rather than becoming a wasted turn with
+  // no feedback at all.
+  return Math.max(1, Math.round(base * healFalloff(consecutive)));
+}
+
+/**
+ * Shield granted by a Defend, respecting the bank cap. Zero for most classes.
+ *
+ * The shield tapers with the same chain as the heal it rides on. Without that
+ * it would be the whole spam incentive on its own: it is a separate pool, so
+ * it is never wasted even at full health.
+ */
 export function getHealShield(
   arch: Archetype,
   current: number,
   copied?: ArchetypeId | null,
+  consecutiveHeals = 0,
 ): number {
   const shield = hasPassive(arch, "healGrantsShield", copied, "healer");
   if (!shield) return current;
   const { shieldPerHeal, shieldCap } = DAMAGE_TUNING.healer;
-  return Math.min(shieldCap, current + Math.round(shieldPerHeal * strength(shield)));
+  const granted = shieldPerHeal * strength(shield) * healFalloff(consecutiveHeals);
+  return Math.min(shieldCap, current + Math.round(granted));
 }
 
 /**

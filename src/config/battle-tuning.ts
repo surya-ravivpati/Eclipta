@@ -47,6 +47,20 @@ export const damageTuningSchema = z.object({
     })
     .refine((a) => a.damageCap >= a.damagePerAnswer, "the damage cap must allow at least one step")
     .refine((a) => a.scoreCap >= a.scorePerAnswer, "the score cap must allow at least one step"),
+  /**
+   * How much each *consecutive* heal is worth, as a fraction of the last one.
+   *
+   * A single heal is untouched. This exists to stop a Healer parking on one
+   * button: for six of the eight archetypes Heal is already the weakest action
+   * they have, so a global nerf would punish them for a pattern they never
+   * use, while Healer's own Heal is worth roughly double the next-best sustain
+   * in the game and costs it nothing to repeat. Taxing the repetition rather
+   * than the action leaves "outlast them" intact and takes away "hold one
+   * button".
+   */
+  consecutiveHealFalloff: z.number().gt(0).lt(1),
+  /** However long the chain runs, a heal is never worth less than this share. */
+  minHealFraction: z.number().gt(0).lte(1),
   /** Speedster: bonus damage at an instant answer, decaying to zero at the buzzer. */
   speedster: z.object({ maxSpeedBonus: z.number().positive() }),
   /** Apex: below the HP threshold, damage gains this fraction. */
@@ -91,6 +105,11 @@ export const DAMAGE_TUNING: DamageTuning = damageTuningSchema.parse({
   chargeMultiplier: 1.8,
   critChance: 0.1,
   maxDefense: 0.9,
+  // Second heal in a row is worth 60%, third 36%, fourth 22%, then the floor.
+  // A chain of four still restores more than a single heal - stalling is not
+  // banned, it just stops being free.
+  consecutiveHealFalloff: 0.6,
+  minHealFraction: 0.2,
   accelerator: {
     damagePerAnswer: 2,
     damageCap: 16,

@@ -103,6 +103,7 @@ import {
   applyDefense,
   absorbWithShield,
   getHealShield,
+  healAfterFalloff,
   getStreakHeal,
   getScoreMultiplier,
   rollCopiedPassive,
@@ -1623,6 +1624,15 @@ function BattleArena() {
   const liveActionLockedRef = useRef(false);
   const liveOpponentLockedRef = useRef(false);
   const liveResolvingRef = useRef(false);
+  /**
+   * How many heals each side has taken in a row.
+   *
+   * Reset by any other action, so it only ever counts a repeat. See
+   * `healFalloff` in stat-mechanics for why the tax is on the repetition
+   * rather than on the Heal action itself.
+   */
+  const consecutiveHealsRef = useRef({ player: 0, opponent: 0 });
+
   const liveResolvedTurnsRef = useRef<Set<number>>(new Set());
   const livePendingActionRef = useRef<LiveTurnActionRow | null>(null);
   const liveChallengeIdRef = useRef<string | null>(null);
@@ -2846,34 +2856,46 @@ function BattleArena() {
           sfxCombo();
         }
 
+        // Only a Defend continues a heal chain; every other action ends it.
+        if (currentAction !== "defend") consecutiveHealsRef.current.player = 0;
+
         if (currentAction === "defend") {
           const gain = FOCUS_GAIN.defend;
           if (arch.healAmount !== null) {
             // In an HP mode the restore is capped by the missing health; in a
             // bar/grid mode there is no HP to be missing, so the class's full
             // heal is what gets spent on the resource.
-            const heal = modeUsesHp()
+            const chain = consecutiveHealsRef.current.player;
+            const full = modeUsesHp()
               ? Math.min(arch.healAmount, player.maxHp - player.hp)
               : arch.healAmount;
+            // Each heal in an unbroken run is worth less than the one before.
+            const heal = healAfterFalloff(full, chain);
             const hpHeal = spendHeal("player", heal);
-            // Healer (or Fulcrum borrowing it) banks an absorb shield on top.
+            // Healer (or Fulcrum borrowing it) banks an absorb shield on top,
+            // tapered by the same chain - it is a separate pool, so left alone
+            // it would be the whole incentive to keep healing.
             const shieldBefore = playerRef.current.shield ?? 0;
-            const shieldAfter = getHealShield(arch, shieldBefore, copied);
+            const shieldAfter = getHealShield(arch, shieldBefore, copied, chain);
             setPlayer((prev) => ({
               ...prev,
               hp: Math.min(prev.maxHp, prev.hp + hpHeal),
-              shield: getHealShield(arch, prev.shield ?? 0, copied),
+              shield: getHealShield(arch, prev.shield ?? 0, copied, chain),
               focus: Math.min(prev.maxFocus, prev.focus + gain),
             }));
             setShowPlayerHeal(true);
             const shieldNote =
               shieldAfter > shieldBefore ? ` +${shieldAfter - shieldBefore} shield.` : "";
+            // Say why it healed for less, rather than letting the number look
+            // like a bug.
+            const fadeNote = heal < full ? ` Repeated heal - ${modeRestoreLabel(full)} faded.` : "";
             addLog({
               actor: "player",
               actionType: "heal",
-              result: `Defend: ${modeRestoreLabel(heal)}, +${gain} Focus.${shieldNote}`,
+              result: `Defend: ${modeRestoreLabel(heal)}, +${gain} Focus.${shieldNote}${fadeNote}`,
               value: heal,
             });
+            consecutiveHealsRef.current.player = chain + 1;
           } else {
             setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + gain) }));
             addLog({
@@ -3306,6 +3328,7 @@ function BattleArena() {
             maxFocus: prevOpp.maxFocus,
             canHeal: oppArch.healAmount !== null,
             ultimateReady: oppUltimateReady,
+            consecutiveHeals: consecutiveHealsRef.current.opponent,
           },
           {
             hp: Math.round(playerHpPct * prevPlayer.maxHp),
@@ -3381,19 +3404,23 @@ function BattleArena() {
           // The bot's correct-answer count drives its Accelerator ramp / God heal.
           const oppCorrect = mem.turnNumber;
 
+          if (choice !== "defend") consecutiveHealsRef.current.opponent = 0;
+
           if (choice === "defend") {
             newOppFocus = Math.min(prevOpp.maxFocus, prevOpp.focus + FOCUS_GAIN.defend);
             if (oppArch.healAmount !== null) {
-              newOppHp = Math.min(
-                prevOpp.maxHp,
-                prevOpp.hp + spendHeal("opponent", oppArch.healAmount),
+              const oppHeal = healAfterFalloff(
+                oppArch.healAmount,
+                consecutiveHealsRef.current.opponent,
               );
+              newOppHp = Math.min(prevOpp.maxHp, prevOpp.hp + spendHeal("opponent", oppHeal));
               addLog({
                 actor: "opponent",
                 actionType: "heal",
-                result: `${prevOpp.name} heals: ${modeRestoreLabel(oppArch.healAmount)}, +${FOCUS_GAIN.defend} Focus.`,
-                value: oppArch.healAmount,
+                result: `${prevOpp.name} heals: ${modeRestoreLabel(oppHeal)}, +${FOCUS_GAIN.defend} Focus.`,
+                value: oppHeal,
               });
+              consecutiveHealsRef.current.opponent += 1;
             } else {
               addLog({
                 actor: "opponent",
@@ -3654,6 +3681,7 @@ function BattleArena() {
     setPvpBattleId(null);
     battleFinishedRef.current = false;
     answeredChallengeIdsRef.current = [];
+    consecutiveHealsRef.current = { player: 0, opponent: 0 };
     rematchStartedRef.current = false;
     setLiveRematchState("idle");
 

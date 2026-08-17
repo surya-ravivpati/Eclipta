@@ -27,7 +27,7 @@
  */
 
 import type { Action, ArchetypeId, Archetype } from "./types";
-import { botAccuracy } from "./stat-mechanics";
+import { botAccuracy, healFalloff } from "./stat-mechanics";
 
 // --- Battle Memory ------------------------------------------------------------
 // Stored in a ref (not React state) so it never causes re-renders.
@@ -221,6 +221,14 @@ interface OppState {
   canHeal: boolean;
   /** Whether the ultimate charge is full - gates the `ultimate` action. */
   ultimateReady: boolean;
+  /**
+   * How many times this bot has healed in a row already.
+   *
+   * Each consecutive heal restores less than the last (`healFalloff`), so a
+   * bot that ignores this keeps pressing Defend for a shrinking return and
+   * reads as broken rather than as cautious.
+   */
+  consecutiveHeals?: number;
 }
 interface PlayerState {
   hp: number;
@@ -278,6 +286,12 @@ export function pickAiAction(
     charge: opp.focus >= 25 ? 2.0 : 0,
     ultimate: opp.ultimateReady ? 0.9 : 0,
   };
+
+  // -- A heal already repeated is worth less, so want it less ---------------
+  // The same curve the heal itself is taxed by, applied to how much the bot
+  // wants the action: one that healed three times running should be visibly
+  // looking for something else to do.
+  w.defend *= healFalloff(opp.consecutiveHeals ?? 0);
 
   // -- Personality: aggression lifts charge, dampens defend -----------------
   w.charge *= 0.4 + eff * 2.2;

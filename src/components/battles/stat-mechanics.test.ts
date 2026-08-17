@@ -10,6 +10,8 @@ import {
   getEffectiveDamage,
   getHealShield,
   getQuestionTime,
+  healAfterFalloff,
+  healFalloff,
   getScoreMultiplier,
   getStreakHeal,
   levelToCategory,
@@ -362,5 +364,114 @@ describe("botAccuracy", () => {
     const hard = botAccuracy(archetype({ diffMin: 7, diffMax: 10 }));
     expect(easy).toBeGreaterThan(mid);
     expect(mid).toBeGreaterThan(hard);
+  });
+});
+
+/**
+ * The heal chain exists to answer one complaint - a Healer parking on Defend -
+ * without punishing the six archetypes for whom Heal is already the weakest
+ * action they have. So the properties that matter are that a *single* heal is
+ * untouched, that a chain tapers without ever reaching zero, and that the
+ * shield rides the same curve. Left alone, the shield would be the whole
+ * incentive on its own: it is a separate pool, so it is never wasted even at
+ * full health.
+ */
+describe("healFalloff", () => {
+  it("leaves the first heal of a chain completely alone", () => {
+    expect(healFalloff(0)).toBe(1);
+    expect(healFalloff(-1)).toBe(1);
+  });
+
+  it("takes more off each heal in a row", () => {
+    let previous = healFalloff(0);
+    for (let chain = 1; chain <= 6; chain++) {
+      const current = healFalloff(chain);
+      expect(current, `chain=${chain}`).toBeLessThanOrEqual(previous);
+      previous = current;
+    }
+  });
+
+  it("never taxes a heal out of existence", () => {
+    // A turn that restores nothing at all is a turn the player cannot read.
+    for (const chain of [1, 5, 50, 5000]) {
+      expect(healFalloff(chain), `chain=${chain}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("settles on a floor rather than approaching zero", () => {
+    expect(healFalloff(100)).toBe(healFalloff(1000));
+  });
+});
+
+describe("healAfterFalloff", () => {
+  it("returns a first heal unchanged", () => {
+    expect(healAfterFalloff(24, 0)).toBe(24);
+  });
+
+  it("reduces each repeat", () => {
+    const first = healAfterFalloff(24, 0);
+    const second = healAfterFalloff(24, 1);
+    const third = healAfterFalloff(24, 2);
+    expect(second).toBeLessThan(first);
+    expect(third).toBeLessThan(second);
+  });
+
+  it("still restores something at the end of a long chain", () => {
+    expect(healAfterFalloff(24, 20)).toBeGreaterThanOrEqual(1);
+    expect(healAfterFalloff(1, 20)).toBeGreaterThanOrEqual(1);
+  });
+
+  it("leaves nothing to restore as nothing", () => {
+    // At full health the cap has already reduced the heal to zero; the tax
+    // must not turn that into a phantom point.
+    expect(healAfterFalloff(0, 0)).toBe(0);
+    expect(healAfterFalloff(0, 3)).toBe(0);
+  });
+
+  it("keeps a chain of four worth more than a single heal", () => {
+    // Stalling is meant to be taxed, not banned - a Healer that commits four
+    // turns to it should still be ahead of one that healed once.
+    const chained = [0, 1, 2, 3].reduce((total, i) => total + healAfterFalloff(24, i), 0);
+    expect(chained).toBeGreaterThan(healAfterFalloff(24, 0));
+  });
+
+  it("still leaves healing worth doing against a typical attack", () => {
+    // Two heals in a row should out-restore what one ordinary hit takes off,
+    // or the archetype's whole premise stops working.
+    expect(healAfterFalloff(24, 0) + healAfterFalloff(24, 1)).toBeGreaterThan(20);
+  });
+});
+
+describe("getHealShield under a heal chain", () => {
+  const healer = archetype({ healGrantsShield: true });
+  const { shieldPerHeal, shieldCap } = DAMAGE_TUNING.healer;
+
+  it("grants the full shield on the first heal", () => {
+    expect(getHealShield(healer, 0, null, 0)).toBe(shieldPerHeal);
+  });
+
+  it("grants less on each repeat", () => {
+    const first = getHealShield(healer, 0, null, 0);
+    const second = getHealShield(healer, 0, null, 1);
+    const third = getHealShield(healer, 0, null, 2);
+    expect(second).toBeLessThan(first);
+    expect(third).toBeLessThan(second);
+  });
+
+  it("still respects the bank cap", () => {
+    expect(getHealShield(healer, shieldCap, null, 0)).toBe(shieldCap);
+    expect(getHealShield(healer, shieldCap - 1, null, 0)).toBe(shieldCap);
+  });
+
+  it("grants nothing to an archetype without the passive, chain or no chain", () => {
+    const plain = archetype();
+    for (const chain of [0, 1, 5]) {
+      expect(getHealShield(plain, 7, null, chain), `chain=${chain}`).toBe(7);
+    }
+  });
+
+  it("defaults to an unchained heal when no chain is given", () => {
+    // Every existing caller passes three arguments; they must keep working.
+    expect(getHealShield(healer, 0, null)).toBe(getHealShield(healer, 0, null, 0));
   });
 });

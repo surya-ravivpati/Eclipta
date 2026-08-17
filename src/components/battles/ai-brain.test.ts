@@ -533,3 +533,59 @@ describe("pickAiAction - it only ever returns a legal action", () => {
     expect(action).toBe("attack");
   });
 });
+
+/**
+ * Each consecutive heal restores less than the last, so a bot that keeps
+ * pressing Defend is spending turns for a shrinking return. It has to want the
+ * action less as the chain grows, or it reads as broken rather than cautious -
+ * the same complaint that motivated taxing the chain in the first place.
+ */
+describe("a bot that has already been healing", () => {
+  /** How often Defend is chosen over many draws at a given chain length. */
+  function defendRate(consecutiveHeals: number, samples = 600): number {
+    const m = createBattleMemory();
+    let defends = 0;
+    for (let i = 0; i < samples; i++) {
+      const action = pickAiAction(
+        m,
+        AI_PERSONALITIES.healer,
+        opp({ hp: 40, consecutiveHeals }),
+        player(),
+      );
+      if (action === "defend") defends += 1;
+    }
+    return defends / samples;
+  }
+
+  it("wants to heal less the more it already has", () => {
+    const fresh = defendRate(0);
+    const chained = defendRate(3);
+    expect(chained).toBeLessThan(fresh);
+  });
+
+  it("still heals sometimes rather than refusing outright", () => {
+    // The tax is on repetition, not on the action - a bot that stops healing
+    // entirely at low health is a different bug.
+    expect(defendRate(5)).toBeGreaterThan(0);
+  });
+
+  it("treats an unstated chain as no chain at all", () => {
+    // Every existing caller omits the field; they must behave as before.
+    const withoutField = pickAiAction(createBattleMemory(), AI_PERSONALITIES.tank, opp(), player());
+    expect(["attack", "defend", "charge", "ultimate"]).toContain(withoutField);
+  });
+
+  it("never picks a heal it cannot perform, chain or no chain", () => {
+    for (const consecutiveHeals of [0, 2, 9]) {
+      for (let i = 0; i < 100; i++) {
+        const action = pickAiAction(
+          createBattleMemory(),
+          AI_PERSONALITIES.healer,
+          opp({ canHeal: false, consecutiveHeals }),
+          player(),
+        );
+        expect(action, `chain=${consecutiveHeals}`).not.toBe("defend");
+      }
+    }
+  });
+});

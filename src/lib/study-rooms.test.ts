@@ -18,14 +18,24 @@ let profileRow: unknown = null;
 let messageRows: unknown[] = [];
 
 /** Chainable PostgREST stand-in; which leaf resolves depends on the query. */
-function tableChain() {
-  const chain: Record<string, unknown> = {};
-  chain.select = () => chain;
-  chain.eq = () => chain;
-  chain.order = () => chain;
-  chain.limit = () => Promise.resolve({ data: messageRows, error: null });
-  chain.maybeSingle = () => Promise.resolve({ data: profileRow, error: null });
-  chain.insert = (row: unknown) => insert(row);
+interface TableChain {
+  select: () => TableChain;
+  eq: () => TableChain;
+  order: () => TableChain;
+  limit: () => Promise<{ data: unknown[]; error: null }>;
+  maybeSingle: () => Promise<{ data: unknown; error: null }>;
+  insert: (row: unknown) => Promise<{ error: unknown }>;
+}
+
+function tableChain(): TableChain {
+  const chain: TableChain = {
+    select: () => chain,
+    eq: () => chain,
+    order: () => chain,
+    limit: () => Promise.resolve({ data: messageRows, error: null }),
+    maybeSingle: () => Promise.resolve({ data: profileRow, error: null }),
+    insert: (row: unknown) => insert(row),
+  };
   return chain;
 }
 

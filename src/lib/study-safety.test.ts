@@ -15,14 +15,26 @@ const select = vi.fn();
 const upsert = vi.fn();
 const del = vi.fn();
 
-/** Chainable stand-in for the PostgREST builder, resolved by the leaf call. */
-function builder(result: { data?: unknown; error?: unknown }) {
-  const chain: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "upsert", "delete"]) {
-    chain[method] = vi.fn(() => chain);
-  }
-  // The builder is a thenable; awaiting anywhere in the chain resolves it.
-  chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
+/**
+ * Chainable stand-in for the PostgREST builder. It is a thenable, so awaiting
+ * anywhere along the chain resolves it - which is how the real one behaves.
+ */
+interface Builder {
+  select: () => Builder;
+  eq: () => Builder;
+  upsert: () => Builder;
+  delete: () => Builder;
+  then: (resolve: (value: unknown) => unknown) => Promise<unknown>;
+}
+
+function builder(result: { data?: unknown; error?: unknown }): Builder {
+  const chain: Builder = {
+    select: () => chain,
+    eq: () => chain,
+    upsert: () => chain,
+    delete: () => chain,
+    then: (resolve) => Promise.resolve(result).then(resolve),
+  };
   return chain;
 }
 

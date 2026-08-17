@@ -14,17 +14,26 @@ const del = vi.fn();
 let tableResult: { data: unknown; error: unknown } = { data: [], error: null };
 
 /** Chainable PostgREST stand-in; the leaf call resolves it. */
-function tableChain() {
-  const chain: Record<string, unknown> = {};
+interface TableChain {
+  select: () => TableChain;
+  order: () => TableChain;
+  delete: () => TableChain;
+  limit: () => Promise<{ data: unknown; error: unknown }>;
+  eq: () => Promise<{ data: unknown; error: unknown }>;
+}
+
+function tableChain(): TableChain {
   const resolve = () => Promise.resolve(tableResult);
-  chain.select = () => chain;
-  chain.order = () => chain;
-  chain.limit = resolve;
-  chain.delete = () => {
-    del();
-    return chain;
+  const chain: TableChain = {
+    select: () => chain,
+    order: () => chain,
+    delete: () => {
+      del();
+      return chain;
+    },
+    limit: resolve,
+    eq: resolve,
   };
-  chain.eq = resolve;
   return chain;
 }
 

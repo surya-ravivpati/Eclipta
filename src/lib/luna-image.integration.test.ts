@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  * JPEG would silently flatten it to one frame.
  */
 
-const toastError = vi.fn();
+const toastError = vi.fn<(message: string) => void>();
 vi.mock("sonner", () => ({ toast: { error: (msg: string) => toastError(msg) } }));
 
 const { processUserImage } = await import("./luna-image");

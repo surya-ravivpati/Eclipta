@@ -79,8 +79,10 @@ const privacy: LegalDocument = {
     {
       heading: "Children and young people",
       body: [
-        "This platform is used by students, and we ask for age during onboarding.",
-        `Where a user is under the age at which they can consent for themselves — 13 in the United States under COPPA, and between 13 and 16 depending on the country under GDPR Article 8 — verifiable parental consent is required before we may process their personal data. If you believe a child has provided us with personal data without that consent, contact ${LEGAL_CONTACT} and we will delete it.`,
+        "You must be 13 or older to use Eclipta. Setup asks for your birth month and year. If you are younger than 13, we will not set up the account.",
+        "Only the month and year reach us. Nobody asks for the day. Those two numbers answer one question: is this account old enough?",
+        `Children under 13 cannot have an account here. Giving them one would mean proving a parent agreed, and no way to prove that exists. Tell us at ${LEGAL_CONTACT} if you think a child under 13 has an account. We will delete it, and their data with it.`,
+        "Some countries let you agree for yourself at 13. Others set the line as high as 16, under a privacy law in Europe called the General Data Protection Regulation (GDPR). Ask a parent or guardian to help if your country sets it above 13.",
         "If a school or district deploys Eclipta, additional obligations may apply, including FERPA in the United States. Schools should contact us before rolling the platform out to students.",
       ],
     },
@@ -127,7 +129,8 @@ const terms: LegalDocument = {
       heading: "Agreement",
       body: [
         `By creating an account or using ${PLATFORM}, you agree to these Terms. If you do not agree, do not use the platform.`,
-        "If you are under the age of majority where you live, you may use Eclipta only with the involvement of a parent, guardian or school that agrees to these Terms on your behalf.",
+        "You must be 13 or older to hold an account.",
+        "Are you under the age of majority where you live? Then a parent, guardian or school must agree to these Terms for you.",
       ],
     },
     {

@@ -19,6 +19,7 @@ import {
   countUnownedEcliptarsRpc,
   getClaimedChestNodeIds,
   getEcliptarClaimCountsByNode,
+  setBirthDate,
   getOwnedEcliptarSlugs,
   getUsername,
   getUserXp,
@@ -341,5 +342,77 @@ describe("getEcliptarClaimCountsByNode", () => {
   it("throws when the read fails", async () => {
     mockNodeRows({ data: null, error: { message: "denied" } });
     await expect(getEcliptarClaimCountsByNode("u1")).rejects.toThrow("denied");
+  });
+});
+
+/**
+ * The refusal has to be the server's, and this side must not soften it. A
+ * malformed or missing response means "not eligible", never "probably fine" -
+ * getting that backwards would let an under-13 account through on a network
+ * hiccup, which is the exact failure the gate exists to prevent.
+ */
+describe("setBirthDate", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sends the month and year, and nothing else", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { ok: true, already_set: false, meets_minimum: true },
+      error: null,
+    } as never);
+
+    await setBirthDate(2005, 7);
+
+    expect(supabase.rpc).toHaveBeenCalledWith("set_birth_date", {
+      p_year: 2005,
+      p_month: 7,
+    });
+    // No day is collected, so none may be sent.
+    const [, args] = vi.mocked(supabase.rpc).mock.calls[0] as [string, Record<string, unknown>];
+    expect(Object.keys(args).sort()).toEqual(["p_month", "p_year"]);
+  });
+
+  it("reports an accepted date", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { ok: true, already_set: false },
+      error: null,
+    } as never);
+    expect(await setBirthDate(2005, 7)).toEqual({ ok: true, alreadySet: false });
+  });
+
+  it("reports a refusal without saying why to the caller", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { ok: false, reason: "below_minimum_age" },
+      error: null,
+    } as never);
+    expect(await setBirthDate(2020, 3)).toEqual({ ok: false, alreadySet: false });
+  });
+
+  it("reports a date already on file, because the routine is write-once", async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { ok: true, already_set: true, meets_minimum: true },
+      error: null,
+    } as never);
+    expect(await setBirthDate(1990, 1)).toEqual({ ok: true, alreadySet: true });
+  });
+
+  it("treats a malformed response as not eligible", async () => {
+    // Failing closed. A truthy default here would let an account through on a
+    // response nobody understood.
+    for (const data of [null, {}, { ok: "yes" }, { ok: 1 }, []]) {
+      vi.mocked(supabase.rpc).mockResolvedValue({ data, error: null } as never);
+      expect((await setBirthDate(2005, 7)).ok, JSON.stringify(data)).toBe(false);
+    }
+  });
+
+  it("throws when the call fails, rather than reporting a silent refusal", async () => {
+    // The caller needs to tell these apart: refused is a message about age,
+    // failed is a message about trying again.
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: null,
+      error: { message: "Invalid year" },
+    } as never);
+    await expect(setBirthDate(1800, 7)).rejects.toThrow("Invalid year");
   });
 });

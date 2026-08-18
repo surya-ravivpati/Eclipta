@@ -20,6 +20,7 @@ import {
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { setBirthDate } from "@/repositories/profile";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
 
@@ -53,7 +54,8 @@ export const Route = createFileRoute("/onboarding")({
 
 interface Form {
   username: string;
-  age: string;
+  birthMonth: string;
+  birthYear: string;
   bio: string;
   goals: string[];
   hours: number | null;
@@ -99,15 +101,32 @@ const STYLES = [
 
 /* ============= component ============= */
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 function OnboardingPage() {
   const navigate = useNavigate();
   const { redirect: requested } = Route.useSearch();
   const destination = safeRedirect(requested);
+  const [blockedForAge, setBlockedForAge] = useState(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Form>({
     username: "",
-    age: "",
+    birthMonth: "",
+    birthYear: "",
     bio: "",
     goals: [],
     hours: null,
@@ -161,8 +180,18 @@ function OnboardingPage() {
         return !containsProfanity(u);
       }
       case 1: {
-        const age = parseInt(form.age, 10);
-        return Number.isFinite(age) && age >= 6 && age <= 120 && form.bio.trim().length <= 240;
+        // Only shape is checked here. Whether the date clears the age floor
+        // is the server's answer, because this one is trivially editable.
+        const month = parseInt(form.birthMonth, 10);
+        const year = parseInt(form.birthYear, 10);
+        const shaped =
+          Number.isFinite(month) &&
+          month >= 1 &&
+          month <= 12 &&
+          Number.isFinite(year) &&
+          year >= 1900 &&
+          year <= new Date().getFullYear();
+        return shaped && form.bio.trim().length <= 240;
       }
       case 2:
         return form.goals.length > 0;
@@ -202,12 +231,20 @@ function OnboardingPage() {
         challenge: "practice",
       };
 
+      // The birth date goes through its own routine: it is write-once, and
+      // refusing an under-13 account is a decision the browser must not make.
+      const birth = await setBirthDate(parseInt(form.birthYear, 10), parseInt(form.birthMonth, 10));
+      if (!birth.ok) {
+        setStep(1);
+        setBlockedForAge(true);
+        return;
+      }
+
       const { error } = await supabase
         .from("user_profiles")
         .update({
           username: form.username.trim(),
           bio: form.bio.trim() || null,
-          age: parseInt(form.age, 10),
           learning_goal: form.goals.join(","),
           weekly_hours: form.hours,
           preferred_style: styleMap[form.style] ?? "mixed",
@@ -298,19 +335,61 @@ function OnboardingPage() {
             {step === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
-                    Age
+                  <label
+                    className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block"
+                    htmlFor="onboarding-birth-month"
+                  >
+                    Date of birth
                   </label>
-                  <input
-                    autoFocus
-                    type="number"
-                    min={6}
-                    max={120}
-                    value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
-                    placeholder="e.g. 17"
-                    className="w-32 px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-2 focus-visible:ring-primary/50"
-                  />
+                  {/* Asked as a date, and without stating the threshold. A field
+                      labelled "are you over 13?" tells anyone under 13 exactly
+                      what to answer; a neutral date screen does not. No day is
+                      collected, because none is needed to work out an age. */}
+                  <div className="flex gap-2">
+                    <select
+                      autoFocus
+                      id="onboarding-birth-month"
+                      aria-label="Birth month"
+                      value={form.birthMonth}
+                      onChange={(e) => {
+                        setBlockedForAge(false);
+                        setForm({ ...form, birthMonth: e.target.value });
+                      }}
+                      className="px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground text-sm focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                      <option value="">Month</option>
+                      {MONTHS.map((label, i) => (
+                        <option key={label} value={String(i + 1)}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      aria-label="Birth year"
+                      min={1900}
+                      max={new Date().getFullYear()}
+                      value={form.birthYear}
+                      onChange={(e) => {
+                        setBlockedForAge(false);
+                        setForm({ ...form, birthYear: e.target.value });
+                      }}
+                      placeholder="Year"
+                      className="w-28 px-4 py-3 rounded-lg bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-2 focus-visible:ring-primary/50"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    We keep the month and year only, and use them once - to check you are old enough
+                    to hold an account.
+                  </p>
+                  {blockedForAge && (
+                    <p role="alert" className="text-xs text-destructive mt-3 leading-relaxed">
+                      Eclipta is for learners aged 13 and over, so we cannot set up an account this
+                      time. Nothing has been saved. If this was a mistake, correct the date above
+                      and try again.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">

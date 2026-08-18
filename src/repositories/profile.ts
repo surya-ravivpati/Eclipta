@@ -219,3 +219,34 @@ export async function getEcliptarClaimCountsByNode(userId: string): Promise<Map<
   }
   return counts;
 }
+
+/** What the birth-date routine says about an account's eligibility. */
+export interface BirthDateResult {
+  /** False only when the date puts the account below the minimum age. */
+  ok: boolean;
+  /** True when a date was already on file; the routine is write-once. */
+  alreadySet: boolean;
+}
+
+/**
+ * Record a birth month and year, once.
+ *
+ * The refusal is the server's to make, not the browser's: the client talks to
+ * PostgREST directly, so an age check that lives only in TypeScript is one
+ * devtools call away from being skipped. A rejected date is not stored at all,
+ * because keeping the birth date of someone just refused would create exactly
+ * the children's data the gate exists to avoid holding.
+ */
+export async function setBirthDate(year: number, month: number): Promise<BirthDateResult> {
+  const { data, error } = await supabase.rpc(
+    "set_birth_date" as never,
+    {
+      p_year: year,
+      p_month: month,
+    } as never,
+  );
+  if (error) throw new Error(error.message);
+
+  const result = data as { ok?: boolean; already_set?: boolean } | null;
+  return { ok: result?.ok === true, alreadySet: result?.already_set === true };
+}

@@ -1,7 +1,7 @@
 {
-  "lines": 24.51,
-  "covered": 2303,
-  "total": 9394,
+  "lines": 24.66,
+  "covered": 2325,
+  "total": 9426,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -473,7 +473,7 @@
       "covered": 9
     },
     "src/lib/luna-api.ts": {
-      "pct": 33.58,
+      "pct": 33.08,
       "covered": 45
     },
     "src/lib/luna-calibration.ts": {
@@ -555,6 +555,10 @@
     "src/lib/reporting.ts": {
       "pct": 100,
       "covered": 9
+    },
+    "src/lib/safe-redirect.ts": {
+      "pct": 100,
+      "covered": 22
     },
     "src/lib/search/query.ts": {
       "pct": 100,

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { takePostAuthRedirect } from "@/lib/safe-redirect";
 
 /**
  * OAuth return landing.
@@ -31,7 +32,9 @@ function AuthCallback() {
     const finish = () => {
       if (done) return;
       done = true;
-      void navigate({ to: "/" });
+      // Where the visitor was headed before the provider round-trip. Read once
+      // and cleared, so a later sign-in does not inherit it.
+      void navigate({ to: takePostAuthRedirect() });
     };
 
     // Surface an explicit provider error from the URL (query or hash).

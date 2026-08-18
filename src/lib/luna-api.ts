@@ -169,6 +169,12 @@ export async function streamLunaChat({
           err.code === "rate_limited"
             ? (err.error ?? "You've hit the AI limit for now - try again in a few minutes.")
             : "Luna is getting a lot of questions right now. Try again in a moment.";
+      } else if (resp.status === 401) {
+        // Luna renders on public pages and greets visitors by name, so the
+        // first thing a signed-out stranger got back was the word
+        // "Unauthorized". Say what is actually true instead.
+        msg =
+          "Luna tutors signed-in learners. Create a free account and she'll pick up right here.";
       } else if (resp.status === 402)
         msg = "Luna's AI credits ran out. Add more in Workspace -> Usage.";
       else if (TRANSIENT_STATUSES.has(resp.status))

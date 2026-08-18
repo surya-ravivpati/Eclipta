@@ -17,11 +17,17 @@ import {
   Code2,
   ScrollText,
 } from "lucide-react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
 
+/** Where to land once setup is done - the page that triggered the gate. */
+const searchSchema = z.object({ redirect: z.string().optional() });
+
 export const Route = createFileRoute("/onboarding")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "Welcome to Eclipta - Quick Setup" },
@@ -95,6 +101,8 @@ const STYLES = [
 
 function OnboardingPage() {
   const navigate = useNavigate();
+  const { redirect: requested } = Route.useSearch();
+  const destination = safeRedirect(requested);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Form>({
@@ -217,7 +225,7 @@ function OnboardingPage() {
       }
 
       toast.success("You're in. Welcome to the arena.");
-      void navigate({ to: "/" });
+      void navigate({ to: destination });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Try again.");
     } finally {

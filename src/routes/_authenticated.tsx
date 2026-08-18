@@ -28,7 +28,9 @@ export const Route = createFileRoute("/_authenticated")({
       .maybeSingle();
 
     if (!profile?.onboarded_at) {
-      throw redirect({ to: "/onboarding" });
+      // Carry the destination through this gate too, or a first-time visitor
+      // who clicked a specific page loses it to the onboarding hop.
+      throw redirect({ to: "/onboarding", search: { redirect: location.href } });
     }
   },
   component: () => <Outlet />,

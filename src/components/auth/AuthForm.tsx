@@ -5,12 +5,19 @@ import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { PasswordStrength } from "./PasswordStrength";
 import { scorePassword } from "@/lib/password-strength";
+import { DEFAULT_POST_AUTH_PATH, stashPostAuthRedirect } from "@/lib/safe-redirect";
 
 interface AuthFormProps {
   mode: "login" | "signup";
+  /**
+   * Where to land once signed in - the page the visitor was trying to reach
+   * when the gate stopped them. Already validated by the caller; passing an
+   * unvalidated value here would be an open redirect.
+   */
+  redirectTo?: string;
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ mode, redirectTo = DEFAULT_POST_AUTH_PATH }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -40,7 +47,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back! 🌙");
-        void navigate({ to: "/" });
+        void navigate({ to: redirectTo });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");
@@ -54,6 +61,9 @@ export function AuthForm({ mode }: AuthFormProps) {
     // back to `redirectTo`, where supabase-js exchanges the code and stores the
     // session (AuthProvider's onAuthStateChange then picks it up). Requires the
     // Google provider to be enabled in the Supabase dashboard.
+    // The provider hop leaves the app, so a query parameter cannot survive it.
+    // Session storage can, and the callback re-validates what it finds.
+    stashPostAuthRedirect(redirectTo);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },

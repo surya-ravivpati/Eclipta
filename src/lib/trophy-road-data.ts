@@ -517,6 +517,24 @@ export function isNodeUnlocked(node: RoadNode, playerXp: number = PLAYER_XP): bo
   return node.xp <= playerXp;
 }
 
+/**
+ * The next node the player has not reached, and how far off it is.
+ *
+ * Returns null only at the very top of the road, which the caller has to
+ * handle: there is no "next" after Eclipse III, and a screen that renders
+ * "NaN XP to undefined" is worse than one that says nothing.
+ *
+ * Lives here rather than in a component because two screens want it - the
+ * road's own overview and the post-battle report - and a second copy of
+ * "which node is next" is a second copy that can disagree.
+ */
+export function nextRoadNode(
+  playerXp: number = PLAYER_XP,
+): { node: RoadNode; xpAway: number } | null {
+  const node = ROAD_NODES.find((n) => n.xp > playerXp);
+  return node ? { node, xpAway: node.xp - playerXp } : null;
+}
+
 /** Check if a node is the current one (highest unlocked) */
 export function isCurrentNode(node: RoadNode, playerXp: number = PLAYER_XP): boolean {
   const idx = ROAD_NODES.indexOf(node);

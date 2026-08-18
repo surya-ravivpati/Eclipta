@@ -26,6 +26,8 @@ import {
   type ArchetypeMastery,
 } from "@/lib/archetype-mastery";
 import { supabase } from "@/integrations/supabase/client";
+import { nextRoadNode } from "@/lib/trophy-road-data";
+import { usePlayerXp } from "@/hooks/use-player-xp";
 
 export function BattleReport({
   stats,
@@ -58,6 +60,10 @@ export function BattleReport({
   const [xpCount, setXpCount] = useState(0);
   const [mastery, setMastery] = useState<ArchetypeMastery | null>(null);
   const [prevBestStreak, setPrevBestStreak] = useState(0);
+  // The XP total this battle just moved. Awarded at battle end rather than
+  // here, so by the time this screen mounts the fetch already includes it.
+  const { xp: totalXp, loading: xpLoading } = usePlayerXp();
+  const upcoming = xpLoading ? null : nextRoadNode(totalXp);
 
   // Animate XP count-up
   useEffect(() => {
@@ -263,6 +269,23 @@ export function BattleReport({
           </div>
         )}
       </div>
+
+      {/* How much closer that XP put them to the next thing on the road. The
+          count-up says what they earned; this says what it bought. Hidden at
+          the top of the road, where there is no next node to point at. */}
+      {upcoming && (
+        <motion.p
+          className="text-center text-[11px] tracking-wide text-muted-foreground mb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <span className="text-neon-cyan tabular-nums font-bold">
+            {upcoming.xpAway.toLocaleString()} XP
+          </span>{" "}
+          to {upcoming.node.label}
+        </motion.p>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">

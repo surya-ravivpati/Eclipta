@@ -4,6 +4,7 @@ import {
   getUnlockedArchetypes,
   isNodeUnlocked,
   isCurrentNode,
+  nextRoadNode,
   type RoadNode,
 } from "./trophy-road-data";
 import { ECLIPTARS } from "./ecliptars";
@@ -126,5 +127,44 @@ describe("isCurrentNode", () => {
   it("is true for the very last node once its own threshold is met (no next node)", () => {
     const last = nodeAt(ROAD_NODES.length - 1);
     expect(isCurrentNode(last, last.xp)).toBe(true);
+  });
+});
+
+describe("nextRoadNode", () => {
+  it("points at the first node the player has not reached", () => {
+    const target = nodeAt(4);
+    const result = nextRoadNode(target.xp - 1);
+    expect(result?.node.id).toBe(target.id);
+    expect(result?.xpAway).toBe(1);
+  });
+
+  it("moves on the moment a node's threshold is met, not after", () => {
+    // Standing exactly on a node means it is reached. Still pointing at it
+    // would tell the player they are 0 XP from something they already have.
+    const target = nodeAt(4);
+    const result = nextRoadNode(target.xp);
+    expect(result?.node.id).not.toBe(target.id);
+    expect(result?.xpAway).toBeGreaterThan(0);
+  });
+
+  it("points at the first node on the road for a brand new player", () => {
+    // Node 1 sits at 0 XP, so a new player is already past it.
+    const result = nextRoadNode(0);
+    expect(result?.node.id).toBe(nodeAt(1).id);
+  });
+
+  it("returns null at the top of the road", () => {
+    // There is nothing after Eclipse III. The caller renders nothing rather
+    // than "NaN XP to undefined".
+    const last = nodeAt(ROAD_NODES.length - 1);
+    expect(nextRoadNode(last.xp)).toBeNull();
+    expect(nextRoadNode(last.xp + 100_000)).toBeNull();
+  });
+
+  it("never reports a distance that is not positive", () => {
+    for (const node of ROAD_NODES) {
+      const result = nextRoadNode(node.xp);
+      if (result) expect(result.xpAway).toBeGreaterThan(0);
+    }
   });
 });

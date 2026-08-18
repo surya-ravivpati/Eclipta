@@ -1,7 +1,7 @@
 {
-  "lines": 26.35,
-  "covered": 2502,
-  "total": 9495,
+  "lines": 26.46,
+  "covered": 2513,
+  "total": 9497,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -235,6 +235,10 @@
     "src/components/study/TeachBack.tsx": {
       "pct": 0,
       "covered": 0
+    },
+    "src/components/trophy-road-icons.ts": {
+      "pct": 100,
+      "covered": 9
     },
     "src/components/TrophyRoad.tsx": {
       "pct": 0,
@@ -598,7 +602,7 @@
     },
     "src/lib/trophy-road-data.ts": {
       "pct": 100,
-      "covered": 8
+      "covered": 10
     },
     "src/lib/utils.ts": {
       "pct": 100,

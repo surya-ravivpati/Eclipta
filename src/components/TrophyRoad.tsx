@@ -1,30 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  Lock,
-  CheckCircle,
-  Crown,
-  Zap,
-  Shield,
-  Skull,
-  Dice5,
-  Heart,
-  Scale,
-  TrendingUp,
-  Gift,
-  Apple,
-  Atom,
-  Hammer,
-  Swords,
-  Medal,
-  Gem,
-  Diamond as DiamondIcon,
-  Flame,
-  Sparkle,
-  Sun,
-  Star,
-} from "lucide-react";
+import { Lock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ROAD_NODES as RAW_NODES,
@@ -42,19 +19,8 @@ import {
   getRollableEcliptars,
 } from "@/lib/ecliptars";
 import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
+import { nodeIcon, ROAD_ARCHETYPE_ICONS, type RoadIcon } from "./trophy-road-icons";
 import "./TrophyRoad.css";
-
-/* -- Per-tier rank icon (used for "rank" nodes) --------------- */
-const TIER_ICONS: Record<TierId, typeof Crown> = {
-  bronze: Hammer,
-  silver: Swords,
-  gold: Medal,
-  diamond: DiamondIcon,
-  platinum: Gem,
-  champion: Flame,
-  unreal: Sparkle,
-  god: Sun,
-};
 
 const TIER_ORDER: TierId[] = [
   "bronze",
@@ -149,7 +115,7 @@ const TIERS: Record<TierId, TierMeta> = {
 interface MonsterArchetype {
   id: ArchetypeKey;
   name: string;
-  icon: typeof Zap;
+  icon: RoadIcon;
   stats: {
     health: string;
     damage: string;
@@ -168,7 +134,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   speedster: {
     id: "speedster",
     name: "Speedster",
-    icon: Zap,
+    icon: ROAD_ARCHETYPE_ICONS.speedster,
     stats: {
       health: "Mid",
       damage: "Mid",
@@ -182,7 +148,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   tank: {
     id: "tank",
     name: "Tank",
-    icon: Shield,
+    icon: ROAD_ARCHETYPE_ICONS.tank,
     stats: {
       health: "High",
       damage: "Low",
@@ -196,7 +162,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   chud: {
     id: "chud",
     name: "Apex",
-    icon: Skull,
+    icon: ROAD_ARCHETYPE_ICONS.chud,
     stats: {
       health: "Low",
       damage: "Ultra High",
@@ -210,7 +176,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   gambler: {
     id: "gambler",
     name: "Gambler",
-    icon: Dice5,
+    icon: ROAD_ARCHETYPE_ICONS.gambler,
     stats: {
       health: "Rand",
       damage: "Rand",
@@ -224,7 +190,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   healer: {
     id: "healer",
     name: "Healer",
-    icon: Heart,
+    icon: ROAD_ARCHETYPE_ICONS.healer,
     stats: {
       health: "Low",
       damage: "Low",
@@ -238,7 +204,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   fulcrum: {
     id: "fulcrum",
     name: "Fulcrum",
-    icon: Scale,
+    icon: ROAD_ARCHETYPE_ICONS.fulcrum,
     stats: {
       health: "Mid",
       damage: "Mid",
@@ -252,7 +218,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   accelerator: {
     id: "accelerator",
     name: "Accelerator",
-    icon: TrendingUp,
+    icon: ROAD_ARCHETYPE_ICONS.accelerator,
     stats: {
       health: "Mid",
       damage: "Scaling",
@@ -266,7 +232,7 @@ const ARCHETYPES: Record<ArchetypeKey, MonsterArchetype> = {
   god: {
     id: "god",
     name: "God",
-    icon: Crown,
+    icon: ROAD_ARCHETYPE_ICONS.god,
     stats: {
       health: "High",
       damage: "High",
@@ -425,21 +391,9 @@ function TrophyNode({
   };
 
   const getIcon = () => {
-    if (node.type === "final") {
-      const I = node.finalMonster === "newton" ? Apple : Atom;
-      return <I size={24} />;
-    }
-    if (node.type === "rank") {
-      const I = TIER_ICONS[node.tier];
-      return <I size={18} />;
-    }
-    if (node.type === "chest") return <Gift size={18} />;
-    if (node.type === "boss") return <Skull size={18} />;
-    if (archetype) {
-      const I = archetype.icon;
-      return <I size={18} />;
-    }
-    return <Star size={16} />;
+    const I = nodeIcon(node);
+    // The final node is the end of the road and is drawn larger to say so.
+    return <I size={node.type === "final" ? 24 : 18} />;
   };
 
   const classes = cn(
@@ -1128,16 +1082,7 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
           >
             <div className="tr-compact-preview-track">
               {previewNodes.map((n, i) => {
-                const Icon =
-                  n.type === "rank"
-                    ? TIER_ICONS[n.tier]
-                    : n.type === "chest"
-                      ? Gift
-                      : n.type === "boss"
-                        ? Skull
-                        : n.archetype
-                          ? ARCHETYPES[n.archetype].icon
-                          : Star;
+                const Icon = nodeIcon(n);
                 return (
                   <React.Fragment key={n.id}>
                     <div

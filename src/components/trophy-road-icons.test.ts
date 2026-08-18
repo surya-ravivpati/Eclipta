@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ROAD_NODES, type MonsterArchetypeKey } from "@/lib/trophy-road-data";
+import { ROAD_NODES } from "@/lib/trophy-road-data";
 import { nodeIcon, ROAD_ARCHETYPE_ICONS, TIER_ICONS } from "./trophy-road-icons";
 
 /**
@@ -17,9 +17,7 @@ describe("nodeIcon", () => {
     // These two sit next to each other with nothing between them in seven of
     // the eight tiers, and used to draw the same mark twice.
     const archetypes = new Set(
-      ROAD_NODES.filter((n) => n.type === "ecliptar" && n.archetype).map(
-        (n) => n.archetype!,
-      ),
+      ROAD_NODES.flatMap((n) => (n.type === "ecliptar" && n.archetype ? [n.archetype] : [])),
     );
     expect(archetypes.size).toBeGreaterThan(0);
     for (const archetype of archetypes) {

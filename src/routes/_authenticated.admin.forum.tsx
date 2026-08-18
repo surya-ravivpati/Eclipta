@@ -6,7 +6,6 @@ import {
   Loader2,
   ExternalLink,
   Check,
-  X,
   Trash2,
   EyeOff,
   RotateCcw,
@@ -17,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { TableRow } from "@/integrations/supabase/database";
 import { useModerator } from "@/hooks/use-moderator";
 import { setModerationStatus } from "@/lib/moderation";
+import { ReportQueue } from "@/components/moderation/ReportQueue";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/forum")({
@@ -46,16 +46,6 @@ interface QueueItem {
   updated_at: string;
 }
 
-interface Report {
-  id: string;
-  reporter_id: string;
-  target_type: "thread" | "answer" | "comment";
-  target_id: string;
-  reason: string;
-  status: "pending" | "reviewed" | "dismissed";
-  created_at: string;
-}
-
 interface ActionLog {
   id: string;
   target_type: string;
@@ -69,22 +59,8 @@ interface ActionLog {
   created_at: string;
 }
 
-/**
- * Shapes of the snippet lookups below. Declared so the "nothing to fetch"
- * branch of each `Promise.all` leg can produce a correctly-typed empty
- * array instead of one the compiler has to guess at.
- */
-interface BodySnippetRow {
-  id: string;
-  body: string;
-  author_name: string;
-  moderation_status: string;
-}
-type ThreadSnippetRow = BodySnippetRow & { title: string };
-
 const TARGET_TYPES = ["thread", "answer", "comment"] as const;
 const MODERATION_STATUSES = ["visible", "pending", "hidden", "removed"] as const;
-const REPORT_STATUSES = ["pending", "reviewed", "dismissed"] as const;
 
 function isTargetType(value: string): value is QueueItem["target_type"] {
   return (TARGET_TYPES as readonly string[]).includes(value);
@@ -123,34 +99,12 @@ function toQueueItem(row: TableRow<"admin_moderation_queue">): QueueItem[] {
   ];
 }
 
-/** Reports whose type or status the UI can't classify are not shown. */
-function toReport(row: TableRow<"forum_reports">): Report[] {
-  if (!isTargetType(row.target_type)) return [];
-  if (!(REPORT_STATUSES as readonly string[]).includes(row.status)) return [];
-  return [
-    {
-      id: row.id,
-      reporter_id: row.reporter_id,
-      target_type: row.target_type,
-      target_id: row.target_id,
-      reason: row.reason,
-      status: row.status as Report["status"],
-      created_at: row.created_at,
-    },
-  ];
-}
-
 function AdminForumPage() {
   const { isModerator, loading: roleLoading } = useModerator();
   const [tab, setTab] = useState<"queue" | "reports" | "log">("queue");
   const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [reportSnippets, setReportSnippets] = useState<
-    Record<string, { title?: string; body: string; author?: string; status?: string }>
-  >({});
   const [log, setLog] = useState<ActionLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
 
   const loadQueue = async () => {
     setLoading(true);
@@ -163,59 +117,6 @@ function AdminForumPage() {
       .limit(200);
     if (error) toast.error(error.message);
     setQueue((data ?? []).flatMap(toQueueItem));
-    setLoading(false);
-  };
-
-  const loadReports = async () => {
-    setLoading(true);
-    let q = supabase
-      .from("forum_reports")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (filter === "pending") q = q.eq("status", "pending");
-    const { data } = await q;
-    const list = (data ?? []).flatMap(toReport);
-    setReports(list);
-
-    const grouped = { thread: [] as string[], answer: [] as string[], comment: [] as string[] };
-    list.forEach((r) => grouped[r.target_type]?.push(r.target_id));
-    const next: typeof reportSnippets = {};
-    const [tRes, aRes, cRes] = await Promise.all([
-      grouped.thread.length
-        ? supabase
-            .from("forum_threads")
-            .select("id, title, body, author_name, moderation_status")
-            .in("id", grouped.thread)
-        : Promise.resolve({ data: [] as ThreadSnippetRow[] }),
-      grouped.answer.length
-        ? supabase
-            .from("forum_answers")
-            .select("id, body, author_name, moderation_status")
-            .in("id", grouped.answer)
-        : Promise.resolve({ data: [] as BodySnippetRow[] }),
-      grouped.comment.length
-        ? supabase
-            .from("forum_comments")
-            .select("id, body, author_name, moderation_status")
-            .in("id", grouped.comment)
-        : Promise.resolve({ data: [] as BodySnippetRow[] }),
-    ]);
-    (tRes.data ?? []).forEach((row) => {
-      next[row.id] = {
-        title: row.title,
-        body: row.body,
-        author: row.author_name,
-        status: row.moderation_status,
-      };
-    });
-    (aRes.data ?? []).forEach((row) => {
-      next[row.id] = { body: row.body, author: row.author_name, status: row.moderation_status };
-    });
-    (cRes.data ?? []).forEach((row) => {
-      next[row.id] = { body: row.body, author: row.author_name, status: row.moderation_status };
-    });
-    setReportSnippets(next);
     setLoading(false);
   };
 
@@ -232,10 +133,11 @@ function AdminForumPage() {
 
   useEffect(() => {
     if (!isModerator) return;
+    // The reports tab is self-loading; ReportQueue owns its own fetch and
+    // filter, so this only drives the two tabs that still read from here.
     if (tab === "queue") void loadQueue();
-    else if (tab === "reports") void loadReports();
-    else void loadLog();
-  }, [isModerator, tab, filter]);
+    else if (tab === "log") void loadLog();
+  }, [isModerator, tab]);
 
   const setStatus = async (
     target_type: "thread" | "answer" | "comment",
@@ -249,36 +151,6 @@ function AdminForumPage() {
       `${status === "visible" ? "Restored" : status === "hidden" ? "Hidden" : "Removed"}`,
     );
     if (tab === "queue") void loadQueue();
-    else if (tab === "reports") void loadReports();
-  };
-
-  const dismissReport = async (id: string) => {
-    const { error } = await supabase
-      .from("forum_reports")
-      .update({ status: "dismissed", resolved_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Dismissed");
-    void loadReports();
-  };
-
-  const deleteTarget = async (r: Report) => {
-    if (
-      !confirm(
-        `Permanently delete this ${r.target_type}? Use 'Remove' instead to keep the row for audit.`,
-      )
-    )
-      return;
-    const table =
-      r.target_type === "thread"
-        ? "forum_threads"
-        : r.target_type === "answer"
-          ? "forum_answers"
-          : "forum_comments";
-    const { error } = await supabase.from(table).delete().eq("id", r.target_id);
-    if (error) return toast.error(error.message);
-    toast.success(`${r.target_type} deleted`);
-    void loadReports();
   };
 
   if (roleLoading) {
@@ -337,32 +209,10 @@ function AdminForumPage() {
                   : "border-border text-muted-foreground hover:border-neon-purple/40"
               } active:scale-[0.97]`}
             >
-              {t === "queue"
-                ? "AUTO-FLAGGED QUEUE"
-                : t === "reports"
-                  ? "USER REPORTS"
-                  : "AUDIT LOG"}
+              {t === "queue" ? "AUTO-FLAGGED QUEUE" : t === "reports" ? "REPORTS" : "AUDIT LOG"}
             </button>
           ))}
         </div>
-
-        {tab === "reports" && (
-          <div className="flex gap-2 mb-4">
-            {(["pending", "all"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1 text-[10px] font-bold tracking-widest border transition-colors ${
-                  filter === f
-                    ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan"
-                    : "border-border text-muted-foreground hover:border-neon-cyan/40"
-                } active:scale-[0.97]`}
-              >
-                {f.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        )}
 
         {loading ? (
           <div className="flex justify-center py-16">
@@ -474,128 +324,7 @@ function AdminForumPage() {
             </div>
           )
         ) : tab === "reports" ? (
-          reports.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <ShieldCheck className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No {filter === "pending" ? "pending " : ""}reports.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {reports.map((r) => (
-                <div key={r.id} className="glass-panel p-5">
-                  <div className="flex items-start justify-between gap-4 mb-2 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-[10px] font-bold tracking-widest px-2 py-0.5 border ${
-                          r.status === "pending"
-                            ? "border-neon-pink text-neon-pink"
-                            : r.status === "reviewed"
-                              ? "border-neon-cyan text-neon-cyan"
-                              : "border-border text-muted-foreground"
-                        }`}
-                      >
-                        {r.status.toUpperCase()}
-                      </span>
-                      <span className="text-[10px] font-bold tracking-widest text-muted-foreground bg-secondary/50 px-2 py-0.5 border border-border">
-                        {r.target_type.toUpperCase()}
-                      </span>
-                      {reportSnippets[r.target_id]?.status &&
-                        reportSnippets[r.target_id].status !== "visible" && (
-                          <span className="text-[10px] font-bold tracking-widest text-neon-pink bg-neon-pink/10 px-2 py-0.5 border border-neon-pink/30">
-                            {(reportSnippets[r.target_id].status ?? "").toUpperCase()}
-                          </span>
-                        )}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(r.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-foreground mb-3">
-                    <span className="text-muted-foreground">Reason:</span> {r.reason}
-                  </p>
-                  {reportSnippets[r.target_id] ? (
-                    <div className="mb-3 p-3 border-l-2 border-neon-purple/40 bg-secondary/30 rounded-sm">
-                      {reportSnippets[r.target_id].title && (
-                        <p className="text-xs font-bold font-display mb-1">
-                          {reportSnippets[r.target_id].title}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap break-words">
-                        {reportSnippets[r.target_id].body}
-                      </p>
-                      {reportSnippets[r.target_id].author && (
-                        <p className="text-[10px] text-muted-foreground mt-1.5">
-                          - {reportSnippets[r.target_id].author}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mb-3 p-3 border-l-2 border-destructive/40 bg-destructive/5 rounded-sm">
-                      <p className="text-[11px] text-destructive italic">
-                        Original content was deleted or is unavailable.
-                      </p>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {r.target_type === "thread" && (
-                      <Link
-                        to="/forum/$threadId"
-                        params={{ threadId: r.target_id }}
-                        className="text-[11px] font-bold tracking-widest text-neon-purple hover:underline inline-flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        OPEN
-                      </Link>
-                    )}
-                    <button
-                      onClick={() =>
-                        setStatus(
-                          r.target_type,
-                          r.target_id,
-                          "hidden",
-                          `Mod hide via report: ${r.reason.slice(0, 80)}`,
-                        )
-                      }
-                      className="px-3 py-1 text-[10px] font-bold tracking-widest border border-neon-pink/40 text-neon-pink hover:bg-neon-pink/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
-                    >
-                      <EyeOff className="w-3 h-3" />
-                      HIDE
-                    </button>
-                    <button
-                      onClick={() =>
-                        setStatus(
-                          r.target_type,
-                          r.target_id,
-                          "removed",
-                          `Mod remove via report: ${r.reason.slice(0, 80)}`,
-                        )
-                      }
-                      className="px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      REMOVE
-                    </button>
-                    {r.status === "pending" && (
-                      <button
-                        onClick={() => dismissReport(r.id)}
-                        className="px-3 py-1 text-[10px] font-bold tracking-widest border border-border text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
-                      >
-                        <X className="w-3 h-3" />
-                        DISMISS REPORT
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteTarget(r)}
-                      className="ml-auto px-3 py-1 text-[10px] font-bold tracking-widest border border-destructive/60 text-destructive hover:bg-destructive/10 transition-colors inline-flex items-center gap-1 active:scale-[0.97]"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      HARD DELETE
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
+          <ReportQueue />
         ) : log.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <p className="text-sm">No moderation activity yet.</p>

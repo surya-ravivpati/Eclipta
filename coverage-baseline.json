@@ -1,7 +1,7 @@
 {
   "lines": 24.66,
-  "covered": 2329,
-  "total": 9443,
+  "covered": 2332,
+  "total": 9455,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -613,8 +613,8 @@
       "covered": 23
     },
     "src/repositories/profile.ts": {
-      "pct": 89.09,
-      "covered": 49
+      "pct": 89.65,
+      "covered": 52
     },
     "src/repositories/search.ts": {
       "pct": 100,

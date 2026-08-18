@@ -1,5 +1,5 @@
 {
-  "warnings": 171,
+  "warnings": 170,
   "counts": {
     "no-restricted-syntax": 138,
     "@typescript-eslint/no-empty-function": 1,
@@ -8,7 +8,7 @@
     "@typescript-eslint/no-unsafe-assignment": 1,
     "@typescript-eslint/no-explicit-any": 14,
     "@typescript-eslint/no-unsafe-argument": 1,
-    "@typescript-eslint/no-unsafe-return": 2
+    "@typescript-eslint/no-unsafe-return": 1
   },
   "updated": "2026-08-18"
 }

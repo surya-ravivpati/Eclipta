@@ -148,6 +148,10 @@ config, in one place, not scattered as magic numbers.
 - Import config from that module. Never read `process.env`, `import.meta.env`,
   or `Deno.env` anywhere else.
 - Secrets stay server-side. Never ship one to the browser.
+- The web app holds no service-role key and has no RLS-bypassing client. Work
+  that needs one belongs in a Supabase Edge Function, which reads the key from
+  Supabase's own secrets. A privileged client in `src/` is a bypass waiting for
+  someone to import it.
 
 ## Errors and logging
 

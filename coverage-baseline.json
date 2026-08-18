@@ -1,7 +1,7 @@
 {
-  "lines": 26.46,
+  "lines": 26.56,
   "covered": 2513,
-  "total": 9497,
+  "total": 9459,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -248,10 +248,6 @@
       "pct": 100,
       "covered": 25
     },
-    "src/config/env.server.ts": {
-      "pct": 0,
-      "covered": 0
-    },
     "src/config/env.ts": {
       "pct": 93.33,
       "covered": 14
@@ -387,18 +383,6 @@
     "src/i18n/use-translation.ts": {
       "pct": 25,
       "covered": 2
-    },
-    "src/integrations/supabase/auth-attacher.ts": {
-      "pct": 0,
-      "covered": 0
-    },
-    "src/integrations/supabase/auth-middleware.ts": {
-      "pct": 0,
-      "covered": 0
-    },
-    "src/integrations/supabase/client.server.ts": {
-      "pct": 0,
-      "covered": 0
     },
     "src/integrations/supabase/client.ts": {
       "pct": 25,

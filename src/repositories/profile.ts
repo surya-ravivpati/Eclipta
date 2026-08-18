@@ -250,3 +250,31 @@ export async function setBirthDate(year: number, month: number): Promise<BirthDa
   const result = data as { ok?: boolean; already_set?: boolean } | null;
   return { ok: result?.ok === true, alreadySet: result?.already_set === true };
 }
+
+/** What still stands between an account and the rest of the app. */
+export interface OnboardingStatus {
+  onboarded: boolean;
+  /** False for every account created before the age gate existed. */
+  hasBirthDate: boolean;
+}
+
+/**
+ * Whether setup is finished, and whether a birth date is on file.
+ *
+ * The two are asked together because they are one question - may this account
+ * use the product - and answering it in two round trips invites the two halves
+ * to disagree.
+ */
+export async function getOnboardingStatus(userId: string): Promise<OnboardingStatus> {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("onboarded_at, birth_year")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  return {
+    onboarded: Boolean(data?.onboarded_at),
+    hasBirthDate: data?.birth_year !== null && data?.birth_year !== undefined,
+  };
+}

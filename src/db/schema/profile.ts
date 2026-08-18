@@ -1,4 +1,14 @@
-import { date, integer, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  date,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import type { LearningProfile } from "@/lib/luna-calibration";
 
 /**
@@ -74,7 +84,15 @@ export const userProfiles = pgTable("user_profiles", {
   username: text("username").unique(),
   avatar_url: text("avatar_url"),
   bio: text("bio"),
-  age: integer("age"),
+  /**
+   * Renamed by 20260817010000. Written once by the old onboarding step and read
+   * nowhere; kept so existing answers are not destroyed. Superseded by
+   * birth_year/birth_month. Do not use.
+   */
+  legacy_self_reported_age: integer("legacy_self_reported_age"),
+  /** Set once, only through the set_birth_date routine. No day is collected. */
+  birth_year: smallint("birth_year"),
+  birth_month: smallint("birth_month"),
   learning_goal: text("learning_goal"),
   weekly_hours: integer("weekly_hours"),
 

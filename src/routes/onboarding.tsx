@@ -20,7 +20,7 @@ import {
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { safeRedirect } from "@/lib/safe-redirect";
-import { setBirthDate } from "@/repositories/profile";
+import { getOnboardingStatus, setBirthDate } from "@/repositories/profile";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
 
@@ -40,12 +40,19 @@ export const Route = createFileRoute("/onboarding")({
       data: { session },
     } = await supabase.auth.getSession();
     if (!session) throw redirect({ to: "/login" });
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("onboarded_at")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-    if (profile?.onboarded_at) throw redirect({ to: "/" });
+    // A profile finished before the age gate existed has no birth date, and
+    // cannot post without one. Let it back in to fill just that in, rather
+    // than bouncing it to a home page it can no longer participate from.
+    const status = await getOnboardingStatus(session.user.id);
+    if (status.onboarded && status.hasBirthDate) throw redirect({ to: "/" });
+  },
+  loader: async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return { backfillOnly: false };
+    const status = await getOnboardingStatus(session.user.id);
+    return { backfillOnly: status.onboarded && !status.hasBirthDate };
   },
   component: OnboardingPage,
 });
@@ -121,7 +128,9 @@ function OnboardingPage() {
   const { redirect: requested } = Route.useSearch();
   const destination = safeRedirect(requested);
   const [blockedForAge, setBlockedForAge] = useState(false);
-  const [step, setStep] = useState(0);
+  /** An existing account that only needs the birth date the gate added. */
+  const { backfillOnly } = Route.useLoaderData();
+  const [step, setStep] = useState(backfillOnly ? 1 : 0);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Form>({
     username: "",
@@ -240,6 +249,15 @@ function OnboardingPage() {
         return;
       }
 
+      // An existing profile is only here for the date the age gate added.
+      // Writing the rest from this form's empty defaults would wipe answers
+      // they already gave.
+      if (backfillOnly) {
+        toast.success("Thanks - you're all set.");
+        void navigate({ to: destination });
+        return;
+      }
+
       const { error } = await supabase
         .from("user_profiles")
         .update({
@@ -272,7 +290,7 @@ function OnboardingPage() {
 
   const next = () => {
     if (!canAdvance) return;
-    if (step === total - 1) void handleFinish();
+    if (backfillOnly || step === total - 1) void handleFinish();
     else setStep((s) => s + 1);
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
@@ -525,7 +543,13 @@ function OnboardingPage() {
             disabled={!canAdvance || saving}
             className="px-6 py-3 rounded-md bg-primary text-primary-foreground font-bold text-sm tracking-widest uppercase inline-flex items-center gap-2 transition-colors hover:bg-primary/90 disabled:opacity-40 elev-1 active:scale-[0.97]"
           >
-            {saving ? "Saving..." : step === total - 1 ? "Enter the arena" : "Continue"}
+            {saving
+              ? "Saving..."
+              : backfillOnly
+                ? "Save and continue"
+                : step === total - 1
+                  ? "Enter the arena"
+                  : "Continue"}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

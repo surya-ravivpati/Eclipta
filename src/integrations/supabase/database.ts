@@ -401,10 +401,41 @@ type FunctionReturnOverrides = {
   };
 };
 
+/**
+ * Columns added by a migration that has not been reflected in the generated
+ * types yet. Regenerating (`supabase gen types typescript --linked`) needs a
+ * live database, so this keeps the app compiling in the meantime.
+ *
+ * Remove an entry once the generated file carries the column.
+ * Source: `20260817010000_age-gate.sql`.
+ */
+type SupplementalUserProfileColumns = {
+  /** Birth year. With birth_month, enough to derive an age. Set once, by RPC. */
+  birth_year: number | null;
+  birth_month: number | null;
+  /** `age` renamed. Never read; kept so existing answers survive. Do not use. */
+  legacy_self_reported_age: number | null;
+};
+
+type UserProfilesTable = PublicSchema["Tables"]["user_profiles"];
+
+// A `type`, not an `interface`: intersecting an interface into the generated
+// schema silently produces `never`, because an interface has no implicit index
+// signature. The same trap is documented in eslint.config.js's
+// consistent-type-definitions note.
+type SupplementalTables = {
+  user_profiles: Omit<UserProfilesTable, "Row" | "Insert" | "Update"> & {
+    Row: Omit<UserProfilesTable["Row"], "age"> & SupplementalUserProfileColumns;
+    Insert: Omit<UserProfilesTable["Insert"], "age"> & Partial<SupplementalUserProfileColumns>;
+    Update: Omit<UserProfilesTable["Update"], "age"> & Partial<SupplementalUserProfileColumns>;
+  };
+};
+
 // -- The merged schema ----------------------------------------------------
 
 export type Database = Omit<GeneratedDatabase, "public"> & {
-  public: Omit<PublicSchema, "Views" | "Functions"> & {
+  public: Omit<PublicSchema, "Tables" | "Views" | "Functions"> & {
+    Tables: Omit<PublicSchema["Tables"], keyof SupplementalTables> & SupplementalTables;
     Views: PublicSchema["Views"] & SupplementalViews;
     Functions: Omit<
       PublicSchema["Functions"],

@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { getOnboardingStatus } from "@/repositories/profile";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -21,13 +22,10 @@ export const Route = createFileRoute("/_authenticated")({
     // Skip the onboarding gate when already on the onboarding route
     if (location.pathname.startsWith("/onboarding")) return;
 
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("onboarded_at")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
-    if (!profile?.onboarded_at) {
+    // A birth date is required to post, and accounts created before the age
+    // gate existed do not have one - so "onboarded" is no longer enough.
+    const status = await getOnboardingStatus(session.user.id);
+    if (!status.onboarded || !status.hasBirthDate) {
       // Carry the destination through this gate too, or a first-time visitor
       // who clicked a specific page loses it to the onboarding hop.
       throw redirect({ to: "/onboarding", search: { redirect: location.href } });

@@ -19,6 +19,7 @@ import {
   countUnownedEcliptarsRpc,
   getClaimedChestNodeIds,
   getEcliptarClaimCountsByNode,
+  getOnboardingStatus,
   setBirthDate,
   getOwnedEcliptarSlugs,
   getUsername,
@@ -414,5 +415,58 @@ describe("setBirthDate", () => {
       error: { message: "Invalid year" },
     } as never);
     await expect(setBirthDate(1800, 7)).rejects.toThrow("Invalid year");
+  });
+});
+
+/**
+ * Two gates read this, so "no birth date" must be unmistakable. An account
+ * created before the age gate existed has `onboarded_at` set and `birth_year`
+ * null - the one combination that has to route back into setup rather than
+ * through to an app it can no longer post in.
+ */
+describe("getOnboardingStatus", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("asks for both answers in one round trip", async () => {
+    const { select, eq } = mockSelectEq({
+      data: { onboarded_at: null, birth_year: null },
+      error: null,
+    });
+
+    await getOnboardingStatus("u1");
+
+    expect(supabase.from).toHaveBeenCalledWith("user_profiles");
+    expect(select).toHaveBeenCalledWith("onboarded_at, birth_year");
+    expect(eq).toHaveBeenCalledWith("user_id", "u1");
+  });
+
+  it("reports a finished profile", async () => {
+    mockSelectEq({ data: { onboarded_at: "2026-08-01", birth_year: 2005 }, error: null });
+    expect(await getOnboardingStatus("u1")).toEqual({ onboarded: true, hasBirthDate: true });
+  });
+
+  it("reports a profile that predates the age gate", async () => {
+    // The case the whole backfill path exists for.
+    mockSelectEq({ data: { onboarded_at: "2026-01-01", birth_year: null }, error: null });
+    expect(await getOnboardingStatus("u1")).toEqual({ onboarded: true, hasBirthDate: false });
+  });
+
+  it("reports a brand-new account", async () => {
+    mockSelectEq({ data: { onboarded_at: null, birth_year: null }, error: null });
+    expect(await getOnboardingStatus("u1")).toEqual({ onboarded: false, hasBirthDate: false });
+  });
+
+  it("treats a missing profile row as nothing done", async () => {
+    mockSelectEq({ data: null, error: null });
+    expect(await getOnboardingStatus("u1")).toEqual({ onboarded: false, hasBirthDate: false });
+  });
+
+  it("throws rather than reporting a false all-clear when the read fails", async () => {
+    // Returning "onboarded" here would wave an unverified account straight
+    // through both gates.
+    mockSelectEq({ data: null, error: { message: "denied" } });
+    await expect(getOnboardingStatus("u1")).rejects.toThrow("denied");
   });
 });

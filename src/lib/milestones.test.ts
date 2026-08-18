@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ROAD_NODES } from "./trophy-road-data";
 
 /**
@@ -147,5 +147,106 @@ describe("not repeating itself", () => {
     // prompt to go and claim, not an achievement.
     const chestCount = toasts.filter((t) => t.title.startsWith(CHEST)).length;
     expect(lunaMessages).toHaveLength(toasts.length - chestCount);
+  });
+});
+
+/* -------------------------------------------------------------------------
+ * Merged in from milestones.integration.test.ts, which covered the threshold
+ * and dedupe machinery while this file covered which message a node routes to.
+ * Two files for one module is one file too many, and neither half needed a
+ * DOM - only a stubbed toast - so the pair lives here, in the unit project.
+ * ---------------------------------------------------------------------- */
+
+describe("XP thresholds", () => {
+  it("fires a milestone as its threshold is crossed", async () => {
+    const { checkMilestones } = await freshMilestones();
+    const { toasts, lunaMessages } = checkMilestones(50, 150);
+    expect(toasts.some((t) => t.title.includes("First Steps"))).toBe(true);
+    expect(lunaMessages.some((m) => m.includes("First Steps"))).toBe(true);
+  });
+
+  it("stays quiet about a threshold already passed before this check", async () => {
+    const { checkMilestones } = await freshMilestones();
+    const { toasts } = checkMilestones(150, 200);
+    expect(toasts.some((t) => t.title.includes("First Steps"))).toBe(false);
+  });
+
+  it("fires each milestone once per session, not once per call", async () => {
+    const { checkMilestones } = await freshMilestones();
+    checkMilestones(50, 150);
+    const second = checkMilestones(150, 600);
+    expect(second.toasts.some((t) => t.title.includes("First Steps"))).toBe(false);
+    expect(second.toasts.some((t) => t.title.includes("Rising Star"))).toBe(true);
+  });
+
+  it("says nothing when no threshold was crossed", async () => {
+    const { checkMilestones } = await freshMilestones();
+    expect(checkMilestones(150, 160)).toEqual({ toasts: [], lunaMessages: [] });
+  });
+
+  it("names a specific chest without giving it a Luna line", async () => {
+    const { checkMilestones } = await freshMilestones();
+    const { toasts, lunaMessages } = checkMilestones(0, 1000);
+    expect(toasts.find((t) => t.title.includes("Dawn Cache"))).toBeDefined();
+    expect(lunaMessages.some((m) => m.includes("Dawn Cache"))).toBe(false);
+  });
+});
+
+describe("markExistingMilestones", () => {
+  it("suppresses everything at or below the marked XP", async () => {
+    // Otherwise every returning player is congratulated on their whole history.
+    const { checkMilestones, markExistingMilestones } = await freshMilestones();
+    markExistingMilestones(600);
+    const { toasts } = checkMilestones(0, 600);
+    expect(toasts.some((t) => t.title.includes("First Steps"))).toBe(false);
+    expect(toasts.some((t) => t.title.includes("Rising Star"))).toBe(false);
+  });
+
+  it("is idempotent, because two Luna panels both mount and call it", async () => {
+    const { checkMilestones, markExistingMilestones } = await freshMilestones();
+    markExistingMilestones(600);
+    markExistingMilestones(600);
+    expect(checkMilestones(0, 600).toasts).toEqual([]);
+  });
+});
+
+describe("fireMilestoneToasts", () => {
+  beforeEach(() => {
+    // resetModules gives a fresh module registry but not a fresh call history
+    // on the sonner stub, so counts leak between tests without this.
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("staggers them, with the first arriving immediately", async () => {
+    const { fireMilestoneToasts } = await freshMilestones();
+    const { toast } = await import("sonner");
+    const toastMock = vi.mocked(toast);
+
+    fireMilestoneToasts([
+      { title: "A", description: "first" },
+      { title: "B", description: "second" },
+    ]);
+
+    // The first is staggered by i*1500 = 0, so it does not wait a full step.
+    vi.advanceTimersByTime(0);
+    expect(toastMock).toHaveBeenCalledTimes(1);
+    expect(toastMock).toHaveBeenCalledWith("A", expect.objectContaining({ description: "first" }));
+
+    vi.advanceTimersByTime(1500);
+    expect(toastMock).toHaveBeenCalledTimes(2);
+    expect(toastMock).toHaveBeenCalledWith("B", expect.objectContaining({ description: "second" }));
+  });
+
+  it("does nothing for an empty list", async () => {
+    const { fireMilestoneToasts } = await freshMilestones();
+    const { toast } = await import("sonner");
+
+    fireMilestoneToasts([]);
+    vi.advanceTimersByTime(5000);
+    expect(vi.mocked(toast)).not.toHaveBeenCalled();
   });
 });

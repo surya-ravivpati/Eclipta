@@ -65,6 +65,29 @@ our own small interface so swapping it later touches one file.
 - One concept per test. Fresh data per test. Never depend on run order.
 - Found a bug? Write the test that reproduces it _before_ fixing it.
 - Never delete a failing test to make a feature pass.
+- One test file per module. Check for an existing one before writing a new
+  one — `foo.test.ts` and `foo.integration.test.ts` for the same module is one
+  file too many, and the second gets written because nobody looked.
+- `.integration.test.ts` / `.test.tsx` run in jsdom and are much slower to
+  start. Use them only when the code genuinely needs a DOM. Logic that happens
+  to live in a component belongs in a `.ts` module that a unit test can reach.
+
+### The coverage gate
+
+`scripts/coverage-ratchet.mjs`, run from pre-commit against the staged diff:
+
+1. **No file you touch may lose coverage.** Recorded per file in
+   `coverage-baseline.json`. Adding untested code to a covered file fails, and
+   testing something else does not offset it.
+2. **A new production file must reach 60%.** New code is where choosing to make
+   it testable is still free.
+3. **The project total may never fall.**
+
+It used to demand a flat +1pp on the project total per commit. That took
+coverage from 11.8% to 24.5% and then stopped measuring the right thing: 89% of
+what remains uncovered is JSX, so the cheapest way to buy a point became writing
+tests for a module you were _not_ changing. The per-file rule is stricter where
+it counts and costs nothing when you edit a legacy component.
 
 ## Comments
 

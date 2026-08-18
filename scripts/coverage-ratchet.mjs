@@ -1,42 +1,54 @@
 #!/usr/bin/env node
 /**
- * Unit-test line-coverage ratchet.
+ * Unit-test line-coverage ratchet, per file.
  *
- * Same shape as lint-ratchet.mjs and typecheck-ratchet.mjs — a recorded floor
- * that may fall but never rise — with one addition: a commit that changes
- * production code has to *raise* the floor, not merely hold it.
+ * Same shape as lint-ratchet.mjs and typecheck-ratchet.mjs — recorded numbers
+ * that may improve but never regress — applied to each production file rather
+ * than only to the project total.
  *
- * ── Why the increase is conditional ─────────────────────────────────────────
- * The requested rule was "+1/100th every commit". Applied literally that blocks
- * commits that cannot possibly satisfy it: a README edit, a SQL migration, a
- * config change, or a refactor that deletes as much as it adds. A gate that
- * fires on work it has no opinion about is a gate people learn to pass with
- * --no-verify, and then it protects nothing.
+ * ── Why this replaced "every code commit adds a point" ──────────────────────
+ * The original rule was a flat +1.00pp on the project total for any commit
+ * touching src/. It worked, and it took coverage from 11.83% to 24.50%. Then it
+ * stopped measuring what it was for.
  *
- * So the demand is scoped to the commits it can actually be about. Touch
- * `src/**` production code and you owe a percentage point. Touch anything else
- * and you only owe "don't regress". The floor still only moves one way, so the
- * number climbs steadily toward the target without ever standing in front of
- * work it was not designed to judge.
+ * At 24.50% of 9,408 lines, a point costs 95 newly-covered lines. But 89% of
+ * what remains uncovered is React components and route pages — JSX that a unit
+ * test can only reach by rendering a whole screen with its data layer mocked.
+ * Only 557 uncovered lines were pure logic, and ~104 of those are Web Audio
+ * synthesis that cannot run in Node at all.
  *
- * ── What counts as "production code" ────────────────────────────────────────
- * `src/**` excluding tests and the generated files coverage already ignores.
- * Adding tests alone raises coverage without tripping the requirement, which
- * is the intended escape hatch: a commit whose whole job is backfilling tests
- * should never be blocked for not adding enough of them.
+ * That produced a perverse incentive, and it is worth naming plainly: the
+ * cheapest way to satisfy a global gain is to write tests for a module you are
+ * *not* changing. The gate asked for a number, and the number was easiest to
+ * get somewhere other than the code under review — so it stopped being about
+ * the commit in front of it.
+ *
+ * Worse, it was not actually strict where it counted. A commit could add a
+ * hundred untested lines to a well-tested file and sail through, as long as it
+ * bought its point elsewhere.
+ *
+ * ── The rule now ────────────────────────────────────────────────────────────
+ *   1. **No file you touch may lose coverage.** Recorded per file. This is the
+ *      guard the old rule was missing: adding untested code to a covered file
+ *      now fails, and no amount of unrelated testing can buy it off.
+ *   2. **A new production file must clear NEW_FILE_BAR.** New code is the code
+ *      you can still cheaply choose to make testable.
+ *   3. **The project total may never fall.** Unchanged, and still the backstop.
+ *
+ * Nothing demands a gain any more. Coverage climbs because (1) and (2) make it
+ * the path of least resistance for the code actually being written, not because
+ * a counter has to move.
  *
  * ── Checking never writes ───────────────────────────────────────────────────
- * Raising the floor is something a *commit* earns, so only `--advance` (which
- * the pre-commit hook passes) may move it. An earlier version raised the floor
- * on any passing run, which meant checking your work before committing quietly
- * banked the gain - and the hook then asked for another point on top of it, for
- * the same code. Running this by hand as often as you like is now free.
+ * Only `--advance` (which the pre-commit hook passes) records anything. An
+ * earlier version banked improvements on any passing run, so checking your work
+ * before committing quietly moved the goalposts. Running this by hand is free.
  *
  * Usage:
  *   node scripts/coverage-ratchet.mjs            check only, never writes
  *   node scripts/coverage-ratchet.mjs --staged   judge the staged diff
- *   node scripts/coverage-ratchet.mjs --advance  raise the floor when earned
- *   node scripts/coverage-ratchet.mjs --accept   force-record the current number
+ *   node scripts/coverage-ratchet.mjs --advance  record improvements
+ *   node scripts/coverage-ratchet.mjs --accept   force-record the current state
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -47,23 +59,29 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const baselinePath = join(repoRoot, "coverage-baseline.json");
 const summaryPath = join(repoRoot, "coverage", "coverage-summary.json");
 
-/** Percentage points a production-code commit must add. */
-const REQUIRED_GAIN = 1.0;
+/**
+ * Line coverage a brand-new production file must reach.
+ *
+ * Deliberately not applied to existing files: 131 of 189 production files sit
+ * below this today, almost all of them components, and a gate that fails on
+ * every edit to them is one that gets bypassed. New files are where the choice
+ * to write testable code is still free.
+ */
+const NEW_FILE_BAR = 60;
 
 /**
- * How far the percentage may dip before it counts as a regression.
+ * How far a number may dip before it counts as a regression.
  *
- * Not float noise - real churn. Coverage is a ratio, and the formatter that
+ * Not float noise — real churn. Coverage is a ratio, and the formatter that
  * runs in lint-staged moves the denominator on its own: reflowing a few files
- * added 9 lines to the total on one commit here and dropped the figure by
- * 0.01pp while not one line of behaviour changed. A gate that fails on that is
- * measuring prettier.
- *
- * 0.05pp is about five lines out of nine thousand - far below anything a real
- * slug of untested code moves, and the +1pp gain requirement is the guard that
- * actually catches new untested work.
+ * added 9 lines to one total here and dropped the figure by 0.01pp while not
+ * one line of behaviour changed. A gate that fails on that is measuring
+ * prettier.
  */
-const EPSILON = 0.05;
+const EPSILON = 0.5;
+
+/** The project total is a much larger denominator, so it needs far less slack. */
+const TOTAL_EPSILON = 0.05;
 
 function git(args) {
   try {
@@ -78,9 +96,9 @@ function git(args) {
 }
 
 /**
- * Files this commit changes, from the staged index or from the diff against
- * the upstream branch. Falls back to an empty list rather than guessing: an
- * unknown diff should not invent an obligation.
+ * Files this commit changes, from the staged index or from the diff against the
+ * upstream branch. Falls back to an empty list rather than guessing: an unknown
+ * diff should not invent an obligation.
  */
 function changedFiles() {
   if (process.argv.includes("--staged")) {
@@ -101,11 +119,12 @@ const NOT_PRODUCTION = [
   /\.verify\.ts$/,
   /^src\/routeTree\.gen\.ts$/,
   /^src\/integrations\/supabase\/types\.ts$/,
+  // shadcn owns these and regenerates them wholesale - see eslint.config.js.
   /^src\/components\/ui\//,
 ];
 
-function touchesProductionCode(files) {
-  return files.some((f) => PRODUCTION.test(f) && !NOT_PRODUCTION.some((skip) => skip.test(f)));
+function isProduction(file) {
+  return PRODUCTION.test(file) && !NOT_PRODUCTION.some((skip) => skip.test(file));
 }
 
 function runCoverage() {
@@ -120,6 +139,12 @@ function runCoverage() {
   });
 }
 
+/** Coverage keys are absolute and platform-shaped; git paths are not. */
+function toRepoPath(key) {
+  const parts = key.split(/Eclipta[\\/]/);
+  return (parts.length > 1 ? parts[parts.length - 1] : key).split("\\").join("/");
+}
+
 function readCoverage() {
   if (!existsSync(summaryPath)) {
     console.error(
@@ -128,33 +153,46 @@ function readCoverage() {
     );
     process.exit(1);
   }
-  const total = JSON.parse(readFileSync(summaryPath, "utf8")).total;
+  const raw = JSON.parse(readFileSync(summaryPath, "utf8"));
+  const files = {};
+  for (const [key, entry] of Object.entries(raw)) {
+    if (key === "total") continue;
+    const path = toRepoPath(key);
+    // A file with no executable lines has nothing to say about coverage.
+    if (isProduction(path) && entry.lines.total > 0) files[path] = entry.lines.pct;
+  }
   return {
-    lines: total.lines.pct,
-    covered: total.lines.covered,
-    totalLines: total.lines.total,
+    total: raw.total.lines.pct,
+    covered: raw.total.lines.covered,
+    totalLines: raw.total.lines.total,
+    files,
   };
 }
 
 const accept = process.argv.includes("--accept");
-/** Only a real commit may bank a gain - see "Checking never writes" above. */
+/** Only a real commit may record anything - see "Checking never writes" above. */
 const advance = process.argv.includes("--advance");
 
 runCoverage();
-const { lines, covered, totalLines } = readCoverage();
-const shown = lines.toFixed(2);
+const { total, covered, totalLines, files } = readCoverage();
+const shown = total.toFixed(2);
 
 const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, "utf8")) : null;
 
-function write(floor) {
+function write(nextTotal, nextFiles) {
   writeFileSync(
     baselinePath,
     `${JSON.stringify(
       {
-        lines: Number(floor.toFixed(2)),
+        lines: Number(nextTotal.toFixed(2)),
         covered,
         total: totalLines,
-        requiredGainPerCodeCommit: REQUIRED_GAIN,
+        newFileBar: NEW_FILE_BAR,
+        files: Object.fromEntries(
+          Object.entries(nextFiles)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([f, pct]) => [f, Number(pct.toFixed(2))]),
+        ),
         updated: new Date().toISOString().slice(0, 10),
       },
       null,
@@ -163,73 +201,104 @@ function write(floor) {
   );
 }
 
-if (accept || baseline === null) {
-  write(lines);
-  console.log(`Line coverage baseline set to ${shown}%. Commit coverage-baseline.json.`);
+if (accept || baseline === null || !baseline.files) {
+  // No per-file record yet: adopt the current state as the starting point.
+  write(total, files);
+  const why = baseline && !baseline.files ? " (migrated to per-file tracking)" : "";
+  console.log(`Coverage baseline set to ${shown}%${why}. Commit coverage-baseline.json.`);
   process.exit(0);
 }
 
 const floor = baseline.lines;
+const recorded = baseline.files;
+const changed = changedFiles().filter(isProduction);
 
-if (lines < floor - EPSILON) {
-  console.error(
-    `Line coverage fell from ${floor.toFixed(2)}% to ${shown}% (${covered}/${totalLines} lines).\n\n` +
-      `Coverage may never drop. Add tests for what this commit changed, or\n` +
-      `remove the untested code it introduced.`,
-  );
-  process.exit(1);
-}
+// -- 1. No file this commit touched may lose coverage ------------------------
+const regressed = [];
+const belowBar = [];
 
-// The gain is a property of *making* a commit, so it is only demanded at
-// commit time. Two reasons, both learned the hard way:
-//
-//   1. It is not idempotent otherwise. Once a commit raises the floor, a later
-//      run against the same commit sees coverage == floor and asks for another
-//      point on top - punishing the same change twice, forever.
-//   2. Percentage is a ratio, and the denominator moves on its own. The
-//      formatter that runs during `git commit` reflowed 162 files here and
-//      added 92 lines to the total, which dropped the percentage while covered
-//      lines actually went up. Judging the gain after that has already happened
-//      measures the formatter, not the author.
-//
-// Push keeps the guard that matters and cannot drift: coverage may never fall.
-const enforceGain = process.argv.includes("--staged");
-const files = changedFiles();
-const owesGain = enforceGain && touchesProductionCode(files);
-const target = floor + REQUIRED_GAIN;
+for (const file of changed) {
+  const now = files[file];
+  // Deleted, or with nothing executable left in it - nothing to judge.
+  if (now === undefined) continue;
 
-if (owesGain && lines < target - EPSILON) {
-  console.error(
-    `Line coverage is ${shown}% (${covered}/${totalLines} lines).\n` +
-      `This commit changes production code under src/, so it needs ` +
-      `${target.toFixed(2)}% — a ${REQUIRED_GAIN.toFixed(2)}pp gain on the ` +
-      `${floor.toFixed(2)}% floor.\n\n` +
-      `Short by ${(target - lines).toFixed(2)}pp, roughly ` +
-      `${Math.ceil(((target - lines) / 100) * totalLines)} more covered lines.\n\n` +
-      `A commit that only adds tests is never asked for a gain — split the work\n` +
-      `if that is easier than covering this change in place.`,
-  );
-  process.exit(1);
-}
-
-if (lines > floor + EPSILON) {
-  if (advance) {
-    write(lines);
-    console.log(
-      `Line coverage rose from ${floor.toFixed(2)}% to ${shown}% ` +
-        `(${covered}/${totalLines} lines). Floor raised - commit coverage-baseline.json.`,
-    );
-  } else {
-    console.log(
-      `Line coverage is ${shown}%, above the ${floor.toFixed(2)}% floor ` +
-        `(${covered}/${totalLines} lines). Floor unchanged - a commit banks the gain.`,
-    );
+  const before = recorded[file];
+  if (before === undefined) {
+    if (now < NEW_FILE_BAR) belowBar.push({ file, now });
+    continue;
   }
+  if (now < before - EPSILON) regressed.push({ file, before, now });
+}
+
+if (regressed.length > 0) {
+  console.error(
+    `Coverage fell in ${regressed.length} file(s) this commit changed:\n\n` +
+      regressed
+        .map(
+          ({ file, before, now }) => `  ${file}\n      ${before.toFixed(1)}% -> ${now.toFixed(1)}%`,
+        )
+        .join("\n") +
+      `\n\nCover what this commit added to them, or take the untested code back out.\n` +
+      `Testing something else does not offset this - the rule is about the files\n` +
+      `in front of you.`,
+  );
+  process.exit(1);
+}
+
+if (belowBar.length > 0) {
+  console.error(
+    `New production file(s) below the ${NEW_FILE_BAR}% bar:\n\n` +
+      belowBar.map(({ file, now }) => `  ${file}\n      ${now.toFixed(1)}%`).join("\n") +
+      `\n\nA new file is where making the code testable is still cheap. If this one\n` +
+      `genuinely cannot be unit-tested - a screen, a canvas, a realtime wrapper -\n` +
+      `keep the untestable part thin and put the logic somewhere that can be.`,
+  );
+  process.exit(1);
+}
+
+// -- 2. The project total may never fall -------------------------------------
+if (total < floor - TOTAL_EPSILON) {
+  console.error(
+    `Line coverage fell from ${floor.toFixed(2)}% to ${shown}% ` +
+      `(${covered}/${totalLines} lines).\n\n` +
+      `No file this commit changed regressed, so this is the total moving on its\n` +
+      `own - usually deleted tests, or a large untested file arriving. Check what\n` +
+      `landed.`,
+  );
+  process.exit(1);
+}
+
+// -- 3. Record the improvements a commit earned ------------------------------
+if (advance) {
+  const merged = { ...recorded };
+  let raised = 0;
+  for (const [file, pct] of Object.entries(files)) {
+    const before = merged[file];
+    if (before === undefined || pct > before) {
+      if (before !== undefined && pct > before + EPSILON) raised++;
+      merged[file] = pct;
+    }
+  }
+  // Drop files that no longer exist, so the baseline cannot rot.
+  for (const file of Object.keys(merged)) {
+    if (!(file in files)) delete merged[file];
+  }
+
+  const nextTotal = Math.max(floor, total);
+  write(nextTotal, merged);
+
+  const totalNote =
+    total > floor + TOTAL_EPSILON
+      ? `Total ${floor.toFixed(2)}% -> ${shown}%.`
+      : `Total holding at ${shown}%.`;
+  console.log(
+    `${totalNote}${raised > 0 ? ` ${raised} file(s) improved.` : ""} ` +
+      `Baseline recorded - commit coverage-baseline.json.`,
+  );
   process.exit(0);
 }
 
 console.log(
-  `Line coverage holding at ${shown}%` +
-    (enforceGain && !owesGain ? " (no production-code changes, so no gain required)" : "") +
-    ".",
+  `Coverage holding at ${shown}% (${covered}/${totalLines} lines).` +
+    (changed.length > 0 ? ` ${changed.length} production file(s) changed, none regressed.` : ""),
 );

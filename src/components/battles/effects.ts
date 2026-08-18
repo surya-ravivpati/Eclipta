@@ -73,10 +73,6 @@ export function has(effects: ActiveEffect[], kind: EffectKind): boolean {
   return effects.some((e) => e.kind === kind);
 }
 
-export function findCopiedPassive(effects: ActiveEffect[]): ArchetypeId | null {
-  return effects.find((e) => e.kind === "copiedPassive")?.passive ?? null;
-}
-
 /**
  * Stacking rule: a second cast of the same kind refreshes rather than stacks,
  * taking the stronger magnitude and the longer remaining duration. Without this

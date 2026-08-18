@@ -80,6 +80,18 @@ const NEW_FILE_BAR = 60;
  */
 const EPSILON = 0.5;
 
+/**
+ * Executable lines a file needs before its *percentage* is worth judging.
+ *
+ * On a six-line file one line is sixteen points, so deleting a covered line -
+ * or the formatter reflowing an import - swings the figure further than any
+ * real change would. Below this, the honest question is not "did the ratio
+ * fall" but "did this commit stop covering something", so the count is used
+ * instead. Caught the first time this gate ran: removing two dead one-line
+ * consts from battles/archetypes.ts read as 50% -> 33%.
+ */
+const MIN_LINES_FOR_PCT = 20;
+
 /** The project total is a much larger denominator, so it needs far less slack. */
 const TOTAL_EPSILON = 0.05;
 
@@ -159,7 +171,13 @@ function readCoverage() {
     if (key === "total") continue;
     const path = toRepoPath(key);
     // A file with no executable lines has nothing to say about coverage.
-    if (isProduction(path) && entry.lines.total > 0) files[path] = entry.lines.pct;
+    if (isProduction(path) && entry.lines.total > 0) {
+      files[path] = {
+        pct: entry.lines.pct,
+        covered: entry.lines.covered,
+        total: entry.lines.total,
+      };
+    }
   }
   return {
     total: raw.total.lines.pct,
@@ -191,7 +209,7 @@ function write(nextTotal, nextFiles) {
         files: Object.fromEntries(
           Object.entries(nextFiles)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([f, pct]) => [f, Number(pct.toFixed(2))]),
+            .map(([f, e]) => [f, { pct: Number(e.pct.toFixed(2)), covered: e.covered }]),
         ),
         updated: new Date().toISOString().slice(0, 10),
       },
@@ -224,10 +242,16 @@ for (const file of changed) {
 
   const before = recorded[file];
   if (before === undefined) {
-    if (now < NEW_FILE_BAR) belowBar.push({ file, now });
+    if (now.pct < NEW_FILE_BAR) belowBar.push({ file, now: now.pct });
     continue;
   }
-  if (now < before - EPSILON) regressed.push({ file, before, now });
+
+  // On a small file the ratio is too coarse to mean anything, so ask whether
+  // this commit stopped covering something instead.
+  const lost =
+    now.total < MIN_LINES_FOR_PCT ? now.covered < before.covered : now.pct < before.pct - EPSILON;
+
+  if (lost) regressed.push({ file, before: before.pct, now: now.pct });
 }
 
 if (regressed.length > 0) {
@@ -272,11 +296,13 @@ if (total < floor - TOTAL_EPSILON) {
 if (advance) {
   const merged = { ...recorded };
   let raised = 0;
-  for (const [file, pct] of Object.entries(files)) {
+  for (const [file, entry] of Object.entries(files)) {
     const before = merged[file];
-    if (before === undefined || pct > before) {
-      if (before !== undefined && pct > before + EPSILON) raised++;
-      merged[file] = pct;
+    // Record the new state whenever it is not worse, so a deletion that moves
+    // the denominator does not leave a floor the file can never meet again.
+    if (before === undefined || entry.pct >= before.pct || entry.covered >= before.covered) {
+      if (before !== undefined && entry.pct > before.pct + EPSILON) raised++;
+      merged[file] = entry;
     }
   }
   // Drop files that no longer exist, so the baseline cannot rot.

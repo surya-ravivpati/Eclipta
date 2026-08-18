@@ -40,8 +40,6 @@ export interface SeedThread {
   answers?: { body: string }[];
 }
 
-const TEAM = "Eclipta Team";
-
 export const SEED_THREADS: SeedThread[] = [
   // ── Getting started ────────────────────────────────────────────────────────
   {
@@ -419,20 +417,3 @@ export const SEED_GROUPS: SeedGroup[] = [
     isPublic: true,
   },
 ];
-
-/** Provenance summary, for asserting nothing is mis-attributed. */
-export function contentAudit() {
-  return {
-    threads: SEED_THREADS.length,
-    answers: SEED_THREADS.reduce((a, t) => a + (t.answers?.length ?? 0), 0),
-    groups: SEED_GROUPS.length,
-    author: TEAM,
-    /** Every thread declares a non-member source. */
-    allAttributed: SEED_THREADS.every((t) => t.source === "seed" || t.source === "official"),
-    /** No fabricated engagement of any kind. */
-    fabricatedVotes: 0,
-    fabricatedMembers: 0,
-    fabricatedAcceptedAnswers: 0,
-    categories: [...new Set(SEED_THREADS.map((t) => t.category))].sort(),
-  };
-}

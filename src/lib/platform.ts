@@ -14,10 +14,6 @@ export function isMacPlatform(): boolean {
 }
 
 /** The modifier key label for shortcut hints: "⌘" on Mac, "Ctrl" elsewhere. */
-export function modKeyLabel(): string {
-  return isMacPlatform() ? "⌘" : "Ctrl";
-}
-
 /** A shortcut like "K" formatted as "⌘K" on Mac or "Ctrl+K" elsewhere. */
 export function formatShortcut(key: string): string {
   return isMacPlatform() ? `⌘${key}` : `Ctrl+${key}`;

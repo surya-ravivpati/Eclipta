@@ -1,5 +1,4 @@
-import type { ArchetypeId } from "./types";
-import { effect, type ActiveEffect } from "./effects";
+import { type ActiveEffect } from "./effects";
 
 /**
  * Ecliptar ultimates - one signature move per creature, replacing the old Wild
@@ -533,22 +532,4 @@ const BY_SLUG: Record<string, Ultimate | undefined> = ULTIMATES;
 export function getUltimate(slug: string | null | undefined): Ultimate | null {
   if (!slug) return null;
   return BY_SLUG[slug] ?? null;
-}
-
-/**
- * Every ultimate an archetype's Ecliptars can bring. Used to give bot opponents
- * a real ultimate rather than a generic one - a Tank bot should roar, not poison.
- */
-export function ultimatesForArchetype(
-  arch: ArchetypeId,
-  slugsByArchetype: (a: ArchetypeId) => string[],
-): Ultimate[] {
-  return slugsByArchetype(arch)
-    .map((s) => BY_SLUG[s])
-    .filter((u): u is Ultimate => Boolean(u));
-}
-
-/** Turn an op list into the effects it would apply, for previews and tests. */
-export function effectsFromOps(ops: UltimateOp[]): ActiveEffect[] {
-  return ops.filter((o) => o.op === "effect").map((o) => effect(o.effect));
 }

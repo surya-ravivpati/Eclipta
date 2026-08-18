@@ -1,198 +1,765 @@
 {
-  "lines": 24.5,
-  "covered": 2305,
-  "total": 9408,
+  "lines": 24.51,
+  "covered": 2303,
+  "total": 9394,
   "newFileBar": 60,
   "files": {
-    "src/components/archetypes/ArchetypesCompass.tsx": 0,
-    "src/components/auth/AuthForm.tsx": 0,
-    "src/components/auth/PasswordStrength.tsx": 100,
-    "src/components/battles/ai-brain.ts": 76.05,
-    "src/components/battles/archetypes.ts": 50,
-    "src/components/battles/BattleIntro.tsx": 0,
-    "src/components/battles/BattleReport.tsx": 0,
-    "src/components/battles/ChallengeInbox.tsx": 0,
-    "src/components/battles/ClassSelectDialog.tsx": 0,
-    "src/components/battles/DraftDialog.tsx": 0,
-    "src/components/battles/effects.ts": 96.92,
-    "src/components/battles/GameModeSelectDialog.tsx": 0,
-    "src/components/battles/questions.ts": 100,
-    "src/components/battles/resolve-ultimate.ts": 84.48,
-    "src/components/battles/stat-mechanics.ts": 100,
-    "src/components/battles/TerritoryGrid.tsx": 0,
-    "src/components/battles/TugOfWarBar.tsx": 0,
-    "src/components/battles/ultimates.ts": 55.55,
-    "src/components/battles/UserSearchDialog.tsx": 0,
-    "src/components/battles/weak-spot.ts": 100,
-    "src/components/battles/WeakSpotPractice.tsx": 0,
-    "src/components/BrandLockup.tsx": 0,
-    "src/components/ConsentBanner.tsx": 0,
-    "src/components/CourseBuilder.tsx": 0,
-    "src/components/dashboard/MissionControl.tsx": 0,
-    "src/components/Forum.tsx": 0,
-    "src/components/forum/AnswerComments.tsx": 0,
-    "src/components/forum/ReportDialog.tsx": 0,
-    "src/components/ForumMarkdown.tsx": 0,
-    "src/components/KnowledgeBattles.tsx": 0,
-    "src/components/landing/CinematicFilm.tsx": 0,
-    "src/components/LanguageSelector.tsx": 0,
-    "src/components/Luna.tsx": 0,
-    "src/components/luna/LunaActions.tsx": 0,
-    "src/components/luna/LunaChatPanel.tsx": 0,
-    "src/components/luna/LunaFullSession.tsx": 0,
-    "src/components/luna/LunaIcon.tsx": 0,
-    "src/components/luna/LunaInlineQuiz.tsx": 0,
-    "src/components/luna/LunaMark.tsx": 0,
-    "src/components/luna/LunaMarkdown.tsx": 0,
-    "src/components/luna/LunaThinkingIndicator.tsx": 0,
-    "src/components/moderation/CrisisSupport.tsx": 0,
-    "src/components/Navbar.tsx": 0,
-    "src/components/profile/avatar-crop.ts": 67.56,
-    "src/components/profile/AvatarCropDialog.tsx": 52.38,
-    "src/components/profile/FollowingFeedCard.tsx": 0,
-    "src/components/ProgressDashboard.tsx": 0,
-    "src/components/search/GlobalSearch.tsx": 0,
-    "src/components/SiteFooter.tsx": 0,
-    "src/components/streak/StreakCelebration.tsx": 0,
-    "src/components/streak/StreakHub.tsx": 0,
-    "src/components/study/GoalPin.tsx": 0,
-    "src/components/study/LofiPlayer.tsx": 0,
-    "src/components/study/RoomAssistant.tsx": 0,
-    "src/components/study/RoomSafety.tsx": 0,
-    "src/components/study/SessionClock.tsx": 0,
-    "src/components/study/TeachBack.tsx": 0,
-    "src/components/TrophyRoad.tsx": 0,
-    "src/config/battle-tuning.ts": 100,
-    "src/config/env.server.ts": 0,
-    "src/config/env.ts": 93.33,
-    "src/config/motion.ts": 0,
-    "src/config/query-client.ts": 0,
-    "src/content/legal/documents.ts": 0,
-    "src/content/legal/types.ts": 0,
-    "src/db/schema/battles.ts": 0,
-    "src/db/schema/courses.ts": 0,
-    "src/db/schema/profile.ts": 0,
-    "src/hooks/use-archetype-mastery.ts": 0,
-    "src/hooks/use-auth.tsx": 0,
-    "src/hooks/use-blocked-users.tsx": 0,
-    "src/hooks/use-daily-streak.tsx": 95.55,
-    "src/hooks/use-global-search.ts": 80,
-    "src/hooks/use-luna-conversation.tsx": 0,
-    "src/hooks/use-luna-history.tsx": 0,
-    "src/hooks/use-luna-profile.tsx": 0,
-    "src/hooks/use-luna-session-timer.tsx": 0,
-    "src/hooks/use-luna-voice.tsx": 0,
-    "src/hooks/use-mobile.tsx": 0,
-    "src/hooks/use-modal-a11y.ts": 0,
-    "src/hooks/use-moderator.tsx": 0,
-    "src/hooks/use-notifications.tsx": 0,
-    "src/hooks/use-player-rating.tsx": 94.73,
-    "src/hooks/use-player-xp.tsx": 84.61,
-    "src/hooks/use-reduced-motion.ts": 0,
-    "src/hooks/use-theme.tsx": 0,
-    "src/hooks/use-xp-milestones.tsx": 0,
-    "src/i18n/context.ts": 0,
-    "src/i18n/core.ts": 0,
-    "src/i18n/index.tsx": 0,
-    "src/i18n/locales.ts": 0,
-    "src/i18n/page-titles.ts": 0,
-    "src/i18n/use-translation.ts": 0,
-    "src/integrations/supabase/auth-attacher.ts": 0,
-    "src/integrations/supabase/auth-middleware.ts": 0,
-    "src/integrations/supabase/client.server.ts": 0,
-    "src/integrations/supabase/client.ts": 25,
-    "src/lib/a11y.ts": 100,
-    "src/lib/archetype-mastery.ts": 100,
-    "src/lib/battle-modes/draft.ts": 100,
-    "src/lib/battle-modes/territory.ts": 100,
-    "src/lib/battle-modes/tug-of-war.ts": 100,
-    "src/lib/battle-modes/types.ts": 0,
-    "src/lib/battle-replay.ts": 0,
-    "src/lib/bots/roster.ts": 93.02,
-    "src/lib/bots/seed-content.ts": 0,
-    "src/lib/certified-courses.ts": 50,
-    "src/lib/concept-mastery.ts": 100,
-    "src/lib/consent.ts": 100,
-    "src/lib/course-blocks.ts": 100,
-    "src/lib/course-graph.ts": 100,
-    "src/lib/course-progress.ts": 0,
-    "src/lib/courses.ts": 100,
-    "src/lib/daily-challenge.ts": 0,
-    "src/lib/daily-streak.ts": 97.14,
-    "src/lib/ecliptars.ts": 91.13,
-    "src/lib/edge-function.ts": 100,
-    "src/lib/luna-api.ts": 33.58,
-    "src/lib/luna-calibration.ts": 95.83,
-    "src/lib/luna-context.ts": 90.56,
-    "src/lib/luna-image.ts": 100,
-    "src/lib/luna-preference-detector.ts": 90.47,
-    "src/lib/luna-screen.ts": 100,
-    "src/lib/matchmaking.ts": 100,
-    "src/lib/milestones.ts": 98.03,
-    "src/lib/moderation.ts": 83.33,
-    "src/lib/notifications.ts": 88.63,
-    "src/lib/password-strength.ts": 100,
-    "src/lib/platform.ts": 0,
-    "src/lib/pressure/distraction.ts": 5.45,
-    "src/lib/pressure/integrity.ts": 95.74,
-    "src/lib/pressure/metrics.ts": 97.87,
-    "src/lib/profanity.ts": 100,
-    "src/lib/rating.ts": 76.19,
-    "src/lib/recommend.ts": 93.2,
-    "src/lib/record-practice.ts": 0,
-    "src/lib/report-error.ts": 100,
-    "src/lib/reporting.ts": 100,
-    "src/lib/search/query.ts": 100,
-    "src/lib/study-luna.ts": 92.85,
-    "src/lib/study-rooms.ts": 23.8,
-    "src/lib/study-safety.ts": 100,
-    "src/lib/study-teachback.ts": 100,
-    "src/lib/test-helpers.ts": 100,
-    "src/lib/time.ts": 0,
-    "src/lib/trophy-road-data.ts": 100,
-    "src/lib/utils.ts": 100,
-    "src/lib/xp-service.ts": 95.23,
-    "src/repositories/battles.ts": 62.5,
-    "src/repositories/courses.ts": 95.38,
-    "src/repositories/dashboard.ts": 100,
-    "src/repositories/profile.ts": 88.23,
-    "src/repositories/search.ts": 100,
-    "src/router.tsx": 0,
-    "src/routes/__root.tsx": 0,
-    "src/routes/_authenticated.admin.forum.tsx": 0,
-    "src/routes/_authenticated.battles.tsx": 0,
-    "src/routes/_authenticated.build-course.tsx": 0,
-    "src/routes/_authenticated.calibration.tsx": 0,
-    "src/routes/_authenticated.certified.$slug.forum.tsx": 0,
-    "src/routes/_authenticated.certified.$slug.learn.tsx": 0,
-    "src/routes/_authenticated.certified.$slug.tsx": 0,
-    "src/routes/_authenticated.certified.tsx": 0,
-    "src/routes/_authenticated.collection.tsx": 0,
-    "src/routes/_authenticated.courses.$courseId.edit.tsx": 0,
-    "src/routes/_authenticated.forum_.$threadId.tsx": 0,
-    "src/routes/_authenticated.forum.tsx": 0,
-    "src/routes/_authenticated.groups_.$roomId.tsx": 0,
-    "src/routes/_authenticated.groups.tsx": 0,
-    "src/routes/_authenticated.luna.tsx": 0,
-    "src/routes/_authenticated.notifications.tsx": 0,
-    "src/routes/_authenticated.profile.tsx": 0,
-    "src/routes/_authenticated.progress.tsx": 0,
-    "src/routes/_authenticated.streak.tsx": 0,
-    "src/routes/_authenticated.tsx": 0,
-    "src/routes/about.tsx": 0,
-    "src/routes/auth.callback.tsx": 0,
-    "src/routes/courses.$slug.tsx": 0,
-    "src/routes/courses.tsx": 0,
-    "src/routes/forgot-password.tsx": 0,
-    "src/routes/index.tsx": 0,
-    "src/routes/legal.$doc.tsx": 0,
-    "src/routes/legal.notices.tsx": 0,
-    "src/routes/login.tsx": 0,
-    "src/routes/onboarding.tsx": 0,
-    "src/routes/reset-password.tsx": 0,
-    "src/routes/signup.tsx": 0,
-    "src/routes/tags.$tag.tsx": 0,
-    "src/routes/u.$username.tsx": 0
+    "src/components/archetypes/ArchetypesCompass.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/auth/AuthForm.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/auth/PasswordStrength.tsx": {
+      "pct": 100,
+      "covered": 4
+    },
+    "src/components/battles/ai-brain.ts": {
+      "pct": 76.05,
+      "covered": 108
+    },
+    "src/components/battles/archetypes.ts": {
+      "pct": 33.33,
+      "covered": 2
+    },
+    "src/components/battles/BattleIntro.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/BattleReport.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/ChallengeInbox.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/ClassSelectDialog.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/DraftDialog.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/effects.ts": {
+      "pct": 98.43,
+      "covered": 63
+    },
+    "src/components/battles/GameModeSelectDialog.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/questions.ts": {
+      "pct": 100,
+      "covered": 60
+    },
+    "src/components/battles/resolve-ultimate.ts": {
+      "pct": 84.48,
+      "covered": 147
+    },
+    "src/components/battles/stat-mechanics.ts": {
+      "pct": 100,
+      "covered": 69
+    },
+    "src/components/battles/TerritoryGrid.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/TugOfWarBar.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/ultimates.ts": {
+      "pct": 100,
+      "covered": 5
+    },
+    "src/components/battles/UserSearchDialog.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/battles/weak-spot.ts": {
+      "pct": 100,
+      "covered": 13
+    },
+    "src/components/battles/WeakSpotPractice.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/BrandLockup.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/ConsentBanner.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/CourseBuilder.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/dashboard/MissionControl.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/Forum.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/forum/AnswerComments.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/forum/ReportDialog.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/ForumMarkdown.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/KnowledgeBattles.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/landing/CinematicFilm.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/LanguageSelector.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/Luna.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaActions.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaChatPanel.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaFullSession.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaIcon.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaInlineQuiz.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaMark.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaMarkdown.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/luna/LunaThinkingIndicator.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/moderation/CrisisSupport.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/Navbar.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/profile/avatar-crop.ts": {
+      "pct": 67.56,
+      "covered": 25
+    },
+    "src/components/profile/AvatarCropDialog.tsx": {
+      "pct": 52.38,
+      "covered": 33
+    },
+    "src/components/profile/FollowingFeedCard.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/ProgressDashboard.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/search/GlobalSearch.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/SiteFooter.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/streak/StreakCelebration.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/streak/StreakHub.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/study/GoalPin.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/study/LofiPlayer.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/study/RoomAssistant.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/study/RoomSafety.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/study/SessionClock.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/study/TeachBack.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/components/TrophyRoad.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/config/battle-tuning.ts": {
+      "pct": 100,
+      "covered": 25
+    },
+    "src/config/env.server.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/config/env.ts": {
+      "pct": 93.33,
+      "covered": 14
+    },
+    "src/config/motion.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/config/query-client.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/content/legal/documents.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/content/legal/types.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/db/schema/battles.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/db/schema/courses.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/db/schema/profile.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-archetype-mastery.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-auth.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-blocked-users.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-daily-streak.tsx": {
+      "pct": 95.55,
+      "covered": 43
+    },
+    "src/hooks/use-global-search.ts": {
+      "pct": 80,
+      "covered": 48
+    },
+    "src/hooks/use-luna-conversation.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-luna-history.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-luna-profile.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-luna-session-timer.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-luna-voice.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-mobile.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-modal-a11y.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-moderator.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-notifications.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-player-rating.tsx": {
+      "pct": 94.73,
+      "covered": 18
+    },
+    "src/hooks/use-player-xp.tsx": {
+      "pct": 84.61,
+      "covered": 22
+    },
+    "src/hooks/use-reduced-motion.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-theme.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/hooks/use-xp-milestones.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/i18n/context.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/i18n/core.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/i18n/index.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/i18n/locales.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/i18n/page-titles.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/i18n/use-translation.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/integrations/supabase/auth-attacher.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/integrations/supabase/auth-middleware.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/integrations/supabase/client.server.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/integrations/supabase/client.ts": {
+      "pct": 25,
+      "covered": 1
+    },
+    "src/lib/a11y.ts": {
+      "pct": 100,
+      "covered": 25
+    },
+    "src/lib/archetype-mastery.ts": {
+      "pct": 100,
+      "covered": 22
+    },
+    "src/lib/battle-modes/draft.ts": {
+      "pct": 100,
+      "covered": 34
+    },
+    "src/lib/battle-modes/territory.ts": {
+      "pct": 100,
+      "covered": 85
+    },
+    "src/lib/battle-modes/tug-of-war.ts": {
+      "pct": 100,
+      "covered": 12
+    },
+    "src/lib/battle-modes/types.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/battle-replay.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/bots/roster.ts": {
+      "pct": 93.02,
+      "covered": 80
+    },
+    "src/lib/bots/seed-content.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/certified-courses.ts": {
+      "pct": 50,
+      "covered": 1
+    },
+    "src/lib/concept-mastery.ts": {
+      "pct": 100,
+      "covered": 35
+    },
+    "src/lib/consent.ts": {
+      "pct": 100,
+      "covered": 7
+    },
+    "src/lib/course-blocks.ts": {
+      "pct": 100,
+      "covered": 20
+    },
+    "src/lib/course-graph.ts": {
+      "pct": 100,
+      "covered": 34
+    },
+    "src/lib/course-progress.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/courses.ts": {
+      "pct": 100,
+      "covered": 24
+    },
+    "src/lib/daily-challenge.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/daily-streak.ts": {
+      "pct": 97.14,
+      "covered": 34
+    },
+    "src/lib/ecliptars.ts": {
+      "pct": 91.13,
+      "covered": 72
+    },
+    "src/lib/edge-function.ts": {
+      "pct": 100,
+      "covered": 9
+    },
+    "src/lib/luna-api.ts": {
+      "pct": 33.58,
+      "covered": 45
+    },
+    "src/lib/luna-calibration.ts": {
+      "pct": 95.83,
+      "covered": 69
+    },
+    "src/lib/luna-context.ts": {
+      "pct": 90.56,
+      "covered": 48
+    },
+    "src/lib/luna-image.ts": {
+      "pct": 100,
+      "covered": 37
+    },
+    "src/lib/luna-preference-detector.ts": {
+      "pct": 90.47,
+      "covered": 38
+    },
+    "src/lib/luna-screen.ts": {
+      "pct": 100,
+      "covered": 27
+    },
+    "src/lib/matchmaking.ts": {
+      "pct": 100,
+      "covered": 39
+    },
+    "src/lib/milestones.ts": {
+      "pct": 98.03,
+      "covered": 50
+    },
+    "src/lib/moderation.ts": {
+      "pct": 83.33,
+      "covered": 30
+    },
+    "src/lib/notifications.ts": {
+      "pct": 88.63,
+      "covered": 39
+    },
+    "src/lib/password-strength.ts": {
+      "pct": 100,
+      "covered": 9
+    },
+    "src/lib/platform.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/pressure/distraction.ts": {
+      "pct": 5.45,
+      "covered": 6
+    },
+    "src/lib/pressure/integrity.ts": {
+      "pct": 95.74,
+      "covered": 45
+    },
+    "src/lib/pressure/metrics.ts": {
+      "pct": 97.87,
+      "covered": 92
+    },
+    "src/lib/profanity.ts": {
+      "pct": 100,
+      "covered": 28
+    },
+    "src/lib/rating.ts": {
+      "pct": 76.19,
+      "covered": 16
+    },
+    "src/lib/recommend.ts": {
+      "pct": 93.2,
+      "covered": 96
+    },
+    "src/lib/record-practice.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/report-error.ts": {
+      "pct": 100,
+      "covered": 12
+    },
+    "src/lib/reporting.ts": {
+      "pct": 100,
+      "covered": 9
+    },
+    "src/lib/search/query.ts": {
+      "pct": 100,
+      "covered": 44
+    },
+    "src/lib/study-luna.ts": {
+      "pct": 92.85,
+      "covered": 39
+    },
+    "src/lib/study-rooms.ts": {
+      "pct": 23.8,
+      "covered": 15
+    },
+    "src/lib/study-safety.ts": {
+      "pct": 100,
+      "covered": 26
+    },
+    "src/lib/study-teachback.ts": {
+      "pct": 100,
+      "covered": 22
+    },
+    "src/lib/test-helpers.ts": {
+      "pct": 100,
+      "covered": 9
+    },
+    "src/lib/time.ts": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/lib/trophy-road-data.ts": {
+      "pct": 100,
+      "covered": 8
+    },
+    "src/lib/utils.ts": {
+      "pct": 100,
+      "covered": 1
+    },
+    "src/lib/xp-service.ts": {
+      "pct": 95.23,
+      "covered": 40
+    },
+    "src/repositories/battles.ts": {
+      "pct": 62.5,
+      "covered": 25
+    },
+    "src/repositories/courses.ts": {
+      "pct": 95.38,
+      "covered": 62
+    },
+    "src/repositories/dashboard.ts": {
+      "pct": 100,
+      "covered": 23
+    },
+    "src/repositories/profile.ts": {
+      "pct": 88.23,
+      "covered": 45
+    },
+    "src/repositories/search.ts": {
+      "pct": 100,
+      "covered": 15
+    },
+    "src/router.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/__root.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.admin.forum.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.battles.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.build-course.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.calibration.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.certified.$slug.forum.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.certified.$slug.learn.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.certified.$slug.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.certified.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.collection.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.courses.$courseId.edit.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.forum_.$threadId.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.forum.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.groups_.$roomId.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.groups.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.luna.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.notifications.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.profile.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.progress.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.streak.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/_authenticated.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/about.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/auth.callback.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/courses.$slug.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/courses.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/forgot-password.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/index.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/legal.$doc.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/legal.notices.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/login.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/onboarding.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/reset-password.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/signup.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/tags.$tag.tsx": {
+      "pct": 0,
+      "covered": 0
+    },
+    "src/routes/u.$username.tsx": {
+      "pct": 0,
+      "covered": 0
+    }
   },
   "updated": "2026-08-18"
 }

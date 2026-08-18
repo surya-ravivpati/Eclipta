@@ -1,15 +1,4 @@
-import {
-  Zap,
-  Shield,
-  Skull,
-  Dice5,
-  Heart,
-  Scale,
-  FastForward,
-  Crown,
-  User,
-  Bot,
-} from "lucide-react";
+import { Zap, Shield, Skull, Dice5, Heart, Scale, FastForward, Crown } from "lucide-react";
 import type { Archetype, ArchetypeId, GamblerRoll } from "./types";
 
 /**
@@ -264,6 +253,3 @@ export function rollGamblerStats(): GamblerRoll {
     diffMax,
   };
 }
-
-export const PLAYER_AVATAR_ICON = User;
-export const AI_AVATAR_ICON = Bot;

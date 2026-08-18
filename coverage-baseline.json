@@ -1,7 +1,7 @@
 {
-  "lines": 26.56,
-  "covered": 2513,
-  "total": 9459,
+  "lines": 27.01,
+  "covered": 2570,
+  "total": 9513,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -103,6 +103,10 @@
     "src/components/dashboard/MissionControl.tsx": {
       "pct": 0,
       "covered": 0
+    },
+    "src/components/emotes/EmoteMark.tsx": {
+      "pct": 100,
+      "covered": 17
     },
     "src/components/Forum.tsx": {
       "pct": 0,
@@ -248,6 +252,10 @@
       "pct": 100,
       "covered": 25
     },
+    "src/config/emotes.ts": {
+      "pct": 100,
+      "covered": 7
+    },
     "src/config/env.ts": {
       "pct": 93.33,
       "covered": 14
@@ -336,6 +344,10 @@
       "pct": 0,
       "covered": 0
     },
+    "src/hooks/use-owned-emotes.ts": {
+      "pct": 100,
+      "covered": 6
+    },
     "src/hooks/use-player-rating.tsx": {
       "pct": 94.73,
       "covered": 18
@@ -349,8 +361,8 @@
       "covered": 25
     },
     "src/hooks/use-reduced-motion.ts": {
-      "pct": 0,
-      "covered": 0
+      "pct": 100,
+      "covered": 15
     },
     "src/hooks/use-theme.tsx": {
       "pct": 0,
@@ -467,6 +479,10 @@
     "src/lib/edge-function.ts": {
       "pct": 100,
       "covered": 9
+    },
+    "src/lib/emotes.ts": {
+      "pct": 100,
+      "covered": 12
     },
     "src/lib/luna-api.ts": {
       "pct": 33.08,

@@ -22,6 +22,7 @@ import {
   Volume2,
   Crown,
   Medal,
+  Lock,
   X,
 } from "lucide-react";
 import {
@@ -111,6 +112,9 @@ import {
 } from "./battles/stat-mechanics";
 import { DAMAGE_TUNING, ULTIMATE_TUNING } from "@/config/battle-tuning";
 import { useTranslation } from "@/i18n/use-translation";
+import { getEmote, isEmoteId } from "@/config/emotes";
+import { EmoteMark } from "./emotes/EmoteMark";
+import { useOwnedEmotes } from "@/hooks/use-owned-emotes";
 import { announce } from "@/lib/a11y";
 import {
   createBattleMemory,
@@ -265,7 +269,14 @@ const CHAT_PHRASES = [
 
 interface ChatItem {
   id: number;
+  /** The phrase, or the emote's name when `emoteId` is set. */
   text: string;
+  /**
+   * Set when this is an emote rather than a phrase. Validated against the
+   * roster on arrival, so an unknown id never reaches here - see
+   * `isEmoteId` in config/emotes.ts for why that check is the important one.
+   */
+  emoteId?: string;
   fromPlayer: boolean; // true = local player sent it
   senderName: string;
   ts: number; // Date.now() at creation for TTL removal
@@ -1004,6 +1015,7 @@ function BattleChat({
   incomingItems: ChatItem[];
 }) {
   const [sentItems, setSentItems] = useState<ChatItem[]>([]);
+  const { roster } = useOwnedEmotes();
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [muted, setMuted] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
@@ -1029,16 +1041,19 @@ function BattleChat({
   const onCooldown = now < cooldownUntil;
   const cooldownSec = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
 
-  const send = (text: string) => {
+  const send = (text: string, emoteId?: string) => {
     if (onCooldown) return;
     const item: ChatItem = {
       id: ++_chatIdCounter,
       text,
+      ...(emoteId ? { emoteId } : {}),
       fromPlayer: true,
       senderName: playerName,
       ts: Date.now(),
     };
     setSentItems((prev) => [...prev, item]);
+    // One cooldown for phrases and emotes together. Two separate budgets would
+    // just double the amount a player can send in the same three seconds.
     setCooldownUntil(Date.now() + 3000);
     setTick(Date.now()); // kick countdown interval
 
@@ -1046,7 +1061,7 @@ function BattleChat({
       void pvpChannelRef.current.send({
         type: "broadcast",
         event: "chat",
-        payload: { text, sender_name: playerName },
+        payload: { text, emote_id: emoteId ?? null, sender_name: playerName },
       });
     }
   };
@@ -1075,7 +1090,13 @@ function BattleChat({
                   {item.senderName}:
                 </span>
               )}
-              {item.text}
+              {item.emoteId ? (
+                <span className="w-5 h-5 inline-block">
+                  <EmoteMark id={item.emoteId} label={item.text} />
+                </span>
+              ) : (
+                item.text
+              )}
             </motion.div>
           ))}
         </AnimatePresence>
@@ -1133,6 +1154,39 @@ function BattleChat({
                   className="px-2 py-1 border border-border/40 hover:border-neon-purple/50 text-[10px] font-bold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
                 >
                   {phrase}
+                </button>
+              ))}
+
+              {/* Earned emotes. Locked ones are shown too, naming the chest
+                  that opens them - a reward you cannot see is not one you can
+                  work towards. */}
+              {roster.length > 0 && <span className="w-px h-5 bg-border/60 mx-0.5" />}
+              {roster.map(({ emote, owned, from }) => (
+                <button
+                  key={emote.id}
+                  onClick={() => owned && send(emote.name, emote.id)}
+                  disabled={onCooldown || !owned}
+                  aria-label={
+                    owned
+                      ? `${emote.name} - ${emote.meaning}`
+                      : `${emote.name}, locked. Opens with ${from?.label ?? "a Trophy Road chest"}.`
+                  }
+                  title={
+                    owned
+                      ? `${emote.name} - ${emote.meaning}`
+                      : `Locked - opens with ${from?.label ?? "a Trophy Road chest"}`
+                  }
+                  className={`w-7 h-7 p-1 border transition-colors active:scale-[0.97] disabled:cursor-not-allowed ${
+                    owned
+                      ? "border-border/40 hover:border-neon-purple/50 text-neon-purple disabled:opacity-40"
+                      : "border-border/20 text-muted-foreground/40"
+                  }`}
+                >
+                  {owned ? (
+                    <EmoteMark id={emote.id} label={emote.name} />
+                  ) : (
+                    <Lock className="w-full h-full" aria-hidden="true" />
+                  )}
                 </button>
               ))}
 
@@ -1750,11 +1804,21 @@ function BattleArena() {
       // Issue 2: receive opponent chat / emoji reactions
       .on("broadcast", { event: "chat" }, ({ payload }) => {
         if (chatMutedRef.current) return;
+        // Everything on this channel came from another browser, so it is
+        // treated as unknown until proven otherwise. An emote arrives as an id
+        // and only an id already in the roster is drawn: there is no path from
+        // the wire to the render that skips this lookup, which is what stops a
+        // modified client putting arbitrary content on the other screen.
+        const msg: { text?: unknown; emote_id?: unknown } = payload;
+        const emote = isEmoteId(msg.emote_id) ? getEmote(msg.emote_id) : null;
+        const text = typeof msg.text === "string" ? msg.text : null;
+        if (!emote && text === null) return;
         setIncomingChats((prev) => [
           ...prev,
           {
             id: ++chatCounterRef.current,
-            text: payload.text as string,
+            text: emote ? emote.name : (text ?? ""),
+            ...(emote ? { emoteId: emote.id } : {}),
             fromPlayer: false,
             senderName: opponentRef.current.name,
             ts: Date.now(),

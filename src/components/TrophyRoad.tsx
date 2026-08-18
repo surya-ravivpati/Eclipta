@@ -11,6 +11,7 @@ import {
 } from "@/lib/trophy-road-data";
 import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
 import { usePlayerRating } from "@/hooks/use-player-rating";
+import { useAuth } from "@/hooks/use-auth";
 import { ratingLeague, leagueProgress } from "@/lib/rating";
 import {
   claimRandomEcliptar,
@@ -20,6 +21,10 @@ import {
 } from "@/lib/ecliptars";
 import { claimChest, fetchClaimedChestNodeIds, CHEST_BONUS_XP } from "@/lib/xp-service";
 import { nodeIcon, ROAD_ARCHETYPE_ICONS, type RoadIcon } from "./trophy-road-icons";
+import { useQueryClient } from "@tanstack/react-query";
+import { emoteForChest } from "@/config/emotes";
+import { claimedChestsQueryKey } from "@/hooks/use-owned-emotes";
+import { EmoteMark } from "./emotes/EmoteMark";
 import "./TrophyRoad.css";
 
 const TIER_ORDER: TierId[] = [
@@ -305,6 +310,9 @@ function TrophyNode({
   const showChestOpen = isChest && node.unlocked && !chestClaimed;
   // Chests display a themed Realm name but claim against a stable server key.
   const chestKey = node.rewardKey ?? node.label;
+  // The second chest of each tier also carries an emote, so the two chests
+  // in a tier stop being the same reward twice.
+  const chestEmote = isChest ? emoteForChest(chestKey) : null;
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -381,7 +389,9 @@ function TrophyNode({
     setBusy(false);
     if (bonus > 0) {
       toast(`${node.label} opened`, {
-        description: `+${bonus} bonus XP added to your total.`,
+        description: chestEmote
+          ? `+${bonus} bonus XP, and the ${chestEmote.name} emote is yours - use it in a live battle.`
+          : `+${bonus} bonus XP added to your total.`,
         duration: 6000,
       });
       onChestClaimed();
@@ -442,6 +452,17 @@ function TrophyNode({
           +{(CHEST_BONUS_XP[chestKey] ?? 0).toLocaleString()} XP
         </span>
       )}
+      {chestEmote && (
+        <span
+          className="tr-node-reward inline-flex items-center gap-1 justify-center"
+          title={`${chestEmote.name} emote - "${chestEmote.meaning}"`}
+        >
+          <span className="w-3 h-3 inline-block">
+            <EmoteMark id={chestEmote.id} label={chestEmote.name} />
+          </span>
+          {chestEmote.name}
+        </span>
+      )}
 
       {showClaim && (
         <button
@@ -475,7 +496,11 @@ function TrophyNode({
           className="tr-node-act active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleOpenChest}
           disabled={busy}
-          title={`+${CHEST_BONUS_XP[chestKey] ?? 0} bonus XP`}
+          title={
+            chestEmote
+              ? `+${CHEST_BONUS_XP[chestKey] ?? 0} bonus XP and the ${chestEmote.name} emote`
+              : `+${CHEST_BONUS_XP[chestKey] ?? 0} bonus XP`
+          }
         >
           {busy ? "|||" : "Open"}
         </button>
@@ -1008,6 +1033,8 @@ function Overview({ playerXp, standing }: { playerXp: number; standing: Standing
 
 export function TrophyRoad({ compact = false }: { compact?: boolean }) {
   const { xp: playerXp } = usePlayerXp();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { rating, peakRating, wins, losses, ranked, loading: ratingLoading } = usePlayerRating();
   const { slugs: ownedSlugs, refresh: refreshOwned } = useOwnedEcliptars();
   const [claimedChestIds, setClaimedChestIds] = useState<Set<number>>(new Set());
@@ -1142,6 +1169,10 @@ export function TrophyRoad({ compact = false }: { compact?: boolean }) {
         onClaimed={handleClaimed}
         onChestClaimed={() => {
           void refreshChests();
+          // The emote picker reads the same claims through TanStack Query and
+          // would otherwise keep serving its cached answer.
+          if (user)
+            void queryClient.invalidateQueries({ queryKey: claimedChestsQueryKey(user.id) });
         }}
       />
     </div>

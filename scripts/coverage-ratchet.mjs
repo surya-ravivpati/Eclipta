@@ -217,6 +217,18 @@ function write(nextTotal, nextFiles) {
       2,
     )}\n`,
   );
+
+  // Stage it during a commit. The pre-commit hook runs after lint-staged, so a
+  // file written here is not in the index yet: without this the record lands in
+  // the working tree, the commit that earned it does not contain it, and every
+  // commit afterwards starts with a dirty tree it did not create.
+  if (advance) {
+    try {
+      execFileSync("git", ["add", "--", baselinePath], { stdio: "ignore" });
+    } catch {
+      // Not a commit, or nothing to stage. The record on disk is what matters.
+    }
+  }
 }
 
 if (accept || baseline === null || !baseline.files) {

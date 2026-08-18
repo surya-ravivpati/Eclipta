@@ -12,6 +12,7 @@ import { Luna } from "@/components/Luna";
 import { Navbar } from "@/components/Navbar";
 import { announce, applyMotionPreference } from "@/lib/a11y";
 import { I18nProvider } from "@/i18n";
+import { usePreferredLanguage } from "@/hooks/use-preferred-language";
 import { useTranslation } from "@/i18n/use-translation";
 import { pageTitleFor } from "@/i18n/page-titles";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -154,12 +155,23 @@ function RootComponent() {
         <AuthProvider>
           {/* I18nProvider sits inside AuthProvider so it can read the signed-in
               user's saved language, and outside everything that renders text. */}
-          <I18nProvider>
-            <AppShell />
-          </I18nProvider>
+          <LocalisedApp />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+}
+
+/**
+ * Its own component because the saved language needs `useAuth`, which only
+ * works below `AuthProvider` - and the provider that consumes it has to wrap
+ * everything that renders text.
+ */
+function LocalisedApp() {
+  return (
+    <I18nProvider userPreference={usePreferredLanguage()}>
+      <AppShell />
+    </I18nProvider>
   );
 }
 

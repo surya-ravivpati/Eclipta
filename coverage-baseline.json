@@ -1,7 +1,7 @@
 {
-  "lines": 24.66,
-  "covered": 2332,
-  "total": 9455,
+  "lines": 26.35,
+  "covered": 2502,
+  "total": 9495,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -172,6 +172,10 @@
       "pct": 0,
       "covered": 0
     },
+    "src/components/moderation/ReportQueue.tsx": {
+      "pct": 100,
+      "covered": 49
+    },
     "src/components/Navbar.tsx": {
       "pct": 0,
       "covered": 0
@@ -340,6 +344,10 @@
       "pct": 84.61,
       "covered": 22
     },
+    "src/hooks/use-preferred-language.ts": {
+      "pct": 100,
+      "covered": 25
+    },
     "src/hooks/use-reduced-motion.ts": {
       "pct": 0,
       "covered": 0
@@ -353,28 +361,28 @@
       "covered": 0
     },
     "src/i18n/context.ts": {
-      "pct": 0,
-      "covered": 0
+      "pct": 100,
+      "covered": 1
     },
     "src/i18n/core.ts": {
-      "pct": 0,
-      "covered": 0
+      "pct": 85.71,
+      "covered": 24
     },
     "src/i18n/index.tsx": {
-      "pct": 0,
-      "covered": 0
+      "pct": 76.36,
+      "covered": 42
     },
     "src/i18n/locales.ts": {
-      "pct": 0,
-      "covered": 0
+      "pct": 93.33,
+      "covered": 14
     },
     "src/i18n/page-titles.ts": {
       "pct": 0,
       "covered": 0
     },
     "src/i18n/use-translation.ts": {
-      "pct": 0,
-      "covered": 0
+      "pct": 25,
+      "covered": 2
     },
     "src/integrations/supabase/auth-attacher.ts": {
       "pct": 0,
@@ -585,8 +593,8 @@
       "covered": 9
     },
     "src/lib/time.ts": {
-      "pct": 0,
-      "covered": 0
+      "pct": 33.33,
+      "covered": 2
     },
     "src/lib/trophy-road-data.ts": {
       "pct": 100,
@@ -611,6 +619,10 @@
     "src/repositories/dashboard.ts": {
       "pct": 100,
       "covered": 23
+    },
+    "src/repositories/moderation.ts": {
+      "pct": 100,
+      "covered": 11
     },
     "src/repositories/profile.ts": {
       "pct": 89.65,

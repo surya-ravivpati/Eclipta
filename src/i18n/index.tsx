@@ -80,12 +80,19 @@ export function I18nProvider({
     document.documentElement.dir = def.dir;
   }, [def.code, def.dir]);
 
-  // A signed-in user's saved language wins once it arrives, unless they have
-  // already overridden it locally.
+  // A signed-in user's saved language wins once it arrives.
+  //
+  // It beats the local copy rather than deferring to it, because the profile
+  // records the last explicit choice made on *any* device while the local copy
+  // only knows about this one. A user who switched to German on their phone
+  // should not be met with the French they picked here months ago. The local
+  // copy is a cache for signed-out use and for the first paint, not a rival
+  // answer, so it is brought into line rather than argued with.
   useEffect(() => {
-    if (isSupportedLocale(userPreference) && userPreference && !readStoredLocale()) {
-      setLocaleState(userPreference);
-    }
+    if (!isSupportedLocale(userPreference) || !userPreference) return;
+    if (userPreference === readStoredLocale()) return;
+    storeLocale(userPreference);
+    setLocaleState(userPreference);
   }, [userPreference]);
 
   const setLocale = useCallback((code: string) => {

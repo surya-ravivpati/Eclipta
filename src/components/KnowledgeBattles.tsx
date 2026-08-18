@@ -3191,11 +3191,6 @@ function BattleArena() {
             window.dispatchEvent(new Event("daily-challenge-updated"));
           }
 
-          // Browser-reported battle sessions are not durable evidence, so no
-          // session id is minted client-side and the bot branch below stays
-          // inert until it has a server-side resolver.
-          const sessionId = null;
-
           // Update competitive rating. Live PvP completes on the server once per battle.
           if (opponentTypeRef.current === "live" && pvpBattleIdRef.current && winnerId) {
             const { data, error } = await supabase.rpc("complete_authoritative_pvp_battle", {
@@ -3214,15 +3209,17 @@ function BattleArena() {
                 window.dispatchEvent(new Event("pvp-leaderboard-updated"));
               }
             }
-          } else if (opponentTypeRef.current === "bot" && sessionId) {
+          } else if (opponentTypeRef.current === "bot") {
             // Bot battles move the ladder too, at half the ranked K-factor.
             // The questions are handed over rather than the result: the server
             // issued them and marked them, so it recomputes who won from its
-            // own rows instead of believing this one.
+            // own rows, and writes the session row itself. Nothing about the
+            // outcome crosses from here.
             try {
               const outcome = await completeBotBattleVerified(
-                sessionId,
                 answeredChallengeIdsRef.current,
+                archetype,
+                ecliptarRef.current,
               );
               if (outcome.rated && outcome.ratingAfter !== null) {
                 setRatingChange(outcome.ratingDelta);

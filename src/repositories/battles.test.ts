@@ -125,22 +125,26 @@ describe("completeBotBattleVerified", () => {
     vi.clearAllMocks();
   });
 
-  it("sends the challenge ids and no claim about who won", async () => {
+  it("sends the challenge ids and no claim about who won, or which session", async () => {
     vi.mocked(supabase.rpc).mockResolvedValue({
       data: { rated: true, won: true, rating_after: 1006, rating_delta: 6 },
       error: null,
     } as never);
 
-    await completeBotBattleVerified("session-1", ["c1", "c2", "c3"]);
+    await completeBotBattleVerified(["c1", "c2", "c3"], "tank", "tank-a");
 
     expect(supabase.rpc).toHaveBeenCalledWith("complete_bot_battle_verified", {
-      p_session_id: "session-1",
       p_challenge_ids: ["c1", "c2", "c3"],
+      p_archetype: "tank",
+      p_ecliptar_slug: "tank-a",
     });
 
+    // Nothing resembling a result crosses: no won flag, and no session id -
+    // a client-minted session is exactly the evidence this replaced.
     const [, args] = vi.mocked(supabase.rpc).mock.calls[0] as [string, Record<string, unknown>];
-    expect(Object.keys(args).sort()).toEqual(["p_challenge_ids", "p_session_id"]);
+    expect(Object.keys(args).sort()).toEqual(["p_archetype", "p_challenge_ids", "p_ecliptar_slug"]);
     expect(args).not.toHaveProperty("p_won");
+    expect(args).not.toHaveProperty("p_session_id");
   });
 
   it("reports the rating the server settled on", async () => {
@@ -149,7 +153,7 @@ describe("completeBotBattleVerified", () => {
       error: null,
     } as never);
 
-    expect(await completeBotBattleVerified("s", ["c"])).toEqual({
+    expect(await completeBotBattleVerified(["c"], "tank", null)).toEqual({
       rated: true,
       won: true,
       ratingAfter: 1006,
@@ -163,7 +167,7 @@ describe("completeBotBattleVerified", () => {
       error: null,
     } as never);
 
-    const outcome = await completeBotBattleVerified("s", ["c"]);
+    const outcome = await completeBotBattleVerified(["c"], "tank", null);
     expect(outcome.won).toBe(false);
     expect(outcome.ratingDelta).toBe(-6);
   });
@@ -174,7 +178,7 @@ describe("completeBotBattleVerified", () => {
       error: null,
     } as never);
 
-    expect(await completeBotBattleVerified("s", ["c"])).toEqual({
+    expect(await completeBotBattleVerified(["c"], "tank", null)).toEqual({
       rated: false,
       won: null,
       ratingAfter: null,
@@ -185,7 +189,7 @@ describe("completeBotBattleVerified", () => {
   it("does not invent a rating change from a malformed response", async () => {
     for (const data of [null, {}, { rated: true }, { rated: "yes", rating_delta: "6" }]) {
       vi.mocked(supabase.rpc).mockResolvedValue({ data, error: null } as never);
-      const outcome = await completeBotBattleVerified("s", ["c"]);
+      const outcome = await completeBotBattleVerified(["c"], "tank", null);
       expect(outcome.ratingDelta, JSON.stringify(data)).toBe(0);
       expect(outcome.ratingAfter).toBeNull();
     }
@@ -197,6 +201,8 @@ describe("completeBotBattleVerified", () => {
       error: { message: "Not authenticated" },
     } as never);
 
-    await expect(completeBotBattleVerified("s", ["c"])).rejects.toThrow("Not authenticated");
+    await expect(completeBotBattleVerified(["c"], "tank", null)).rejects.toThrow(
+      "Not authenticated",
+    );
   });
 });

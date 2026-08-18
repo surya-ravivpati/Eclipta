@@ -82,7 +82,7 @@ type SupplementalFunctions = {
    * Source: `20260816010000_bot-battles-affect-rating-again.sql`.
    */
   complete_bot_battle_verified: {
-    Args: { p_session_id: string; p_challenge_ids: string[] };
+    Args: { p_challenge_ids: string[]; p_archetype: string; p_ecliptar_slug: string | null };
     Returns: VerifiedBotBattleResult;
   };
   /**
@@ -211,7 +211,6 @@ interface RatingApplication {
  * Every rating field is absent in that case.
  */
 interface VerifiedBotBattleResult {
-  already_completed: boolean;
   rated?: boolean;
   reason?: string;
   won?: boolean;

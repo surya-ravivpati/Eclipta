@@ -272,14 +272,21 @@ export interface BotBattleOutcome {
  * account of who won. That is the whole reason this exists: the older
  * `complete_bot_battle` trusted a client-written `won` flag, which made a
  * forged victory worth free rating, and was revoked rather than fixed.
+ *
+ * No session id is passed because none exists to pass. Client-minted sessions
+ * were revoked for the same reason, so the routine writes its own row from what
+ * it verified - which is also what puts bot results back in front of
+ * `player_wl`, the shared win/loss derivation.
  */
 export async function completeBotBattleVerified(
-  sessionId: string,
   challengeIds: string[],
+  archetype: string,
+  ecliptarSlug: string | null,
 ): Promise<BotBattleOutcome> {
   const { data, error } = await supabase.rpc("complete_bot_battle_verified", {
-    p_session_id: sessionId,
     p_challenge_ids: challengeIds,
+    p_archetype: archetype,
+    p_ecliptar_slug: ecliptarSlug,
   });
   if (error) throw new Error(error.message);
 

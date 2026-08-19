@@ -119,6 +119,9 @@ import {
 } from "@/config/battle-tuning";
 import { xpToTier } from "@/lib/trophy-road-data";
 import { useTranslation } from "@/i18n/use-translation";
+import { ACTIONS, FOCUS_GAIN, getActionDesc } from "./battles/action-config";
+import { tierColors } from "./battles/tiers";
+import { sfxBreak, sfxCombo, sfxDefeat, sfxStreak, sfxVictory, sfxWild } from "./battles/audio";
 import { getEmote, isEmoteId } from "@/config/emotes";
 import { EmoteMark } from "./emotes/EmoteMark";
 import { useOwnedEmotes } from "@/hooks/use-owned-emotes";
@@ -169,110 +172,6 @@ function pickOpponent(playerArch: ArchetypeId): Ecliptar {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// --- Action Config ---------------------------------------------------
-// Focus economy: Attack & Defend BUILD focus, Charge SPENDS it. Ultimate is
-// deliberately outside that economy - it spends its own charge meter, earned
-// only by answering correctly - so the two payoff moves never compete for the
-// same resource and Charge keeps its role as the tempo play.
-const FOCUS_GAIN: Record<Action, number> = { attack: 15, defend: 10, charge: 0, ultimate: 0 };
-
-const ACTIONS: Record<Action, ActionConfig> = {
-  attack: { label: "Attack", icon: Swords, focusCost: 0, desc: "Your base DMG | +15 Focus" },
-  defend: { label: "Heal", icon: Heart, focusCost: 0, desc: "Restore HP | +10 Focus" },
-  charge: { label: "Charge", icon: Zap, focusCost: 25, desc: "1.8x your DMG | -25 Focus" },
-  ultimate: {
-    label: "Ultimate",
-    icon: Sparkles,
-    focusCost: 0,
-    desc: "Your Ecliptar's signature move",
-  },
-};
-
-/**
- * Action button descriptions, derived from the ACTIVE archetype's real stats
- * AND its signature identity - so Attack/Heal/Charge read differently for every
- * class. The +/- Focus is shown as a badge, so the text carries flavor instead.
- */
-const ATTACK_TAG: Record<string, string> = {
-  speedster: "fast = harder",
-  tank: "low, relentless",
-  chud: "glass cannon",
-  gambler: "rolled stats",
-  healer: "soft hits",
-  fulcrum: "borrowed passive",
-  accelerator: "ramps each answer",
-  god: "all maxed",
-};
-const HEAL_TAG: Record<string, string> = {
-  speedster: "quick patch",
-  tank: "",
-  chud: "risky pause",
-  gambler: "rolled",
-  healer: "+8 HP shield",
-  fulcrum: "steady",
-  accelerator: "scales up",
-  god: "free every 3rd",
-};
-const CHARGE_TAG: Record<string, string> = {
-  speedster: "fast = harder",
-  tank: "rare big hit",
-  chud: "devastating",
-  gambler: "rolled",
-  healer: "burst heal-tank",
-  fulcrum: "always an answer",
-  accelerator: "ramps",
-  god: "finisher",
-};
-
-/**
- * Base damage shown on the action buttons - live, so ramps read as they climb.
- *
- * The ramp is asked of `getEffectiveDamage` rather than recomputed here.
- * `allowCrit: false` is what that option was added for: a preview must not
- * roll a crit, or the button would flicker between two numbers and promise one
- * of them.
- *
- * The Speedster is the one case it cannot answer, because the bonus depends on
- * how fast the answer comes and the question has not been asked yet - so the
- * button shows the range instead of a number.
- */
-function displayDamage(arch: Archetype, correctCount: number, action: Action = "attack"): string {
-  if (arch.damageIsTimeScaled) {
-    const floor = getEffectiveDamage(arch, { action, allowCrit: false }).damage;
-    const ceiling = Math.floor(
-      floor +
-        DAMAGE_TUNING.speedster.maxSpeedBonus *
-          (action === "charge" ? DAMAGE_TUNING.chargeMultiplier : 1),
-    );
-    return `${floor}-${ceiling} DMG`;
-  }
-  const { damage } = getEffectiveDamage(arch, { action, correctCount, allowCrit: false });
-  return `${damage} DMG${arch.damageRamps ? " ^" : ""}`;
-}
-
-function getActionDesc(
-  action: Action,
-  arch: Archetype,
-  correctCount: number,
-  ultimate?: Ultimate | null,
-): string {
-  const tag = (m: Record<string, string>) => (m[arch.id] ? ` | ${m[arch.id]}` : "");
-  switch (action) {
-    case "attack":
-      return `${displayDamage(arch, correctCount)}${tag(ATTACK_TAG)}`;
-    case "defend": {
-      if (arch.healAmount === null) return "Can't heal | builds Focus"; // Tank
-      return `+${arch.healAmount} HP${tag(HEAL_TAG)}`;
-    }
-    case "charge":
-      // Asked as a charge rather than multiplying the digits of the attack
-      // string, which rounded twice and could not see the cap it was scaling.
-      return `${displayDamage(arch, correctCount, "charge")}${tag(CHARGE_TAG)}`;
-    case "ultimate":
-      return ultimate ? ultimate.tag : "No Ecliptar equipped";
-  }
-}
-
 // --- Quick-chat constants -------------------------------------------
 // Preset-only, sportsmanship-first: a fixed set of positive/neutral worded
 // phrases. No free text (toxicity), no emoji (brand: docs/brand-system.md).
@@ -314,84 +213,6 @@ interface LiveTurnActionRow {
   momentum: number;
   time_spent: number;
   question?: unknown;
-}
-
-const tierColors: Record<string, string> = {
-  // Expedition realms (XP leaderboard)
-  Eclipse: "text-tier-god",
-  Totality: "text-tier-unreal",
-  Nightfall: "text-tier-champion",
-  Umbra: "text-tier-platinum",
-  Penumbra: "text-tier-diamond",
-  Meridian: "text-tier-gold",
-  Moonrise: "text-tier-silver",
-  Dawn: "text-tier-bronze",
-  // Competitive leagues (rating leaderboard)
-  "God Tier": "text-tier-god",
-  Unreal: "text-tier-unreal",
-  Champion: "text-tier-champion",
-  Platinum: "text-tier-platinum",
-  Diamond: "text-tier-diamond",
-  Gold: "text-tier-gold",
-  Silver: "text-tier-silver",
-  Bronze: "text-tier-bronze",
-};
-
-// --- Audio Engine -----------------------------------------------------
-// Web Audio API tone synthesizer - runs on the main thread, no external deps.
-// AudioContext is created lazily on first use (requires prior user gesture).
-let _audioCtx: AudioContext | null = null;
-function getAudioCtx(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  if (!_audioCtx) {
-    try {
-      _audioCtx = new AudioContext();
-    } catch {
-      return null;
-    }
-  }
-  if (_audioCtx.state === "suspended") void _audioCtx.resume();
-  return _audioCtx;
-}
-function playTone(freq: number, dur: number, type: OscillatorType = "sine", vol = 0.1) {
-  const ctx = getAudioCtx();
-  if (!ctx) return;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, ctx.currentTime);
-  gain.gain.setValueAtTime(vol, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + dur);
-}
-// Pitch rises with streak (220 Hz base + 22 Hz per streak hit, capped at 880 Hz)
-function sfxStreak(streak: number) {
-  playTone(Math.min(220 + streak * 22, 880), 0.11, "sine", 0.09);
-}
-function sfxBreak() {
-  playTone(160, 0.22, "triangle", 0.11);
-  setTimeout(() => playTone(110, 0.28, "triangle", 0.07), 90);
-}
-function sfxCombo() {
-  playTone(660, 0.08, "sine", 0.13);
-  setTimeout(() => playTone(880, 0.14, "sine", 0.1), 80);
-}
-function sfxWild() {
-  [0, 55, 110].forEach((ms, i) =>
-    setTimeout(() => playTone(300 + i * 130, 0.18, "sawtooth", 0.07), ms),
-  );
-}
-// Rising major arpeggio for the win, falling minor slide for the loss
-function sfxVictory() {
-  [523, 659, 784, 1047].forEach((f, i) =>
-    setTimeout(() => playTone(f, 0.22, "sine", 0.1), i * 110),
-  );
-}
-function sfxDefeat() {
-  [330, 262, 196].forEach((f, i) => setTimeout(() => playTone(f, 0.3, "triangle", 0.1), i * 170));
 }
 
 // --- Sub-components --------------------------------------------------

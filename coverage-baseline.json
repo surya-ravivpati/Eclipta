@@ -1,6 +1,6 @@
 {
-  "lines": 30.23,
-  "covered": 2870,
+  "lines": 30.69,
+  "covered": 2913,
   "total": 9491,
   "newFileBar": 60,
   "files": {
@@ -89,6 +89,11 @@
       "covered": 63,
       "total": 64
     },
+    "src/components/battles/FighterCard.tsx": {
+      "pct": 95.65,
+      "covered": 22,
+      "total": 23
+    },
     "src/components/battles/GamblerReveal.tsx": {
       "pct": 98.07,
       "covered": 51,
@@ -103,6 +108,11 @@
       "pct": 87.93,
       "covered": 51,
       "total": 58
+    },
+    "src/components/battles/QuestionOverlay.tsx": {
+      "pct": 100,
+      "covered": 21,
+      "total": 21
     },
     "src/components/battles/questions.ts": {
       "pct": 100,
@@ -212,7 +222,7 @@
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 1268
+      "total": 1224
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,

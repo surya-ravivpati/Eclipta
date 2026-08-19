@@ -209,7 +209,10 @@ function write(nextTotal, nextFiles) {
         files: Object.fromEntries(
           Object.entries(nextFiles)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([f, e]) => [f, { pct: Number(e.pct.toFixed(2)), covered: e.covered }]),
+            .map(([f, e]) => [
+              f,
+              { pct: Number(e.pct.toFixed(2)), covered: e.covered, total: e.total },
+            ]),
         ),
         updated: new Date().toISOString().slice(0, 10),
       },
@@ -258,20 +261,35 @@ for (const file of changed) {
     continue;
   }
 
-  // On a small file the ratio is too coarse to mean anything, so ask whether
-  // this commit stopped covering something instead.
+  // Entries recorded before this script stored `total` cannot say how many
+  // lines were uncovered, so they fall back to the old ratio test once.
+  const uncoveredNow = now.total - now.covered;
+  const uncoveredBefore = before.total === undefined ? null : before.total - before.covered;
   const lost =
-    now.total < MIN_LINES_FOR_PCT ? now.covered < before.covered : now.pct < before.pct - EPSILON;
+    uncoveredBefore === null
+      ? now.total < MIN_LINES_FOR_PCT
+        ? now.covered < before.covered
+        : now.pct < before.pct - EPSILON
+      : uncoveredNow > uncoveredBefore;
 
-  if (lost) regressed.push({ file, before: before.pct, now: now.pct });
+  if (lost) {
+    regressed.push({
+      file,
+      before: before.pct,
+      now: now.pct,
+      added: uncoveredBefore === null ? null : uncoveredNow - uncoveredBefore,
+    });
+  }
 }
 
 if (regressed.length > 0) {
   console.error(
-    `Coverage fell in ${regressed.length} file(s) this commit changed:\n\n` +
+    `Untested code grew in ${regressed.length} file(s) this commit changed:\n\n` +
       regressed
         .map(
-          ({ file, before, now }) => `  ${file}\n      ${before.toFixed(1)}% -> ${now.toFixed(1)}%`,
+          ({ file, before, now, added }) =>
+            `  ${file}\n      ${before.toFixed(1)}% -> ${now.toFixed(1)}%` +
+            (added === null ? "" : ` (+${added} uncovered line${added === 1 ? "" : "s"})`),
         )
         .join("\n") +
       `\n\nCover what this commit added to them, or take the untested code back out.\n` +

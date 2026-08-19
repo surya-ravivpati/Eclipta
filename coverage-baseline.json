@@ -6,779 +6,973 @@
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 85
     },
     "src/components/auth/AuthForm.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 33
     },
     "src/components/auth/PasswordStrength.tsx": {
       "pct": 100,
-      "covered": 4
+      "covered": 4,
+      "total": 4
     },
     "src/components/battles/ai-brain.ts": {
       "pct": 76.05,
-      "covered": 108
+      "covered": 108,
+      "total": 142
     },
     "src/components/battles/archetypes.ts": {
       "pct": 33.33,
-      "covered": 2
+      "covered": 2,
+      "total": 6
     },
     "src/components/battles/BattleIntro.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 9
     },
     "src/components/battles/BattleReport.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 85
     },
     "src/components/battles/ChallengeInbox.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 67
     },
     "src/components/battles/ClassSelectDialog.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 51
     },
     "src/components/battles/DraftDialog.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 35
     },
     "src/components/battles/effects.ts": {
       "pct": 98.43,
-      "covered": 63
+      "covered": 63,
+      "total": 64
     },
     "src/components/battles/GameModeSelectDialog.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/components/battles/questions.ts": {
       "pct": 100,
-      "covered": 60
+      "covered": 60,
+      "total": 60
     },
     "src/components/battles/resolve-ultimate.ts": {
       "pct": 84.48,
-      "covered": 147
+      "covered": 147,
+      "total": 174
     },
     "src/components/battles/stat-mechanics.ts": {
       "pct": 100,
-      "covered": 69
+      "covered": 69,
+      "total": 69
     },
     "src/components/battles/TerritoryGrid.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/components/battles/TugOfWarBar.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/components/battles/ultimates.ts": {
       "pct": 100,
-      "covered": 5
+      "covered": 5,
+      "total": 5
     },
     "src/components/battles/UserSearchDialog.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 51
     },
     "src/components/battles/weak-spot.ts": {
       "pct": 100,
-      "covered": 13
+      "covered": 13,
+      "total": 13
     },
     "src/components/battles/WeakSpotPractice.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 47
     },
     "src/components/BrandLockup.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 9
     },
     "src/components/ConsentBanner.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 12
     },
     "src/components/CourseBuilder.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 95
     },
     "src/components/dashboard/MissionControl.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 90
     },
     "src/components/emotes/EmoteMark.tsx": {
       "pct": 100,
-      "covered": 17
+      "covered": 17,
+      "total": 17
     },
     "src/components/Forum.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 153
     },
     "src/components/forum/AnswerComments.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 58
     },
     "src/components/forum/ReportDialog.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 21
     },
     "src/components/ForumMarkdown.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 4
     },
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 1568
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 186
     },
     "src/components/LanguageSelector.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 23
     },
     "src/components/Luna.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 58
     },
     "src/components/luna/LunaActions.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 12
     },
     "src/components/luna/LunaChatPanel.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 49
     },
     "src/components/luna/LunaFullSession.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 48
     },
     "src/components/luna/LunaIcon.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/components/luna/LunaInlineQuiz.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 48
     },
     "src/components/luna/LunaMark.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 1
     },
     "src/components/luna/LunaMarkdown.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 24
     },
     "src/components/luna/LunaThinkingIndicator.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 30
     },
     "src/components/moderation/CrisisSupport.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 4
     },
     "src/components/moderation/ReportQueue.tsx": {
       "pct": 100,
-      "covered": 49
+      "covered": 49,
+      "total": 49
     },
     "src/components/Navbar.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 34
     },
     "src/components/profile/avatar-crop.ts": {
       "pct": 67.56,
-      "covered": 25
+      "covered": 25,
+      "total": 37
     },
     "src/components/profile/AvatarCropDialog.tsx": {
       "pct": 52.38,
-      "covered": 33
+      "covered": 33,
+      "total": 63
     },
     "src/components/profile/FollowingFeedCard.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 28
     },
     "src/components/ProgressDashboard.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 34
     },
     "src/components/search/GlobalSearch.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 92
     },
     "src/components/SiteFooter.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/components/streak/StreakCelebration.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 20
     },
     "src/components/streak/StreakHub.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 16
     },
     "src/components/study/GoalPin.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 86
     },
     "src/components/study/LofiPlayer.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 24
     },
     "src/components/study/RoomAssistant.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 89
     },
     "src/components/study/RoomSafety.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 59
     },
     "src/components/study/SessionClock.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 49
     },
     "src/components/study/TeachBack.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 42
     },
     "src/components/trophy-road-icons.ts": {
       "pct": 100,
-      "covered": 9
+      "covered": 9,
+      "total": 9
     },
     "src/components/TrophyRoad.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 271
     },
     "src/config/battle-tuning.ts": {
       "pct": 100,
-      "covered": 25
+      "covered": 25,
+      "total": 25
     },
     "src/config/emotes.ts": {
       "pct": 100,
-      "covered": 7
+      "covered": 7,
+      "total": 7
     },
     "src/config/env.ts": {
       "pct": 93.33,
-      "covered": 14
+      "covered": 14,
+      "total": 15
     },
     "src/config/motion.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/config/query-client.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 1
     },
     "src/content/legal/documents.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 11
     },
     "src/content/legal/types.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/db/schema/battles.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 10
     },
     "src/db/schema/courses.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 12
     },
     "src/db/schema/profile.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/hooks/use-archetype-mastery.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 23
     },
     "src/hooks/use-auth.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 12
     },
     "src/hooks/use-blocked-users.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 27
     },
     "src/hooks/use-daily-streak.tsx": {
       "pct": 95.55,
-      "covered": 43
+      "covered": 43,
+      "total": 45
     },
     "src/hooks/use-global-search.ts": {
       "pct": 80,
-      "covered": 48
+      "covered": 48,
+      "total": 60
     },
     "src/hooks/use-luna-conversation.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 113
     },
     "src/hooks/use-luna-history.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 30
     },
     "src/hooks/use-luna-profile.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 23
     },
     "src/hooks/use-luna-session-timer.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 36
     },
     "src/hooks/use-luna-voice.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 220
     },
     "src/hooks/use-mobile.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 10
     },
     "src/hooks/use-modal-a11y.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 38
     },
     "src/hooks/use-moderator.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 21
     },
     "src/hooks/use-notifications.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 58
     },
     "src/hooks/use-owned-emotes.ts": {
       "pct": 100,
-      "covered": 6
+      "covered": 6,
+      "total": 6
     },
     "src/hooks/use-player-rating.tsx": {
       "pct": 94.73,
-      "covered": 18
+      "covered": 18,
+      "total": 19
     },
     "src/hooks/use-player-xp.tsx": {
       "pct": 84.61,
-      "covered": 22
+      "covered": 22,
+      "total": 26
     },
     "src/hooks/use-preferred-language.ts": {
       "pct": 100,
-      "covered": 25
+      "covered": 25,
+      "total": 25
     },
     "src/hooks/use-reduced-motion.ts": {
       "pct": 100,
-      "covered": 15
+      "covered": 15,
+      "total": 15
     },
     "src/hooks/use-theme.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 34
     },
     "src/hooks/use-xp-milestones.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 33
     },
     "src/i18n/context.ts": {
       "pct": 100,
-      "covered": 1
+      "covered": 1,
+      "total": 1
     },
     "src/i18n/core.ts": {
       "pct": 85.71,
-      "covered": 24
+      "covered": 24,
+      "total": 28
     },
     "src/i18n/index.tsx": {
       "pct": 76.36,
-      "covered": 42
+      "covered": 42,
+      "total": 55
     },
     "src/i18n/locales.ts": {
       "pct": 93.33,
-      "covered": 14
+      "covered": 14,
+      "total": 15
     },
     "src/i18n/page-titles.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 4
     },
     "src/i18n/use-translation.ts": {
       "pct": 25,
-      "covered": 2
+      "covered": 2,
+      "total": 8
     },
     "src/integrations/supabase/client.ts": {
       "pct": 25,
-      "covered": 1
+      "covered": 1,
+      "total": 4
     },
     "src/lib/a11y.ts": {
       "pct": 100,
-      "covered": 25
+      "covered": 25,
+      "total": 25
     },
     "src/lib/archetype-mastery.ts": {
       "pct": 100,
-      "covered": 22
+      "covered": 22,
+      "total": 22
     },
     "src/lib/battle-modes/draft.ts": {
       "pct": 100,
-      "covered": 34
+      "covered": 34,
+      "total": 34
     },
     "src/lib/battle-modes/territory.ts": {
       "pct": 100,
-      "covered": 85
+      "covered": 85,
+      "total": 85
     },
     "src/lib/battle-modes/tug-of-war.ts": {
       "pct": 100,
-      "covered": 12
+      "covered": 12,
+      "total": 12
     },
     "src/lib/battle-modes/types.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/lib/battle-replay.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/lib/bots/roster.ts": {
       "pct": 93.02,
-      "covered": 80
+      "covered": 80,
+      "total": 86
     },
     "src/lib/bots/seed-content.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/lib/certified-courses.ts": {
       "pct": 50,
-      "covered": 1
+      "covered": 1,
+      "total": 2
     },
     "src/lib/concept-mastery.ts": {
       "pct": 100,
-      "covered": 35
+      "covered": 35,
+      "total": 35
     },
     "src/lib/consent.ts": {
       "pct": 100,
-      "covered": 7
+      "covered": 7,
+      "total": 7
     },
     "src/lib/course-blocks.ts": {
       "pct": 100,
-      "covered": 20
+      "covered": 20,
+      "total": 20
     },
     "src/lib/course-graph.ts": {
       "pct": 100,
-      "covered": 34
+      "covered": 34,
+      "total": 34
     },
     "src/lib/course-progress.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/lib/courses.ts": {
       "pct": 100,
-      "covered": 24
+      "covered": 24,
+      "total": 24
     },
     "src/lib/daily-challenge.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/lib/daily-streak.ts": {
       "pct": 97.14,
-      "covered": 34
+      "covered": 34,
+      "total": 35
     },
     "src/lib/ecliptars.ts": {
       "pct": 91.13,
-      "covered": 72
+      "covered": 72,
+      "total": 79
     },
     "src/lib/edge-function.ts": {
       "pct": 100,
-      "covered": 9
+      "covered": 9,
+      "total": 9
     },
     "src/lib/emotes.ts": {
       "pct": 100,
-      "covered": 12
+      "covered": 12,
+      "total": 12
     },
     "src/lib/luna-api.ts": {
       "pct": 33.08,
-      "covered": 45
+      "covered": 45,
+      "total": 136
     },
     "src/lib/luna-calibration.ts": {
       "pct": 95.83,
-      "covered": 69
+      "covered": 69,
+      "total": 72
     },
     "src/lib/luna-context.ts": {
       "pct": 90.56,
-      "covered": 48
+      "covered": 48,
+      "total": 53
     },
     "src/lib/luna-image.ts": {
       "pct": 100,
-      "covered": 37
+      "covered": 37,
+      "total": 37
     },
     "src/lib/luna-preference-detector.ts": {
       "pct": 90.47,
-      "covered": 38
+      "covered": 38,
+      "total": 42
     },
     "src/lib/luna-screen.ts": {
       "pct": 100,
-      "covered": 27
+      "covered": 27,
+      "total": 27
     },
     "src/lib/matchmaking.ts": {
       "pct": 100,
-      "covered": 39
+      "covered": 39,
+      "total": 39
     },
     "src/lib/milestones.ts": {
       "pct": 98.03,
-      "covered": 50
+      "covered": 50,
+      "total": 51
     },
     "src/lib/moderation.ts": {
       "pct": 83.33,
-      "covered": 30
+      "covered": 30,
+      "total": 36
     },
     "src/lib/notifications.ts": {
       "pct": 88.63,
-      "covered": 39
+      "covered": 39,
+      "total": 44
     },
     "src/lib/password-strength.ts": {
       "pct": 100,
-      "covered": 9
+      "covered": 9,
+      "total": 9
     },
     "src/lib/platform.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/lib/pressure/distraction.ts": {
       "pct": 5.45,
-      "covered": 6
+      "covered": 6,
+      "total": 110
     },
     "src/lib/pressure/integrity.ts": {
       "pct": 95.74,
-      "covered": 45
+      "covered": 45,
+      "total": 47
     },
     "src/lib/pressure/metrics.ts": {
       "pct": 97.87,
-      "covered": 92
+      "covered": 92,
+      "total": 94
     },
     "src/lib/profanity.ts": {
       "pct": 100,
-      "covered": 28
+      "covered": 28,
+      "total": 28
     },
     "src/lib/rating.ts": {
       "pct": 76.19,
-      "covered": 16
+      "covered": 16,
+      "total": 21
     },
     "src/lib/recommend.ts": {
       "pct": 93.2,
-      "covered": 96
+      "covered": 96,
+      "total": 103
     },
     "src/lib/record-practice.ts": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 6
     },
     "src/lib/report-error.ts": {
       "pct": 100,
-      "covered": 12
+      "covered": 12,
+      "total": 12
     },
     "src/lib/reporting.ts": {
       "pct": 100,
-      "covered": 9
+      "covered": 9,
+      "total": 9
     },
     "src/lib/safe-redirect.ts": {
       "pct": 100,
-      "covered": 22
+      "covered": 22,
+      "total": 22
     },
     "src/lib/search/query.ts": {
       "pct": 100,
-      "covered": 44
+      "covered": 44,
+      "total": 44
     },
     "src/lib/study-luna.ts": {
       "pct": 92.85,
-      "covered": 39
+      "covered": 39,
+      "total": 42
     },
     "src/lib/study-rooms.ts": {
       "pct": 23.8,
-      "covered": 15
+      "covered": 15,
+      "total": 63
     },
     "src/lib/study-safety.ts": {
       "pct": 100,
-      "covered": 26
+      "covered": 26,
+      "total": 26
     },
     "src/lib/study-teachback.ts": {
       "pct": 100,
-      "covered": 22
+      "covered": 22,
+      "total": 22
     },
     "src/lib/test-helpers.ts": {
       "pct": 100,
-      "covered": 9
+      "covered": 9,
+      "total": 9
     },
     "src/lib/time.ts": {
       "pct": 33.33,
-      "covered": 2
+      "covered": 2,
+      "total": 6
     },
     "src/lib/trophy-road-data.ts": {
       "pct": 100,
-      "covered": 10
+      "covered": 10,
+      "total": 10
     },
     "src/lib/utils.ts": {
       "pct": 100,
-      "covered": 1
+      "covered": 1,
+      "total": 1
     },
     "src/lib/xp-service.ts": {
-      "pct": 95.23,
-      "covered": 40
+      "pct": 95,
+      "covered": 38,
+      "total": 40
     },
     "src/repositories/battles.ts": {
       "pct": 62.5,
-      "covered": 25
+      "covered": 25,
+      "total": 40
     },
     "src/repositories/courses.ts": {
       "pct": 95.38,
-      "covered": 62
+      "covered": 62,
+      "total": 65
     },
     "src/repositories/dashboard.ts": {
       "pct": 100,
-      "covered": 23
+      "covered": 23,
+      "total": 23
     },
     "src/repositories/moderation.ts": {
       "pct": 100,
-      "covered": 11
+      "covered": 11,
+      "total": 11
     },
     "src/repositories/profile.ts": {
       "pct": 89.65,
-      "covered": 52
+      "covered": 52,
+      "total": 58
     },
     "src/repositories/search.ts": {
       "pct": 100,
-      "covered": 15
+      "covered": 15,
+      "total": 15
     },
     "src/router.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 8
     },
     "src/routes/__root.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 21
     },
     "src/routes/_authenticated.admin.forum.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 47
     },
     "src/routes/_authenticated.battles.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/routes/_authenticated.build-course.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/routes/_authenticated.calibration.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 56
     },
     "src/routes/_authenticated.certified.$slug.forum.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 9
     },
     "src/routes/_authenticated.certified.$slug.learn.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 72
     },
     "src/routes/_authenticated.certified.$slug.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 37
     },
     "src/routes/_authenticated.certified.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 2
     },
     "src/routes/_authenticated.collection.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 54
     },
     "src/routes/_authenticated.courses.$courseId.edit.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 168
     },
     "src/routes/_authenticated.forum_.$threadId.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 123
     },
     "src/routes/_authenticated.forum.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/routes/_authenticated.groups_.$roomId.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 241
     },
     "src/routes/_authenticated.groups.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 89
     },
     "src/routes/_authenticated.luna.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/routes/_authenticated.notifications.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 57
     },
     "src/routes/_authenticated.profile.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 186
     },
     "src/routes/_authenticated.progress.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 3
     },
     "src/routes/_authenticated.streak.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 23
     },
     "src/routes/_authenticated.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 10
     },
     "src/routes/about.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 63
     },
     "src/routes/auth.callback.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 25
     },
     "src/routes/courses.$slug.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 76
     },
     "src/routes/courses.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 116
     },
     "src/routes/forgot-password.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 14
     },
     "src/routes/index.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/routes/legal.$doc.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 10
     },
     "src/routes/legal.notices.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/routes/login.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/routes/onboarding.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 101
     },
     "src/routes/reset-password.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 28
     },
     "src/routes/signup.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 5
     },
     "src/routes/tags.$tag.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 14
     },
     "src/routes/u.$username.tsx": {
       "pct": 0,
-      "covered": 0
+      "covered": 0,
+      "total": 73
     }
   },
   "updated": "2026-08-19"

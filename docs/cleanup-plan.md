@@ -344,29 +344,53 @@ Tests first, so the Phase 6 split has a safety net. These modules have **zero** 
 
 ---
 
-## Phase 6 — Split `KnowledgeBattles.tsx`
+## Phase 6 - Split `KnowledgeBattles.tsx`
 
-3,091 lines holding the arena engine, a Web Audio synthesiser, the leaderboard, and the daily challenge. The `src/components/battles/` extraction pattern is already established and clean — this extends it.
+**Stage A: done (2026-08-19).** The file went from 5,447 lines to 3,694. The
+line ranges this section used to list were written when it was 3,091 lines and
+were all stale by the time the work happened; they are replaced below with what
+actually exists.
 
-**Stage A — mechanical moves, zero logic change.** These are already self-contained functions; move them and add imports. Line ranges in the current file:
+Extracted, each with a test file beside it:
 
-- [ ] `battles/audio.ts` ← `:169-196` (the `playTone` / `sfx*` engine)
-- [ ] `battles/HpBar.tsx` ← `:198-225`, `battles/FocusBar.tsx` ← `:226-287`, `battles/FighterCard.tsx` ← `:288-388`
-- [ ] `battles/QuestionOverlay.tsx` ← `:389-472`, `battles/BattleLog.tsx` ← `:473-531`, `battles/WildEventOverlay.tsx` ← `:532-563`
-- [ ] `battles/BattleChat.tsx` ← `:564-731`
-- [ ] `battles/GamblerReveal.tsx` ← `:732-935`
-- [ ] `battles/LeaderboardCard.tsx` ← `:2593-2830`, `battles/DailyChallengeCard.tsx` ← `:2831-2958`
+- [x] `battles/audio.ts` - the Web Audio tone engine
+- [x] `battles/action-config.ts` - `ACTIONS`, `FOCUS_GAIN`, the per-archetype
+      flavour tags, `displayDamage` and `getActionDesc`
+- [x] `battles/tiers.ts` - leaderboard name colours
+- [x] `battles/ResourceBars.tsx` - `HpBar` and `FocusBar`
+- [x] `battles/FighterCard.tsx`
+- [x] `battles/QuestionOverlay.tsx`
+- [x] `battles/BattleLog.tsx`
+- [x] `battles/ArenaOverlays.tsx` - `UltimateCastOverlay` and `EffectChips`
+      (the "WildEventOverlay" this section used to name no longer exists;
+      ultimates replaced wild events)
+- [x] `battles/BattleChat.tsx`
+- [x] `battles/GamblerReveal.tsx`
+- [x] `battles/LeaderboardCard.tsx`
+- [x] `battles/DailyChallengeCard.tsx`
 
-That removes ~1,130 lines with no behavioural risk, leaving `KnowledgeBattles.tsx` at ~1,950.
+The tests were written with the moves rather than deferred to Phase 7, because
+the extraction is the only moment the code is in hand and the reason it was
+untested - living inside a 5,400-line file - has just stopped being true.
+Coverage over the whole repo went 24.66% to 30.69% across the session that did
+this.
 
-**Stage B — hook extraction, only with tests behind it.** `BattleArena` (`:937-2592`) holds ~60 `useState`/`useRef` declarations, including ~15 refs that exist purely to mirror state for async callbacks. Real seams:
+**Stage B - hook extraction, only with tests behind it.** `BattleArena` is
+still ~3,100 lines and holds the mirrored-ref pattern. Real seams:
 
-- [ ] `battles/use-battle-log.ts` — the ref-based log pipeline (`logCounterRef`, `pendingLogsRef`).
-- [ ] `battles/use-live-pvp-channel.ts` — the Realtime subscription and turn resolution (the `live*Ref` cluster).
+- [ ] `battles/use-battle-log.ts` - the ref-based log pipeline
+      (`logCounterRef`, `pendingLogsRef`).
+- [ ] `battles/use-live-pvp-channel.ts` - the Realtime subscription and turn
+      resolution (the `live*Ref` cluster).
 
-**Do not attempt** a `useReducer` rewrite of the state/mirrored-ref pattern in this pass. It's the right long-term fix and the wrong thing to bundle into a cleanup PR.
+**Do not attempt** a `useReducer` rewrite of the state/mirrored-ref pattern in
+this pass. It is the right long-term fix and the wrong thing to bundle into a
+cleanup PR.
 
-**Verify:** typecheck + build green; then play a full battle at each tier — bot, ghost, and live PvP (two browser sessions) — confirming damage numbers, combo multipliers, the Gambler reveal, chat, the battle report, and that XP/rating land in the DB.
+**Verify:** typecheck + build green; then play a full battle at each tier - bot,
+ghost, and live PvP (two browser sessions) - confirming damage numbers, combo
+multipliers, the Gambler reveal, chat, the battle report, and that XP/rating
+land in the DB.
 
 ---
 

@@ -14,16 +14,7 @@ import {
 import { ForumMarkdown } from "@/components/ForumMarkdown";
 import { timeAgo } from "@/lib/time";
 import { UserLink } from "@/components/common/UserLink";
-
-interface Comment {
-  id: string;
-  user_id: string;
-  author_name: string;
-  body: string;
-  created_at: string;
-  moderation_status?: "visible" | "pending" | "hidden" | "removed" | null;
-  moderation_reason?: string | null;
-}
+import type { ForumComment } from "@/lib/forum-types";
 
 export function AnswerComments({
   answerId,
@@ -33,7 +24,7 @@ export function AnswerComments({
   isModerator: boolean;
 }) {
   const { user, isAuthenticated } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<ForumComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +37,7 @@ export function AnswerComments({
       .select("id,user_id,author_name,body,created_at,moderation_status,moderation_reason")
       .eq("answer_id", answerId)
       .order("created_at", { ascending: true });
-    setComments((data as Comment[]) || []);
+    setComments((data as ForumComment[]) || []);
     setLoading(false);
   }, [answerId]);
 

@@ -5,6 +5,9 @@ import {
   isNodeUnlocked,
   isCurrentNode,
   nextRoadNode,
+  TIER_ORDER,
+  TIER_THRESHOLDS,
+  xpToTier,
   type RoadNode,
 } from "./trophy-road-data";
 import { ECLIPTARS } from "./ecliptars";
@@ -166,5 +169,69 @@ describe("nextRoadNode", () => {
       const result = nextRoadNode(node.xp);
       if (result) expect(result.xpAway).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("TIER_THRESHOLDS", () => {
+  it("covers every tier a node can be on", () => {
+    const onNodes = new Set(ROAD_NODES.map((n) => n.tier));
+    const declared = new Set(TIER_THRESHOLDS.map((t) => t.id));
+    for (const tier of onNodes) expect(declared, tier).toContain(tier);
+  });
+
+  it("climbs, so a higher realm always costs more", () => {
+    const xp = TIER_THRESHOLDS.map((t) => t.xpRequired);
+    expect([...xp].sort((a, b) => a - b)).toEqual(xp);
+    expect(new Set(xp).size).toBe(xp.length);
+  });
+
+  it("starts at zero, so a new player is already in a realm", () => {
+    expect(TIER_THRESHOLDS[0]?.xpRequired).toBe(0);
+  });
+
+  it("names each realm once", () => {
+    const names = TIER_THRESHOLDS.map((t) => t.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("agrees with TIER_ORDER, which is derived from it", () => {
+    expect(TIER_ORDER).toEqual(TIER_THRESHOLDS.map((t) => t.id));
+  });
+
+  it("opens no realm after a node that belongs to it", () => {
+    // A node in a realm the player has not reached would render as available
+    // inside a locked tier.
+    for (const tier of TIER_THRESHOLDS) {
+      const firstNode = ROAD_NODES.find((n) => n.tier === tier.id);
+      if (firstNode) expect(firstNode.xp, tier.name).toBeGreaterThanOrEqual(tier.xpRequired);
+    }
+  });
+});
+
+describe("xpToTier", () => {
+  it("answers with the realm the player is in at every boundary", () => {
+    for (const tier of TIER_THRESHOLDS) {
+      expect(xpToTier(tier.xpRequired).name, tier.name).toBe(tier.name);
+    }
+  });
+
+  it("stays in the realm below until the next one opens", () => {
+    for (let i = 1; i < TIER_THRESHOLDS.length; i++) {
+      const below = TIER_THRESHOLDS[i - 1];
+      const tier = TIER_THRESHOLDS[i];
+      if (!below || !tier) continue;
+      expect(xpToTier(tier.xpRequired - 1).name, tier.name).toBe(below.name);
+    }
+  });
+
+  it("keeps a player above the top threshold in the top realm", () => {
+    // Read lowest-first, the loop would fall through and report the bottom one.
+    const top = TIER_THRESHOLDS[TIER_THRESHOLDS.length - 1];
+    expect(top).toBeDefined();
+    if (top) expect(xpToTier(top.xpRequired * 10).name).toBe(top.name);
+  });
+
+  it("puts a brand new player in the first realm", () => {
+    expect(xpToTier(0).name).toBe(TIER_THRESHOLDS[0]?.name);
   });
 });

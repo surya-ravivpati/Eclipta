@@ -3,6 +3,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { Tag, Loader2, MessageCircle, ArrowLeft, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { timeAgo } from "@/lib/time";
+import type { ThreadListItem } from "@/lib/forum-types";
 
 export const Route = createFileRoute("/tags/$tag")({
   head: ({ params }) => ({
@@ -14,24 +15,10 @@ export const Route = createFileRoute("/tags/$tag")({
   component: TagPage,
 });
 
-interface Thread {
-  id: string;
-  title: string;
-  body: string;
-  course: string;
-  tags: string[];
-  votes: number;
-  answer_count: number;
-  view_count: number;
-  author_name: string;
-  created_at: string;
-  solved: boolean;
-}
-
 function TagPage() {
   const { tag } = useParams({ from: "/tags/$tag" });
   const normalized = tag.toLowerCase();
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [threads, setThreads] = useState<ThreadListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,7 +30,7 @@ function TagPage() {
         .contains("tags", [normalized])
         .order("created_at", { ascending: false })
         .limit(100);
-      setThreads((data as Thread[]) ?? []);
+      setThreads((data as ThreadListItem[]) ?? []);
       setLoading(false);
     })();
   }, [normalized]);

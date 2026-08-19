@@ -1,7 +1,7 @@
 {
-  "lines": 27.16,
-  "covered": 2577,
-  "total": 9487,
+  "lines": 27.26,
+  "covered": 2586,
+  "total": 9484,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -162,7 +162,7 @@
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 1564
+      "total": 1554
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,
@@ -312,7 +312,7 @@
     "src/components/TrophyRoad.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 271
+      "total": 269
     },
     "src/config/battle-tuning.ts": {
       "pct": 100,
@@ -756,8 +756,8 @@
     },
     "src/lib/trophy-road-data.ts": {
       "pct": 100,
-      "covered": 10,
-      "total": 10
+      "covered": 19,
+      "total": 19
     },
     "src/lib/username.ts": {
       "pct": 100,

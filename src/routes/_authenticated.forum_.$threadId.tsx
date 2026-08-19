@@ -32,6 +32,7 @@ import {
 import { EyeOff, RotateCcw } from "lucide-react";
 import { timeAgo } from "@/lib/time";
 import { UserLink } from "@/components/common/UserLink";
+import type { ForumAnswer, ForumThread } from "@/lib/forum-types";
 
 export const Route = createFileRoute("/_authenticated/forum_/$threadId")({
   head: () => ({
@@ -43,43 +44,13 @@ export const Route = createFileRoute("/_authenticated/forum_/$threadId")({
   component: ThreadPage,
 });
 
-type ModerationStatus = "visible" | "pending" | "hidden" | "removed" | null;
-interface Thread {
-  id: string;
-  user_id: string;
-  author_name: string;
-  title: string;
-  body: string;
-  course: string;
-  tags: string[];
-  solved: boolean;
-  votes: number;
-  answer_count: number;
-  view_count: number;
-  created_at: string;
-  moderation_status?: ModerationStatus;
-  moderation_reason?: string | null;
-}
-interface Answer {
-  id: string;
-  thread_id: string;
-  user_id: string;
-  author_name: string;
-  body: string;
-  votes: number;
-  accepted: boolean;
-  created_at: string;
-  moderation_status?: ModerationStatus;
-  moderation_reason?: string | null;
-}
-
 function ThreadPage() {
   const { threadId } = useParams({ from: "/_authenticated/forum_/$threadId" });
   const { user } = useAuth();
   const { isModerator } = useModerator();
   const navigate = useNavigate();
-  const [thread, setThread] = useState<Thread | null>(null);
-  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [thread, setThread] = useState<ForumThread | null>(null);
+  const [answers, setAnswers] = useState<ForumAnswer[]>([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -97,8 +68,8 @@ function ThreadPage() {
         .order("accepted", { ascending: false })
         .order("votes", { ascending: false }),
     ]);
-    setThread(t as Thread | null);
-    setAnswers((a as Answer[]) || []);
+    setThread(t as ForumThread | null);
+    setAnswers((a as ForumAnswer[]) || []);
     setLoading(false);
   }, [threadId]);
 

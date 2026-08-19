@@ -31,23 +31,7 @@ import {
 import { CrisisSupport } from "@/components/moderation/CrisisSupport";
 import "@/components/moderation/crisis-support.css";
 import { timeAgo } from "@/lib/time";
-
-interface Thread {
-  id: string;
-  user_id: string;
-  author_name: string;
-  title: string;
-  body: string;
-  course: string;
-  tags: string[];
-  solved: boolean;
-  votes: number;
-  answer_count: number;
-  view_count: number;
-  created_at: string;
-  moderation_status?: "visible" | "pending" | "hidden" | "removed" | null;
-  moderation_reason?: string | null;
-}
+import type { ForumThread } from "@/lib/forum-types";
 
 const COURSES = [
   "General",
@@ -69,7 +53,7 @@ function ThreadCard({
   currentUserId,
   isModerator,
 }: {
-  thread: Thread;
+  thread: ForumThread;
   userVote: number | null;
   onVote: (dir: 1 | -1) => void;
   canDelete: boolean;
@@ -422,7 +406,7 @@ export function Forum({
 } = {}) {
   const { user, isAuthenticated } = useAuth();
   const { isModerator } = useModerator();
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [threads, setThreads] = useState<ForumThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{
     threads: number;
@@ -445,7 +429,7 @@ export function Forum({
         .limit(100),
       supabase.rpc("get_forum_stats"),
     ]);
-    setThreads((t as Thread[]) || []);
+    setThreads((t as ForumThread[]) || []);
     const row = Array.isArray(s) ? s[0] : s;
     if (row)
       setStats({

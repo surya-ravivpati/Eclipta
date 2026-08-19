@@ -29,6 +29,113 @@ export interface RoadNode {
   band?: "training" | "trials" | "ascension" | "mastery" | "summit";
 }
 
+/**
+ * Where each realm begins, and what it is called.
+ *
+ * The one place these numbers live. They were also written out in
+ * `TrophyRoad`'s `TIERS` table and again as a ladder of `if` statements in
+ * `KnowledgeBattles`'s XP leaderboard, with a comment on the latter asking a
+ * future reader to keep it "aligned with Trophy Road tier thresholds" - which
+ * is a rule a compiler can enforce and a comment cannot.
+ *
+ * The editorial copy - each realm's label and description - stays in
+ * `TrophyRoad`, which is the only thing that renders it. Only the ordering
+ * facts are shared.
+ */
+export interface TierThreshold {
+  id: TierId;
+  name: string;
+  xpRequired: number;
+}
+
+/** Typed as non-empty so "the first realm" needs no null check. */
+export const TIER_THRESHOLDS: [TierThreshold, ...TierThreshold[]] = [
+  { id: "bronze", name: "Dawn", xpRequired: 0 },
+  { id: "silver", name: "Moonrise", xpRequired: 7_500 },
+  { id: "gold", name: "Meridian", xpRequired: 20_000 },
+  { id: "diamond", name: "Penumbra", xpRequired: 43_000 },
+  { id: "platinum", name: "Umbra", xpRequired: 78_000 },
+  { id: "champion", name: "Nightfall", xpRequired: 145_000 },
+  { id: "unreal", name: "Totality", xpRequired: 265_000 },
+  { id: "god", name: "Eclipse", xpRequired: 460_000 },
+];
+
+/** Realm ids, lowest first. Derived so a new tier cannot be left out of it. */
+export const TIER_ORDER: TierId[] = TIER_THRESHOLDS.map((t) => t.id);
+
+/**
+ * The realm a player is in: the highest one whose threshold they have passed.
+ *
+ * Someone above the top threshold gets the top realm; someone at zero gets the
+ * first, because the first threshold is zero.
+ */
+export function xpToTier(xp: number): TierThreshold {
+  // Walked forwards, keeping the last realm reached, rather than searched
+  // backwards with a fallback for "found nothing". The fallback could never
+  // run - the first threshold is 0 - so it was a line no test could reach and
+  // no reader could check.
+  let reached = TIER_THRESHOLDS[0];
+  for (const tier of TIER_THRESHOLDS) {
+    if (xp >= tier.xpRequired) reached = tier;
+  }
+  return reached;
+}
+
+export interface TierMeta {
+  id: TierId;
+  name: string;
+  label: string; // serif sub-label, e.g. "Origin"
+  description: string;
+  xpRequired: number;
+}
+
+/**
+ * The eight realms trace a single eclipse - from first light, through the sun's
+ * peak, into deepening shadow, to totality and the Eclipse itself.
+ *
+ * Only the writing lives here. Each realm's name and the XP that opens it come
+ * from `TIER_THRESHOLDS`, which the XP leaderboard reads too - the two used to
+ * hold their own copies of those numbers, kept in step by a comment.
+ */
+const TIER_COPY: Record<TierId, { label: string; description: string }> = {
+  bronze: {
+    label: "First Light",
+    description: "Where the journey begins, under the first light. Learn to read the sky.",
+  },
+  silver: {
+    label: "The Waxing",
+    description: "The moon climbs and your momentum builds. Find your rhythm.",
+  },
+  gold: {
+    label: "High Noon",
+    description: "The sky at its brightest, where pressure forges precision.",
+  },
+  diamond: {
+    label: "Half-Light",
+    description: "The first shadow falls. Patterns sharpen in the dimming light.",
+  },
+  platinum: {
+    label: "Deep Shadow",
+    description: "Into true shadow. Your craft becomes a signature in the dark.",
+  },
+  champion: {
+    label: "The Long Night",
+    description: "Far from any light - the solitude of real mastery.",
+  },
+  unreal: {
+    label: "Convergence",
+    description: "The moment every path aligns and the sky goes dark. Beyond competition.",
+  },
+  god: {
+    label: "The Threshold",
+    description: "The corona's edge, where Newton and Ecliptadon wait at the edge of knowing.",
+  },
+};
+
+export const TIERS: Record<TierId, TierMeta> = Object.fromEntries(
+  TIER_THRESHOLDS.map((t) => [t.id, { ...t, ...TIER_COPY[t.id] }]),
+) as Record<TierId, TierMeta>;
+
 // Current player XP (will come from DB later)
 export const PLAYER_XP = 4200;
 

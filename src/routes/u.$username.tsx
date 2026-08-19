@@ -23,6 +23,7 @@ import type { MonsterArchetypeKey } from "@/lib/trophy-road-data";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import type { ArchetypeId } from "@/components/battles/types";
+import type { ThreadLinkItem } from "@/lib/forum-types";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({
@@ -51,20 +52,12 @@ interface Ecliptar {
   ecliptar_slug: string;
   archetype: string;
 }
-interface Thread {
-  id: string;
-  title: string;
-  created_at: string;
-  votes: number;
-  answer_count: number;
-}
-
 function PublicProfilePage() {
   const { username } = useParams({ from: "/u/$username" });
   const { user } = useAuth();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [ecliptars, setEcliptars] = useState<Ecliptar[]>([]);
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [threads, setThreads] = useState<ThreadLinkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -115,7 +108,7 @@ function PublicProfilePage() {
           : Promise.resolve({ data: null }),
       ]);
       setEcliptars((e as Ecliptar[]) || []);
-      setThreads((t as Thread[]) || []);
+      setThreads((t as ThreadLinkItem[]) || []);
       setFollowerCount(fCount ?? 0);
       setIsFollowing(!!followRow?.data);
       setLoading(false);

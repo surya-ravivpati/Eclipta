@@ -101,6 +101,7 @@ import {
   getActionDifficultyLevel,
   getQuestionTime,
   applyDefense,
+  getEffectiveDamage,
   absorbWithShield,
   getHealShield,
   healAfterFalloff,
@@ -110,6 +111,7 @@ import {
   rollMissPenalty,
 } from "./battles/stat-mechanics";
 import { DAMAGE_TUNING, ULTIMATE_TUNING } from "@/config/battle-tuning";
+import { xpToTier } from "@/lib/trophy-road-data";
 import { useTranslation } from "@/i18n/use-translation";
 import { getEmote, isEmoteId } from "@/config/emotes";
 import { EmoteMark } from "./emotes/EmoteMark";
@@ -216,16 +218,30 @@ const CHARGE_TAG: Record<string, string> = {
   god: "finisher",
 };
 
-/** Base damage shown on the action buttons - live, so ramps read as they climb. */
-function displayDamage(arch: Archetype, correctCount: number): string {
+/**
+ * Base damage shown on the action buttons - live, so ramps read as they climb.
+ *
+ * The ramp is asked of `getEffectiveDamage` rather than recomputed here.
+ * `allowCrit: false` is what that option was added for: a preview must not
+ * roll a crit, or the button would flicker between two numbers and promise one
+ * of them.
+ *
+ * The Speedster is the one case it cannot answer, because the bonus depends on
+ * how fast the answer comes and the question has not been asked yet - so the
+ * button shows the range instead of a number.
+ */
+function displayDamage(arch: Archetype, correctCount: number, action: Action = "attack"): string {
   if (arch.damageIsTimeScaled) {
-    return `${arch.baseDamage}-${arch.baseDamage + DAMAGE_TUNING.speedster.maxSpeedBonus} DMG`;
+    const floor = getEffectiveDamage(arch, { action, allowCrit: false }).damage;
+    const ceiling = Math.floor(
+      floor +
+        DAMAGE_TUNING.speedster.maxSpeedBonus *
+          (action === "charge" ? DAMAGE_TUNING.chargeMultiplier : 1),
+    );
+    return `${floor}-${ceiling} DMG`;
   }
-  if (arch.damageRamps) {
-    const { damagePerAnswer, damageCap } = DAMAGE_TUNING.accelerator;
-    return `${arch.baseDamage + Math.min(correctCount * damagePerAnswer, damageCap)} DMG ^`;
-  }
-  return `${arch.baseDamage} DMG`;
+  const { damage } = getEffectiveDamage(arch, { action, correctCount, allowCrit: false });
+  return `${damage} DMG${arch.damageRamps ? " ^" : ""}`;
 }
 
 function getActionDesc(
@@ -242,13 +258,10 @@ function getActionDesc(
       if (arch.healAmount === null) return "Can't heal | builds Focus"; // Tank
       return `+${arch.healAmount} HP${tag(HEAL_TAG)}`;
     }
-    case "charge": {
-      // Charge is chargeMultiplierx whatever Attack would deal right now.
-      const scaled = displayDamage(arch, correctCount).replace(/\d+/g, (n) =>
-        String(Math.floor(Number(n) * DAMAGE_TUNING.chargeMultiplier)),
-      );
-      return `${scaled}${tag(CHARGE_TAG)}`;
-    }
+    case "charge":
+      // Asked as a charge rather than multiplying the digits of the attack
+      // string, which rounded twice and could not see the cap it was scaling.
+      return `${displayDamage(arch, correctCount, "charge")}${tag(CHARGE_TAG)}`;
     case "ultimate":
       return ultimate ? ultimate.tag : "No Ecliptar equipped";
   }
@@ -295,20 +308,6 @@ interface LiveTurnActionRow {
   momentum: number;
   time_spent: number;
   question?: unknown;
-}
-
-// Aligned with Trophy Road tier thresholds in src/lib/trophy-road-data.ts
-// XP leaderboard shows the player's Expedition realm (the discovery loop),
-// matching the re-skinned Trophy Road. Thresholds mirror the TIERS xpRequired.
-function xpToTier(xp: number): string {
-  if (xp >= 460000) return "Eclipse";
-  if (xp >= 265000) return "Totality";
-  if (xp >= 145000) return "Nightfall";
-  if (xp >= 78000) return "Umbra";
-  if (xp >= 43000) return "Penumbra";
-  if (xp >= 20000) return "Meridian";
-  if (xp >= 7500) return "Moonrise";
-  return "Dawn";
 }
 
 const tierColors: Record<string, string> = {
@@ -4524,14 +4523,16 @@ function BattleArena() {
         {archetype === "accelerator" &&
           (() => {
             const arch = getArch("accelerator");
-            const { damagePerAnswer, damageCap, scorePerAnswer, scoreCap } =
-              DAMAGE_TUNING.accelerator;
+            const { scorePerAnswer, scoreCap } = DAMAGE_TUNING.accelerator;
             // The ramp caps at +16 DMG (8 answers) and +35% score (18 answers) -
             // the bar tracks the slower of the two so it fills as the class matures.
             const answersToCap = Math.ceil(scoreCap / scorePerAnswer);
             const scalePct = Math.min(correctCount / answersToCap, 1);
-            const effectiveDmg =
-              arch.baseDamage + Math.min(correctCount * damagePerAnswer, damageCap);
+            const effectiveDmg = getEffectiveDamage(arch, {
+              action: "attack",
+              correctCount,
+              allowCrit: false,
+            }).damage;
             const effectiveScore = Math.round(
               Math.min(correctCount * scorePerAnswer, scoreCap) * 100,
             );
@@ -4869,7 +4870,7 @@ function LeaderboardCard() {
           userId: r.user_id,
           name: r.username || `learner_${r.user_id.slice(0, 6)}`,
           isUser: r.user_id === myId,
-          tier: xpToTier(r.xp ?? 0),
+          tier: xpToTier(r.xp ?? 0).name,
           score: r.xp ?? 0,
         })),
       );

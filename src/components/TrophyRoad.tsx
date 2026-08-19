@@ -7,6 +7,8 @@ import {
   ROAD_NODES as RAW_NODES,
   type TierId,
   type MonsterArchetypeKey,
+  TIER_ORDER,
+  TIERS,
   type RoadNode as BaseRoadNode,
 } from "@/lib/trophy-road-data";
 import { usePlayerXp, useOwnedEcliptars } from "@/hooks/use-player-xp";
@@ -27,17 +29,6 @@ import { claimedChestsQueryKey } from "@/hooks/use-owned-emotes";
 import { EmoteMark } from "./emotes/EmoteMark";
 import "./TrophyRoad.css";
 
-const TIER_ORDER: TierId[] = [
-  "bronze",
-  "silver",
-  "gold",
-  "diamond",
-  "platinum",
-  "champion",
-  "unreal",
-  "god",
-];
-
 type ArchetypeKey = MonsterArchetypeKey;
 interface RoadNode extends BaseRoadNode {
   unlocked: boolean;
@@ -45,75 +36,6 @@ interface RoadNode extends BaseRoadNode {
 }
 
 /* -- Tier metadata (XP + editorial copy) ---------------------- */
-
-interface TierMeta {
-  id: TierId;
-  name: string;
-  label: string; // serif sub-label, e.g. "Origin"
-  description: string;
-  xpRequired: number;
-}
-
-// The eight realms trace a single eclipse - from first light, through the sun's
-// peak, into deepening shadow, to totality and the Eclipse itself.
-const TIERS: Record<TierId, TierMeta> = {
-  bronze: {
-    id: "bronze",
-    name: "Dawn",
-    label: "First Light",
-    description: "Where the journey begins, under the first light. Learn to read the sky.",
-    xpRequired: 0,
-  },
-  silver: {
-    id: "silver",
-    name: "Moonrise",
-    label: "The Waxing",
-    description: "The moon climbs and your momentum builds. Find your rhythm.",
-    xpRequired: 7500,
-  },
-  gold: {
-    id: "gold",
-    name: "Meridian",
-    label: "High Noon",
-    description: "The sky at its brightest, where pressure forges precision.",
-    xpRequired: 20000,
-  },
-  diamond: {
-    id: "diamond",
-    name: "Penumbra",
-    label: "Half-Light",
-    description: "The first shadow falls. Patterns sharpen in the dimming light.",
-    xpRequired: 43000,
-  },
-  platinum: {
-    id: "platinum",
-    name: "Umbra",
-    label: "Deep Shadow",
-    description: "Into true shadow. Your craft becomes a signature in the dark.",
-    xpRequired: 78000,
-  },
-  champion: {
-    id: "champion",
-    name: "Nightfall",
-    label: "The Long Night",
-    description: "Far from any light - the solitude of real mastery.",
-    xpRequired: 145000,
-  },
-  unreal: {
-    id: "unreal",
-    name: "Totality",
-    label: "Convergence",
-    description: "The moment every path aligns and the sky goes dark. Beyond competition.",
-    xpRequired: 265000,
-  },
-  god: {
-    id: "god",
-    name: "Eclipse",
-    label: "The Threshold",
-    description: "The corona's edge, where Newton and Ecliptadon wait at the edge of knowing.",
-    xpRequired: 460000,
-  },
-};
 
 /* -- Archetypes ---------------------------------------------- */
 

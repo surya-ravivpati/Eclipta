@@ -26,3 +26,17 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 window.scrollTo = vi.fn();
+
+// Framer Motion's `whileInView` observes intersections, which jsdom does not
+// implement - without this every component using it throws on mount rather
+// than simply not animating.
+class NoopIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = "";
+  readonly thresholds: readonly number[] = [];
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+  takeRecords = vi.fn(() => []);
+}
+vi.stubGlobal("IntersectionObserver", NoopIntersectionObserver);

@@ -1,6 +1,6 @@
 {
-  "lines": 27.84,
-  "covered": 2643,
+  "lines": 30.23,
+  "covered": 2870,
   "total": 9491,
   "newFileBar": 60,
   "files": {
@@ -34,15 +34,30 @@
       "covered": 2,
       "total": 6
     },
+    "src/components/battles/ArenaOverlays.tsx": {
+      "pct": 100,
+      "covered": 8,
+      "total": 8
+    },
     "src/components/battles/audio.ts": {
       "pct": 100,
       "covered": 30,
       "total": 30
     },
+    "src/components/battles/BattleChat.tsx": {
+      "pct": 100,
+      "covered": 35,
+      "total": 35
+    },
     "src/components/battles/BattleIntro.tsx": {
       "pct": 0,
       "covered": 0,
       "total": 9
+    },
+    "src/components/battles/BattleLog.tsx": {
+      "pct": 94.73,
+      "covered": 18,
+      "total": 19
     },
     "src/components/battles/BattleReport.tsx": {
       "pct": 0,
@@ -59,6 +74,11 @@
       "covered": 0,
       "total": 51
     },
+    "src/components/battles/DailyChallengeCard.tsx": {
+      "pct": 94.44,
+      "covered": 51,
+      "total": 54
+    },
     "src/components/battles/DraftDialog.tsx": {
       "pct": 0,
       "covered": 0,
@@ -69,10 +89,20 @@
       "covered": 63,
       "total": 64
     },
+    "src/components/battles/GamblerReveal.tsx": {
+      "pct": 98.07,
+      "covered": 51,
+      "total": 52
+    },
     "src/components/battles/GameModeSelectDialog.tsx": {
       "pct": 0,
       "covered": 0,
       "total": 5
+    },
+    "src/components/battles/LeaderboardCard.tsx": {
+      "pct": 87.93,
+      "covered": 51,
+      "total": 58
     },
     "src/components/battles/questions.ts": {
       "pct": 100,
@@ -83,6 +113,11 @@
       "pct": 84.48,
       "covered": 147,
       "total": 174
+    },
+    "src/components/battles/ResourceBars.tsx": {
+      "pct": 100,
+      "covered": 10,
+      "total": 10
     },
     "src/components/battles/stat-mechanics.ts": {
       "pct": 100,
@@ -177,7 +212,7 @@
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 1504
+      "total": 1268
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,
@@ -600,8 +635,8 @@
       "total": 24
     },
     "src/lib/daily-challenge.ts": {
-      "pct": 0,
-      "covered": 0,
+      "pct": 100,
+      "covered": 3,
       "total": 3
     },
     "src/lib/daily-streak.ts": {

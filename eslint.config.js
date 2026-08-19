@@ -377,7 +377,6 @@ export default tseslint.config(
       // are the thing it detects), reward and brand emoji, mathematical
       // notation, and the (c) sign. Anything NOT on this list is still held to
       // ASCII, which is what stops the drift the rule exists to catch.
-      "src/components/KnowledgeBattles.tsx",
       "src/components/SiteFooter.tsx",
       "src/components/auth/AuthForm.tsx",
       "src/components/battles/ai-brain.ts",

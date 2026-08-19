@@ -1,11 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Forum } from "@/components/Forum";
-import { getCourseBySlug } from "@/lib/certified-courses";
+import { findCertifiedCourse } from "@/lib/certified-courses";
 
 export const Route = createFileRoute("/_authenticated/certified/$slug/forum")({
   loader: ({ params }) => {
-    const course = getCourseBySlug(params.slug);
+    const course = findCertifiedCourse(params.slug);
     if (!course) throw notFound();
     return { course };
   },

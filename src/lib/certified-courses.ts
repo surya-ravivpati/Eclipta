@@ -182,6 +182,15 @@ export const CERTIFIED_COURSES: CertifiedCourse[] = [
   },
 ];
 
-export function getCourseBySlug(slug: string): CertifiedCourse | undefined {
+/**
+ * A certified course from the static catalogue in this file.
+ *
+ * Named for the catalogue rather than "by slug" because
+ * `repositories/courses.ts` exports a `getCourseBySlug` too, which asks
+ * Postgres about a user-authored course and returns a different shape. Two
+ * identically-named functions imported from different modules in the same
+ * codebase is a mistake waiting for whoever autocompletes the wrong one.
+ */
+export function findCertifiedCourse(slug: string): CertifiedCourse | undefined {
   return CERTIFIED_COURSES.find((c) => c.slug === slug);
 }

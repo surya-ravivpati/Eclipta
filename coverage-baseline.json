@@ -1,7 +1,7 @@
 {
-  "lines": 27.26,
-  "covered": 2586,
-  "total": 9484,
+  "lines": 27.33,
+  "covered": 2594,
+  "total": 9491,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -162,7 +162,7 @@
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 1554
+      "total": 1553
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,
@@ -316,8 +316,8 @@
     },
     "src/config/battle-tuning.ts": {
       "pct": 100,
-      "covered": 25,
-      "total": 25
+      "covered": 33,
+      "total": 33
     },
     "src/config/emotes.ts": {
       "pct": 100,

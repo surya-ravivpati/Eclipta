@@ -13,7 +13,7 @@ import {
   Trophy,
   Lightbulb,
 } from "lucide-react";
-import { getCourseBySlug, type CertifiedCourse } from "@/lib/certified-courses";
+import { findCertifiedCourse, type CertifiedCourse } from "@/lib/certified-courses";
 import { useAuth } from "@/hooks/use-auth";
 import { syncCourseProgress } from "@/lib/course-progress";
 import { z } from "zod";
@@ -28,7 +28,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/certified/$slug/learn")({
   validateSearch: (s) => searchSchema.parse(s),
   loader: ({ params }) => {
-    const course = getCourseBySlug(params.slug);
+    const course = findCertifiedCourse(params.slug);
     if (!course) throw notFound();
     return { course };
   },

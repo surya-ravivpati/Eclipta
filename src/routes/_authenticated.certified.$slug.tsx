@@ -12,7 +12,7 @@ import {
   PlayCircle,
   MessagesSquare,
 } from "lucide-react";
-import { getCourseBySlug } from "@/lib/certified-courses";
+import { findCertifiedCourse } from "@/lib/certified-courses";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { enrollInCourse, isEnrolled as isEnrolledInCourse } from "@/repositories/courses";
@@ -20,7 +20,7 @@ import { enrollInCourse, isEnrolled as isEnrolledInCourse } from "@/repositories
 export const Route = createFileRoute("/_authenticated/certified/$slug")({
   component: CourseDetail,
   loader: ({ params }) => {
-    const course = getCourseBySlug(params.slug);
+    const course = findCertifiedCourse(params.slug);
     if (!course) throw notFound();
     return { course };
   },

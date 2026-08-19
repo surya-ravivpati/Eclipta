@@ -24,6 +24,7 @@ import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerStanding } from "@/repositories/battles";
+import { UNRATED_RATING } from "@/config/battle-tuning";
 
 export interface PlayerRatingState {
   rating: number;
@@ -41,8 +42,8 @@ export interface UsePlayerRatingResult extends PlayerRatingState {
 }
 
 const DEFAULT: Omit<PlayerRatingState, "loading"> = {
-  rating: 1000,
-  peakRating: 1000,
+  rating: UNRATED_RATING,
+  peakRating: UNRATED_RATING,
   wins: 0,
   losses: 0,
   ranked: false,

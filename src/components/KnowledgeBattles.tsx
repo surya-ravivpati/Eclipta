@@ -110,7 +110,13 @@ import {
   rollCopiedPassive,
   rollMissPenalty,
 } from "./battles/stat-mechanics";
-import { DAMAGE_TUNING, ULTIMATE_TUNING } from "@/config/battle-tuning";
+import {
+  actionScoreFor,
+  comboThresholdFor,
+  DAMAGE_TUNING,
+  ULTIMATE_TUNING,
+  UNRATED_RATING,
+} from "@/config/battle-tuning";
 import { xpToTier } from "@/lib/trophy-road-data";
 import { useTranslation } from "@/i18n/use-translation";
 import { getEmote, isEmoteId } from "@/config/emotes";
@@ -548,7 +554,7 @@ function FighterCard({
   showHp?: boolean;
 }) {
   const arch = archetype ? ARCHETYPES[archetype] : null;
-  const comboThreshold = archetype === "fulcrum" ? 2 : 3;
+  const comboThreshold = comboThresholdFor(archetype);
 
   // In-battle creature art. Falls back to the Lucide icon if the sprite is
   // missing or fails to load; reset when the fighter's sprite changes.
@@ -2130,7 +2136,7 @@ function BattleArena() {
         ? battle.opponent_archetype
         : battle.challenger_archetype) as ArchetypeId,
       opponentName: prof?.username ?? `Player_${oppId.slice(0, 6)}`,
-      opponentRating: rating?.rating ?? 1000,
+      opponentRating: rating?.rating ?? UNRATED_RATING,
       iAmChallenger,
       opponentUserId: oppId,
     });
@@ -3047,11 +3053,7 @@ function BattleArena() {
           });
         }
 
-        setTotalScore(
-          (prev) =>
-            prev +
-            (currentAction === "charge" ? 150 : currentAction === "attack" ? 100 : 75) * scoreMult,
-        );
+        setTotalScore((prev) => prev + actionScoreFor(currentAction) * scoreMult);
       } else {
         setMomentum(0);
         sfxBreak();
@@ -3942,7 +3944,7 @@ function BattleArena() {
 
       setOpponentType("live");
       opponentTypeRef.current = "live";
-      opponentRatingRef.current = opts.opponentRating ?? 1000;
+      opponentRatingRef.current = opts.opponentRating ?? UNRATED_RATING;
       setPvpBattleId(opts.battleId);
 
       iAmChallengerRef.current = opts.iAmChallenger === true;

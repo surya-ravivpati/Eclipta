@@ -11,6 +11,7 @@ import type { playerRatings, StoredQuestionRecord } from "@/db/schema/battles";
 import type { ArchetypeId } from "@/components/battles/types";
 import type { Json, PvpMatchAttempt } from "@/integrations/supabase/database";
 import type { ArchetypeMastery } from "@/lib/archetype-mastery";
+import { UNRATED_RATING } from "@/config/battle-tuning";
 
 export type PlayerRatingRow = InferSelectModel<typeof playerRatings>;
 
@@ -56,8 +57,8 @@ export async function getPlayerStanding(userId: string): Promise<PlayerStanding 
   } | null;
   if (!d) return null;
   return {
-    rating: d.rating ?? 1000,
-    peakRating: d.peak_rating ?? 1000,
+    rating: d.rating ?? UNRATED_RATING,
+    peakRating: d.peak_rating ?? UNRATED_RATING,
     wins: d.wins ?? 0,
     losses: d.losses ?? 0,
     ranked: d.ranked ?? false,

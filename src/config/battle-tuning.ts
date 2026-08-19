@@ -28,6 +28,29 @@ export const damageTuningSchema = z.object({
   /** Charge multiplies base damage by this before other bonuses. */
   chargeMultiplier: z.number().positive(),
   /**
+   * Score awarded per correct answer, by action, before the streak multiplier.
+   *
+   * The whole score economy, which used to sit inline in a ternary inside the
+   * turn resolver. Charge pays more than Attack because it costs a turn of
+   * setup; Defend pays least because it buys survival instead.
+   */
+  actionScore: z.object({
+    charge: z.number().positive(),
+    attack: z.number().positive(),
+    other: z.number().positive(),
+  }),
+  /**
+   * How many correct answers in a row light the combo marker.
+   *
+   * The Fulcrum reaches it a step sooner - that is its whole advantage in the
+   * momentum economy, and it used to be a bare `archetype === "fulcrum" ? 2 : 3`
+   * halfway down a render function.
+   */
+  comboThreshold: z.object({
+    default: z.number().int().positive(),
+    fulcrum: z.number().int().positive(),
+  }),
+  /**
    * Crit chance is flat across the whole roster — archetypes differ in crit
    * *power* (`critBonus` on the stat sheet), not in how often they crit.
    */
@@ -101,8 +124,22 @@ export const damageTuningSchema = z.object({
 
 export type DamageTuning = z.infer<typeof damageTuningSchema>;
 
+/** Score for one correct answer, by the action it was spent on. */
+export function actionScoreFor(action: string): number {
+  const { charge, attack, other } = DAMAGE_TUNING.actionScore;
+  return action === "charge" ? charge : action === "attack" ? attack : other;
+}
+
+/** How many answers in a row light the combo marker for this archetype. */
+export function comboThresholdFor(archetype: string | null | undefined): number {
+  const { default: standard, fulcrum } = DAMAGE_TUNING.comboThreshold;
+  return archetype === "fulcrum" ? fulcrum : standard;
+}
+
 export const DAMAGE_TUNING: DamageTuning = damageTuningSchema.parse({
   chargeMultiplier: 1.8,
+  actionScore: { charge: 150, attack: 100, other: 75 },
+  comboThreshold: { default: 3, fulcrum: 2 },
   critChance: 0.1,
   maxDefense: 0.9,
   // Second heal in a row is worth 60%, third 36%, fourth 22%, then the floor.
@@ -233,6 +270,17 @@ const ratingLeaguesSchema = z
     "leagues must be contiguous — each floor must equal the previous league's ceiling",
   );
 
+/**
+ * The rating an account starts at, and the one shown when none is stored.
+ *
+ * Nine TypeScript sites wrote this out as a bare `?? 1000`, and five migrations
+ * declare it as a column default. Changing the seed used to mean finding all
+ * nine; now it means changing this and the migration that follows.
+ *
+ * It has to stay inside the first league's range, or a new player would open
+ * on a league they had not reached - which the check below enforces at import
+ * rather than leaving to whoever next retunes the ladder.
+ */
 export const RATING_LEAGUES: RatingLeague[] = ratingLeaguesSchema.parse([
   { id: "bronze", name: "Bronze", floor: 0, ceiling: 1050 },
   { id: "silver", name: "Silver", floor: 1050, ceiling: 1200 },
@@ -242,6 +290,29 @@ export const RATING_LEAGUES: RatingLeague[] = ratingLeaguesSchema.parse([
   { id: "champion", name: "Champion", floor: 1800, ceiling: 2000 },
   { id: "unreal", name: "Unreal", floor: 2000, ceiling: null },
 ] satisfies RatingLeague[]);
+
+/** True when a rating falls inside the first league - see `UNRATED_RATING`. */
+export function isOpeningLeagueRating(rating: number): boolean {
+  const opening = RATING_LEAGUES[0];
+  if (!opening) return false;
+  return rating >= opening.floor && (opening.ceiling === null || rating < opening.ceiling);
+}
+
+/**
+ * The rating an account starts at, and the one shown when none is stored.
+ *
+ * Nine TypeScript sites wrote this out as a bare `?? 1000`, and five migrations
+ * declare it as a column default. Changing the seed used to mean finding all
+ * nine; now it means changing this and the migration that follows.
+ *
+ * Checked at import rather than trusted: a seed outside the opening league
+ * would show a brand new player a rank they had not earned.
+ */
+export const UNRATED_RATING: number = z
+  .number()
+  .int()
+  .refine(isOpeningLeagueRating, "must sit inside the opening league's range")
+  .parse(1000);
 
 // ── Trophy Road chest rewards ────────────────────────────────────────────────
 // Used by src/lib/xp-service.ts. Bonus XP used to be declared twice — once as

@@ -7,6 +7,10 @@ import {
   QUESTION_TIMER,
   RATING_LEAGUES,
   ratingLeagueSchema,
+  UNRATED_RATING,
+  actionScoreFor,
+  comboThresholdFor,
+  isOpeningLeagueRating,
 } from "./battle-tuning";
 
 /**
@@ -159,5 +163,90 @@ describe("CHEST_REWARDS", () => {
     // tier), only that nothing is zero or negative - covered above - and
     // that the schema itself enforces positivity.
     expect(amounts.every((n) => Number.isInteger(n))).toBe(true);
+  });
+});
+
+describe("actionScore", () => {
+  it("pays Charge more than Attack, and Attack more than the rest", () => {
+    // Charge costs a turn of setup, so it has to be worth more than spending
+    // that turn attacking. Defend pays least because it buys survival instead.
+    const { charge, attack, other } = DAMAGE_TUNING.actionScore;
+    expect(charge).toBeGreaterThan(attack);
+    expect(attack).toBeGreaterThan(other);
+  });
+
+  it("maps each action to its award, and everything else to the floor", () => {
+    const { charge, attack, other } = DAMAGE_TUNING.actionScore;
+    expect(actionScoreFor("charge")).toBe(charge);
+    expect(actionScoreFor("attack")).toBe(attack);
+    expect(actionScoreFor("defend")).toBe(other);
+    // Ultimate and any action added later fall to the floor rather than to
+    // undefined, which would make the running score NaN for the rest of the
+    // match.
+    expect(actionScoreFor("ultimate")).toBe(other);
+  });
+
+  it("rejects a zero or negative award", () => {
+    expect(() =>
+      damageTuningSchema.parse({
+        ...DAMAGE_TUNING,
+        actionScore: { ...DAMAGE_TUNING.actionScore, attack: 0 },
+      }),
+    ).toThrow();
+  });
+});
+
+describe("comboThreshold", () => {
+  it("lets the Fulcrum reach a combo sooner than anyone else", () => {
+    // That gap is the Fulcrum's whole advantage in the momentum economy.
+    // Equal values would silently remove it.
+    expect(DAMAGE_TUNING.comboThreshold.fulcrum).toBeLessThan(DAMAGE_TUNING.comboThreshold.default);
+  });
+
+  it("answers for an archetype, and for not having picked one yet", () => {
+    expect(comboThresholdFor("fulcrum")).toBe(DAMAGE_TUNING.comboThreshold.fulcrum);
+    expect(comboThresholdFor("tank")).toBe(DAMAGE_TUNING.comboThreshold.default);
+    expect(comboThresholdFor(null)).toBe(DAMAGE_TUNING.comboThreshold.default);
+    expect(comboThresholdFor(undefined)).toBe(DAMAGE_TUNING.comboThreshold.default);
+  });
+
+  it("counts whole answers", () => {
+    expect(() =>
+      damageTuningSchema.parse({
+        ...DAMAGE_TUNING,
+        comboThreshold: { default: 2.5, fulcrum: 2 },
+      }),
+    ).toThrow();
+  });
+
+  it("never lights on the very first answer", () => {
+    // A combo that fires every turn is not a combo.
+    expect(DAMAGE_TUNING.comboThreshold.fulcrum).toBeGreaterThan(1);
+  });
+});
+
+describe("UNRATED_RATING", () => {
+  it("sits inside the opening league", () => {
+    // A new player opening on a league they have not reached would show a rank
+    // they did not earn. The module throws at import if this is ever untrue;
+    // this states the rule where a reader will find it.
+    const opening = RATING_LEAGUES[0];
+    expect(opening).toBeDefined();
+    if (!opening) return;
+    expect(UNRATED_RATING).toBeGreaterThanOrEqual(opening.floor);
+    expect(UNRATED_RATING).toBeLessThan(opening.ceiling ?? Infinity);
+  });
+
+  it("knows a rating above the opening league is not one", () => {
+    const opening = RATING_LEAGUES[0];
+    expect(opening).toBeDefined();
+    if (!opening || opening.ceiling === null) return;
+    expect(isOpeningLeagueRating(opening.ceiling)).toBe(false);
+    expect(isOpeningLeagueRating(opening.ceiling - 1)).toBe(true);
+    expect(isOpeningLeagueRating(opening.floor - 1)).toBe(false);
+  });
+
+  it("is a whole number, since ratings are displayed as integers", () => {
+    expect(Number.isInteger(UNRATED_RATING)).toBe(true);
   });
 });

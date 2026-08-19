@@ -13,6 +13,7 @@ import {
   leavePvpQueue,
 } from "@/repositories/battles";
 import { getUsername } from "@/repositories/profile";
+import { UNRATED_RATING } from "@/config/battle-tuning";
 
 export type OpponentType = "live" | "bot";
 
@@ -75,7 +76,7 @@ async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<Mat
       // The queue only ever holds archetypes this client wrote, so the
       // server's `text` column is an ArchetypeId by construction.
       opponentArchetype: attempt.opponent_archetype as ArchetypeId,
-      opponentRating: attempt.opponent_rating ?? 1000,
+      opponentRating: attempt.opponent_rating ?? UNRATED_RATING,
       pvpBattleId: attempt.battle_id,
       pvpChannelName: `pvp-battle:${attempt.battle_id}`,
       iAmChallenger: true,
@@ -102,7 +103,7 @@ async function tryLiveMatch(archetype: ArchetypeId, rating: number): Promise<Mat
       opponentUserId: oppId,
       // Written by this client on enqueue - see the note in Case 1.
       opponentArchetype: oppArch as ArchetypeId,
-      opponentRating: oppRating?.rating ?? 1000,
+      opponentRating: oppRating?.rating ?? UNRATED_RATING,
       pvpBattleId: b.id,
       pvpChannelName: `pvp-battle:${b.id}`,
       iAmChallenger: isChallenger,

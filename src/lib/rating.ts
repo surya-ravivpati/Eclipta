@@ -4,7 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { getPlayerRating } from "@/repositories/battles";
-import { RATING_LEAGUES, type RatingLeague } from "@/config/battle-tuning";
+import { RATING_LEAGUES, UNRATED_RATING, type RatingLeague } from "@/config/battle-tuning";
 
 export type { RatingLeague };
 
@@ -15,7 +15,12 @@ export interface PlayerRating {
   losses: number;
 }
 
-const UNRATED: PlayerRating = { rating: 1000, peakRating: 1000, wins: 0, losses: 0 };
+const UNRATED: PlayerRating = {
+  rating: UNRATED_RATING,
+  peakRating: UNRATED_RATING,
+  wins: 0,
+  losses: 0,
+};
 
 export async function fetchPlayerRating(): Promise<PlayerRating> {
   const {

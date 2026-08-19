@@ -27,6 +27,7 @@ import { useTranslation } from "@/i18n/use-translation";
 import { useAppReducedMotion } from "@/hooks/use-reduced-motion";
 import { progressLabel } from "@/lib/a11y";
 import { cn } from "@/lib/utils";
+import { UNRATED_RATING } from "@/config/battle-tuning";
 
 /**
  * Mission Control - the authenticated home.
@@ -403,7 +404,7 @@ function SmartInsights({ data }: { data: DashboardData }) {
 
 function CompetitivePanel({ data }: { data: DashboardData }) {
   const { t } = useTranslation();
-  const rating = data.rating.rating ?? 1000;
+  const rating = data.rating.rating ?? UNRATED_RATING;
   const wins = data.rating.wins ?? 0;
   const losses = data.rating.losses ?? 0;
   const games = wins + losses;

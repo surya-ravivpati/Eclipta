@@ -81,7 +81,6 @@ import {
   autoDraftTeam,
   type DraftTeam,
 } from "@/lib/battle-modes/draft";
-import { generateQuestion } from "./battles/questions";
 import {
   tickEffects,
   consumeUse,
@@ -1579,7 +1578,6 @@ function BattleArena() {
   // because the async turn callbacks (bot, PvP resolution) read them
   // outside React's render cycle.
   const [ultimateCharge, setUltimateCharge] = useState(0);
-  const [opponentCharge, setOpponentCharge] = useState(0);
   const [playerEffects, setPlayerEffects] = useState<ActiveEffect[]>([]);
   const [opponentEffects, setOpponentEffects] = useState<ActiveEffect[]>([]);
   const [ultimateCast, setUltimateCast] = useState<{
@@ -1859,9 +1857,6 @@ function BattleArena() {
     ultimateChargeRef.current = ultimateCharge;
   }, [ultimateCharge]);
   useEffect(() => {
-    opponentChargeRef.current = opponentCharge;
-  }, [opponentCharge]);
-  useEffect(() => {
     playerEffectsRef.current = playerEffects;
   }, [playerEffects]);
   useEffect(() => {
@@ -1879,7 +1874,6 @@ function BattleArena() {
     ultimateChargeRef.current = 0;
     setUltimateCharge(0);
     opponentChargeRef.current = 0;
-    setOpponentCharge(0);
     playerEffectsRef.current = [];
     setPlayerEffects([]);
     opponentEffectsRef.current = [];
@@ -2250,7 +2244,6 @@ function BattleArena() {
       } else {
         const next = chargeAfterCast;
         opponentChargeRef.current = next;
-        setOpponentCharge(next);
         opponentCooldownRef.current = outcome.resetCooldowns ? 0 : ULTIMATE_TUNING.cooldownTurns;
       }
 
@@ -3565,7 +3558,6 @@ function BattleArena() {
             opponentChargeRef.current + ULTIMATE_TUNING.chargePerCorrectAnswer,
           );
           opponentChargeRef.current = nextCharge;
-          setOpponentCharge(nextCharge);
         }
         if (opponentCooldownRef.current > 0) opponentCooldownRef.current -= 1;
 
@@ -3667,7 +3659,10 @@ function BattleArena() {
 
     const level = getActionDifficultyLevel(arch, action);
     const category = levelToCategory(level);
-    let q = generateQuestion(category);
+    // The question comes from the server, which also keeps the answer. A
+    // locally generated one used to be built here first and overwritten a few
+    // lines later without ever being read.
+    let q: MathQuestion;
     let challengeId: string | null = null;
     liveChallengeIdRef.current = null;
     liveChallengeAnswerRef.current = null;

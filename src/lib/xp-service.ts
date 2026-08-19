@@ -6,8 +6,6 @@ import { checkMilestones, fireMilestoneToasts, markExistingMilestones } from "./
 import { ROAD_NODES } from "./trophy-road-data";
 import { CHEST_REWARDS } from "@/config/battle-tuning";
 import {
-  adminGrantXpRpc,
-  adminSetXpRpc,
   awardBattleXpRpc,
   awardVerifiedBattleXpRpc,
   awardXpRpc,
@@ -121,20 +119,4 @@ export async function fetchClaimedChestNodeIds(): Promise<Set<number>> {
   } = await supabase.auth.getUser();
   if (!user) return new Set();
   return new Set(await getClaimedChestNodeIds(user.id));
-}
-
-/**
- * Admin: grant XP to a user by ID. Increments their current XP.
- * Returns the new total XP, or null on error.
- */
-export async function adminGrantXp(userId: string, amount: number): Promise<number | null> {
-  return adminGrantXpRpc(userId, amount);
-}
-
-/**
- * Admin: set a user's XP to a specific value.
- * Returns the new total XP, or null on error.
- */
-export async function adminSetXp(userId: string, xpAmount: number): Promise<number | null> {
-  return adminSetXpRpc(userId, xpAmount);
 }

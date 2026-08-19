@@ -10,8 +10,6 @@ vi.mock("@/repositories/profile", () => ({
   awardVerifiedBattleXpRpc: vi.fn(),
   claimChestRpc: vi.fn(),
   getClaimedChestNodeIds: vi.fn(),
-  adminGrantXpRpc: vi.fn(),
-  adminSetXpRpc: vi.fn(),
 }));
 vi.mock("./milestones", () => ({
   checkMilestones: vi.fn().mockReturnValue({ toasts: [], lunaMessages: [] }),
@@ -21,8 +19,6 @@ vi.mock("./milestones", () => ({
 
 import { supabase } from "@/integrations/supabase/client";
 import {
-  adminGrantXpRpc,
-  adminSetXpRpc,
   awardXpRpc,
   awardBattleXpRpc,
   awardVerifiedBattleXpRpc,
@@ -31,8 +27,6 @@ import {
   getUserXp,
 } from "@/repositories/profile";
 import {
-  adminGrantXp,
-  adminSetXp,
   awardXp,
   awardBattleXp,
   awardVerifiedBattleXp,
@@ -150,27 +144,5 @@ describe("fetchClaimedChestNodeIds", () => {
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null } } as never);
     expect(await fetchClaimedChestNodeIds()).toEqual(new Set());
     expect(getClaimedChestNodeIds).not.toHaveBeenCalled();
-  });
-});
-
-describe("admin XP", () => {
-  it("keeps grant and set distinct - one increments, the other replaces", async () => {
-    // Both take (userId, amount) in the same order, so a swapped call would
-    // typecheck and silently overwrite someone's total instead of adding.
-    vi.mocked(adminGrantXpRpc).mockResolvedValue(1200);
-    vi.mocked(adminSetXpRpc).mockResolvedValue(500);
-
-    expect(await adminGrantXp("u2", 200)).toBe(1200);
-    expect(adminGrantXpRpc).toHaveBeenCalledWith("u2", 200);
-
-    expect(await adminSetXp("u2", 500)).toBe(500);
-    expect(adminSetXpRpc).toHaveBeenCalledWith("u2", 500);
-  });
-
-  it("passes a null through when the server refuses", async () => {
-    vi.mocked(adminGrantXpRpc).mockResolvedValue(null);
-    vi.mocked(adminSetXpRpc).mockResolvedValue(null);
-    expect(await adminGrantXp("u2", 10)).toBeNull();
-    expect(await adminSetXp("u2", 10)).toBeNull();
   });
 });

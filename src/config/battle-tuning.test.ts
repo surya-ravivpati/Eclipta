@@ -239,10 +239,11 @@ describe("UNRATED_RATING", () => {
 
   it("knows a rating above the opening league is not one", () => {
     const opening = RATING_LEAGUES[0];
-    expect(opening).toBeDefined();
-    if (!opening || opening.ceiling === null) return;
-    expect(isOpeningLeagueRating(opening.ceiling)).toBe(false);
-    expect(isOpeningLeagueRating(opening.ceiling - 1)).toBe(true);
+    const ceiling = opening?.ceiling;
+    expect(ceiling).not.toBeNull();
+    if (!opening || ceiling === null || ceiling === undefined) return;
+    expect(isOpeningLeagueRating(ceiling)).toBe(false);
+    expect(isOpeningLeagueRating(ceiling - 1)).toBe(true);
     expect(isOpeningLeagueRating(opening.floor - 1)).toBe(false);
   });
 

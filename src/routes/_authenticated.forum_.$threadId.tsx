@@ -31,6 +31,7 @@ import {
 } from "@/lib/moderation";
 import { EyeOff, RotateCcw } from "lucide-react";
 import { timeAgo } from "@/lib/time";
+import { UserLink } from "@/components/common/UserLink";
 
 export const Route = createFileRoute("/_authenticated/forum_/$threadId")({
   head: () => ({
@@ -70,20 +71,6 @@ interface Answer {
   created_at: string;
   moderation_status?: ModerationStatus;
   moderation_reason?: string | null;
-}
-
-function AuthorLink({ name }: { name: string }) {
-  const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(name);
-  if (!isUsername) return <span className="font-medium text-foreground">{name}</span>;
-  return (
-    <Link
-      to="/u/$username"
-      params={{ username: name }}
-      className="font-medium text-foreground hover:text-neon-purple transition-colors"
-    >
-      {name}
-    </Link>
-  );
 }
 
 function ThreadPage() {
@@ -389,7 +376,7 @@ function ThreadPage() {
                       ))}
                     </div>
                     <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
-                      <AuthorLink name={thread.author_name} />
+                      <UserLink name={thread.author_name} />
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {timeAgo(thread.created_at)}
@@ -504,7 +491,7 @@ function ThreadPage() {
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                           <div className="text-[11px] text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span>
-                              <AuthorLink name={a.author_name} /> | {timeAgo(a.created_at)}
+                              <UserLink name={a.author_name} /> | {timeAgo(a.created_at)}
                             </span>
                             {user && user.id !== a.user_id && (
                               <button

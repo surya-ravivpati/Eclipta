@@ -7,12 +7,12 @@
  * so this component only needs to handle the visual link.
  */
 import { LunaMarkdown } from "@/components/luna/LunaMarkdown";
+import { mentionPattern } from "@/lib/username";
 
 function linkifyMentions(input: string): string {
   if (!input) return input;
-  // Avoid eating emails: require a non-word char (or start) before "@".
   return input.replace(
-    /(^|[^\w@])@([a-zA-Z0-9_]{3,20})\b/g,
+    mentionPattern(),
     (_m, prefix: string, name: string) => `${prefix}[@${name}](/u/${name})`,
   );
 }

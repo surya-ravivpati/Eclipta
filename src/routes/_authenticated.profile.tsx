@@ -43,6 +43,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
+import { isUsername } from "@/lib/username";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -545,7 +546,7 @@ function SettingsPanel({
     profile?.luna_notes,
   ]);
 
-  const validateUsername = (v: string) => /^[a-zA-Z0-9_]{3,20}$/.test(v) && !containsProfanity(v);
+  const validateUsername = (v: string) => isUsername(v) && !containsProfanity(v);
 
   // Debounced availability check
   useEffect(() => {
@@ -576,7 +577,7 @@ function SettingsPanel({
 
   const saveUsername = async () => {
     const trimmed = username.trim();
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
+    if (!isUsername(trimmed)) {
       return toast.error("Username must be 3-20 chars: letters, numbers, underscores");
     }
     if (containsProfanity(trimmed)) {

@@ -89,7 +89,9 @@ describe("timeAgo", () => {
     const now = new Date("2026-03-15T12:00:00Z");
     vi.setSystemTime(now);
     const ago = (ms: number) => new Date(now.getTime() - ms).toISOString();
-    expect(timeAgo(ago(30_000))).toBe("just now");
+    // "now", not "just now": this list reads terse throughout, and the shared
+    // helper drops the whole suffix rather than half of it.
+    expect(timeAgo(ago(30_000))).toBe("now");
     expect(timeAgo(ago(5 * 60_000))).toBe("5m");
     expect(timeAgo(ago(3 * 3_600_000))).toBe("3h");
     expect(timeAgo(ago(4 * 86_400_000))).toBe("4d");

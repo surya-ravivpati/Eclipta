@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Users, MessageSquare, MessageCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { timeAgo } from "@/lib/time";
 
 type FeedRow =
   | { kind: "thread"; id: string; title: string; created_at: string; author: string }
@@ -13,15 +14,6 @@ type FeedRow =
       thread_id: string;
       author: string;
     };
-
-function timeAgo(iso: string): string {
-  const m = Math.floor((Date.now() - +new Date(iso)) / 60000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}d`;
-}
 
 /**
  * Compact feed showing recent forum activity from accounts the user follows.
@@ -142,7 +134,9 @@ export function FollowingFeedCard({ userId }: { userId: string }) {
                       {it.author}
                     </Link>
                     <span className="text-muted-foreground">started a thread</span>
-                    <span className="ml-auto text-muted-foreground">{timeAgo(it.created_at)}</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {timeAgo(it.created_at, { suffix: false })}
+                    </span>
                   </div>
                   <p className="text-xs text-foreground/90 group-hover:text-neon-pink line-clamp-1">
                     {it.title}
@@ -164,7 +158,9 @@ export function FollowingFeedCard({ userId }: { userId: string }) {
                       {it.author}
                     </Link>
                     <span className="text-muted-foreground">replied</span>
-                    <span className="ml-auto text-muted-foreground">{timeAgo(it.created_at)}</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {timeAgo(it.created_at, { suffix: false })}
+                    </span>
                   </div>
                   <p className="text-xs text-foreground/80 group-hover:text-neon-cyan line-clamp-1">
                     {it.body.slice(0, 120)}

@@ -1,7 +1,7 @@
 {
-  "lines": 27.02,
-  "covered": 2568,
-  "total": 9504,
+  "lines": 27.16,
+  "covered": 2577,
+  "total": 9487,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -114,6 +114,11 @@
       "covered": 0,
       "total": 9
     },
+    "src/components/common/UserLink.tsx": {
+      "pct": 100,
+      "covered": 3,
+      "total": 3
+    },
     "src/components/ConsentBanner.tsx": {
       "pct": 0,
       "covered": 0,
@@ -142,7 +147,7 @@
     "src/components/forum/AnswerComments.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 58
+      "total": 49
     },
     "src/components/forum/ReportDialog.tsx": {
       "pct": 0,
@@ -157,7 +162,7 @@
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 1568
+      "total": 1564
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,
@@ -242,7 +247,7 @@
     "src/components/profile/FollowingFeedCard.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 28
+      "total": 22
     },
     "src/components/ProgressDashboard.tsx": {
       "pct": 0,
@@ -745,14 +750,19 @@
       "total": 9
     },
     "src/lib/time.ts": {
-      "pct": 33.33,
-      "covered": 2,
-      "total": 6
+      "pct": 100,
+      "covered": 11,
+      "total": 11
     },
     "src/lib/trophy-road-data.ts": {
       "pct": 100,
       "covered": 10,
       "total": 10
+    },
+    "src/lib/username.ts": {
+      "pct": 100,
+      "covered": 4,
+      "total": 4
     },
     "src/lib/utils.ts": {
       "pct": 100,
@@ -857,7 +867,7 @@
     "src/routes/_authenticated.forum_.$threadId.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 123
+      "total": 120
     },
     "src/routes/_authenticated.forum.tsx": {
       "pct": 0,

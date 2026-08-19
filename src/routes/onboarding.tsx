@@ -23,6 +23,7 @@ import { safeRedirect } from "@/lib/safe-redirect";
 import { getOnboardingStatus, setBirthDate } from "@/repositories/profile";
 import { containsProfanity } from "@/lib/profanity";
 import { moderate, calmBlockMessage } from "@/lib/moderation";
+import { isUsername } from "@/lib/username";
 
 /** Where to land once setup is done - the page that triggered the gate. */
 const searchSchema = z.object({ redirect: z.string().optional() });
@@ -184,7 +185,7 @@ function OnboardingPage() {
     switch (step) {
       case 0: {
         const u = form.username.trim();
-        if (!/^[a-zA-Z0-9_]{3,20}$/.test(u)) return false;
+        if (!isUsername(u)) return false;
         // Block obvious slurs / profanity in handles.
         return !containsProfanity(u);
       }

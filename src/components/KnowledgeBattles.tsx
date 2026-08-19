@@ -149,6 +149,7 @@ import { awardXp, awardVerifiedBattleXp } from "@/lib/xp-service";
 import { completeBotBattleVerified } from "@/repositories/battles";
 import { toast } from "sonner";
 import "./Battles.css";
+import { UserLink } from "@/components/common/UserLink";
 
 /**
  * Pick a random opponent Ecliptar (excluding the player's own archetype when possible).
@@ -4842,19 +4843,6 @@ const winRate = (w?: number, l?: number) => {
   return total > 0 ? Math.round(((w ?? 0) / total) * 100) : null;
 };
 const initialOf = (name: string) => (name.trim()[0] ?? "?").toUpperCase();
-const isUsername = (name: string) => /^[a-zA-Z0-9_]{3,20}$/.test(name);
-
-function LbName({ row, className }: { row: LbRow; className?: string }) {
-  if (isUsername(row.name)) {
-    return (
-      <a href={`/u/${row.name}`} className={className}>
-        {row.name}
-      </a>
-    );
-  }
-  return <span className={className}>{row.name}</span>;
-}
-
 function LeaderboardCard() {
   const [tab, setTab] = useState<"rating" | "xp">("rating");
   const [xpEntries, setXpEntries] = useState<LbRow[]>([]);
@@ -5032,7 +5020,7 @@ function LeaderboardCard() {
                       <span>{row.rank === 1 ? "1ST" : row.rank === 2 ? "2ND" : "3RD"}</span>
                     </div>
                     <div className="btt-lb-ava">{initialOf(row.name)}</div>
-                    <LbName row={row} className="btt-lb-pod-name" />
+                    <UserLink name={row.name} className="btt-lb-pod-name" />
                     <div className={`btt-lb-pod-tier ${tierColors[row.tier] ?? ""}`}>
                       {row.tier}
                     </div>
@@ -5066,7 +5054,7 @@ function LeaderboardCard() {
                     <span className="btt-lb-rank">{row.rank}</span>
                     <span className="btt-lb-row-ava">{initialOf(row.name)}</span>
                     <div className="min-w-0">
-                      <LbName row={row} className="btt-lb-row-name" />
+                      <UserLink name={row.name} className="btt-lb-row-name" />
                       <span
                         className={`btt-lb-row-tier ${tierColors[row.tier] ?? "text-muted-foreground"}`}
                       >

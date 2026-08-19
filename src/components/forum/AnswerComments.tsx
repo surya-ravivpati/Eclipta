@@ -13,6 +13,8 @@ import {
   isContentVisible,
 } from "@/lib/moderation";
 import { ForumMarkdown } from "@/components/ForumMarkdown";
+import { timeAgo } from "@/lib/time";
+import { UserLink } from "@/components/common/UserLink";
 
 interface Comment {
   id: string;
@@ -22,29 +24,6 @@ interface Comment {
   created_at: string;
   moderation_status?: "visible" | "pending" | "hidden" | "removed" | null;
   moderation_reason?: string | null;
-}
-
-function timeAgo(iso: string): string {
-  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}d`;
-}
-
-function AuthorLink({ name }: { name: string }) {
-  const isUsername = /^[a-zA-Z0-9_]{3,20}$/.test(name);
-  if (!isUsername) return <span className="font-medium text-foreground">{name}</span>;
-  return (
-    <Link
-      to="/u/$username"
-      params={{ username: name }}
-      className="font-medium hover:text-neon-purple transition-colors"
-    >
-      {name}
-    </Link>
-  );
 }
 
 export function AnswerComments({
@@ -157,8 +136,8 @@ export function AnswerComments({
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                <AuthorLink name={c.author_name} />
-                <span>| {timeAgo(c.created_at)}</span>
+                <UserLink name={c.author_name} />
+                <span>| {timeAgo(c.created_at, { suffix: false })}</span>
                 {isAuthenticated && user?.id !== c.user_id && (
                   <button
                     onClick={() => setReporting(c.id)}

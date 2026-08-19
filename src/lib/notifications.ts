@@ -7,6 +7,7 @@
  * the realtime toast).
  */
 import type { ComponentType } from "react";
+import { timeAgo as sharedTimeAgo } from "./time";
 import {
   Bell,
   MessageSquare,
@@ -176,13 +177,13 @@ export function dateBucket(iso: string): "Today" | "Yesterday" | "Earlier" {
   return "Earlier";
 }
 
+/**
+ * Notification-list timestamps: terse, and a date once a notification is old
+ * enough that counting days stops meaning anything.
+ *
+ * Re-exported under this name so the notifications page keeps importing its
+ * whole toolkit from one module.
+ */
 export function timeAgo(iso: string): string {
-  const m = Math.floor((Date.now() - +new Date(iso)) / 60_000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d`;
-  return new Date(iso).toLocaleDateString();
+  return sharedTimeAgo(iso, { suffix: false, dateAfterDays: 30 });
 }

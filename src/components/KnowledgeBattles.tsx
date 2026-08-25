@@ -142,6 +142,7 @@ import { recordDailyPractice } from "@/lib/record-practice";
 import { recordOutcomes } from "@/lib/concept-mastery";
 import { ECLIPTARS, ecliptarForArchetype, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
+import { withFreshSession } from "@/integrations/supabase/auth-retry";
 import type { TableRow } from "@/integrations/supabase/database";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { findMatch, type MatchResult, type OpponentType } from "@/lib/matchmaking";
@@ -2342,14 +2343,20 @@ function BattleArena() {
     liveChallengeIdRef.current = null;
     liveChallengeAnswerRef.current = null;
     {
-      const { data, error } = await supabase.rpc("issue_battle_question", {
-        p_difficulty: category,
-        p_battle_id: opponentTypeRef.current === "live" ? pvpBattleIdRef.current : null,
-      });
+      const { data, error } = await withFreshSession(() =>
+        supabase.rpc("issue_battle_question", {
+          p_difficulty: category,
+          p_battle_id: opponentTypeRef.current === "live" ? pvpBattleIdRef.current : null,
+        }),
+      );
       if (error || !data) {
         if (cost > 0)
           setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + cost) }));
-        toast.error("Couldn't prepare a secure battle question.");
+        // The turn hasn't advanced past `select`, so the player can pick again.
+        // Surface the reason: an expired session survived the refresh retry,
+        // otherwise it's the server declining (rate limit, closed battle).
+        if (error) console.error("issue_battle_question failed:", error);
+        toast.error("Couldn't prepare a secure battle question. Please try again.");
         return;
       }
       const challenge = data as {

@@ -5,6 +5,7 @@
  * these tables and functions.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { withFreshSession } from "@/integrations/supabase/auth-retry";
 
 /** A brand-new user has no profile row yet - that is not an error, they simply have 0 XP. */
 export async function getUserXp(userId: string): Promise<number> {
@@ -266,11 +267,13 @@ export interface OnboardingStatus {
  * to disagree.
  */
 export async function getOnboardingStatus(userId: string): Promise<OnboardingStatus> {
-  const { data, error } = await supabase
-    .from("user_profiles")
-    .select("onboarded_at, birth_year")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data, error } = await withFreshSession(() =>
+    supabase
+      .from("user_profiles")
+      .select("onboarded_at, birth_year")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  );
   if (error) throw new Error(error.message);
 
   return {

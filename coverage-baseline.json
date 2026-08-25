@@ -1,7 +1,7 @@
 {
-  "lines": 30.69,
-  "covered": 2913,
-  "total": 9491,
+  "lines": 30.76,
+  "covered": 2924,
+  "total": 9504,
   "newFileBar": 60,
   "files": {
     "src/components/archetypes/ArchetypesCompass.tsx": {
@@ -222,7 +222,7 @@
     "src/components/KnowledgeBattles.tsx": {
       "pct": 0,
       "covered": 0,
-      "total": 1224
+      "total": 1226
     },
     "src/components/landing/CinematicFilm.tsx": {
       "pct": 0,
@@ -559,6 +559,11 @@
       "covered": 2,
       "total": 8
     },
+    "src/integrations/supabase/auth-retry.ts": {
+      "pct": 100,
+      "covered": 10,
+      "total": 10
+    },
     "src/integrations/supabase/client.ts": {
       "pct": 25,
       "covered": 1,
@@ -855,9 +860,9 @@
       "total": 11
     },
     "src/repositories/profile.ts": {
-      "pct": 89.65,
-      "covered": 52,
-      "total": 58
+      "pct": 89.83,
+      "covered": 53,
+      "total": 59
     },
     "src/repositories/search.ts": {
       "pct": 100,
@@ -1045,5 +1050,5 @@
       "total": 73
     }
   },
-  "updated": "2026-08-19"
+  "updated": "2026-08-25"
 }

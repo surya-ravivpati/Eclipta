@@ -143,6 +143,7 @@ import { recordOutcomes } from "@/lib/concept-mastery";
 import { ECLIPTARS, ecliptarForArchetype, ecliptarSpriteUrl, type Ecliptar } from "@/lib/ecliptars";
 import { supabase } from "@/integrations/supabase/client";
 import { withFreshSession } from "@/integrations/supabase/auth-retry";
+import { battleQuestionUnavailableMessage } from "./battles/battle-question-error";
 import type { TableRow } from "@/integrations/supabase/database";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { findMatch, type MatchResult, type OpponentType } from "@/lib/matchmaking";
@@ -2353,10 +2354,10 @@ function BattleArena() {
         if (cost > 0)
           setPlayer((prev) => ({ ...prev, focus: Math.min(prev.maxFocus, prev.focus + cost) }));
         // The turn hasn't advanced past `select`, so the player can pick again.
-        // Surface the reason: an expired session survived the refresh retry,
-        // otherwise it's the server declining (rate limit, closed battle).
+        // Log the raw error so anything unexpected is diagnosable; the message
+        // shown names the hourly cap when that is the reason (see helper).
         if (error) console.error("issue_battle_question failed:", error);
-        toast.error("Couldn't prepare a secure battle question. Please try again.");
+        toast.error(battleQuestionUnavailableMessage(error));
         return;
       }
       const challenge = data as {
